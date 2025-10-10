@@ -1,0 +1,23 @@
+.nav-pills .nav-link {
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    color:#000000;
+    font-weight: 500;
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--main-color);
+    color: #ffffff;
+}
+
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: var(--kazaria-light-gray);
+    border: none;
+    color: var(--kazaria-dark);
+    font-weight: 600;
+}

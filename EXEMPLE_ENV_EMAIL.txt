@@ -1,0 +1,205 @@
+═══════════════════════════════════════════════════════════════
+   EXEMPLES DE CONFIGURATION EMAIL - .ENV
+═══════════════════════════════════════════════════════════════
+
+Copiez UNE de ces configurations dans votre fichier .env
+
+═══════════════════════════════════════════════════════════════
+   1. MAILTRAP - Pour TESTS (RECOMMANDÉ)
+═══════════════════════════════════════════════════════════════
+
+Site: https://mailtrap.io (Gratuit)
+Usage: Capture les emails sans les envoyer réellement
+
+MAIL_MAILER=smtp
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=1234567890abcd
+MAIL_PASSWORD=1234567890abcd
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@kazaria.com
+MAIL_FROM_NAME="KAZARIA"
+
+IMPORTANT:
+- Remplacez MAIL_USERNAME et MAIL_PASSWORD par VOS identifiants Mailtrap
+- Trouvez-les dans: Mailtrap > My Inbox > SMTP Settings > Laravel
+- Les identifiants ressemblent à: a1b2c3d4e5f6g7
+
+
+═══════════════════════════════════════════════════════════════
+   2. GMAIL - Pour petits tests
+═══════════════════════════════════════════════════════════════
+
+IMPORTANT: Ne PAS utiliser votre mot de passe Gmail normal !
+Utilisez un "Mot de passe d'application" (16 caractères)
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=votre-email@gmail.com
+MAIL_PASSWORD=abcd efgh ijkl mnop
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=votre-email@gmail.com
+MAIL_FROM_NAME="KAZARIA"
+
+Comment obtenir le mot de passe d'application:
+1. Activez la validation en 2 étapes sur votre compte Google
+2. Allez sur: https://myaccount.google.com/apppasswords
+3. Sélectionnez "Mail" et "Ordinateur Windows"
+4. Copiez le mot de passe à 16 caractères généré
+5. Utilisez-le dans MAIL_PASSWORD (sans espaces: abcdefghijklmnop)
+
+
+═══════════════════════════════════════════════════════════════
+   3. SENDGRID - Pour PRODUCTION
+═══════════════════════════════════════════════════════════════
+
+Site: https://sendgrid.com
+Plan gratuit: 100 emails/jour
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.sendgrid.net
+MAIL_PORT=587
+MAIL_USERNAME=apikey
+MAIL_PASSWORD=SG.VOTRE_API_KEY_ICI
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@kazaria.com
+MAIL_FROM_NAME="KAZARIA"
+
+IMPORTANT:
+- MAIL_USERNAME doit être EXACTEMENT "apikey"
+- MAIL_PASSWORD est votre clé API SendGrid
+- La clé API commence par "SG."
+- Créez la clé dans: Settings > API Keys > Create API Key
+
+
+═══════════════════════════════════════════════════════════════
+   4. MAILGUN - Pour PRODUCTION
+═══════════════════════════════════════════════════════════════
+
+Site: https://mailgun.com
+Plan gratuit: 1000 emails/mois (premiers 3 mois)
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailgun.org
+MAIL_PORT=587
+MAIL_USERNAME=postmaster@votre-domaine.mailgun.org
+MAIL_PASSWORD=votre_password_mailgun
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@kazaria.com
+MAIL_FROM_NAME="KAZARIA"
+
+
+═══════════════════════════════════════════════════════════════
+   APRÈS MODIFICATION DU .ENV
+═══════════════════════════════════════════════════════════════
+
+TOUJOURS exécuter cette commande après modification:
+
+php artisan config:clear
+
+Puis tester avec:
+
+php artisan tinker
+
+Dans Tinker, tapez:
+config('mail.mailers.smtp.username')
+config('mail.mailers.smtp.password')
+
+Vérifiez que les valeurs affichées sont correctes, puis tapez:
+exit
+
+
+═══════════════════════════════════════════════════════════════
+   TESTER L'ENVOI D'EMAIL
+═══════════════════════════════════════════════════════════════
+
+php artisan tinker
+
+Mail::raw('Test email KAZARIA', function($message) {
+    $message->to('test@example.com')->subject('Test');
+});
+
+exit
+
+Si vous utilisez Mailtrap, l'email apparaîtra dans votre inbox Mailtrap.
+
+
+═══════════════════════════════════════════════════════════════
+   ERREURS COURANTES
+═══════════════════════════════════════════════════════════════
+
+❌ ERREUR: Failed to authenticate with username "KAZARIA"
+
+CAUSE: Vous n'avez pas mis de vrais identifiants SMTP dans .env
+
+SOLUTION: 
+- Créez un compte Mailtrap
+- Copiez les vrais identifiants
+- Remplacez dans .env
+- Exécutez: php artisan config:clear
+
+
+❌ ERREUR: Expected response code "235" but got code "535"
+
+CAUSE: Username ou password incorrect
+
+SOLUTION:
+- Vérifiez les identifiants sur Mailtrap
+- Vérifiez qu'il n'y a pas d'espace avant/après
+- Vérifiez que vous avez copié le bon username ET password
+
+
+❌ ERREUR: Connection timeout
+
+CAUSE: Port ou host incorrect
+
+SOLUTION:
+- Mailtrap: port 2525
+- Gmail: port 587
+- Vérifiez MAIL_HOST dans .env
+
+
+═══════════════════════════════════════════════════════════════
+   CONFIGURATION .ENV COMPLÈTE (EXEMPLE)
+═══════════════════════════════════════════════════════════════
+
+APP_NAME=KAZARIA
+APP_ENV=local
+APP_KEY=base64:VotreCléGénérée...
+APP_DEBUG=true
+APP_URL=http://localhost
+
+# Avec MAILTRAP
+MAIL_MAILER=smtp
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=a1b2c3d4e5f6g7
+MAIL_PASSWORD=h8i9j0k1l2m3n4
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@kazaria.com
+MAIL_FROM_NAME="KAZARIA"
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=kazaria_db
+DB_USERNAME=root
+DB_PASSWORD=
+
+
+═══════════════════════════════════════════════════════════════
+   AIDE RAPIDE
+═══════════════════════════════════════════════════════════════
+
+1. Créez un compte Mailtrap: https://mailtrap.io
+2. Copiez vos identifiants SMTP
+3. Collez-les dans .env (MAIL_USERNAME et MAIL_PASSWORD)
+4. Exécutez: php artisan config:clear
+5. Testez l'inscription sur votre site
+6. Vérifiez l'email dans votre inbox Mailtrap
+
+C'est tout ! 🚀
+
+═══════════════════════════════════════════════════════════════
+

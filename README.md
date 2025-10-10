@@ -1,2 +1,0 @@
-# kazaria
-KAZARIA MarketPlace

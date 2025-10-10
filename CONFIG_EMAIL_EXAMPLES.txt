@@ -1,0 +1,243 @@
+═══════════════════════════════════════════════════════════════
+   EXEMPLES DE CONFIGURATION EMAIL - KAZARIA MARKETPLACE
+═══════════════════════════════════════════════════════════════
+
+Copiez l'une de ces configurations dans votre fichier .env selon
+le service que vous souhaitez utiliser.
+
+═══════════════════════════════════════════════════════════════
+   1. MAILTRAP - Pour les TESTS (Recommandé pour développement)
+═══════════════════════════════════════════════════════════════
+
+Site: https://mailtrap.io (Gratuit)
+Usage: Teste l'envoi d'emails sans les envoyer réellement
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=votre_username_mailtrap
+MAIL_PASSWORD=votre_password_mailtrap
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@kazaria.com
+MAIL_FROM_NAME="KAZARIA"
+
+Étapes:
+1. Créer un compte sur mailtrap.io
+2. Créer une inbox
+3. Copier les identifiants SMTP
+4. Coller dans .env
+
+
+═══════════════════════════════════════════════════════════════
+   2. GMAIL - Service Gmail
+═══════════════════════════════════════════════════════════════
+
+Site: https://mail.google.com
+Usage: Envoi réel d'emails via Gmail
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=votre-email@gmail.com
+MAIL_PASSWORD=mot_de_passe_application_16_caracteres
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=votre-email@gmail.com
+MAIL_FROM_NAME="KAZARIA"
+
+Étapes importantes:
+1. Activer l'authentification à 2 facteurs sur votre compte Gmail
+2. Aller dans "Gérer votre compte Google" > Sécurité
+3. Rechercher "Mots de passe des applications"
+4. Générer un nouveau mot de passe pour "Mail"
+5. Copier le mot de passe (16 caractères)
+6. Utiliser ce mot de passe dans MAIL_PASSWORD
+
+⚠️ N'utilisez PAS votre mot de passe Gmail normal !
+
+
+═══════════════════════════════════════════════════════════════
+   3. SENDGRID - Service professionnel
+═══════════════════════════════════════════════════════════════
+
+Site: https://sendgrid.com
+Usage: Service d'email professionnel (100 emails/jour gratuits)
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.sendgrid.net
+MAIL_PORT=587
+MAIL_USERNAME=apikey
+MAIL_PASSWORD=votre_sendgrid_api_key
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=verified-email@votre-domaine.com
+MAIL_FROM_NAME="KAZARIA"
+
+Étapes:
+1. Créer un compte sur sendgrid.com
+2. Vérifier votre email
+3. Créer une API Key dans Settings > API Keys
+4. Copier l'API Key
+5. MAIL_USERNAME doit être exactement "apikey"
+6. MAIL_PASSWORD doit être votre API Key
+
+
+═══════════════════════════════════════════════════════════════
+   4. MAILGUN - Service professionnel
+═══════════════════════════════════════════════════════════════
+
+Site: https://mailgun.com
+Usage: Service d'email professionnel (1000 emails/mois gratuits)
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailgun.org
+MAIL_PORT=587
+MAIL_USERNAME=postmaster@votre-domaine.mailgun.org
+MAIL_PASSWORD=votre_password_mailgun
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@votre-domaine.com
+MAIL_FROM_NAME="KAZARIA"
+
+Étapes:
+1. Créer un compte sur mailgun.com
+2. Ajouter et vérifier votre domaine
+3. Obtenir les identifiants SMTP
+4. Copier dans .env
+
+
+═══════════════════════════════════════════════════════════════
+   5. AMAZON SES - Service AWS
+═══════════════════════════════════════════════════════════════
+
+Site: https://aws.amazon.com/ses/
+Usage: Service email d'Amazon (Très économique)
+
+MAIL_MAILER=smtp
+MAIL_HOST=email-smtp.eu-west-1.amazonaws.com
+MAIL_PORT=587
+MAIL_USERNAME=votre_smtp_username
+MAIL_PASSWORD=votre_smtp_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=verified@votre-domaine.com
+MAIL_FROM_NAME="KAZARIA"
+
+Note: Remplacez "eu-west-1" par votre région AWS
+
+
+═══════════════════════════════════════════════════════════════
+   6. BREVO (ex-Sendinblue) - Service français
+═══════════════════════════════════════════════════════════════
+
+Site: https://www.brevo.com/fr/
+Usage: Service français (300 emails/jour gratuits)
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_USERNAME=votre-email@exemple.com
+MAIL_PASSWORD=votre_cle_smtp_brevo
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@votre-domaine.com
+MAIL_FROM_NAME="KAZARIA"
+
+Étapes:
+1. Créer un compte sur brevo.com
+2. Aller dans "SMTP & API"
+3. Créer une clé SMTP
+4. Utiliser votre email de connexion comme USERNAME
+
+
+═══════════════════════════════════════════════════════════════
+   7. OFFICE 365 / OUTLOOK - Microsoft
+═══════════════════════════════════════════════════════════════
+
+Site: https://outlook.com
+Usage: Service Microsoft
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.office365.com
+MAIL_PORT=587
+MAIL_USERNAME=votre-email@outlook.com
+MAIL_PASSWORD=votre_mot_de_passe
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=votre-email@outlook.com
+MAIL_FROM_NAME="KAZARIA"
+
+
+═══════════════════════════════════════════════════════════════
+   TESTER LA CONFIGURATION
+═══════════════════════════════════════════════════════════════
+
+Après avoir configuré votre .env:
+
+1. Nettoyer le cache:
+   php artisan config:clear
+   php artisan cache:clear
+
+2. Tester l'envoi:
+   php artisan tinker
+
+   Puis dans tinker:
+   Mail::raw('Test KAZARIA', function($m) {
+       $m->to('votre-email@test.com')->subject('Test');
+   });
+   exit
+
+
+═══════════════════════════════════════════════════════════════
+   COMPARAISON DES SERVICES
+═══════════════════════════════════════════════════════════════
+
+SERVICE         | GRATUIT      | FACILE  | PRODUCTION
+----------------|--------------|---------|-------------
+Mailtrap        | ✅ Illimité  | ⭐⭐⭐   | ❌ Tests uniquement
+Gmail           | ✅ Limité    | ⭐⭐     | ⚠️ Petite échelle
+SendGrid        | ✅ 100/jour  | ⭐⭐⭐   | ✅ Oui
+Mailgun         | ✅ 1000/mois | ⭐⭐⭐   | ✅ Oui
+Amazon SES      | ✅ 62k/mois* | ⭐⭐     | ✅ Oui
+Brevo           | ✅ 300/jour  | ⭐⭐⭐   | ✅ Oui
+Outlook/O365    | ✅ Limité    | ⭐⭐     | ⚠️ Petite échelle
+
+* Avec compte AWS gratuit
+
+
+═══════════════════════════════════════════════════════════════
+   RECOMMANDATIONS
+═══════════════════════════════════════════════════════════════
+
+Pour DÉVELOPPEMENT/TESTS:
+  → Mailtrap (aucun email réel envoyé, parfait pour tester)
+
+Pour PRODUCTION (petit site):
+  → Brevo (français, 300 emails/jour gratuits)
+  → SendGrid (100 emails/jour gratuits)
+
+Pour PRODUCTION (gros volume):
+  → Amazon SES (très économique)
+  → Mailgun (fiable et scalable)
+
+Pour TESTS RAPIDES:
+  → Gmail (si vous avez déjà un compte)
+
+
+═══════════════════════════════════════════════════════════════
+   VÉRIFIER QUE ÇA FONCTIONNE
+═══════════════════════════════════════════════════════════════
+
+Logs Laravel:
+  storage/logs/laravel.log
+
+Vérifier la configuration:
+  php artisan config:show mail
+
+Tester les routes:
+  php artisan route:list | findstr login
+
+
+═══════════════════════════════════════════════════════════════
+
+Pour plus d'informations, consultez:
+- README_AUTH.md : Documentation complète
+- GUIDE_RAPIDE_AUTH.md : Installation rapide
+- INSTALLATION_AUTH.md : Liste des fichiers et étapes
+
+═══════════════════════════════════════════════════════════════
+
