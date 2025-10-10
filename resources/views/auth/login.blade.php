@@ -23,7 +23,7 @@
         <div class="text-center mb-3">
             <img src="{{ asset('images/logo-orange.png') }}" class="logo-size-header" alt="KAZARIA">
             <p class="mb-0 fw-bold fs-7">Bienvenue chez KAZARIA</p>
-            <p class="my-3 fs-8">Veuillez vous connecter ou inscrivez-vous si vous n'avez pas de compte</p>
+            <p class="mb-0 fs-8">Veuillez vous connecter ou inscrivez-vous si vous n'avez pas de compte</p>
         </div>
         
         <!-- SECTION FORM -->
