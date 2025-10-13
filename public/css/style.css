@@ -121,3 +121,49 @@
 .h-500px{
     height: 500px;
 }
+
+/* PRODUCT NAME TRUNCATION */
+.product-name-truncate {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.4; /* Hauteur de ligne consistante */
+}
+
+/* Variante pour les titres de produits dans les cartes */
+.product-card .card-title,
+.card-title.text-truncate {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.4;
+}
+
+/* Garantir que tous les noms de produits dans les cartes sont tronqués */
+.product-card p.orange-color,
+.product-card h6 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* ACTIVITY STYLES */
+.activity-item {
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: rgba(240, 78, 39, 0.05);
+    border-radius: 8px;
+    padding: 12px !important;
+    margin: 0 -12px 12px -12px !important;
+}
+
+.activity-item:last-child {
+    border-bottom: none !important;
+}

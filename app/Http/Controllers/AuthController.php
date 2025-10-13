@@ -3,198 +3,325 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\AuthCode;
 use App\Mail\AuthCodeMail;
 use App\Mail\VerifyEmailMail;
 use App\Mail\ResetPasswordMail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class AuthController extends Controller
 {
     /**
-     * Afficher le formulaire de connexion
-     */
-    public function showLoginForm()
-    {
-        return view('auth.login');
-    }
-
-    /**
-     * Afficher le formulaire d'inscription
-     */
-    public function showRegisterForm()
-    {
-        return view('auth.register');
-    }
-
-    /**
-     * Traiter l'inscription
+     * Inscription d'un nouvel utilisateur
      */
     public function register(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'nom' => 'required|string|max:255',
             'prenoms' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'telephone' => 'nullable|string|max:20|unique:users',
+            'telephone' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
-            'adresse' => 'nullable|string',
-            'newsletter' => 'boolean',
             'termes_condition' => 'required|accepted',
-        ], [
-            'nom.required' => 'Le nom est obligatoire.',
-            'prenoms.required' => 'Le(s) prénom(s) est/sont obligatoire(s).',
-            'email.required' => 'L\'adresse email est obligatoire.',
-            'email.email' => 'L\'adresse email doit être valide.',
-            'email.unique' => 'Cette adresse email est déjà utilisée.',
-            'telephone.unique' => 'Ce numéro de téléphone est déjà utilisé.',
-            'password.required' => 'Le mot de passe est obligatoire.',
-            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
-            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
-            'termes_condition.accepted' => 'Vous devez accepter les termes et conditions.',
+            'newsletter' => 'boolean',
         ]);
 
-        $user = User::create([
-            'nom' => $validated['nom'],
-            'prenoms' => $validated['prenoms'],
-            'email' => $validated['email'],
-            'telephone' => $validated['telephone'] ?? null,
-            'password' => Hash::make($validated['password']),
-            'adresse' => $validated['adresse'] ?? null,
-            'newsletter' => $validated['newsletter'] ?? false,
-            'termes_condition' => true,
-            'statut' => 'actif',
-        ]);
+        if ($validator->fails()) {
+            $errors = $validator->errors();
+            $firstError = $errors->first();
+            
+            return response()->json([
+                'success' => false,
+                'message' => $firstError,
+                'errors' => $errors
+            ], 422);
+        }
 
-        event(new Registered($user));
+        try {
+            // Créer l'utilisateur
+            $user = User::create([
+                'nom' => $request->nom,
+                'prenoms' => $request->prenoms,
+                'email' => $request->email,
+                'telephone' => $request->telephone,
+                'password' => Hash::make($request->password),
+                'termes_condition' => $request->boolean('termes_condition'),
+                'newsletter' => $request->boolean('newsletter'),
+                'statut' => 'actif',
+                'is_verified' => false,
+            ]);
 
-        // Générer le lien de vérification
-        $verificationUrl = $this->generateVerificationUrl($user);
+            // Créer un token de vérification
+            $verificationToken = Str::random(64);
+            $user->update(['email_verification_token' => $verificationToken]);
 
-        // Envoyer l'email de vérification
-        Mail::to($user->email)->send(new VerifyEmailMail($verificationUrl, $user->prenoms . ' ' . $user->nom));
+            // URL de vérification
+            $verificationUrl = route('verify-email', ['token' => $verificationToken]);
 
-        return redirect()->route('verification.notice')->with('success', 'Votre compte a été créé. Veuillez vérifier votre adresse email pour continuer.');
+            // Envoyer l'email de vérification
+            Mail::to($user->email)->send(new VerifyEmailMail($user, $verificationUrl));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Compte créé avec succès ! Un email de vérification a été envoyé à votre adresse email.',
+                'user' => $user->only(['id', 'nom', 'prenoms', 'email'])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la création du compte. Veuillez réessayer.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Traiter la connexion (première étape - envoi du code)
+     * Connexion avec code de vérification
      */
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'password' => 'required',
-        ], [
-            'email.required' => 'L\'adresse email est obligatoire.',
-            'email.email' => 'L\'adresse email doit être valide.',
-            'password.required' => 'Le mot de passe est obligatoire.',
+            'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
-
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            return back()->withErrors([
-                'email' => 'Les identifiants fournis sont incorrects.',
-            ])->withInput($request->except('password'));
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email et mot de passe requis'
+            ], 422);
         }
 
-        // Vérifier si l'email est vérifié
-        if (!$user->hasVerifiedEmail()) {
-            return back()->withErrors([
-                'email' => 'Veuillez d\'abord vérifier votre adresse email.',
-            ])->with('resend_verification', true);
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email ou mot de passe incorrect'
+            ], 401);
         }
 
-        // Générer le code d'authentification
-        $authCode = $user->generateAuthCode();
+        if (!$user->is_verified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Veuillez d\'abord vérifier votre adresse email'
+            ], 401);
+        }
 
-        // Envoyer le code par email
-        Mail::to($user->email)->send(new AuthCodeMail($authCode, $user->prenoms . ' ' . $user->nom));
+        // Générer et envoyer le code de connexion
+        $authCode = AuthCode::createCode($user->email, 'login', $request);
+        
+        // Envoyer l'email avec le code
+        Mail::to($user->email)->send(new AuthCodeMail($authCode->code, 'login', $user->prenoms));
 
-        // Stocker l'ID de l'utilisateur en session temporaire
-        session(['pending_auth_user_id' => $user->id]);
-
-        return redirect()->route('verify-code.show')->with('success', 'Un code d\'authentification a été envoyé à votre adresse email.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Code de connexion envoyé à votre email',
+            'email' => $user->email,
+            'requires_code' => true
+        ]);
     }
 
     /**
-     * Afficher le formulaire de vérification du code
+     * Vérification du code de connexion
      */
-    public function showVerifyCodeForm()
+    public function verifyLoginCode(Request $request)
     {
-        if (!session('pending_auth_user_id')) {
-            return redirect()->route('login')->withErrors(['error' => 'Session expirée. Veuillez vous reconnecter.']);
-        }
-
-        return view('auth.verify-code');
-    }
-
-    /**
-     * Vérifier le code d'authentification
-     */
-    public function verifyCode(Request $request)
-    {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
             'code' => 'required|string|size:8',
-        ], [
-            'code.required' => 'Le code est obligatoire.',
-            'code.size' => 'Le code doit contenir exactement 8 chiffres.',
         ]);
 
-        $userId = session('pending_auth_user_id');
-
-        if (!$userId) {
-            return redirect()->route('login')->withErrors(['error' => 'Session expirée. Veuillez vous reconnecter.']);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Code de 8 chiffres requis'
+            ], 422);
         }
 
-        $user = User::find($userId);
+        $authCode = AuthCode::where('email', $request->email)
+                           ->where('code', $request->code)
+                           ->where('type', 'login')
+                           ->unused()
+                           ->notExpired()
+                           ->first();
 
+        if (!$authCode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Code invalide ou expiré'
+            ], 401);
+        }
+
+        $user = User::where('email', $request->email)->first();
         if (!$user) {
-            return redirect()->route('login')->withErrors(['error' => 'Utilisateur non trouvé.']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur introuvable'
+            ], 404);
         }
 
-        if ($user->verifyAuthCode($request->code)) {
-            // Connecter l'utilisateur
-            Auth::login($user, $request->has('remember'));
-            session()->forget('pending_auth_user_id');
+        // Marquer le code comme utilisé
+        $authCode->markAsUsed();
 
-            return redirect()->intended(route('accueil'))->with('success', 'Connexion réussie !');
-        }
+        // Créer le token d'authentification
+        $token = $user->createToken('auth-token')->plainTextToken;
 
-        return back()->withErrors([
-            'code' => 'Le code est invalide ou a expiré.',
-        ])->withInput();
+        return response()->json([
+            'success' => true,
+            'message' => 'Connexion réussie',
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
+            'token' => $token
+        ]);
     }
 
     /**
-     * Renvoyer le code d'authentification
+     * Demande de réinitialisation de mot de passe
      */
-    public function resendAuthCode()
+    public function forgotPassword(Request $request)
     {
-        $userId = session('pending_auth_user_id');
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users',
+        ]);
 
-        if (!$userId) {
-            return redirect()->route('login')->withErrors(['error' => 'Session expirée. Veuillez vous reconnecter.']);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Adresse email invalide ou inexistante'
+            ], 422);
         }
 
-        $user = User::find($userId);
+        $user = User::where('email', $request->email)->first();
+        
+        // Créer un token de réinitialisation
+        $resetToken = Str::random(64);
+        $user->update([
+            'password_reset_token' => $resetToken,
+            'password_reset_expires_at' => now()->addHour()
+        ]);
+
+        // URL de réinitialisation
+        $resetUrl = route('reset-password', ['token' => $resetToken]);
+
+        // Envoyer l'email de réinitialisation
+        Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $user->prenoms));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email de réinitialisation envoyé'
+        ]);
+    }
+
+    /**
+     * Réinitialisation du mot de passe
+     */
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('password_reset_token', $request->token)
+                   ->where('password_reset_expires_at', '>', now())
+                   ->first();
 
         if (!$user) {
-            return redirect()->route('login')->withErrors(['error' => 'Utilisateur non trouvé.']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Token invalide ou expiré'
+            ], 401);
         }
 
-        $authCode = $user->generateAuthCode();
-        Mail::to($user->email)->send(new AuthCodeMail($authCode, $user->prenoms . ' ' . $user->nom));
+        // Mettre à jour le mot de passe
+        $user->update([
+            'password' => Hash::make($request->password),
+            'password_reset_token' => null,
+            'password_reset_expires_at' => null,
+        ]);
 
-        return back()->with('success', 'Un nouveau code a été envoyé à votre adresse email.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Mot de passe réinitialisé avec succès'
+        ]);
+    }
+
+    /**
+     * Vérification de l'email
+     */
+    public function verifyEmail(Request $request, $token)
+    {
+        $user = User::where('email_verification_token', $token)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token de vérification invalide'
+            ], 401);
+        }
+
+        $user->update([
+            'is_verified' => true,
+            'email_verified_at' => now(),
+            'email_verification_token' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email vérifié avec succès'
+        ]);
+    }
+
+    /**
+     * Renvoyer le code de vérification
+     */
+    public function resendVerificationCode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'type' => 'required|in:login,register,password_reset',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides'
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+
+        // Créer un nouveau code
+        $authCode = AuthCode::createCode($user->email, $request->type, $request);
+        
+        // Envoyer l'email
+        Mail::to($user->email)->send(new AuthCodeMail($authCode->code, $request->type, $user->prenoms));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Code renvoyé avec succès'
+        ]);
     }
 
     /**
@@ -202,197 +329,75 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->user()->currentAccessToken()->delete();
 
-        return redirect()->route('accueil')->with('success', 'Vous avez été déconnecté avec succès.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Déconnexion réussie'
+        ]);
     }
 
     /**
-     * Afficher la page de notification de vérification d'email
+     * Informations de l'utilisateur connecté
      */
-    public function verificationNotice()
+    public function me(Request $request)
     {
-        return view('auth.verify-email');
+        return response()->json([
+            'success' => true,
+            'user' => $request->user()->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
+        ]);
     }
 
     /**
-     * Vérifier l'email via le lien
-     * Note: Version simplifiée pour tests en développement
-     * TODO: Renforcer la sécurité avant production
+     * Déconnexion côté client (sans middleware d'authentification)
      */
-    public function verifyEmail(Request $request, $id, $hash)
+    public function logoutClient(Request $request)
     {
-        $user = User::findOrFail($id);
-
-        // Vérification simplifiée pour les tests (utilise email direct)
-        $expectedHash = sha1($user->email);
+        $token = $request->bearerToken();
         
-        if ($hash !== $expectedHash) {
-            return redirect()->route('login')->withErrors(['error' => 'Lien de vérification invalide. Veuillez demander un nouveau lien.']);
+        if ($token) {
+            // Trouver et supprimer le token
+            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($personalAccessToken) {
+                $personalAccessToken->delete();
+            }
         }
 
-        // Vérifier si l'email est déjà vérifié
-        if ($user->hasVerifiedEmail()) {
-            return redirect()->route('login')->with('info', 'Votre email est déjà vérifié. Vous pouvez vous connecter.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Déconnexion réussie'
+        ]);
+    }
+
+    /**
+     * Déconnecter tous les appareils de l'utilisateur
+     */
+    public function logoutAllDevices(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié'
+                ], 401);
+            }
+
+            // Supprimer tous les tokens de l'utilisateur
+            $user->tokens()->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tous les appareils ont été déconnectés avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la déconnexion de tous les appareils: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la déconnexion'
+            ], 500);
         }
-
-        // Marquer l'email comme vérifié
-        $user->email_verified_at = now();
-        $user->is_verified = true;
-        $user->save();
-        
-        event(new \Illuminate\Auth\Events\Verified($user));
-
-        return redirect()->route('login')->with('success', 'Votre email a été vérifié avec succès. Vous pouvez maintenant vous connecter.');
-    }
-
-    /**
-     * Renvoyer l'email de vérification
-     */
-    public function resendVerificationEmail(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ], [
-            'email.required' => 'L\'adresse email est obligatoire.',
-            'email.email' => 'L\'adresse email doit être valide.',
-            'email.exists' => 'Cette adresse email n\'existe pas dans notre système.',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if ($user->hasVerifiedEmail()) {
-            return back()->with('info', 'Votre email est déjà vérifié.');
-        }
-
-        $verificationUrl = $this->generateVerificationUrl($user);
-        Mail::to($user->email)->send(new VerifyEmailMail($verificationUrl, $user->prenoms . ' ' . $user->nom));
-
-        return back()->with('success', 'Un nouveau lien de vérification a été envoyé à votre adresse email.');
-    }
-
-    /**
-     * Afficher le formulaire de demande de réinitialisation de mot de passe
-     */
-    public function showForgotPasswordForm()
-    {
-        return view('auth.forgot-password');
-    }
-
-    /**
-     * Envoyer le lien de réinitialisation
-     */
-    public function sendResetLink(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-        ], [
-            'email.required' => 'L\'adresse email est obligatoire.',
-            'email.email' => 'L\'adresse email doit être valide.',
-            'email.exists' => 'Aucun compte n\'est associé à cette adresse email.',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-        
-        // Créer un token de réinitialisation
-        $token = Str::random(64);
-        
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $request->email],
-            [
-                'token' => Hash::make($token),
-                'created_at' => Carbon::now(),
-            ]
-        );
-
-        $resetUrl = route('password.reset', ['token' => $token, 'email' => $request->email]);
-
-        Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $user->prenoms . ' ' . $user->nom, $token));
-
-        return back()->with('success', 'Un lien de réinitialisation a été envoyé à votre adresse email.');
-    }
-
-    /**
-     * Afficher le formulaire de réinitialisation de mot de passe
-     */
-    public function showResetPasswordForm(Request $request, $token)
-    {
-        return view('auth.reset-password', [
-            'token' => $token,
-            'email' => $request->email,
-        ]);
-    }
-
-    /**
-     * Réinitialiser le mot de passe
-     */
-    public function resetPassword(Request $request)
-    {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ], [
-            'email.required' => 'L\'adresse email est obligatoire.',
-            'email.email' => 'L\'adresse email doit être valide.',
-            'email.exists' => 'Cette adresse email n\'existe pas.',
-            'password.required' => 'Le mot de passe est obligatoire.',
-            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
-            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
-        ]);
-
-        // Vérifier le token
-        $passwordReset = DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->first();
-
-        if (!$passwordReset) {
-            return back()->withErrors(['email' => 'Ce lien de réinitialisation est invalide.']);
-        }
-
-        // Vérifier si le token n'a pas expiré (1 heure)
-        if (Carbon::parse($passwordReset->created_at)->addHour()->isPast()) {
-            return back()->withErrors(['email' => 'Ce lien de réinitialisation a expiré.']);
-        }
-
-        // Mettre à jour le mot de passe
-        $user = User::where('email', $request->email)->first();
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
-
-        // Supprimer le token
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
-        return redirect()->route('login')->with('success', 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.');
-    }
-
-    /**
-     * Générer l'URL de vérification d'email
-     * Note: Version simplifiée pour les tests en développement
-     * TODO: Réactiver temporarySignedRoute avant la production
-     */
-    private function generateVerificationUrl(User $user): string
-    {
-        // Version simplifiée pour les tests (sans signature)
-        return route('verification.verify', [
-            'id' => $user->id,
-            'hash' => sha1($user->email),
-        ]);
-        
-        // Version avec signature (à réactiver en production)
-        /*
-        return \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            [
-                'id' => $user->id,
-                'hash' => sha1($user->getEmailForVerification()),
-            ]
-        );
-        */
     }
 }
-

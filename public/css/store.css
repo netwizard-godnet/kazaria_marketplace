@@ -1,0 +1,140 @@
+/* =========================================
+   STYLES POUR LE SYSTÈME DE BOUTIQUES
+   ========================================= */
+
+/* Formulaire de création de boutique */
+.store-create-form .form-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.store-create-form .form-control,
+.store-create-form .form-select {
+    border-radius: 0.375rem;
+}
+
+.store-create-form .form-control:focus,
+.store-create-form .form-select:focus {
+    border-color: var(--main-color);
+    box-shadow: 0 0 0 0.2rem rgba(240, 78, 38, 0.25);
+}
+
+.store-create-form #charCount {
+    font-size: 0.875rem;
+}
+
+.store-create-form .img-thumbnail {
+    border-radius: 0.375rem;
+}
+
+/* Dashboard vendeur */
+.store-dashboard .nav-link {
+    color: #495057;
+    padding: 12px 20px;
+    border-left: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+.store-dashboard .nav-link:hover {
+    background-color: #f8f9fa;
+    color: var(--main-color);
+}
+
+.store-dashboard .nav-link.active {
+    background-color: #fff3e0;
+    color: var(--main-color);
+    border-left-color: var(--main-color);
+    font-weight: 600;
+}
+
+.store-dashboard .nav-link i {
+    width: 20px;
+}
+
+.store-dashboard .sticky-top {
+    top: 80px;
+}
+
+/* Page publique de boutique */
+.store-public .product-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.store-public .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.store-public .product-item.list-view {
+    width: 100%;
+}
+
+.store-public .product-item.list-view .card {
+    flex-direction: row;
+}
+
+.store-public .product-item.list-view .card img {
+    width: 200px;
+    height: auto;
+}
+
+.store-public .product-item.list-view .card-body {
+    flex: 1;
+}
+
+/* Page d'attente */
+.store-pending .timeline {
+    position: relative;
+    padding-left: 40px;
+}
+
+.store-pending .timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.store-pending .timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.store-pending .timeline-marker {
+    position: absolute;
+    left: -33px;
+    top: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.store-pending .timeline-content h6 {
+    margin-bottom: 5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .store-dashboard .sticky-top {
+        position: relative !important;
+        top: 0 !important;
+    }
+    
+    .store-public .product-item.list-view .card {
+        flex-direction: column;
+    }
+    
+    .store-public .product-item.list-view .card img {
+        width: 100%;
+    }
+}
+

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -12,15 +13,17 @@ class AuthCodeMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $authCode;
-    public string $userName;
+    public $code;
+    public $type;
+    public $userName;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $authCode, string $userName)
+    public function __construct(string $code, string $type, string $userName = null)
     {
-        $this->authCode = $authCode;
+        $this->code = $code;
+        $this->type = $type;
         $this->userName = $userName;
     }
 
@@ -29,8 +32,14 @@ class AuthCodeMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = match($this->type) {
+            'login' => 'Code de connexion - KAZARIA',
+            'password_reset' => 'Réinitialisation de mot de passe - KAZARIA',
+            default => 'Code de vérification - KAZARIA'
+        };
+
         return new Envelope(
-            subject: 'Code d\'authentification - KAZARIA',
+            subject: $subject,
         );
     }
 
@@ -42,7 +51,8 @@ class AuthCodeMail extends Mailable
         return new Content(
             view: 'emails.auth-code',
             with: [
-                'authCode' => $this->authCode,
+                'code' => $this->code,
+                'type' => $this->type,
                 'userName' => $this->userName,
             ]
         );
@@ -58,4 +68,3 @@ class AuthCodeMail extends Mailable
         return [];
     }
 }
-

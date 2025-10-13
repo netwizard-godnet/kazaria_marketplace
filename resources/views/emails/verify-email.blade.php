@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vérification de votre email</title>
+    <title>Vérifiez votre email - KAZARIA</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
             background-color: #f4f4f4;
@@ -15,101 +15,121 @@
         }
         .container {
             max-width: 600px;
-            margin: 20px auto;
+            margin: 0 auto;
             background-color: #ffffff;
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .header {
-            background-color: #28a745;
-            color: #ffffff;
+            background: linear-gradient(135deg, #ff8c00, #ff6b35);
+            color: white;
             padding: 30px;
             text-align: center;
         }
         .header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: bold;
         }
         .content {
             padding: 40px 30px;
         }
-        .button {
-            display: inline-block;
-            padding: 15px 40px;
-            background-color: #28a745;
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-weight: bold;
+        .welcome-message {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #555;
         }
-        .button:hover {
-            background-color: #218838;
+        .verify-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff8c00, #ff6b35);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: transform 0.2s ease;
+        }
+        .verify-button:hover {
+            transform: translateY(-2px);
+            color: white;
+            text-decoration: none;
         }
         .info-box {
-            background-color: #d1ecf1;
-            border-left: 4px solid #17a2b8;
-            padding: 15px;
-            margin: 20px 0;
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 5px;
         }
         .footer {
             background-color: #f8f9fa;
-            padding: 20px;
+            padding: 20px 30px;
             text-align: center;
-            font-size: 12px;
-            color: #6c757d;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
         }
-        .text-center {
-            text-align: center;
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>KAZARIA</h1>
-            <p>Bienvenue sur la marketplace !</p>
+            <img src="{{ asset('images/logo-orange.png') }}" alt="KAZARIA" class="logo">
+            <h1>Bienvenue sur KAZARIA !</h1>
         </div>
         
         <div class="content">
-            <p>Bonjour <strong>{{ $userName }}</strong>,</p>
+            <div class="welcome-message">
+                <p>Bonjour <strong>{{ $user->prenoms }} {{ $user->nom }}</strong>,</p>
+                <p>Félicitations ! Votre compte KAZARIA a été créé avec succès.</p>
+            </div>
             
-            <p>Merci de vous être inscrit sur KAZARIA ! Nous sommes ravis de vous compter parmi nous.</p>
+            <p>Pour activer votre compte et commencer à profiter de tous nos services, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
             
-            <p>Pour finaliser la création de votre compte et accéder à toutes les fonctionnalités de notre marketplace, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
-            
-            <div class="text-center">
-                <a href="{{ $verificationUrl }}" class="button">Vérifier mon email</a>
+            <div style="text-align: center;">
+                <a href="{{ $verificationUrl }}" class="verify-button">
+                    <i class="fa fa-check-circle"></i> Vérifier mon email
+                </a>
             </div>
             
             <div class="info-box">
-                <strong>ℹ️ Remarque :</strong>
-                <p style="margin: 5px 0 0 0;">Si le bouton ne fonctionne pas, vous pouvez copier et coller le lien suivant dans votre navigateur :</p>
-                <p style="margin: 5px 0 0 0; word-break: break-all;">
-                    <a href="{{ $verificationUrl }}" style="color: #007bff;">{{ $verificationUrl }}</a>
-                </p>
+                <h3 style="margin-top: 0; color: #1976d2;">🎉 Que vous attend après la vérification :</h3>
+                <ul style="margin-bottom: 0;">
+                    <li>Accès complet à votre espace personnel</li>
+                    <li>Suivi de vos commandes en temps réel</li>
+                    <li>Historique de vos achats</li>
+                    <li>Notifications personnalisées</li>
+                    <li>Accès aux offres exclusives</li>
+                </ul>
             </div>
             
-            <p>Une fois votre email vérifié, vous pourrez :</p>
-            <ul>
-                <li>Parcourir notre catalogue de produits</li>
-                <li>Passer des commandes en toute sécurité</li>
-                <li>Suivre vos commandes en temps réel</li>
-                <li>Gérer votre profil et vos préférences</li>
-            </ul>
+            <p><strong>Si le bouton ne fonctionne pas</strong>, copiez et collez ce lien dans votre navigateur :</p>
+            <p style="word-break: break-all; color: #ff8c00; font-family: monospace; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                {{ $verificationUrl }}
+            </p>
             
-            <p>Si vous n'avez pas créé de compte sur KAZARIA, vous pouvez ignorer cet email en toute sécurité.</p>
-            
-            <p>Cordialement,<br>
-            <strong>L'équipe KAZARIA</strong></p>
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                <strong>⚠️ Important :</strong> Ce lien de vérification est valide pendant 24 heures. Si vous ne vérifiez pas votre email dans ce délai, vous devrez demander un nouveau lien de vérification.
+            </div>
         </div>
         
         <div class="footer">
-            <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-            <p>&copy; {{ date('Y') }} KAZARIA. Tous droits réservés.</p>
+            <p>
+                Bienvenue dans la famille KAZARIA !<br>
+                Si vous avez des questions, notre service client est là pour vous aider.
+            </p>
+            <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                © {{ date('Y') }} KAZARIA. Tous droits réservés.
+            </p>
         </div>
     </div>
 </body>
 </html>
-

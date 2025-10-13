@@ -24,15 +24,23 @@ class User extends Authenticatable implements MustVerifyEmail
         'prenoms',
         'email',
         'email_verified_at',
+        'email_verification_token',
         'telephone',
         'telephone_verified_at',
         'profile_pic_url',
         'is_verified',
+        'is_seller',
         'adresse',
+        'code_postal',
+        'ville',
+        'pays',
+        'bio',
         'newsletter',
         'termes_condition',
         'statut',
         'password',
+        'password_reset_token',
+        'password_reset_expires_at',
         'auth_code',
         'auth_code_expires_at',
         'auth_code_verified',
@@ -47,6 +55,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
         'auth_code',
+        'password_reset_token',
+        'email_verification_token',
     ];
 
     /**
@@ -60,8 +70,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'email_verified_at' => 'datetime',
             'telephone_verified_at' => 'datetime',
+            'password_reset_expires_at' => 'datetime',
             'auth_code_expires_at' => 'datetime',
             'is_verified' => 'boolean',
+            'is_seller' => 'boolean',
             'newsletter' => 'boolean',
             'termes_condition' => 'boolean',
             'auth_code_verified' => 'boolean',
@@ -120,5 +132,29 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return Carbon::now()->isAfter($this->auth_code_expires_at);
+    }
+
+    /**
+     * Relation avec la boutique
+     */
+    public function store()
+    {
+        return $this->hasOne(Store::class);
+    }
+
+    /**
+     * Vérifier si l'utilisateur est vendeur
+     */
+    public function isSeller(): bool
+    {
+        return $this->is_seller && $this->store()->exists();
+    }
+
+    /**
+     * Vérifier si l'utilisateur a une boutique active
+     */
+    public function hasActiveStore(): bool
+    {
+        return $this->store && $this->store->isActive();
     }
 }

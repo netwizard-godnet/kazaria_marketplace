@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -12,18 +13,16 @@ class ResetPasswordMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $resetUrl;
-    public string $userName;
-    public string $token;
+    public $resetUrl;
+    public $userName;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $resetUrl, string $userName, string $token)
+    public function __construct(string $resetUrl, string $userName = null)
     {
         $this->resetUrl = $resetUrl;
         $this->userName = $userName;
-        $this->token = $token;
     }
 
     /**
@@ -46,7 +45,6 @@ class ResetPasswordMail extends Mailable
             with: [
                 'resetUrl' => $this->resetUrl,
                 'userName' => $this->userName,
-                'token' => $this->token,
             ]
         );
     }
@@ -61,4 +59,3 @@ class ResetPasswordMail extends Mailable
         return [];
     }
 }
-

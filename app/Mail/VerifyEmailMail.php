@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -12,16 +13,16 @@ class VerifyEmailMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public string $verificationUrl;
-    public string $userName;
+    public $user;
+    public $verificationUrl;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $verificationUrl, string $userName)
+    public function __construct($user, string $verificationUrl)
     {
+        $this->user = $user;
         $this->verificationUrl = $verificationUrl;
-        $this->userName = $userName;
     }
 
     /**
@@ -30,7 +31,7 @@ class VerifyEmailMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Vérification de votre adresse email - KAZARIA',
+            subject: 'Vérifiez votre adresse email - KAZARIA',
         );
     }
 
@@ -42,8 +43,8 @@ class VerifyEmailMail extends Mailable
         return new Content(
             view: 'emails.verify-email',
             with: [
+                'user' => $this->user,
                 'verificationUrl' => $this->verificationUrl,
-                'userName' => $this->userName,
             ]
         );
     }
@@ -58,4 +59,3 @@ class VerifyEmailMail extends Mailable
         return [];
     }
 }
-

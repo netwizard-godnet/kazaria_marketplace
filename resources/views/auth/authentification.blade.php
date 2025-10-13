@@ -35,11 +35,6 @@
                 <img src="{{ asset('images/logo-orange.png') }}" class="logo-size-header" alt="">
                 <p class="mb-0 fw-bold fs-7">Bienvenue chez KAZARIA</p>
                 <p class="mb-0 fs-8">Veuillez connecter ou inscrivez-vous si vous n'avez pas de compte</p>
-                @auth
-                Connecté
-                @else
-                Pas Connecté
-                @endauth
             </div>
             <!-- SECTION FORM -->
             <div class="d-flex align-items-center justify-content-center">
@@ -84,7 +79,7 @@
                                                     Se souvenir de moi
                                                 </label>
                                             </div>
-                                            <a href="#" class="text-decoration-none small" onclick="showForgotPassword()">Mot de passe oublié ?</a>
+                                            <a href="{{ route('forgot-password') }}" class="text-decoration-none small">Mot de passe oublié ?</a>
                                         </div>
                                         
                                         <button type="submit" class="btn blue-bg text-white w-100 mb-4">
@@ -187,30 +182,6 @@
                 </div>
             </div>
             <!-- SECTION FORM END -->
-
-            <!-- Forgot Password Modal -->
-            <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title"><i class="bi bi-key me-2"></i>Récupération de mot de passe</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="text-muted">Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.</p>
-                            <form id="forgotPasswordForm">
-                                <div class="form-floating mb-3">
-                                    <input type="email" class="form-control" id="forgotEmail" placeholder="name@example.com" required>
-                                    <label for="forgotEmail"><i class="bi bi-envelope me-2"></i>Adresse email</label>
-                                </div>
-                                <button type="submit" class="btn blue-bg text-white w-100">
-                                    <i class="bi bi-send me-2"></i>Envoyer le lien de réinitialisation
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <div class="text-center mt-3">
                 <p class="mb-0 fs-8">Si besoin d'aide, merci de vous référer au Centre d'Assistance ou de contacter notre service client.</p>
                 <img src="{{ asset('images/Favicon.png') }}" class="logo-size-header" alt="">
@@ -218,75 +189,303 @@
         </main>
 
         <script>
-            //INSCRIPTION AJAX
+            // Vérifier si l'utilisateur est déjà connecté
+            if (localStorage.getItem('auth_token')) {
+                window.location.href = '{{ route("accueil") }}';
+            }
+
+            let currentStep = 'login'; // 'login', 'code', 'register'
+            let userEmail = '';
+
+            // Fonction pour afficher un message
+            function showMessage(elementId, message, type = 'success') {
+                const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+                const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+                
+                document.getElementById(elementId).innerHTML = `
+                    <div class="alert ${alertClass}" role="alert">
+                        <i class="fa-solid ${icon} me-2"></i>${message}
+                    </div>
+                `;
+                
+                // Scroll vers le message d'erreur
+                document.getElementById(elementId).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Fonction pour afficher le formulaire de code
+            function showCodeForm(email) {
+                userEmail = email;
+                currentStep = 'code';
+                
+                document.getElementById('login').innerHTML = `
+                    <div class="text-center mb-4">
+                        <i class="fa-solid fa-envelope-open-text fa-3x orange-color mb-3"></i>
+                        <h5>Code de Connexion</h5>
+                        <p class="text-muted">Un code de 8 chiffres a été envoyé à<br><strong>${email}</strong></p>
+                    </div>
+                    
+                    <form id="codeForm">
+                        @csrf
+                        <input type="hidden" name="email" value="${email}">
+                        
+                        <div id="codeAlert"></div>
+                        
+                        <div class="form-floating mb-4">
+                            <input type="text" class="form-control form-control-sm text-center" id="verificationCode" 
+                                   placeholder="Code de vérification" name="code" required maxlength="8" 
+                                   pattern="[0-9]{8}" style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                            <label for="verificationCode" class="small">
+                                <i class="fa-solid fa-key me-1"></i>Code de vérification (8 chiffres)
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn blue-bg text-white w-100 mb-4">
+                            <i class="fa-solid fa-check me-1"></i>Vérifier le code
+                        </button>
+                        
+                        <div class="text-center">
+                            <button type="button" class="btn btn-link text-decoration-none" onclick="resendCode('${email}')">
+                                <i class="fa-solid fa-redo me-1"></i>Renvoyer le code
+                            </button>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="backToLogin()">
+                                <i class="fa-solid fa-arrow-left me-1"></i>Retour
+                            </button>
+                        </div>
+                    </form>
+                `;
+            }
+
+            // Fonction pour revenir au formulaire de connexion
+            function backToLogin() {
+                currentStep = 'login';
+                location.reload();
+            }
+
+            // Fonction pour renvoyer le code
+            async function resendCode(email) {
+                try {
+                    const response = await fetch('/api/resend-verification-code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ email: email, type: 'login' })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showMessage('codeAlert', 'Code renvoyé avec succès !', 'success');
+                    } else {
+                        showMessage('codeAlert', data.message, 'danger');
+                    }
+                } catch (error) {
+                    showMessage('codeAlert', 'Erreur lors du renvoi du code', 'danger');
+                }
+            }
+
+            // INSCRIPTION AJAX
             document.getElementById('registerForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-                let formData = new FormData(this);
-
-                let object = {};
-                formData.forEach((value, key) => {object[key] = value});
-
-                const response = await fetch("{{ url('/api/register') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                    },
-                    body: JSON.stringify(object)
-                });
-
-                const data = await response.json();
-                console.log(data);
-                // Afficher le message dans le HTML
-                if (data.success) {
-                    document.getElementById('registerAlert').textContent = data.message;
-                    document.getElementById('register').innerHTML = `<div class="alert alert-success" role="alert">`+
-                                                                data.message + `
-                                                                </div>`;
-                }else{
-                    document.getElementById('registerAlert').textContent = data.message;
-                    document.getElementById('register').innerHTML = `<div class="alert alert-danger" role="alert">`+
-                                                                data.message + `<i class="fa-solid fa-circle-notch fa-spin"></i>
-                                                                </div><br><div class="text-center"><a href="" class="btn btn-sm btn-light">Actualiser <i class="bi bi-arrow-clockwise"></i></a></div>`;
-                }
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
                 
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Création du compte...';
+
+                // Collecter les données du formulaire manuellement
+                const formData = {
+                    nom: document.getElementById('registerLastName').value,
+                    prenoms: document.getElementById('registerFirstName').value,
+                    email: document.getElementById('registerEmail').value,
+                    telephone: document.getElementById('registerPhone').value,
+                    password: document.getElementById('registerPassword').value,
+                    password_confirmation: document.getElementById('registerConfirmPassword').value,
+                    termes_condition: document.getElementById('acceptTerms').checked,
+                    newsletter: document.getElementById('acceptNewsletter').checked
+                };
+
+                console.log('Données envoyées:', formData); // Debug
+
+                try {
+                    const response = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+                    console.log('Réponse serveur:', data); // Debug
+                    
+                    if (data.success) {
+                        showMessage('registerAlert', data.message, 'success');
+                        
+                        // Afficher un message de succès plus détaillé
+                        setTimeout(() => {
+                            document.getElementById('register').innerHTML = `
+                                <div class="text-center">
+                                    <i class="fa-solid fa-check-circle fa-4x text-success mb-3"></i>
+                                    <h4 class="text-success">Inscription réussie !</h4>
+                                    <p class="text-muted">${data.message}</p>
+                                    <p class="text-muted">Vérifiez votre boîte email et cliquez sur le lien de vérification.</p>
+                                    <a href="{{ route('login') }}" class="btn blue-bg text-white">
+                                        <i class="fa-solid fa-sign-in-alt me-1"></i>Se connecter
+                                    </a>
+                                </div>
+                            `;
+                        }, 2000);
+                    } else {
+                        // Afficher les erreurs détaillées si disponibles
+                        let errorMessage = data.message;
+                        if (data.errors) {
+                            const errorList = Object.values(data.errors).flat();
+                            errorMessage = errorList.join('<br>');
+                        }
+                        showMessage('registerAlert', errorMessage, 'danger');
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error); // Debug
+                    showMessage('registerAlert', 'Erreur de connexion. Veuillez réessayer.', 'danger');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
             });
             
-            //CONNEXION AJAX
+            // CONNEXION AJAX
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-                let formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Connexion...';
 
+                let formData = new FormData(this);
                 let object = {};
                 formData.forEach((value, key) => {object[key] = value});
 
-                const response = await fetch("{{ url('/api/login') }}", {
-                    method: "POST",
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
                     headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify(object)
                 });
 
                 const data = await response.json();
-                console.log(data);
-                // Afficher le message dans le HTML
-                if (data.success) {
-                    document.getElementById('login').innerHTML = `<div class="alert alert-success" role="alert">`+
-                                                                data.message + `<i class="fa-solid fa-circle-notch fa-spin"></i>
-                                                                </div>`;
-                }else{
-                    document.getElementById('login').innerHTML = `<div class="alert alert-danger" role="alert">`+
-                                                                data.message + `
-                                                                </div><br><div class="text-center"><a href="" class="btn btn-sm btn-light">Actualiser <i class="bi bi-arrow-clockwise"></i></a></div>`;
+                    
+                    if (data.success && data.requires_code) {
+                        showCodeForm(data.email);
+                    } else if (data.success) {
+                        showMessage('loginAlert', data.message, 'success');
+                        // Rediriger vers la page d'accueil
+                        setTimeout(() => {
+                            window.location.href = '{{ route("accueil") }}';
+                        }, 2000);
+                    } else {
+                        showMessage('loginAlert', data.message, 'danger');
+                    }
+                } catch (error) {
+                    showMessage('loginAlert', 'Erreur de connexion. Veuillez réessayer.', 'danger');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 }
-                
             });
+
+            // VÉRIFICATION DU CODE AJAX
+            document.addEventListener('submit', async function(e) {
+                if (e.target.id === 'codeForm') {
+                e.preventDefault();
+
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Vérification...';
+
+                    let formData = new FormData(e.target);
+                let object = {};
+                formData.forEach((value, key) => {object[key] = value});
+
+                    try {
+                        const response = await fetch('/api/verify-login-code', {
+                            method: 'POST',
+                    headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(object)
+                });
+
+                const data = await response.json();
+                        
+                if (data.success) {
+                            showMessage('codeAlert', 'Connexion réussie ! Redirection...', 'success');
+                            
+                            // Stocker le token et les données utilisateur
+                            localStorage.setItem('auth_token', data.token);
+                            localStorage.setItem('user_data', JSON.stringify(data.user));
+                            
+                            // Notifier le gestionnaire d'authentification si disponible
+                            if (typeof authManager !== 'undefined') {
+                                authManager.login(data.token, data.user);
+                            }
+                            
+                            // Vérifier s'il y a une redirection après connexion
+                            const redirectAfter = localStorage.getItem('redirect_after_login');
+                            setTimeout(() => {
+                                if (redirectAfter === 'checkout') {
+                                    localStorage.removeItem('redirect_after_login');
+                                    window.location.href = '/checkout?token=' + data.token;
+                                } else if (redirectAfter === 'favorites') {
+                                    localStorage.removeItem('redirect_after_login');
+                                    window.location.href = '/profil?token=' + data.token + '#favorites';
+                                } else if (redirectAfter === 'sell') {
+                                    localStorage.removeItem('redirect_after_login');
+                                    window.location.href = '/store/create?token=' + data.token;
+                                } else {
+                                    window.location.href = '{{ route("accueil") }}';
+                                }
+                            }, 2000);
+                        } else {
+                            showMessage('codeAlert', data.message, 'danger');
+                        }
+                    } catch (error) {
+                        showMessage('codeAlert', 'Erreur lors de la vérification du code', 'danger');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                }
+            });
+
+            // Validation du code en temps réel
+            document.addEventListener('input', function(e) {
+                if (e.target.id === 'verificationCode') {
+                    e.target.value = e.target.value.replace(/\D/g, ''); // Seulement des chiffres
+                    if (e.target.value.length === 8) {
+                        e.target.form.querySelector('button[type="submit"]').focus();
+                    }
+                }
+            });
+
         </script>
 <!-- JQUERY -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
