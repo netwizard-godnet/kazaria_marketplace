@@ -13,6 +13,13 @@ class ProductController extends Controller
     {
         $product = Product::where('slug', $slug)->with(['categories', 'subcategories', 'category', 'subcategory'])->firstOrFail();
         
+        // Métadonnées SEO
+        $seoData = \App\Http\Controllers\SeoController::getProductSeo($product);
+        foreach ($seoData as $key => $value) {
+            $seoKey = 'seo' . ucfirst($key);
+            view()->share($seoKey, $value);
+        }
+        
         // Tracker la vue de ce produit
         ProductView::trackView($product->id, $request);
         
@@ -48,7 +55,15 @@ class ProductController extends Controller
     
     public function category($slug, Request $request)
     {
-        $category = Category::where('slug', $slug)->with('subcategories')->firstOrFail();
+        $category = Category::where('slug', $slug)->firstOrFail();
+        
+        // Métadonnées SEO
+        $seoData = \App\Http\Controllers\SeoController::getCategorySeo($category);
+        foreach ($seoData as $key => $value) {
+            $seoKey = 'seo' . ucfirst($key);
+            view()->share($seoKey, $value);
+        }
+        $category = $category->load('subcategories');
         
         // Meilleures offres de la catégorie
         $bestOffers = Product::active()

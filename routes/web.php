@@ -15,35 +15,108 @@ Route::get('/boutique-officielle', [ProductController::class, 'boutique'])->name
 
 Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('product-page');
 
-// Routes d'aide et contact
+// Routes d'aide et contact avec SEO
 Route::get('/aide-faq', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'aide-faq',
+        'Aide & FAQ',
+        'Trouvez rapidement les réponses à vos questions sur KAZARIA : commandes, livraison, paiement, retours.',
+        'aide, FAQ, questions fréquentes, KAZARIA, support client, assistance'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('help-faq');
 })->name('help-faq');
 
 Route::get('/contact', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'contact',
+        'Contactez-nous',
+        'Contactez l\'équipe KAZARIA pour toute question. WhatsApp, email, téléphone. Support client disponible.',
+        'contact, support, KAZARIA, WhatsApp, email, téléphone, assistance client'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('contact');
 })->name('contact');
 
-// Routes liens utiles
+// Routes liens utiles avec SEO
 Route::get('/suivre-commande', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'suivre-commande',
+        'Suivre sa commande',
+        'Suivez l\'état de votre commande KAZARIA en temps réel. Numéro de commande et email requis pour le suivi.',
+        'suivi commande, KAZARIA, livraison, statut commande, Côte d\'Ivoire'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('suivre-commande');
 })->name('suivre-commande');
 
 Route::get('/expedition-livraison', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'expedition-livraison',
+        'Expédition & Livraison',
+        'Découvrez nos options de livraison KAZARIA : standard gratuite, express, zones couvertes en Côte d\'Ivoire.',
+        'livraison, expédition, KAZARIA, Côte d\'Ivoire, Abidjan, frais livraison'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('expedition-livraison');
 })->name('expedition-livraison');
 
 Route::get('/politique-retour', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'politique-retour',
+        'Politique de retour',
+        'Retournez vos produits KAZARIA dans les 14 jours. Conditions, processus et remboursement expliqués.',
+        'retour, échange, remboursement, KAZARIA, politique retour, 14 jours'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('politique-retour');
 })->name('politique-retour');
 
 Route::get('/comment-commander', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'comment-commander',
+        'Comment commander',
+        'Guide complet pour commander sur KAZARIA : étapes, paiement, modes de livraison et conseils.',
+        'commander, guide achat, KAZARIA, paiement, livraison, étapes commande'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('comment-commander');
 })->name('comment-commander');
 
 Route::get('/agences-points-relais', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'agences-points-relais',
+        'Agences & Points de relais KAZARIA',
+        'Trouvez nos agences et points de relais KAZARIA à Abidjan et en Côte d\'Ivoire. Horaires et services.',
+        'agences KAZARIA, points relais, Abidjan, Plateau, Cocody, Yopougon, Marcory'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
     return view('agences-points-relais');
 })->name('agences-points-relais');
+
+// Routes SEO
+Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('/panier', function () {
     return view('cart');

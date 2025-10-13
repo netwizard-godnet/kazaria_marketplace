@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
-
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        {{-- Composant SEO --}}
+        <x-seo 
+            :title="$seoTitle ?? 'KAZARIA - Votre marketplace en ligne en Côte d\'Ivoire'"
+            :description="$seoDescription ?? 'Découvrez une large gamme de produits électroniques, électroménagers et accessoires sur KAZARIA. Livraison gratuite, paiement sécurisé et satisfaction garantie.'"
+            :keywords="$seoKeywords ?? 'e-commerce, marketplace, Côte d\'Ivoire, Abidjan, téléphones, électronique, électroménager, ordinateurs, livraison gratuite'"
+            :image="$seoImage ?? null"
+            :url="$seoUrl ?? null"
+            :type="$seoType ?? 'website'"
+            :canonical="$seoCanonical ?? null"
+            :robots="$seoRobots ?? 'index,follow'"
+            :jsonLd="$seoJsonLd ?? null"
+        />
 
         <!-- Bootstrap CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">

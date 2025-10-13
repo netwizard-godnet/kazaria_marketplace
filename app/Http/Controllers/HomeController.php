@@ -10,6 +10,13 @@ class HomeController extends Controller
 {
     public function index()
     {
+        // Métadonnées SEO
+        $seoData = \App\Http\Controllers\SeoController::getHomeSeo();
+        foreach ($seoData as $key => $value) {
+            $seoKey = 'seo' . ucfirst($key);
+            view()->share($seoKey, $value);
+        }
+        
         // Récupérer les catégories principales
         $categories = Category::active()->ordered()->with('subcategories')->get();
         

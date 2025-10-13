@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'client.auth' => \App\Http\Middleware\ClientAuth::class,
+            'seo' => \App\Http\Middleware\SeoMiddleware::class,
+        ]);
+        
+        // Appliquer le middleware SEO globalement
+        $middleware->web(append: [
+            \App\Http\Middleware\SeoMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

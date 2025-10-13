@@ -1,2 +1,95 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap
+Sitemap: {{ config('app.url') }}/sitemap.xml
+
+# Crawl-delay pour éviter la surcharge
+Crawl-delay: 1
+
+# Interdire l'accès aux dossiers sensibles
+Disallow: /admin/
+Disallow: /api/
+Disallow: /storage/
+Disallow: /vendor/
+Disallow: /database/
+Disallow: /config/
+Disallow: /bootstrap/
+Disallow: /app/
+Disallow: /resources/
+Disallow: /tests/
+Disallow: /node_modules/
+Disallow: /.env
+Disallow: /.git/
+Disallow: /composer.json
+Disallow: /composer.lock
+Disallow: /package.json
+Disallow: /package-lock.json
+Disallow: /yarn.lock
+Disallow: /webpack.mix.js
+Disallow: /vite.config.js
+Disallow: /phpunit.xml
+Disallow: /.gitignore
+Disallow: /.gitattributes
+Disallow: /README.md
+Disallow: /artisan
+
+# Autoriser les fichiers statiques
+Allow: /css/
+Allow: /js/
+Allow: /images/
+Allow: /favicon.ico
+Allow: /favicon.png
+
+# Spécifier les pages importantes
+Allow: /
+Allow: /contact
+Allow: /aide-faq
+Allow: /suivre-commande
+Allow: /expedition-livraison
+Allow: /politique-retour
+Allow: /comment-commander
+Allow: /agences-points-relais
+Allow: /boutique-officielle
+
+# Autoriser les catégories et produits
+Allow: /categorie/
+Allow: /produit/
+Allow: /boutique/
+Allow: /search
+
+# Interdire les pages de debug et de développement
+Disallow: /telescope/
+Disallow: /horizon/
+Disallow: /log-viewer/
+Disallow: /_debugbar/
+Disallow: /tinker
+Disallow: /phpinfo
+
+# Spécifier les bots spécifiques
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# Bloquer les bots indésirables
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /

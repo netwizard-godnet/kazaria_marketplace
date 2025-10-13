@@ -191,6 +191,13 @@ class StoreController extends Controller
             ->with(['category', 'subcategory'])
             ->firstOrFail();
         
+        // Métadonnées SEO
+        $seoData = \App\Http\Controllers\SeoController::getStoreSeo($store);
+        foreach ($seoData as $key => $value) {
+            $seoKey = 'seo' . ucfirst($key);
+            view()->share($seoKey, $value);
+        }
+        
         // Requête de base pour les produits
         $query = $store->products();
         
