@@ -82,7 +82,7 @@
                                             <a href="{{ route('forgot-password') }}" class="text-decoration-none small">Mot de passe oublié ?</a>
                                         </div>
                                         
-                                        <button type="submit" class="btn blue-bg text-white w-100 mb-4">
+                                        <button type="submit" class="btn orange-bg text-white w-100 mb-4">
                                             <i class="bi bi-box-arrow-in-right me-1"></i>Se connecter
                                         </button>
                                         

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StoreController;
 
 // Routes principales
 Route::get('/', [HomeController::class, 'index'])->name('accueil');
@@ -174,13 +175,13 @@ Route::get('/politique-de-confidentialite', function() {
 
 // Routes boutiques
 Route::middleware('client.auth')->group(function () {
-    Route::get('/store/create', [App\Http\Controllers\StoreController::class, 'create'])->name('store.create');
-    Route::post('/store/create', [App\Http\Controllers\StoreController::class, 'store'])->name('store.store');
-    Route::get('/store/pending', [App\Http\Controllers\StoreController::class, 'pending'])->name('store.pending');
-    Route::get('/store/dashboard', [App\Http\Controllers\StoreController::class, 'dashboard'])->name('store.dashboard');
-    Route::get('/store/edit', [App\Http\Controllers\StoreController::class, 'edit'])->name('store.edit');
-    Route::post('/store/update', [App\Http\Controllers\StoreController::class, 'update'])->name('store.update');
+    Route::get('/store/create', [StoreController::class, 'create'])->name('store.create');
+    Route::post('/store/create', [StoreController::class, 'store'])->name('store.store');
+    Route::get('/store/pending', [StoreController::class, 'pending'])->name('store.pending');
+    Route::get('/store/dashboard', [StoreController::class, 'dashboard'])->name('store.dashboard');
+    Route::get('/store/edit', [StoreController::class, 'edit'])->name('store.edit');
+    Route::post('/store/update', [StoreController::class, 'update'])->name('store.update');
 });
 
 // Route publique pour voir une boutique
-Route::get('/boutique/{slug}', [App\Http\Controllers\StoreController::class, 'show'])->name('store.show');
+Route::get('/boutique/{slug}', [StoreController::class, 'show'])->name('store.show');
