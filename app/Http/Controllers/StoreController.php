@@ -445,4 +445,349 @@ class StoreController extends Controller
             'orders' => []
         ]);
     }
+
+    /**
+     * API: Mettre à jour les informations de la boutique
+     */
+    public function updateStore(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'category_id' => 'required|exists:categories,id',
+            'description' => 'required|string|max:1000',
+            'address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $store->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'category_id' => $request->category_id,
+                'description' => $request->description,
+                'address' => $request->address,
+                'city' => $request->city,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Boutique mise à jour avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur mise à jour boutique: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Upload du logo de la boutique
+     */
+    public function uploadLogo(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'logo' => 'required|image|mimes:jpeg,jpg,png,gif|max:5120', // 5MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            if ($request->hasFile('logo')) {
+                $logo = $request->file('logo');
+                
+                // Créer un nom de fichier unique
+                $filename = 'store_logo_' . $store->id . '_' . time() . '.' . $logo->getClientOriginalExtension();
+                
+                // Créer le dossier s'il n'existe pas
+                $uploadPath = storage_path('app/public/stores/logos');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                // Supprimer l'ancien logo si il existe
+                if ($store->logo && file_exists(storage_path('app/public/' . $store->logo))) {
+                    unlink(storage_path('app/public/' . $store->logo));
+                }
+                
+                // Déplacer le fichier
+                $logo->move($uploadPath, $filename);
+                
+                // Mettre à jour le chemin du logo dans la base de données
+                $logoPath = 'stores/logos/' . $filename;
+                $store->update(['logo' => $logoPath]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Logo mis à jour avec succès',
+                    'logo_url' => asset('storage/' . $logoPath)
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun fichier reçu'
+            ], 400);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur upload logo: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Upload de la bannière de la boutique
+     */
+    public function uploadBanner(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'banner' => 'required|image|mimes:jpeg,jpg,png,gif|max:5120', // 5MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            if ($request->hasFile('banner')) {
+                $banner = $request->file('banner');
+                
+                // Créer un nom de fichier unique
+                $filename = 'store_banner_' . $store->id . '_' . time() . '.' . $banner->getClientOriginalExtension();
+                
+                // Créer le dossier s'il n'existe pas
+                $uploadPath = storage_path('app/public/stores/banners');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                // Supprimer l'ancienne bannière si elle existe
+                if ($store->banner && file_exists(storage_path('app/public/' . $store->banner))) {
+                    unlink(storage_path('app/public/' . $store->banner));
+                }
+                
+                // Déplacer le fichier
+                $banner->move($uploadPath, $filename);
+                
+                // Mettre à jour le chemin de la bannière dans la base de données
+                $bannerPath = 'stores/banners/' . $filename;
+                $store->update(['banner' => $bannerPath]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Bannière mise à jour avec succès',
+                    'banner_url' => asset('storage/' . $bannerPath)
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun fichier reçu'
+            ], 400);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur upload bannière: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Mettre à jour les liens sociaux de la boutique
+     */
+    public function updateSocialLinks(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'facebook' => 'nullable|url|max:255',
+            'instagram' => 'nullable|url|max:255',
+            'twitter' => 'nullable|url|max:255',
+            'website' => 'nullable|url|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $socialLinks = $store->social_links ?? [];
+            
+            if ($request->has('facebook')) $socialLinks['facebook'] = $request->facebook;
+            if ($request->has('instagram')) $socialLinks['instagram'] = $request->instagram;
+            if ($request->has('twitter')) $socialLinks['twitter'] = $request->twitter;
+            if ($request->has('website')) $socialLinks['website'] = $request->website;
+
+            $store->update(['social_links' => $socialLinks]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Liens sociaux mis à jour avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur mise à jour liens sociaux: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Basculer le statut de la boutique
+     */
+    public function toggleStatus(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'status' => 'required|in:pending,active,suspended,rejected',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Statut invalide'
+            ], 422);
+        }
+
+        try {
+            $store->update(['status' => $request->status]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Statut de la boutique mis à jour avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur changement statut boutique: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du changement de statut: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API: Supprimer la boutique
+     */
+    public function deleteStore(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        try {
+            // Supprimer les fichiers de la boutique
+            if ($store->logo && file_exists(storage_path('app/public/' . $store->logo))) {
+                unlink(storage_path('app/public/' . $store->logo));
+            }
+            
+            if ($store->banner && file_exists(storage_path('app/public/' . $store->banner))) {
+                unlink(storage_path('app/public/' . $store->banner));
+            }
+
+            // Supprimer les produits et leurs images
+            foreach ($store->products as $product) {
+                if ($product->images && is_array($product->images)) {
+                    foreach ($product->images as $image) {
+                        if (strpos($image, 'products/') === 0 && file_exists(storage_path('app/public/' . $image))) {
+                            unlink(storage_path('app/public/' . $image));
+                        }
+                    }
+                }
+            }
+
+            // Supprimer la boutique (cascade supprimera les produits)
+            $store->delete();
+
+            // Mettre à jour le statut vendeur de l'utilisateur
+            $user->update(['is_seller' => false]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Boutique supprimée avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur suppression boutique: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

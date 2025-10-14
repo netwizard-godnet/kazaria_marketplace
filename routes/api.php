@@ -77,5 +77,13 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
     Route::delete('/products/{id}', [App\Http\Controllers\Seller\ProductController::class, 'destroy']);
     Route::post('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'uploadImages']);
     Route::delete('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'deleteImage']);
+    
+    // Paramètres de la boutique
+    Route::post('/update', [App\Http\Controllers\StoreController::class, 'updateStore']);
+    Route::post('/upload-logo', [App\Http\Controllers\StoreController::class, 'uploadLogo']);
+    Route::post('/upload-banner', [App\Http\Controllers\StoreController::class, 'uploadBanner']);
+    Route::post('/update-social', [App\Http\Controllers\StoreController::class, 'updateSocialLinks']);
+    Route::post('/toggle-status', [App\Http\Controllers\StoreController::class, 'toggleStatus']);
+    Route::delete('/delete', [App\Http\Controllers\StoreController::class, 'deleteStore']);
 });
 

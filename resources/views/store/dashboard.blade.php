@@ -359,6 +359,7 @@
                                     <button class="btn btn-sm btn-primary mt-2" onclick="uploadLogo()">
                                         <i class="bi bi-upload me-1"></i>Changer le logo
                                     </button>
+                                    <small class="text-muted d-block mt-1">Format recommandé : PNG, JPG (max 5MB)</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Bannière actuelle</label>
@@ -368,6 +369,155 @@
                                     <input type="file" class="form-control" id="new_banner" accept="image/*">
                                     <button class="btn btn-sm btn-primary mt-2" onclick="uploadBanner()">
                                         <i class="bi bi-upload me-1"></i>Changer la bannière
+                                    </button>
+                                    <small class="text-muted d-block mt-1">Format recommandé : PNG, JPG (max 5MB)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Réseaux sociaux -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Réseaux sociaux</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="updateSocialForm">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="facebook_url" class="form-label">
+                                            <i class="bi bi-facebook text-primary me-2"></i>Facebook
+                                        </label>
+                                        <input type="url" class="form-control" id="facebook_url" 
+                                               value="{{ $store->social_links['facebook'] ?? '' }}" 
+                                               placeholder="https://facebook.com/votre-page">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="instagram_url" class="form-label">
+                                            <i class="bi bi-instagram text-danger me-2"></i>Instagram
+                                        </label>
+                                        <input type="url" class="form-control" id="instagram_url" 
+                                               value="{{ $store->social_links['instagram'] ?? '' }}" 
+                                               placeholder="https://instagram.com/votre-compte">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="twitter_url" class="form-label">
+                                            <i class="bi bi-twitter text-info me-2"></i>Twitter
+                                        </label>
+                                        <input type="url" class="form-control" id="twitter_url" 
+                                               value="{{ $store->social_links['twitter'] ?? '' }}" 
+                                               placeholder="https://twitter.com/votre-compte">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="website_url" class="form-label">
+                                            <i class="bi bi-globe text-success me-2"></i>Site web
+                                        </label>
+                                        <input type="url" class="form-control" id="website_url" 
+                                               value="{{ $store->social_links['website'] ?? '' }}" 
+                                               placeholder="https://votre-site.com">
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn orange-bg text-white">
+                                            <i class="bi bi-check-circle me-2"></i>Enregistrer les liens
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Paramètres de sécurité -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Paramètres de sécurité</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Statut de la boutique</h6>
+                                            <small class="text-muted">Votre boutique est actuellement 
+                                                <span class="badge bg-success">{{ ucfirst($store->status) }}</span>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <i class="bi bi-shield-check text-success fs-4"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Vérification</h6>
+                                            <small class="text-muted">
+                                                @if($store->is_verified)
+                                                    <span class="badge bg-success">Vérifiée</span>
+                                                @else
+                                                    <span class="badge bg-warning">En attente</span>
+                                                @endif
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <i class="bi bi-{{ $store->is_verified ? 'check-circle-fill' : 'clock' }} 
+                                               text-{{ $store->is_verified ? 'success' : 'warning' }} fs-4"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Commission</h6>
+                                            <small class="text-muted">Taux actuel : {{ $store->commission_rate }}%</small>
+                                        </div>
+                                        <div>
+                                            <i class="bi bi-percent text-info fs-4"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">Boutique officielle</h6>
+                                            <small class="text-muted">
+                                                @if($store->is_official)
+                                                    <span class="badge bg-primary">Officielle</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Standard</span>
+                                                @endif
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <i class="bi bi-{{ $store->is_official ? 'star-fill' : 'star' }} 
+                                               text-{{ $store->is_official ? 'warning' : 'secondary' }} fs-4"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions dangereuses -->
+                    <div class="card shadow-sm border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Zone dangereuse
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <h6 class="text-danger">Désactiver la boutique</h6>
+                                    <p class="text-muted small mb-3">Votre boutique ne sera plus visible par les clients.</p>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="toggleStoreStatus('suspended')">
+                                        <i class="bi bi-pause-circle me-1"></i>Suspendre
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-danger">Supprimer la boutique</h6>
+                                    <p class="text-muted small mb-3">Cette action est irréversible et supprimera tous vos produits.</p>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteStore()">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
                                     </button>
                                 </div>
                             </div>
@@ -1010,12 +1160,171 @@ function viewOrder(orderNumber) {
     alert('Voir la commande ' + orderNumber);
 }
 
-function uploadLogo() {
-    alert('Upload de logo en cours de développement');
+// Gestion des formulaires
+document.addEventListener('DOMContentLoaded', function() {
+    const updateStoreForm = document.getElementById('updateStoreForm');
+    if (updateStoreForm) {
+        updateStoreForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await updateStoreInfo();
+        });
+    }
+    
+    const updateSocialForm = document.getElementById('updateSocialForm');
+    if (updateSocialForm) {
+        updateSocialForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await updateSocialLinks();
+        });
+    }
+});
+
+// Mettre à jour les informations de la boutique
+async function updateStoreInfo() {
+    const formData = {
+        name: document.getElementById('store_name').value,
+        email: document.getElementById('store_email').value,
+        phone: document.getElementById('store_phone').value,
+        category_id: document.getElementById('store_category').value,
+        description: document.getElementById('store_description').value,
+        address: document.getElementById('store_address').value,
+        city: document.getElementById('store_city').value,
+    };
+
+    try {
+        showNotification('info', 'Mise à jour en cours...');
+        
+        const response = await fetch('/api/store/update', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', 'Boutique mise à jour avec succès !');
+        } else {
+            showNotification('danger', data.message || 'Erreur lors de la mise à jour');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de la mise à jour');
+    }
 }
 
-function uploadBanner() {
-    alert('Upload de bannière en cours de développement');
+// Upload du logo
+async function uploadLogo() {
+    const fileInput = document.getElementById('new_logo');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('warning', 'Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('warning', 'Veuillez sélectionner une image');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+        showNotification('warning', 'L\'image ne doit pas dépasser 5MB');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('logo', file);
+    
+    try {
+        showNotification('info', 'Upload du logo en cours...');
+        
+        const response = await fetch('/api/store/upload-logo', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', 'Logo mis à jour avec succès !');
+            // Rafraîchir l'image du logo
+            const logoImg = document.querySelector('img[alt="Logo"]');
+            if (logoImg) {
+                logoImg.src = data.logo_url + '?t=' + Date.now();
+            }
+            // Vider le champ de fichier
+            fileInput.value = '';
+        } else {
+            showNotification('danger', data.message || 'Erreur lors de l\'upload');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de l\'upload');
+    }
+}
+
+// Upload de la bannière
+async function uploadBanner() {
+    const fileInput = document.getElementById('new_banner');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showNotification('warning', 'Veuillez sélectionner un fichier');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('warning', 'Veuillez sélectionner une image');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+        showNotification('warning', 'L\'image ne doit pas dépasser 5MB');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('banner', file);
+    
+    try {
+        showNotification('info', 'Upload de la bannière en cours...');
+        
+        const response = await fetch('/api/store/upload-banner', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', 'Bannière mise à jour avec succès !');
+            // Rafraîchir l'image de la bannière
+            const bannerImg = document.querySelector('img[alt="Bannière"]');
+            if (bannerImg) {
+                bannerImg.src = data.banner_url + '?t=' + Date.now();
+            }
+            // Vider le champ de fichier
+            fileInput.value = '';
+        } else {
+            showNotification('danger', data.message || 'Erreur lors de l\'upload');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de l\'upload');
+    }
 }
 
 // Mettre à jour les statistiques
@@ -1047,6 +1356,117 @@ async function updateStats() {
         }
     } catch (error) {
         console.error('Erreur mise à jour stats:', error);
+    }
+}
+
+// Mettre à jour les liens sociaux
+async function updateSocialLinks() {
+    const formData = {
+        facebook: document.getElementById('facebook_url').value,
+        instagram: document.getElementById('instagram_url').value,
+        twitter: document.getElementById('twitter_url').value,
+        website: document.getElementById('website_url').value,
+    };
+
+    try {
+        showNotification('info', 'Mise à jour des liens sociaux...');
+        
+        const response = await fetch('/api/store/update-social', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', 'Liens sociaux mis à jour avec succès !');
+        } else {
+            showNotification('danger', data.message || 'Erreur lors de la mise à jour');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de la mise à jour');
+    }
+}
+
+// Basculer le statut de la boutique
+async function toggleStoreStatus(status) {
+    const action = status === 'suspended' ? 'suspendre' : (status === 'active' ? 'activer' : 'modifier le statut');
+    
+    if (!confirm(`Êtes-vous sûr de vouloir ${action} votre boutique ?`)) {
+        return;
+    }
+
+    try {
+        showNotification('info', `${action.charAt(0).toUpperCase() + action.slice(1)} la boutique...`);
+        
+        const response = await fetch('/api/store/toggle-status', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', `Boutique ${action}ée avec succès !`);
+            // Recharger la page pour mettre à jour l'interface
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showNotification('danger', data.message || 'Erreur lors de l\'opération');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de l\'opération');
+    }
+}
+
+// Supprimer la boutique
+async function deleteStore() {
+    const confirmText = 'SUPPRIMER';
+    const userInput = prompt(`ATTENTION: Cette action est irréversible et supprimera définitivement votre boutique et tous vos produits.\n\nPour confirmer, tapez "${confirmText}" :`);
+    
+    if (userInput !== confirmText) {
+        showNotification('info', 'Suppression annulée');
+        return;
+    }
+
+    try {
+        showNotification('warning', 'Suppression de la boutique en cours...');
+        
+        const response = await fetch('/api/store/delete', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', 'Boutique supprimée avec succès');
+            // Rediriger vers la page d'accueil
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        } else {
+            showNotification('danger', data.message || 'Erreur lors de la suppression');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de la suppression');
     }
 }
 
