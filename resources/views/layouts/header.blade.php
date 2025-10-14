@@ -168,14 +168,14 @@
                     <!--  -->
                     <div class="col-md-8 hstack gap-1">
                         <div class="d-flex align-items-center justify-content-start">
-                            <a class="btn btn-sm orange-bg text-white fs-7" href="{{ route('boutique_officielle') }}">
+                            <a class="btn btn-sm orange-bg text-white fs-7 text-nowrap" href="{{ route('boutique_officielle') }}">
                             Boutiques Officielles <i class="fa-solid fa-certificate"></i>
                             </a>
                         </div>
                         @if(isset($allCategories))
                             @foreach($allCategories->take(4) as $menuCategory)
                             <div class="header-menu d-flex align-items-center justify-content-start">
-                                <a class="btn btn-sm text-white fs-7" type="button">
+                                <a class="btn btn-sm text-white fs-7 text-nowrap" type="button">
                                     @if($menuCategory->icon)
                                     <i class="{{ $menuCategory->icon }} me-1"></i>
                                     @endif
@@ -186,7 +186,7 @@
                                         @foreach($menuCategory->subcategories->chunk(ceil($menuCategory->subcategories->count() / 4)) as $chunk)
                                         <div class="col-md-3">
                                             <div class="list-group">
-                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none">
                                                     @if($menuCategory->icon)
                                                     <i class="{{ $menuCategory->icon }} me-2"></i>
                                                     @endif

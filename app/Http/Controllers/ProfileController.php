@@ -389,6 +389,7 @@ class ProfileController extends Controller
         $user = $request->user();
         
         return response()->json([
+            'success' => true,
             'is_seller' => $user->is_seller,
             'has_store' => $user->store()->exists(),
             'store_status' => $user->store ? $user->store->status : null,

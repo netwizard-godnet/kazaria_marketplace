@@ -33,12 +33,12 @@
                 <p class="mb-2 fw-bold">GAGNER DE L'ARGENT</p>
                 <div class="vstack gap-1 ms-2">
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Vendre sur KAZARIA</a>
-                    <a href="" class="btn btn-sm text-secondary text-start fs-8">Espace vendeur</a>
-                    <a href="" class="btn btn-sm text-secondary text-start fs-8">Devenez consultant KAZARIA</a>
-                    <a href="" class="btn btn-sm text-secondary text-start fs-8">Devenez partenaire de service loqistique</a>
+                    <a onclick="goToSell(event)" class="btn btn-sm text-secondary text-start fs-8">Espace vendeur</a>
+                    <a href="" class="btn btn-sm text-secondary text-start fs-8 d-none">Devenez consultant KAZARIA</a>
+                    <a href="" class="btn btn-sm text-secondary text-start fs-8 d-none">Devenez partenaire de service loqistique</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Toutes les boutiques officielles</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Vente Flash</a>
-                    <a href="" class="btn btn-sm text-secondary text-start fs-8">Directives relatives informations de paiements sur KAZARIA</a>
+                    <a href="" class="btn btn-sm text-secondary text-start fs-8 d-none">Directives relatives informations de paiements sur KAZARIA</a>
                 </div>
             </div>
             <div class="col-md-3">

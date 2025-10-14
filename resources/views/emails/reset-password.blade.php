@@ -85,7 +85,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ asset('images/logo-orange.png') }}" alt="KAZARIA" class="logo">
+            <img src="{{ asset('images/logo.png') }}" alt="KAZARIA" class="logo">
             <h1>Réinitialisation de Mot de Passe</h1>
         </div>
         
