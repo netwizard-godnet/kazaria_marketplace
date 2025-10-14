@@ -158,7 +158,7 @@
                                             </label>
                                         </div>
                                         
-                                        <button type="submit" class="btn blue-bg text-white w-100 mb-4">
+                                        <button type="submit" class="btn orange-bg text-white w-100 mb-4">
                                             <i class="bi bi-person-plus me-1"></i>Créer mon compte
                                         </button>
                                         
