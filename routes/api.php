@@ -10,7 +10,7 @@ Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
-Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('verify-email');
+Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('api.verify-email');
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
