@@ -82,8 +82,28 @@ php artisan storage:check
 php artisan storage:fix --force
 ```
 
-#### **Étape 6 : Définir les Permissions**
+#### **Étape 6 : Définir les Permissions** ⚠️ CRITIQUE
 
+**Option A : Script Automatique** (RECOMMANDÉ)
+```bash
+# Utiliser le script de correction automatique
+bash fix-permissions.sh
+
+# OU avec sudo si nécessaire
+sudo bash fix-permissions.sh
+```
+
+**Option B : Commande Artisan**
+```bash
+# Correction via Artisan
+php artisan permissions:fix
+
+# Puis ajuster le propriétaire
+sudo chown -R www-data:www-data storage bootstrap/cache
+sudo chmod -R 775 storage bootstrap/cache
+```
+
+**Option C : Manuellement**
 ```bash
 # Permissions des dossiers
 chmod -R 775 storage bootstrap/cache
@@ -91,9 +111,14 @@ chmod -R 775 storage bootstrap/cache
 # Propriétaire (adapter selon votre serveur)
 sudo chown -R www-data:www-data storage bootstrap/cache
 
-# Ou avec l'utilisateur de votre hébergement
-sudo chown -R votreuser:www-data storage bootstrap/cache
+# Ou avec l'utilisateur de votre hébergement (cPanel)
+sudo chown -R votreuser:votreuser storage bootstrap/cache
 ```
+
+**⚠️ IMPORTANT** : Ajustez `www-data` selon votre serveur :
+- Ubuntu/Debian : `www-data`
+- CentOS/RHEL : `apache` ou `nginx`
+- cPanel : Votre nom d'utilisateur
 
 #### **Étape 7 : Optimisation Production**
 
