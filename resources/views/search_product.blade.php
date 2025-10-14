@@ -88,8 +88,8 @@
                         </form>
                     </div>
                 </div>
-                <div class="col-12 col-sm-9 col-md-10">
-                    <div id="searchResults">
+                <div class="col-12 col-sm-9 col-md-10 bg-light z-index-7x">
+                    <div id="searchResults" class="">
                         <div class="row g-2">
                             <div class="col-12">
                                 <div class="bg-light d-flex align-items-center justify-content-between mb-4 border-bottom p-2">

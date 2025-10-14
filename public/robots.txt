@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: {{ config('app.url') }}/sitemap.xml
+Sitemap: https://kazaria-ci.com/sitemap.xml
 
 # Crawl-delay pour éviter la surcharge
 Crawl-delay: 1

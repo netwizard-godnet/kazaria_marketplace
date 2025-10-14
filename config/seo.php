@@ -11,9 +11,9 @@ return [
     */
 
     'defaults' => [
-        'title' => 'KAZARIA - Votre marketplace en ligne en Côte d\'Ivoire',
-        'description' => 'Découvrez une large gamme de produits électroniques, électroménagers et accessoires sur KAZARIA. Livraison gratuite, paiement sécurisé et satisfaction garantie.',
-        'keywords' => 'e-commerce, marketplace, Côte d\'Ivoire, Abidjan, téléphones, électronique, électroménager, ordinateurs, livraison gratuite',
+        'title' => 'KAZARIA - Marketplace #1 Côte d\'Ivoire | Meilleurs Prix Garantis | Livraison Gratuite Abidjan',
+        'description' => 'Achetez téléphones, ordinateurs, électroménager à Abidjan. Prix 15% moins chers que Jumia. Livraison gratuite, paiement Mobile Money, garantie 100% authentique. Alternative ivoirienne de confiance.',
+        'keywords' => 'marketplace côte d\'ivoire, alternative jumia ci, e-commerce abidjan, acheter téléphone abidjan, ordinateur portable ci, électroménager abidjan, livraison gratuite abidjan, paiement mobile money, achat en ligne côte d\'ivoire, marketplace abidjan, iphone abidjan, samsung ci, meilleur prix électronique ci, boutique en ligne cocody, vente en ligne plateau, marketplace fiable ci',
         'image' => 'images/KAZARIA.jpg',
         'author' => 'KAZARIA',
         'robots' => 'index,follow',
@@ -22,9 +22,9 @@ return [
 
     'site' => [
         'name' => 'KAZARIA',
-        'url' => env('APP_URL', 'https://kazaria.ci'),
+        'url' => env('APP_URL', 'https://kazaria-ci.com'),
         'logo' => 'images/KAZARIA.jpg',
-        'description' => 'Marketplace en ligne leader en Côte d\'Ivoire',
+        'description' => 'Marketplace en ligne #1 de Côte d\'Ivoire. Meilleurs prix garantis, livraison gratuite, service client 24/7. L\'alternative ivoirienne de confiance.',
         'language' => 'fr',
         'country' => 'CI',
         'locale' => 'fr_CI',
