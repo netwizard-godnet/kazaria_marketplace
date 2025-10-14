@@ -17,7 +17,7 @@
                     <!-- Logo de la boutique -->
                     <div class="bg-white rounded-circle p-2 shadow" style="width: 120px; height: 120px; margin-bottom: -30px;">
                         @if($store->logo)
-                            <img src="{{ asset('storage/' . $store->logo) }}" alt="{{ $store->name }}" class="w-100 h-100 rounded-circle" style="object-fit: cover;">
+                            <img src="{{ $store->logo_url }}" alt="{{ $store->name }}" class="w-100 h-100 rounded-circle" style="object-fit: cover;" onerror="this.onerror=null; this.src='{{ asset('images/logo-orange.png') }}';">
                         @else
                             <div class="w-100 h-100 rounded-circle bg-light d-flex align-items-center justify-content-center">
                                 <i class="bi bi-shop orange-color" style="font-size: 3rem;"></i>
