@@ -1320,29 +1320,35 @@ async function uploadLogo() {
         
         const data = await response.json();
         
-        if (data.success) {
-            console.log('✅ Upload logo réussi, affichage notification...');
-            showNotification('success', 'Logo mis à jour avec succès !');
-            
-            // Rafraîchir toutes les images du logo
-            refreshImages('logo', data.logo_url);
-            
-            // Cibler explicitement les images identifiées avec rechargement forcé
-            const logoSidebar = document.getElementById('storeLogoSidebar');
-            const logoSettings = document.getElementById('storeLogoSettings');
-            const newLogoUrl = data.logo_url + '?t=' + Date.now();
-            
-            console.log('🖼️ Mise à jour des images logo:', { logoSidebar: !!logoSidebar, logoSettings: !!logoSettings, newUrl: newLogoUrl });
-            
-            if (logoSidebar) {
-                forceImageReload(logoSidebar, newLogoUrl);
-            }
-            if (logoSettings) {
-                forceImageReload(logoSettings, newLogoUrl);
-            }
-            // Vider le champ de fichier
-            fileInput.value = '';
-        } else {
+            if (data.success) {
+                console.log('✅ Upload logo réussi, affichage notification...');
+                showNotification('success', 'Logo mis à jour avec succès !');
+                
+                // Attendre un peu que l'image soit complètement écrite sur le serveur
+                setTimeout(() => {
+                    console.log('🔄 Début du rechargement des images logo...');
+                    
+                    // Cibler explicitement les images identifiées avec rechargement forcé
+                    const logoSidebar = document.getElementById('storeLogoSidebar');
+                    const logoSettings = document.getElementById('storeLogoSettings');
+                    
+                    console.log('🖼️ Mise à jour des images logo:', { 
+                        logoSidebar: !!logoSidebar, 
+                        logoSettings: !!logoSettings, 
+                        newUrl: data.logo_url 
+                    });
+                    
+                    if (logoSidebar) {
+                        forceImageReload(logoSidebar, data.logo_url, 5, 2000); // 5 tentatives, 2s entre chaque
+                    }
+                    if (logoSettings) {
+                        forceImageReload(logoSettings, data.logo_url, 5, 2000);
+                    }
+                }, 1500); // Attendre 1.5s avant de commencer le rechargement
+                
+                // Vider le champ de fichier
+                fileInput.value = '';
+            } else {
             showNotification('danger', data.message || 'Erreur lors de l\'upload');
         }
     } catch (error) {
@@ -1388,25 +1394,30 @@ async function uploadBanner() {
         
         const data = await response.json();
         
-        if (data.success) {
-            console.log('✅ Upload bannière réussi, affichage notification...');
-            showNotification('success', 'Bannière mise à jour avec succès !');
-            
-            // Rafraîchir toutes les images de la bannière
-            refreshImages('banner', data.banner_url);
-            
-            // Cibler explicitement l'image identifiée avec rechargement forcé
-            const bannerSettings = document.getElementById('storeBannerSettings');
-            const newBannerUrl = data.banner_url + '?t=' + Date.now();
-            
-            console.log('🖼️ Mise à jour de l\'image bannière:', { bannerSettings: !!bannerSettings, newUrl: newBannerUrl });
-            
-            if (bannerSettings) {
-                forceImageReload(bannerSettings, newBannerUrl);
-            }
-            // Vider le champ de fichier
-            fileInput.value = '';
-        } else {
+            if (data.success) {
+                console.log('✅ Upload bannière réussi, affichage notification...');
+                showNotification('success', 'Bannière mise à jour avec succès !');
+                
+                // Attendre un peu que l'image soit complètement écrite sur le serveur
+                setTimeout(() => {
+                    console.log('🔄 Début du rechargement de l\'image bannière...');
+                    
+                    // Cibler explicitement l'image identifiée avec rechargement forcé
+                    const bannerSettings = document.getElementById('storeBannerSettings');
+                    
+                    console.log('🖼️ Mise à jour de l\'image bannière:', { 
+                        bannerSettings: !!bannerSettings, 
+                        newUrl: data.banner_url 
+                    });
+                    
+                    if (bannerSettings) {
+                        forceImageReload(bannerSettings, data.banner_url, 5, 2000); // 5 tentatives, 2s entre chaque
+                    }
+                }, 1500); // Attendre 1.5s avant de commencer le rechargement
+                
+                // Vider le champ de fichier
+                fileInput.value = '';
+            } else {
             showNotification('danger', data.message || 'Erreur lors de l\'upload');
         }
     } catch (error) {
@@ -1558,24 +1569,47 @@ async function deleteStore() {
     }
 }
 
-// Fonction pour forcer le rechargement d'une image via un élément temporaire
-function forceImageReload(imgElement, newSrc) {
+// Fonction pour forcer le rechargement d'une image avec délai et vérification
+function forceImageReload(imgElement, newSrc, maxRetries = 3, delay = 1000) {
     if (!imgElement) return;
     
-    // Créer un nouvel élément image pour forcer le téléchargement
-    const tempImg = new Image();
-    tempImg.onload = function() {
-        imgElement.src = newSrc;
-        imgElement.style.opacity = '0.8';
-        setTimeout(() => {
-            imgElement.style.opacity = '1';
-        }, 100);
-    };
-    tempImg.onerror = function() {
-        console.warn('Erreur de chargement de l\'image:', newSrc);
-        showNotification('warning', 'Erreur de chargement de l\'image');
-    };
-    tempImg.src = newSrc;
+    let retryCount = 0;
+    
+    function attemptReload() {
+        console.log(`🔄 Tentative ${retryCount + 1}/${maxRetries} de rechargement de l'image:`, newSrc);
+        
+        // Créer un nouvel élément image pour forcer le téléchargement
+        const tempImg = new Image();
+        
+        tempImg.onload = function() {
+            console.log('✅ Image chargée avec succès, mise à jour de l\'élément');
+            imgElement.src = newSrc;
+            imgElement.style.opacity = '0.8';
+            setTimeout(() => {
+                imgElement.style.opacity = '1';
+            }, 100);
+        };
+        
+        tempImg.onerror = function() {
+            retryCount++;
+            console.warn(`❌ Erreur de chargement de l'image (tentative ${retryCount}/${maxRetries}):`, newSrc);
+            
+            if (retryCount < maxRetries) {
+                console.log(`⏳ Nouvelle tentative dans ${delay}ms...`);
+                setTimeout(attemptReload, delay);
+            } else {
+                console.error('💥 Échec définitif du rechargement de l\'image');
+                showNotification('warning', 'Erreur de chargement de l\'image après plusieurs tentatives');
+            }
+        };
+        
+        // Ajouter un timestamp pour forcer le rechargement
+        const srcWithTimestamp = newSrc + (newSrc.includes('?') ? '&' : '?') + 't=' + Date.now();
+        tempImg.src = srcWithTimestamp;
+    }
+    
+    // Délai initial avant la première tentative
+    setTimeout(attemptReload, 500);
 }
 
 // Fonction pour forcer le rechargement des images

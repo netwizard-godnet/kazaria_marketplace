@@ -547,9 +547,21 @@ class StoreController extends Controller
                 // Déplacer le fichier
                 $logo->move($uploadPath, $filename);
                 
+                // Vérifier que le fichier est bien écrit
+                $fullPath = $uploadPath . '/' . $filename;
+                if (!file_exists($fullPath) || filesize($fullPath) === 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erreur lors de l\'écriture du fichier'
+                    ], 500);
+                }
+                
                 // Mettre à jour le chemin du logo dans la base de données
                 $logoPath = 'stores/logos/' . $filename;
                 $store->update(['logo' => $logoPath]);
+
+                // Attendre un peu pour s'assurer que l'écriture est terminée
+                usleep(100000); // 100ms
 
                 return response()->json([
                     'success' => true,
@@ -618,9 +630,21 @@ class StoreController extends Controller
                 // Déplacer le fichier
                 $banner->move($uploadPath, $filename);
                 
+                // Vérifier que le fichier est bien écrit
+                $fullPath = $uploadPath . '/' . $filename;
+                if (!file_exists($fullPath) || filesize($fullPath) === 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erreur lors de l\'écriture du fichier'
+                    ], 500);
+                }
+                
                 // Mettre à jour le chemin de la bannière dans la base de données
                 $bannerPath = 'stores/banners/' . $filename;
                 $store->update(['banner' => $bannerPath]);
+
+                // Attendre un peu pour s'assurer que l'écriture est terminée
+                usleep(100000); // 100ms
 
                 return response()->json([
                     'success' => true,

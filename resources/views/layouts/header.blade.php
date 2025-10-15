@@ -152,12 +152,12 @@
                                 </li>
                                 <li id="auth-section" class="nav-item px-1 d-flex align-items-center justify-content-center">
                                     <a class="nav-link d-flex align-items-center" aria-current="page" href="/authentification">
-                                        <i class="fa-solid fa-user text-white fa-2x"></i>
+                                    <i class="fa-solid fa-user text-white fa-2x"></i>
                                         <div class="vstack text-white ms-2">
-                                            <span class="fs-8 fw-lighter">Connexion</span>
-                                            <span class="fs-8 fw-lighter">Inscription</span>
-                                        </div>
-                                    </a>
+                                    <span class="fs-8 fw-lighter">Connexion</span>
+                                    <span class="fs-8 fw-lighter">Inscription</span>
+                                    </div>
+                                </a>
                                 </li>
                             </ul>
                         </div>
@@ -174,7 +174,7 @@
                         </div>
                         @if(isset($allCategories))
                             @foreach($allCategories->take(4) as $menuCategory)
-                            <div class="header-menu d-flex align-items-center justify-content-start">
+                        <div class="header-menu d-flex align-items-center justify-content-start">
                                 <a class="btn btn-sm text-white fs-7 text-nowrap" type="button">
                                     @if($menuCategory->icon)
                                     <i class="{{ $menuCategory->icon }} me-1"></i>
@@ -182,10 +182,10 @@
                                     {{ $menuCategory->name }} <i class="fa-solid fas fa-chevron-down fs-8"></i>
                                 </a>
                                 <div class="w-100 bg-light py-2 position-absolute top-100 start-0 z-index-9x d-none container-fluid">
-                                    <div class="row g-3">
+                                <div class="row g-3">
                                         @foreach($menuCategory->subcategories->chunk(ceil($menuCategory->subcategories->count() / 4)) as $chunk)
-                                        <div class="col-md-3">
-                                            <div class="list-group">
+                                    <div class="col-md-3">
+                                        <div class="list-group">
                                                 <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none">
                                                     @if($menuCategory->icon)
                                                     <i class="{{ $menuCategory->icon }} me-2"></i>
@@ -200,7 +200,7 @@
                                                     {{ $subcat->name }}
                                                 </a>
                                                 @endforeach
-                                            </div>
+                                    </div>
                                         </div>
                                         @endforeach
                                     </div>
