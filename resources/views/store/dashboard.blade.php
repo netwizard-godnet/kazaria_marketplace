@@ -1256,11 +1256,8 @@ async function uploadLogo() {
         
         if (data.success) {
             showNotification('success', 'Logo mis à jour avec succès !');
-            // Rafraîchir l'image du logo
-            const logoImg = document.querySelector('img[alt="Logo"]');
-            if (logoImg) {
-                logoImg.src = data.logo_url + '?t=' + Date.now();
-            }
+            // Rafraîchir toutes les images du logo
+            refreshImages('logo', data.logo_url);
             // Vider le champ de fichier
             fileInput.value = '';
         } else {
@@ -1311,11 +1308,8 @@ async function uploadBanner() {
         
         if (data.success) {
             showNotification('success', 'Bannière mise à jour avec succès !');
-            // Rafraîchir l'image de la bannière
-            const bannerImg = document.querySelector('img[alt="Bannière"]');
-            if (bannerImg) {
-                bannerImg.src = data.banner_url + '?t=' + Date.now();
-            }
+            // Rafraîchir toutes les images de la bannière
+            refreshImages('banner', data.banner_url);
             // Vider le champ de fichier
             fileInput.value = '';
         } else {
@@ -1467,6 +1461,45 @@ async function deleteStore() {
     } catch (error) {
         console.error('Erreur:', error);
         showNotification('danger', 'Erreur lors de la suppression');
+    }
+}
+
+// Fonction pour forcer le rechargement des images
+function refreshImages(imageType, newUrl) {
+    const timestamp = '?t=' + Date.now();
+    
+    if (imageType === 'logo') {
+        // Mettre à jour toutes les images de logo
+        const logoSelectors = [
+            'img[alt="Logo"]',
+            'img[alt="' + '{{ $store->name }}' + '"]',
+            '.card-body .img-fluid.rounded-circle',
+            'img[src*="logo"]'
+        ];
+        
+        logoSelectors.forEach(selector => {
+            const images = document.querySelectorAll(selector);
+            images.forEach(img => {
+                if (img.src.includes('logo') || img.alt.includes('Logo') || img.alt.includes('{{ $store->name }}')) {
+                    img.src = newUrl + timestamp;
+                }
+            });
+        });
+    } else if (imageType === 'banner') {
+        // Mettre à jour toutes les images de bannière
+        const bannerSelectors = [
+            'img[alt="Bannière"]',
+            'img[src*="banner"]'
+        ];
+        
+        bannerSelectors.forEach(selector => {
+            const images = document.querySelectorAll(selector);
+            images.forEach(img => {
+                if (img.src.includes('banner') || img.alt.includes('Bannière')) {
+                    img.src = newUrl + timestamp;
+                }
+            });
+        });
     }
 }
 
