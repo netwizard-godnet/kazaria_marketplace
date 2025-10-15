@@ -11,7 +11,7 @@
                     <!-- Logo et nom de la boutique -->
                     <div class="text-center p-3 border-bottom">
                         @if($store->logo)
-                            <img src="{{ $store->logo_url }}" alt="{{ $store->name }}" class="img-fluid rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
+                            <img id="storeLogoSidebar" src="{{ $store->logo_url }}" alt="{{ $store->name }}" class="img-fluid rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
                         @else
                             <div class="bg-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
                                 <i class="bi bi-shop orange-color" style="font-size: 2rem;"></i>
@@ -353,7 +353,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label">Logo actuel</label>
                                     <div class="mb-3">
-                                        <img src="{{ $store->logo_url }}" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
+                                        <img id="storeLogoSettings" src="{{ $store->logo_url }}" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
                                     </div>
                                     <input type="file" class="form-control" id="new_logo" accept="image/*">
                                     <button class="btn btn-sm btn-primary mt-2" onclick="uploadLogo()">
@@ -364,7 +364,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label">Bannière actuelle</label>
                                     <div class="mb-3">
-                                        <img src="{{ $store->banner_url }}" alt="Bannière" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
+                                        <img id="storeBannerSettings" src="{{ $store->banner_url }}" alt="Bannière" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
                                     </div>
                                     <input type="file" class="form-control" id="new_banner" accept="image/*">
                                     <button class="btn btn-sm btn-primary mt-2" onclick="uploadBanner()">
@@ -1258,6 +1258,11 @@ async function uploadLogo() {
             showNotification('success', 'Logo mis à jour avec succès !');
             // Rafraîchir toutes les images du logo
             refreshImages('logo', data.logo_url);
+            // Cibler explicitement les images identifiées
+            const logoSidebar = document.getElementById('storeLogoSidebar');
+            if (logoSidebar) logoSidebar.src = data.logo_url + '?t=' + Date.now();
+            const logoSettings = document.getElementById('storeLogoSettings');
+            if (logoSettings) logoSettings.src = data.logo_url + '?t=' + Date.now();
             // Vider le champ de fichier
             fileInput.value = '';
         } else {
@@ -1310,6 +1315,9 @@ async function uploadBanner() {
             showNotification('success', 'Bannière mise à jour avec succès !');
             // Rafraîchir toutes les images de la bannière
             refreshImages('banner', data.banner_url);
+            // Cibler explicitement l'image identifiée
+            const bannerSettings = document.getElementById('storeBannerSettings');
+            if (bannerSettings) bannerSettings.src = data.banner_url + '?t=' + Date.now();
             // Vider le champ de fichier
             fileInput.value = '';
         } else {
@@ -1469,18 +1477,23 @@ function refreshImages(imageType, newUrl) {
     const timestamp = '?t=' + Date.now();
     
     if (imageType === 'logo') {
-        // Mettre à jour toutes les images de logo
+        // Mettre à jour uniquement les images de logo de la boutique (pas le logo principal du site)
         const logoSelectors = [
             'img[alt="Logo"]',
             'img[alt="' + '{{ $store->name }}' + '"]',
-            '.card-body .img-fluid.rounded-circle',
-            'img[src*="logo"]'
+            '.card-body .img-fluid.rounded-circle'
         ];
         
         logoSelectors.forEach(selector => {
-            const images = document.querySelectorAll(selector);
+            // Limiter la recherche au contexte du dashboard uniquement
+            const dashboardContainer = document.querySelector('.store-dashboard');
+            const searchScope = dashboardContainer || document;
+            const images = searchScope.querySelectorAll(selector);
+            
             images.forEach(img => {
-                if (img.src.includes('logo') || img.alt.includes('Logo') || img.alt.includes('{{ $store->name }}')) {
+                // Exclure le logo principal du site (qui contient 'logo.png')
+                if (!img.src.includes('logo.png') && 
+                    (img.src.includes('logo') || img.alt.includes('Logo') || img.alt.includes('{{ $store->name }}'))) {
                     img.src = newUrl + timestamp;
                 }
             });
@@ -1493,7 +1506,11 @@ function refreshImages(imageType, newUrl) {
         ];
         
         bannerSelectors.forEach(selector => {
-            const images = document.querySelectorAll(selector);
+            // Limiter la recherche au contexte du dashboard uniquement
+            const dashboardContainer = document.querySelector('.store-dashboard');
+            const searchScope = dashboardContainer || document;
+            const images = searchScope.querySelectorAll(selector);
+            
             images.forEach(img => {
                 if (img.src.includes('banner') || img.alt.includes('Bannière')) {
                     img.src = newUrl + timestamp;
