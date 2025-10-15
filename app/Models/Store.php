@@ -131,7 +131,24 @@ class Store extends Model
      */
     public function getLogoUrlAttribute()
     {
-        return $this->logo ? asset('storage/' . $this->logo) : asset('images/logo-orange.png');
+        if (!$this->logo) {
+            return asset('images/logo-orange.png');
+        }
+        
+        // Vérifier si c'est une URL externe
+        if (filter_var($this->logo, FILTER_VALIDATE_URL)) {
+            return $this->logo;
+        }
+        
+        // Vérifier si le fichier existe dans storage
+        $storagePath = storage_path('app/public/' . $this->logo);
+        if (file_exists($storagePath)) {
+            // Utiliser la route personnalisée pour servir l'image
+            return asset('images/storage/' . $this->logo);
+        }
+        
+        // Fallback vers une image par défaut
+        return asset('images/logo-orange.png');
     }
 
     /**
@@ -139,6 +156,23 @@ class Store extends Model
      */
     public function getBannerUrlAttribute()
     {
-        return $this->banner ? asset('storage/' . $this->banner) : asset('images/bg-1.jpg');
+        if (!$this->banner) {
+            return asset('images/bg-1.jpg');
+        }
+        
+        // Vérifier si c'est une URL externe
+        if (filter_var($this->banner, FILTER_VALIDATE_URL)) {
+            return $this->banner;
+        }
+        
+        // Vérifier si le fichier existe dans storage
+        $storagePath = storage_path('app/public/' . $this->banner);
+        if (file_exists($storagePath)) {
+            // Utiliser la route personnalisée pour servir l'image
+            return asset('images/storage/' . $this->banner);
+        }
+        
+        // Fallback vers une image par défaut
+        return asset('images/bg-1.jpg');
     }
 }

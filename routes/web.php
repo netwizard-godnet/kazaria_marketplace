@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\ImageController;
 
 // Routes principales
 Route::get('/', [HomeController::class, 'index'])->name('accueil');
@@ -118,6 +119,12 @@ Route::get('/agences-points-relais', function () {
 
 // Routes SEO
 Route::get('/sitemap.xml', [App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
+
+// Routes pour servir les images
+Route::get('/images/storage/{path}', [App\Http\Controllers\ImageController::class, 'serve'])->where('path', '.*');
+Route::get('/images/stores/{storeId}/logo/{filename}', [App\Http\Controllers\ImageController::class, 'storeLogo']);
+Route::get('/images/stores/{storeId}/banner/{filename}', [App\Http\Controllers\ImageController::class, 'storeBanner']);
+Route::get('/images/products/{productId}/{filename}', [App\Http\Controllers\ImageController::class, 'productImage']);
 
 Route::get('/panier', function () {
     return view('cart');

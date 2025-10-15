@@ -6,7 +6,7 @@
 <!-- Bannière de la boutique -->
 <div class="position-relative" style="height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
     @if($store->banner)
-        <img src="{{ asset('storage/' . $store->banner) }}" alt="{{ $store->name }}" class="w-100 h-100" style="object-fit: cover;">
+        <img src="{{ $store->banner_url }}" alt="{{ $store->name }}" class="w-100 h-100" style="object-fit: cover;">
         <div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,0,0,0.3);"></div>
     @endif
     
