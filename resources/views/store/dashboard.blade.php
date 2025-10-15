@@ -11,7 +11,7 @@
                     <!-- Logo et nom de la boutique -->
                     <div class="text-center p-3 border-bottom">
                         @if($store->logo)
-                            <img src="{{ asset('storage/' . $store->logo) }}" alt="{{ $store->name }}" class="img-fluid rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
+                            <img src="{{ $store->logo_url }}" alt="{{ $store->name }}" class="img-fluid rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
                         @else
                             <div class="bg-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
                                 <i class="bi bi-shop orange-color" style="font-size: 2rem;"></i>
