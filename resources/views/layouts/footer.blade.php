@@ -508,5 +508,125 @@
     document.addEventListener('DOMContentLoaded', updateSellerButton);
 </script>
 
+<!-- Styles pour les notifications toast -->
+<style>
+.toast {
+    min-width: 300px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+}
+
+.toast-body {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    border-left: 4px solid #198754;
+}
+
+.bg-danger-subtle {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    border-left: 4px solid #dc3545;
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-left: 4px solid #ffc107;
+}
+
+.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+    border-left: 4px solid #0dcaf0;
+}
+</style>
+
+<!-- Container pour les notifications toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3 z-index-9x" style="z-index: 9999;">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i id="toastIcon" class="bi me-2"></i>
+            <strong id="toastTitle" class="me-auto"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div id="toastBody" class="toast-body bg-light"></div>
+    </div>
+</div>
+
+<script>
+// Fonction globale pour afficher les notifications toast
+window.showNotification = function(type, message) {
+    const toastElement = document.getElementById('notificationToast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastBody = document.getElementById('toastBody');
+    
+    if (!toastElement || !toastIcon || !toastTitle || !toastBody) {
+        console.warn('Éléments toast non trouvés, utilisation de alert()');
+        alert(message);
+        return;
+    }
+    
+    // Configuration selon le type
+    const configs = {
+        'success': {
+            icon: 'bi-check-circle-fill',
+            iconColor: 'text-success',
+            title: 'Succès',
+            bgClass: 'bg-success-subtle'
+        },
+        'error': {
+            icon: 'bi-exclamation-circle-fill',
+            iconColor: 'text-danger',
+            title: 'Erreur',
+            bgClass: 'bg-danger-subtle'
+        },
+        'warning': {
+            icon: 'bi-exclamation-triangle-fill',
+            iconColor: 'text-warning',
+            title: 'Attention',
+            bgClass: 'bg-warning-subtle'
+        },
+        'info': {
+            icon: 'bi-info-circle-fill',
+            iconColor: 'text-info',
+            title: 'Information',
+            bgClass: 'bg-info-subtle'
+        }
+    };
+    
+    const config = configs[type] || configs['info'];
+    
+    // Mettre à jour le contenu
+    toastIcon.className = `bi ${config.icon} ${config.iconColor}`;
+    toastTitle.textContent = config.title;
+    toastBody.textContent = message;
+    
+    // Appliquer le style de fond
+    toastElement.className = `toast ${config.bgClass}`;
+    
+    // Afficher le toast
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: type === 'error' ? 5000 : 3000
+    });
+    
+    toast.show();
+};
+
+// Fallback pour les navigateurs plus anciens
+if (typeof window.showNotification !== 'function') {
+    window.showNotification = function(type, message) {
+        alert(message);
+    };
+}
+</script>
+
 </body>
 </html>

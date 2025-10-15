@@ -2,6 +2,58 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/store.css') }}">
+
+<!-- Container pour les notifications toast du dashboard -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    <div id="dashboardNotificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i id="dashboardToastIcon" class="bi me-2"></i>
+            <strong id="dashboardToastTitle" class="me-auto"></strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div id="dashboardToastBody" class="toast-body"></div>
+    </div>
+</div>
+
+<!-- Styles pour les notifications toast -->
+<style>
+.toast {
+    min-width: 300px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+}
+
+.toast-body {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.bg-success-subtle {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    border-left: 4px solid #198754;
+}
+
+.bg-danger-subtle {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    border-left: 4px solid #dc3545;
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-left: 4px solid #ffc107;
+}
+
+.bg-info-subtle {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+    border-left: 4px solid #0dcaf0;
+}
+</style>
+
 <div class="container-fluid my-4 store-dashboard">
     <div class="row">
         <!-- Sidebar -->
@@ -545,6 +597,20 @@ function showTab(tabName) {
 // Charger les données au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
     loadRecentOrders();
+    
+    // Test de la fonction de notification
+    console.log('🔔 Test de showNotification disponible:', typeof showNotification);
+    if (typeof showNotification === 'function') {
+        console.log('✅ showNotification est disponible');
+        
+        // Test d'affichage d'une notification
+        setTimeout(() => {
+            console.log('🧪 Test d\'affichage d\'une notification...');
+            showNotification('info', 'Dashboard chargé avec succès !');
+        }, 1000);
+    } else {
+        console.error('❌ showNotification n\'est pas disponible');
+    }
     
     // Charger les produits quand l'onglet est affiché
     document.querySelector('a[href="#products"]').addEventListener('shown.bs.tab', function() {
@@ -1255,14 +1321,25 @@ async function uploadLogo() {
         const data = await response.json();
         
         if (data.success) {
+            console.log('✅ Upload logo réussi, affichage notification...');
             showNotification('success', 'Logo mis à jour avec succès !');
+            
             // Rafraîchir toutes les images du logo
             refreshImages('logo', data.logo_url);
-            // Cibler explicitement les images identifiées
+            
+            // Cibler explicitement les images identifiées avec rechargement forcé
             const logoSidebar = document.getElementById('storeLogoSidebar');
-            if (logoSidebar) logoSidebar.src = data.logo_url + '?t=' + Date.now();
             const logoSettings = document.getElementById('storeLogoSettings');
-            if (logoSettings) logoSettings.src = data.logo_url + '?t=' + Date.now();
+            const newLogoUrl = data.logo_url + '?t=' + Date.now();
+            
+            console.log('🖼️ Mise à jour des images logo:', { logoSidebar: !!logoSidebar, logoSettings: !!logoSettings, newUrl: newLogoUrl });
+            
+            if (logoSidebar) {
+                forceImageReload(logoSidebar, newLogoUrl);
+            }
+            if (logoSettings) {
+                forceImageReload(logoSettings, newLogoUrl);
+            }
             // Vider le champ de fichier
             fileInput.value = '';
         } else {
@@ -1312,12 +1389,21 @@ async function uploadBanner() {
         const data = await response.json();
         
         if (data.success) {
+            console.log('✅ Upload bannière réussi, affichage notification...');
             showNotification('success', 'Bannière mise à jour avec succès !');
+            
             // Rafraîchir toutes les images de la bannière
             refreshImages('banner', data.banner_url);
-            // Cibler explicitement l'image identifiée
+            
+            // Cibler explicitement l'image identifiée avec rechargement forcé
             const bannerSettings = document.getElementById('storeBannerSettings');
-            if (bannerSettings) bannerSettings.src = data.banner_url + '?t=' + Date.now();
+            const newBannerUrl = data.banner_url + '?t=' + Date.now();
+            
+            console.log('🖼️ Mise à jour de l\'image bannière:', { bannerSettings: !!bannerSettings, newUrl: newBannerUrl });
+            
+            if (bannerSettings) {
+                forceImageReload(bannerSettings, newBannerUrl);
+            }
             // Vider le champ de fichier
             fileInput.value = '';
         } else {
@@ -1472,6 +1558,26 @@ async function deleteStore() {
     }
 }
 
+// Fonction pour forcer le rechargement d'une image via un élément temporaire
+function forceImageReload(imgElement, newSrc) {
+    if (!imgElement) return;
+    
+    // Créer un nouvel élément image pour forcer le téléchargement
+    const tempImg = new Image();
+    tempImg.onload = function() {
+        imgElement.src = newSrc;
+        imgElement.style.opacity = '0.8';
+        setTimeout(() => {
+            imgElement.style.opacity = '1';
+        }, 100);
+    };
+    tempImg.onerror = function() {
+        console.warn('Erreur de chargement de l\'image:', newSrc);
+        showNotification('warning', 'Erreur de chargement de l\'image');
+    };
+    tempImg.src = newSrc;
+}
+
 // Fonction pour forcer le rechargement des images
 function refreshImages(imageType, newUrl) {
     const timestamp = '?t=' + Date.now();
@@ -1494,7 +1600,12 @@ function refreshImages(imageType, newUrl) {
                 // Exclure le logo principal du site (qui contient 'logo.png')
                 if (!img.src.includes('logo.png') && 
                     (img.src.includes('logo') || img.alt.includes('Logo') || img.alt.includes('{{ $store->name }}'))) {
-                    img.src = newUrl + timestamp;
+                    // Forcer le rechargement en vidant d'abord le src
+                    const currentSrc = img.src;
+                    img.src = '';
+                    setTimeout(() => {
+                        img.src = newUrl + timestamp;
+                    }, 50);
                 }
             });
         });
@@ -1513,20 +1624,82 @@ function refreshImages(imageType, newUrl) {
             
             images.forEach(img => {
                 if (img.src.includes('banner') || img.alt.includes('Bannière')) {
-                    img.src = newUrl + timestamp;
+                    // Forcer le rechargement en vidant d'abord le src
+                    img.src = '';
+                    setTimeout(() => {
+                        img.src = newUrl + timestamp;
+                    }, 50);
                 }
             });
         });
     }
 }
 
-// Fonction de notification
+// Fonction de notification spécifique au dashboard
 function showNotification(type, message) {
-    if (typeof window.showNotification === 'function') {
-        window.showNotification(type, message);
-    } else {
+    console.log('🔔 showNotification appelée:', type, message);
+    
+    const toastElement = document.getElementById('dashboardNotificationToast');
+    const toastIcon = document.getElementById('dashboardToastIcon');
+    const toastTitle = document.getElementById('dashboardToastTitle');
+    const toastBody = document.getElementById('dashboardToastBody');
+    
+    if (!toastElement || !toastIcon || !toastTitle || !toastBody) {
+        console.error('❌ Éléments toast du dashboard non trouvés');
         alert(message);
+        return;
     }
+    
+    console.log('✅ Éléments toast trouvés, affichage de la notification');
+    
+    // Configuration selon le type
+    const configs = {
+        'success': {
+            icon: 'bi-check-circle-fill',
+            iconColor: 'text-success',
+            title: 'Succès',
+            bgClass: 'bg-success-subtle'
+        },
+        'error': {
+            icon: 'bi-exclamation-circle-fill',
+            iconColor: 'text-danger',
+            title: 'Erreur',
+            bgClass: 'bg-danger-subtle'
+        },
+        'warning': {
+            icon: 'bi-exclamation-triangle-fill',
+            iconColor: 'text-warning',
+            title: 'Attention',
+            bgClass: 'bg-warning-subtle'
+        },
+        'info': {
+            icon: 'bi-info-circle-fill',
+            iconColor: 'text-info',
+            title: 'Information',
+            bgClass: 'bg-info-subtle'
+        }
+    };
+    
+    const config = configs[type] || configs['info'];
+    
+    // Mettre à jour le contenu
+    toastIcon.className = `bi ${config.icon} ${config.iconColor}`;
+    toastTitle.textContent = config.title;
+    toastBody.textContent = message;
+    
+    // Appliquer le style de fond
+    toastElement.className = `toast ${config.bgClass}`;
+    
+    console.log('🎨 Toast configuré, affichage...');
+    
+    // Afficher le toast
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: type === 'error' ? 5000 : 3000
+    });
+    
+    toast.show();
+    console.log('🚀 Toast affiché !');
 }
 </script>
 @endsection
