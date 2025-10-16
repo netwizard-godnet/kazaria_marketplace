@@ -339,12 +339,28 @@ class StoreController extends Controller
         // Rafraîchir les données depuis la base
         $store->refresh();
 
+        // Récupérer les statistiques des commandes
+        $orderController = new \App\Http\Controllers\Seller\OrderController();
+        $orderStatsResponse = $orderController->getOrderStats($request);
+        
+        if ($orderStatsResponse->getStatusCode() === 200) {
+            $orderStats = json_decode($orderStatsResponse->getContent(), true)['stats'];
+        } else {
+            // Fallback si erreur
+            $orderStats = [
+                'total_orders' => 0,
+                'pending_orders' => 0,
+                'total_sales' => 0,
+                'total_revenue' => 0
+            ];
+        }
+
         $stats = [
             'total_products' => $store->products()->count(),
-            'total_orders' => 0, // À implémenter
-            'pending_orders' => 0, // À implémenter
-            'total_sales' => $store->total_sales,
-            'total_revenue' => $store->total_sales * (1 - $store->commission_rate / 100),
+            'total_orders' => $orderStats['total_orders'],
+            'pending_orders' => $orderStats['pending_orders'],
+            'total_sales' => $orderStats['total_sales'],
+            'total_revenue' => $orderStats['total_revenue'],
         ];
 
         return response()->json([
@@ -358,21 +374,9 @@ class StoreController extends Controller
      */
     public function getRecentOrders(Request $request)
     {
-        $user = $request->user();
-        $store = $user->store;
-
-        if (!$store) {
-            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
-        }
-
-        $limit = $request->get('limit', 5);
-
-        // Pour le moment, retourner un tableau vide
-        // Plus tard, on récupérera les vraies commandes
-        return response()->json([
-            'success' => true,
-            'orders' => []
-        ]);
+        // Déléguer au contrôleur spécialisé
+        $orderController = new \App\Http\Controllers\Seller\OrderController();
+        return $orderController->getRecentOrders($request);
     }
 
     /**
@@ -431,19 +435,9 @@ class StoreController extends Controller
      */
     public function getOrders(Request $request)
     {
-        $user = $request->user();
-        $store = $user->store;
-
-        if (!$store) {
-            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
-        }
-
-        // Pour le moment, retourner un tableau vide
-        // Plus tard, on récupérera les vraies commandes
-        return response()->json([
-            'success' => true,
-            'orders' => []
-        ]);
+        // Déléguer au contrôleur spécialisé
+        $orderController = new \App\Http\Controllers\Seller\OrderController();
+        return $orderController->getOrders($request);
     }
 
     /**

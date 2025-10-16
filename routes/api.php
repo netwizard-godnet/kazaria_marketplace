@@ -78,6 +78,13 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
     Route::post('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'uploadImages']);
     Route::delete('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'deleteImage']);
     
+    // Gestion des commandes vendeur
+    Route::get('/orders/stats', [App\Http\Controllers\Seller\OrderController::class, 'getOrderStats']);
+    Route::get('/orders/{orderNumber}', [App\Http\Controllers\Seller\OrderController::class, 'getOrderDetails']);
+    Route::put('/orders/{orderNumber}/status', [App\Http\Controllers\Seller\OrderController::class, 'updateOrderStatus']);
+    Route::post('/orders/{orderNumber}/ship', [App\Http\Controllers\Seller\OrderController::class, 'markAsShipped']);
+    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\Seller\OrderController::class, 'cancelOrder']);
+    
     // Paramètres de la boutique
     Route::post('/update', [App\Http\Controllers\StoreController::class, 'updateStore']);
     Route::post('/upload-logo', [App\Http\Controllers\StoreController::class, 'uploadLogo']);

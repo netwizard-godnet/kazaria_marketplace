@@ -32,6 +32,7 @@ class ResetPasswordMail extends Mailable
     {
         return new Envelope(
             subject: 'Réinitialisation de votre mot de passe - KAZARIA',
+            from: new \Illuminate\Mail\Mailables\Address('kazaria2025@gmail.com', 'Kazaria Marketplace'),
         );
     }
 

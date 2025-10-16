@@ -40,6 +40,7 @@ class AuthCodeMail extends Mailable
 
         return new Envelope(
             subject: $subject,
+            from: new \Illuminate\Mail\Mailables\Address('kazaria2025@gmail.com', 'Kazaria Marketplace'),
         );
     }
 

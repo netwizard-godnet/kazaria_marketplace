@@ -143,6 +143,10 @@ Route::get('/authentification', function () {
 // Route pour les suggestions de recherche
 Route::get('/api/search-suggestions', [App\Http\Controllers\SearchController::class, 'suggestions'])->name('search.suggestions');
 
+// Route pour l'avatar des emails
+Route::get('/avatar/kazaria', [App\Http\Controllers\AvatarController::class, 'kazariaAvatar'])->name('avatar.kazaria');
+Route::get('/avatar/generate', [App\Http\Controllers\AvatarController::class, 'generateEmailAvatar'])->name('avatar.generate');
+
 // Routes d'authentification
 Route::get('/verify-email/{token}', [App\Http\Controllers\AuthController::class, 'verifyEmail'])->name('verify-email');
 Route::get('/forgot-password', function() {
@@ -188,6 +192,9 @@ Route::middleware('client.auth')->group(function () {
     Route::get('/store/dashboard', [StoreController::class, 'dashboard'])->name('store.dashboard');
     Route::get('/store/edit', [StoreController::class, 'edit'])->name('store.edit');
     Route::post('/store/update', [StoreController::class, 'update'])->name('store.update');
+    Route::get('/store/orders/{orderNumber}', function($orderNumber) {
+        return view('seller.order-details', compact('orderNumber'));
+    })->name('store.order-details');
 });
 
 // Route publique pour voir une boutique

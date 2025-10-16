@@ -32,6 +32,7 @@ class VerifyEmailMail extends Mailable
     {
         return new Envelope(
             subject: 'Vérifiez votre adresse email - KAZARIA',
+            from: new \Illuminate\Mail\Mailables\Address('kazaria2025@gmail.com', 'Kazaria Marketplace'),
         );
     }
 

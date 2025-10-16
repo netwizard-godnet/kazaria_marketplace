@@ -33,6 +33,10 @@ class OrderConfirmationMail extends Mailable
     {
         return new Envelope(
             subject: 'Confirmation de commande ' . $this->order->order_number . ' - KAZARIA',
+            from: new \Illuminate\Mail\Mailables\Address('kazaria2025@gmail.com', 'Kazaria Marketplace'),
+            replyTo: [
+                new \Illuminate\Mail\Mailables\Address('contact@kazaria.ci', 'Support KAZARIA'),
+            ],
         );
     }
 

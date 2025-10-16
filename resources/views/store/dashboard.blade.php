@@ -2,6 +2,7 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/store.css') }}">
+<link rel="stylesheet" href="{{ asset('css/seller-dashboard.css') }}">
 
 <!-- Container pour les notifications toast du dashboard -->
 <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
@@ -81,7 +82,7 @@
                     <!-- Menu -->
                     <ul class="nav flex-column" id="storeTabs" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active d-flex align-items-center" data-bs-toggle="tab" href="#overview" role="tab">
+                            <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#overview" role="tab">
                                 <i class="bi bi-speedometer2 me-2"></i>
                                 <span>Vue d'ensemble</span>
                             </a>
@@ -94,7 +95,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#orders" role="tab">
+                            <a class="nav-link active d-flex align-items-center" data-bs-toggle="tab" href="#orders" role="tab">
                                 <i class="bi bi-bag me-2"></i>
                                 <span>Commandes</span>
                                 @if($stats['pending_orders'] > 0)
@@ -130,7 +131,7 @@
         <div class="col-md-9 col-lg-10">
             <div class="tab-content">
                 <!-- Vue d'ensemble -->
-                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="tab-pane fade" id="overview" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h2 class="fw-bold blue-color mb-0">
                             <i class="bi bi-speedometer2 me-2"></i>Vue d'ensemble
@@ -281,7 +282,7 @@
                 </div>
 
                 <!-- Commandes -->
-                <div class="tab-pane fade" id="orders" role="tabpanel">
+                <div class="tab-pane fade show active" id="orders" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h2 class="fw-bold blue-color mb-0">
                             <i class="bi bi-bag me-2"></i>Commandes
@@ -291,11 +292,17 @@
                         @endif
                     </div>
 
-                    <!-- Filtres -->
+                    <!-- Filtres et statistiques -->
                     <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-funnel me-2"></i>Filtres et statistiques
+                            </h5>
+                        </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="form-label small">Statut</label>
                                     <select class="form-select" id="orderStatusFilter">
                                         <option value="">Tous les statuts</option>
                                         <option value="pending">En attente</option>
@@ -305,16 +312,73 @@
                                         <option value="cancelled">Annulée</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <input type="date" class="form-control" id="orderDateFilter">
+                                <div class="col-md-2">
+                                    <label class="form-label small">Date de</label>
+                                    <input type="date" class="form-control" id="orderDateFrom">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">Date à</label>
+                                    <input type="date" class="form-control" id="orderDateTo">
                                 </div>
                                 <div class="col-md-3">
-                                    <input type="text" class="form-control" id="orderSearchFilter" placeholder="Rechercher...">
+                                    <label class="form-label small">Rechercher</label>
+                                    <input type="text" class="form-control" id="orderSearchFilter" placeholder="N°, client, email...">
                                 </div>
-                                <div class="col-md-3">
-                                    <button class="btn btn-primary w-100" onclick="loadOrders()">
-                                        <i class="bi bi-search me-2"></i>Filtrer
+                                <div class="col-md-2">
+                                    <label class="form-label small">Trier par</label>
+                                    <select class="form-select" id="orderSortFilter">
+                                        <option value="created_at">Date (récent)</option>
+                                        <option value="created_at_asc">Date (ancien)</option>
+                                        <option value="total">Montant (élevé)</option>
+                                        <option value="total_asc">Montant (faible)</option>
+                                        <option value="status">Statut</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small">&nbsp;</label>
+                                    <button class="btn btn-primary w-100" onclick="loadOrders()" title="Filtrer">
+                                        <i class="bi bi-search"></i>
                                     </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Statistiques rapides -->
+                            <div class="row g-3 mt-3" id="orderStatsContainer">
+                                <div class="col-md-2">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="fw-bold text-primary" id="statTotalOrders">-</div>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+                                        <div class="fw-bold text-warning" id="statPendingOrders">-</div>
+                                        <small class="text-muted">En attente</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center p-2 bg-info bg-opacity-10 rounded">
+                                        <div class="fw-bold text-info" id="statProcessingOrders">-</div>
+                                        <small class="text-muted">En préparation</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
+                                        <div class="fw-bold text-primary" id="statShippedOrders">-</div>
+                                        <small class="text-muted">Expédiées</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                        <div class="fw-bold text-success" id="statDeliveredOrders">-</div>
+                                        <small class="text-muted">Livrées</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                                        <div class="fw-bold text-danger" id="statCancelledOrders">-</div>
+                                        <small class="text-muted">Annulées</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -620,7 +684,53 @@ document.addEventListener('DOMContentLoaded', function() {
     // Charger les commandes quand l'onglet est affiché
     document.querySelector('a[href="#orders"]').addEventListener('shown.bs.tab', function() {
         loadOrders();
+        loadOrderStats();
     });
+    
+    // Auto-reload des commandes toutes les 30 secondes si l'onglet est actif
+    setInterval(() => {
+        const ordersTab = document.querySelector('a[href="#orders"]');
+        if (ordersTab && ordersTab.classList.contains('active')) {
+            checkForNewOrders(); // Vérifier les nouvelles commandes
+        }
+    }, 30000);
+    
+    // Vérifier les nouvelles commandes
+    let lastOrderCount = 0;
+    async function checkForNewOrders() {
+        try {
+            const response = await fetch('/api/store/orders/stats', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const currentOrderCount = data.stats.total_orders || 0;
+                
+                // Si le nombre de commandes a augmenté
+                if (currentOrderCount > lastOrderCount && lastOrderCount > 0) {
+                    const newOrders = currentOrderCount - lastOrderCount;
+                    showNotification('info', `🎉 ${newOrders} nouvelle${newOrders > 1 ? 's' : ''} commande${newOrders > 1 ? 's' : ''} reçue${newOrders > 1 ? 's' : ''} !`);
+                    
+                    // Mettre à jour le badge dans le menu
+                    const ordersBadge = document.querySelector('a[href="#orders"] .badge');
+                    if (ordersBadge) {
+                        ordersBadge.textContent = currentOrderCount;
+                        ordersBadge.className = 'badge bg-danger ms-auto';
+                    }
+                }
+                
+                lastOrderCount = currentOrderCount;
+                loadOrderStats(); // Mettre à jour les statistiques affichées
+            }
+        } catch (error) {
+            console.error('Erreur vérification nouvelles commandes:', error);
+        }
+    }
 
     // Activer l'onglet via paramètre d'URL (ex: ?tab=settings)
     try {
@@ -749,7 +859,25 @@ async function loadOrders() {
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
     
     try {
-        const response = await fetch(`/api/store/orders`, {
+        // Récupérer les paramètres de filtrage
+        const params = new URLSearchParams();
+        const status = document.getElementById('orderStatusFilter').value;
+        const dateFrom = document.getElementById('orderDateFrom').value;
+        const dateTo = document.getElementById('orderDateTo').value;
+        const search = document.getElementById('orderSearchFilter').value;
+        const sort = document.getElementById('orderSortFilter').value;
+        
+        if (status) params.append('status', status);
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        if (search) params.append('search', search);
+        if (sort) {
+            const [sortBy, sortOrder] = sort.split('_');
+            params.append('sort_by', sortBy);
+            params.append('sort_order', sortOrder || 'desc');
+        }
+        
+        const response = await fetch(`/api/store/orders?${params.toString()}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
@@ -767,6 +895,7 @@ async function loadOrders() {
                                 <th>N° Commande</th>
                                 <th>Date</th>
                                 <th>Client</th>
+                                <th>Articles</th>
                                 <th>Montant</th>
                                 <th>Statut</th>
                                 <th>Actions</th>
@@ -777,25 +906,209 @@ async function loadOrders() {
                                 <tr>
                                     <td><strong>${order.order_number}</strong></td>
                                     <td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
-                                    <td>${order.shipping_name}</td>
+                                    <td>
+                                        <div>
+                                            <strong>${order.shipping_name}</strong><br>
+                                            <small class="text-muted">${order.shipping_email}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">${order.items_count} article${order.items_count > 1 ? 's' : ''}</span>
+                                    </td>
                                     <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
                                     <td><span class="badge bg-${getStatusColor(order.status)}">${getStatusLabel(order.status)}</span></td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="viewOrder('${order.order_number}')">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewOrder('${order.order_number}')" title="Voir les détails">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            ${getOrderActionButtons(order.status, order.order_number)}
+                                        </div>
                                     </td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
                 </div>
+                ${data.pagination ? generatePagination(data.pagination) : ''}
             `;
         } else {
             container.innerHTML = `
                 <div class="text-center py-5">
                     <i class="bi bi-bag text-muted" style="font-size: 3rem;"></i>
-                    <p class="text-muted mt-3">Aucune commande pour le moment</p>
+                    <p class="text-muted mt-3">Aucune commande trouvée</p>
+                    <button class="btn btn-outline-primary" onclick="clearFilters()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Effacer les filtres
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Charger les statistiques des commandes
+        loadOrderStats();
+        
+    } catch (error) {
+        console.error('Erreur:', error);
+        container.innerHTML = '<p class="text-danger text-center py-3">Erreur de chargement</p>';
+    }
+}
+
+// Charger les statistiques des commandes
+async function loadOrderStats() {
+    try {
+        const response = await fetch('/api/store/orders/stats', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const stats = data.stats;
+            document.getElementById('statTotalOrders').textContent = stats.total_orders || 0;
+            document.getElementById('statPendingOrders').textContent = stats.pending_orders || 0;
+            document.getElementById('statProcessingOrders').textContent = stats.processing_orders || 0;
+            document.getElementById('statShippedOrders').textContent = stats.shipped_orders || 0;
+            document.getElementById('statDeliveredOrders').textContent = stats.delivered_orders || 0;
+            document.getElementById('statCancelledOrders').textContent = stats.cancelled_orders || 0;
+        }
+    } catch (error) {
+        console.error('Erreur chargement stats commandes:', error);
+    }
+}
+
+// Générer la pagination
+function generatePagination(pagination) {
+    if (pagination.last_page <= 1) return '';
+    
+    let paginationHtml = '<nav aria-label="Pagination des commandes"><ul class="pagination justify-content-center">';
+    
+    // Bouton précédent
+    if (pagination.current_page > 1) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadOrdersPage(${pagination.current_page - 1})">Précédent</a></li>`;
+    }
+    
+    // Pages
+    const startPage = Math.max(1, pagination.current_page - 2);
+    const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === pagination.current_page ? 'active' : '';
+        paginationHtml += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="loadOrdersPage(${i})">${i}</a></li>`;
+    }
+    
+    // Bouton suivant
+    if (pagination.current_page < pagination.last_page) {
+        paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadOrdersPage(${pagination.current_page + 1})">Suivant</a></li>`;
+    }
+    
+    paginationHtml += '</ul></nav>';
+    
+    // Informations de pagination
+    paginationHtml += `
+        <div class="text-center mt-3">
+            <small class="text-muted">
+                Affichage de ${pagination.from || 0} à ${pagination.to || 0} sur ${pagination.total} commande${pagination.total > 1 ? 's' : ''}
+            </small>
+        </div>
+    `;
+    
+    return paginationHtml;
+}
+
+// Charger une page spécifique
+function loadOrdersPage(page) {
+    // Ajouter le paramètre de page aux filtres existants
+    const params = new URLSearchParams();
+    const status = document.getElementById('orderStatusFilter').value;
+    const dateFrom = document.getElementById('orderDateFrom').value;
+    const dateTo = document.getElementById('orderDateTo').value;
+    const search = document.getElementById('orderSearchFilter').value;
+    const sort = document.getElementById('orderSortFilter').value;
+    
+    if (status) params.append('status', status);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    if (search) params.append('search', search);
+    if (sort) {
+        const [sortBy, sortOrder] = sort.split('_');
+        params.append('sort_by', sortBy);
+        params.append('sort_order', sortOrder || 'desc');
+    }
+    params.append('page', page);
+    
+    // Recharger avec la nouvelle page
+    loadOrdersWithParams(params.toString());
+}
+
+// Charger les commandes avec des paramètres spécifiques
+async function loadOrdersWithParams(params) {
+    const container = document.getElementById('ordersContainer');
+    container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+    
+    try {
+        const response = await fetch(`/api/store/orders?${params}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.orders.length > 0) {
+            container.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>N° Commande</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Articles</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.orders.map(order => `
+                                <tr>
+                                    <td><strong>${order.order_number}</strong></td>
+                                    <td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
+                                    <td>
+                                        <div>
+                                            <strong>${order.shipping_name}</strong><br>
+                                            <small class="text-muted">${order.shipping_email}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">${order.items_count} article${order.items_count > 1 ? 's' : ''}</span>
+                                    </td>
+                                    <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
+                                    <td><span class="badge bg-${getStatusColor(order.status)}">${getStatusLabel(order.status)}</span></td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewOrder('${order.order_number}')" title="Voir les détails">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            ${getOrderActionButtons(order.status, order.order_number)}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ${data.pagination ? generatePagination(data.pagination) : ''}
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-bag text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Aucune commande trouvée</p>
                 </div>
             `;
         }
@@ -803,6 +1116,16 @@ async function loadOrders() {
         console.error('Erreur:', error);
         container.innerHTML = '<p class="text-danger text-center py-3">Erreur de chargement</p>';
     }
+}
+
+// Effacer les filtres
+function clearFilters() {
+    document.getElementById('orderStatusFilter').value = '';
+    document.getElementById('orderDateFrom').value = '';
+    document.getElementById('orderDateTo').value = '';
+    document.getElementById('orderSearchFilter').value = '';
+    document.getElementById('orderSortFilter').value = 'created_at';
+    loadOrders();
 }
 
 // Fonctions utilitaires
@@ -1234,7 +1557,88 @@ async function deleteProduct(id) {
 }
 
 function viewOrder(orderNumber) {
-    alert('Voir la commande ' + orderNumber);
+    // Rediriger vers la page de détails de la commande
+    window.open(`/store/orders/${orderNumber}?token=${token}`, '_blank');
+}
+
+// Obtenir les boutons d'action pour les commandes
+function getOrderActionButtons(status, orderNumber) {
+    const buttons = [];
+    
+    if (status === 'pending') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-success" onclick="quickAction('ship', '${orderNumber}')" title="Marquer comme expédiée">
+                <i class="bi bi-truck"></i>
+            </button>
+        `);
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-warning" onclick="quickAction('process', '${orderNumber}')" title="Marquer en préparation">
+                <i class="bi bi-gear"></i>
+            </button>
+        `);
+    } else if (status === 'processing') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-success" onclick="quickAction('ship', '${orderNumber}')" title="Marquer comme expédiée">
+                <i class="bi bi-truck"></i>
+            </button>
+        `);
+    } else if (status === 'shipped') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-success" onclick="quickAction('deliver', '${orderNumber}')" title="Marquer comme livrée">
+                <i class="bi bi-check-circle"></i>
+            </button>
+        `);
+    }
+    
+    return buttons.join('');
+}
+
+// Actions rapides sur les commandes
+async function quickAction(action, orderNumber) {
+    try {
+        let endpoint = '';
+        let message = '';
+        
+        switch (action) {
+            case 'ship':
+                endpoint = `/api/store/orders/${orderNumber}/ship`;
+                message = 'Commande marquée comme expédiée';
+                break;
+            case 'process':
+                endpoint = `/api/store/orders/${orderNumber}/status`;
+                message = 'Commande mise en préparation';
+                break;
+            case 'deliver':
+                endpoint = `/api/store/orders/${orderNumber}/status`;
+                message = 'Commande marquée comme livrée';
+                break;
+        }
+        
+        const body = action === 'process' ? { status: 'processing' } : 
+                    action === 'deliver' ? { status: 'delivered' } : {};
+        
+        const response = await fetch(endpoint, {
+            method: action === 'ship' ? 'POST' : 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', message);
+            loadOrders(); // Recharger la liste des commandes
+        } else {
+            showNotification('danger', data.message);
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de l\'action');
+    }
 }
 
 // Gestion des formulaires
