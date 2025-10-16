@@ -621,6 +621,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('a[href="#orders"]').addEventListener('shown.bs.tab', function() {
         loadOrders();
     });
+
+    // Activer l'onglet via paramètre d'URL (ex: ?tab=settings)
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam) {
+            showTab(tabParam);
+        }
+    } catch (e) {
+        console.warn('Paramètres URL non disponibles', e);
+    }
 });
 
 // Charger les commandes récentes
@@ -1344,10 +1355,17 @@ async function uploadLogo() {
                     if (logoSettings) {
                         forceImageReload(logoSettings, data.logo_url, 5, 2000);
                     }
-                }, 1500); // Attendre 1.5s avant de commencer le rechargement
+                }, 800); // Attendre un peu avant de commencer le rechargement
                 
                 // Vider le champ de fichier
                 fileInput.value = '';
+                
+                // Rediriger vers l'onglet paramètres après un court délai
+                setTimeout(() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', 'settings');
+                    window.location.href = url.toString();
+                }, 1200);
             } else {
             showNotification('danger', data.message || 'Erreur lors de l\'upload');
         }
@@ -1413,10 +1431,17 @@ async function uploadBanner() {
                     if (bannerSettings) {
                         forceImageReload(bannerSettings, data.banner_url, 5, 2000); // 5 tentatives, 2s entre chaque
                     }
-                }, 1500); // Attendre 1.5s avant de commencer le rechargement
+                }, 800); // Attendre un peu avant de commencer le rechargement
                 
                 // Vider le champ de fichier
                 fileInput.value = '';
+
+                // Rediriger vers l'onglet paramètres après un court délai
+                setTimeout(() => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', 'settings');
+                    window.location.href = url.toString();
+                }, 1200);
             } else {
             showNotification('danger', data.message || 'Erreur lors de l\'upload');
         }
@@ -1575,6 +1600,22 @@ function forceImageReload(imgElement, newSrc, maxRetries = 3, delay = 1000) {
     
     let retryCount = 0;
     
+    // Vérifier d'abord si l'URL est accessible
+    function checkUrlAccessibility(url, callback) {
+        fetch(url, { 
+            method: 'HEAD',
+            mode: 'no-cors' // Permet de contourner les problèmes CORS
+        })
+        .then(() => {
+            console.log('✅ URL accessible:', url);
+            callback(true);
+        })
+        .catch(error => {
+            console.warn('⚠️ URL non accessible:', url, error);
+            callback(false);
+        });
+    }
+    
     function attemptReload() {
         console.log(`🔄 Tentative ${retryCount + 1}/${maxRetries} de rechargement de l'image:`, newSrc);
         
@@ -1594,13 +1635,22 @@ function forceImageReload(imgElement, newSrc, maxRetries = 3, delay = 1000) {
             retryCount++;
             console.warn(`❌ Erreur de chargement de l'image (tentative ${retryCount}/${maxRetries}):`, newSrc);
             
-            if (retryCount < maxRetries) {
-                console.log(`⏳ Nouvelle tentative dans ${delay}ms...`);
-                setTimeout(attemptReload, delay);
-            } else {
-                console.error('💥 Échec définitif du rechargement de l\'image');
-                showNotification('warning', 'Erreur de chargement de l\'image après plusieurs tentatives');
-            }
+            // Tester l'accessibilité de l'URL
+            checkUrlAccessibility(newSrc, (isAccessible) => {
+                if (!isAccessible) {
+                    console.error('🚫 URL non accessible, abandon du rechargement');
+                    showNotification('warning', 'L\'image n\'est pas accessible sur le serveur. Vérifiez les permissions.');
+                    return;
+                }
+                
+                if (retryCount < maxRetries) {
+                    console.log(`⏳ Nouvelle tentative dans ${delay}ms...`);
+                    setTimeout(attemptReload, delay);
+                } else {
+                    console.error('💥 Échec définitif du rechargement de l\'image');
+                    showNotification('warning', 'Erreur de chargement de l\'image après plusieurs tentatives. Vérifiez les permissions du serveur.');
+                }
+            });
         };
         
         // Ajouter un timestamp pour forcer le rechargement

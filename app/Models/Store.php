@@ -143,8 +143,8 @@ class Store extends Model
         // Vérifier si le fichier existe dans storage
         $storagePath = storage_path('app/public/' . $this->logo);
         if (file_exists($storagePath)) {
-            // Utiliser la route personnalisée pour servir l'image
-            return asset('images/storage/' . $this->logo);
+            // Utiliser le lien symbolique standard de Laravel
+            return asset('storage/' . $this->logo);
         }
         
         // Fallback vers une image par défaut
@@ -168,8 +168,8 @@ class Store extends Model
         // Vérifier si le fichier existe dans storage
         $storagePath = storage_path('app/public/' . $this->banner);
         if (file_exists($storagePath)) {
-            // Utiliser la route personnalisée pour servir l'image
-            return asset('images/storage/' . $this->banner);
+            // Utiliser le lien symbolique standard de Laravel
+            return asset('storage/' . $this->banner);
         }
         
         // Fallback vers une image par défaut
