@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +17,13 @@ class OrderController extends Controller
      */
     public function getOrders(Request $request)
     {
-        $user = $request->user();
+        // Support pour l'authentification par session et par token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Utilisateur non authentifié'], 401);
+        }
+        
         $store = $user->store;
 
         if (!$store) {
@@ -132,7 +139,7 @@ class OrderController extends Controller
      */
     public function getRecentOrders(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user() ?? $request->user();
         $store = $user->store;
 
         if (!$store) {
@@ -189,7 +196,7 @@ class OrderController extends Controller
      */
     public function getOrderDetails(Request $request, $orderNumber)
     {
-        $user = $request->user();
+        $user = auth()->user() ?? $request->user();
         $store = $user->store;
 
         if (!$store) {
@@ -198,12 +205,7 @@ class OrderController extends Controller
 
         try {
             $order = Order::where('order_number', $orderNumber)
-                ->whereHas('orderItems.product', function($q) use ($store) {
-                    $q->where('store_id', $store->id);
-                })
-                ->with(['orderItems.product' => function($q) use ($store) {
-                    $q->where('store_id', $store->id);
-                }, 'user'])
+                ->with(['orderItems.product', 'user'])
                 ->first();
 
             if (!$order) {
@@ -213,10 +215,27 @@ class OrderController extends Controller
                 ], 404);
             }
 
+            // Filtrer les articles qui appartiennent à cette boutique
+            $storeItems = $order->orderItems->filter(function($item) use ($store) {
+                return $item->product && $item->product->store_id == $store->id;
+            });
+            
             // Calculer le total pour cette boutique seulement
-            $storeTotal = $order->orderItems
-                ->where('product.store_id', $store->id)
-                ->sum('total');
+            $storeSubtotal = $storeItems->sum('total');
+            
+            // Calculer le total de la commande complète
+            $orderTotalSubtotal = $order->orderItems->sum('total');
+            
+            // Calculer le pourcentage que représente cette boutique dans le total
+            $percentageOfTotal = $orderTotalSubtotal > 0 ? $storeSubtotal / $orderTotalSubtotal : 0;
+            
+            // Appliquer ce pourcentage aux frais de livraison, taxes et remises
+            $storeShippingCost = $order->shipping_cost * $percentageOfTotal;
+            $storeTax = $order->tax * $percentageOfTotal;
+            $storeDiscount = $order->discount * $percentageOfTotal;
+            
+            // Calculer le total final pour cette boutique
+            $storeTotal = $storeSubtotal + $storeShippingCost + $storeTax - $storeDiscount;
 
             $formattedOrder = [
                 'id' => $order->id,
@@ -235,11 +254,11 @@ class OrderController extends Controller
                 'shipping_country' => $order->shipping_country,
                 'customer_notes' => $order->customer_notes,
                 'total' => $storeTotal,
-                'subtotal' => $order->subtotal,
-                'shipping_cost' => $order->shipping_cost,
-                'tax' => $order->tax,
-                'discount' => $order->discount,
-                'items' => $order->orderItems->where('product.store_id', $store->id)->map(function($item) {
+                'subtotal' => $storeSubtotal,
+                'shipping_cost' => $storeShippingCost,
+                'tax' => $storeTax,
+                'discount' => $storeDiscount,
+                'items' => $storeItems->map(function($item) {
                     return [
                         'id' => $item->id,
                         'product_name' => $item->product_name,
@@ -254,8 +273,15 @@ class OrderController extends Controller
                             'image' => $item->product->image
                         ] : null
                     ];
-                })
+                })->values() // Pour garantir que c'est un tableau
             ];
+
+            \Log::info('=== STRUCTURE COMMANDE ENVOYÉE ===', [
+                'order_number' => $formattedOrder['order_number'],
+                'items_count' => count($formattedOrder['items']),
+                'items_type' => gettype($formattedOrder['items']),
+                'items_sample' => $formattedOrder['items']
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -277,7 +303,7 @@ class OrderController extends Controller
      */
     public function updateOrderStatus(Request $request, $orderNumber)
     {
-        $user = $request->user();
+        $user = auth()->user() ?? $request->user();
         $store = $user->store;
 
         if (!$store) {
@@ -285,7 +311,7 @@ class OrderController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
+            'status' => 'required|in:pending,processing,delivered,cancelled',
             'notes' => 'nullable|string|max:500'
         ]);
 
@@ -304,10 +330,8 @@ class OrderController extends Controller
             }
 
             $oldStatus = $order->status;
-            $order->update([
-                'status' => $request->status,
-                'updated_at' => now()
-            ]);
+            // Utiliser le nouveau système de statut
+            $order->changeStatus($request->status, $request->notes);
 
             // Log de l'activité
             \Log::info("Commande {$orderNumber} mise à jour de '{$oldStatus}' vers '{$request->status}' par la boutique {$store->name}");
@@ -337,7 +361,12 @@ class OrderController extends Controller
      */
     public function getOrderStats(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Utilisateur non authentifié'], 401);
+        }
+        
         $store = $user->store;
 
         if (!$store) {
@@ -351,20 +380,45 @@ class OrderController extends Controller
                     $q->where('store_id', $store->id);
                 });
 
-            // Statistiques générales
+            // Statistiques générales - recréer la requête pour chaque statut
             $totalOrders = $ordersQuery->count();
-            $pendingOrders = $ordersQuery->where('status', 'pending')->count();
-            $processingOrders = $ordersQuery->where('status', 'processing')->count();
-            $shippedOrders = $ordersQuery->where('status', 'shipped')->count();
-            $deliveredOrders = $ordersQuery->where('status', 'delivered')->count();
-            $cancelledOrders = $ordersQuery->where('status', 'cancelled')->count();
+            $pendingOrders = Order::query()
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->where('status', 'pending')->count();
+            $processingOrders = Order::query()
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->where('status', 'processing')->count();
+            $deliveredOrders = Order::query()
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->where('status', 'delivered')->count();
+            $cancelledOrders = Order::query()
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->where('status', 'cancelled')->count();
+            $paidOrders = Order::query()
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->where('payment_status', 'paid')->count();
+            $pendingPayment = Order::query()
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->where('payment_status', 'pending')->count();
 
             // Calculer le total des ventes pour cette boutique
             $totalSales = Order::query()
                 ->whereHas('orderItems.product', function($q) use ($store) {
                     $q->where('store_id', $store->id);
                 })
-                ->whereIn('status', ['delivered', 'shipped'])
+                ->where('status', 'delivered')
                 ->get()
                 ->sum(function($order) use ($store) {
                     return $order->orderItems
@@ -390,9 +444,10 @@ class OrderController extends Controller
                     'total_orders' => $totalOrders,
                     'pending_orders' => $pendingOrders,
                     'processing_orders' => $processingOrders,
-                    'shipped_orders' => $shippedOrders,
                     'delivered_orders' => $deliveredOrders,
                     'cancelled_orders' => $cancelledOrders,
+                    'paid_orders' => $paidOrders,
+                    'pending_payment' => $pendingPayment,
                     'total_sales' => $totalSales,
                     'recent_orders' => $recentOrders,
                     'this_week_orders' => $thisWeekOrders,
@@ -416,7 +471,7 @@ class OrderController extends Controller
      */
     public function markAsShipped(Request $request, $orderNumber)
     {
-        $user = $request->user();
+        $user = auth()->user() ?? $request->user();
         $store = $user->store;
 
         if (!$store) {
@@ -483,7 +538,7 @@ class OrderController extends Controller
      */
     public function cancelOrder(Request $request, $orderNumber)
     {
-        $user = $request->user();
+        $user = auth()->user() ?? $request->user();
         $store = $user->store;
 
         if (!$store) {
@@ -491,7 +546,7 @@ class OrderController extends Controller
         }
 
         $request->validate([
-            'reason' => 'required|string|max:500'
+            'reason' => 'nullable|string|max:500'
         ]);
 
         try {
@@ -508,20 +563,12 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            if (in_array($order->status, ['delivered', 'cancelled'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Impossible d\'annuler cette commande'
-                ], 400);
-            }
-
-            $order->update([
-                'status' => 'cancelled',
-                'updated_at' => now()
-            ]);
+            // Utiliser le nouveau système de statut
+            $reason = $request->reason ?? 'Annulation par le vendeur';
+            $order->changeStatus(OrderStatusService::STATUS_CANCELLED, $reason);
 
             // Log de l'annulation
-            \Log::info("Commande {$orderNumber} annulée par la boutique {$store->name}. Raison: {$request->reason}");
+            \Log::info("Commande {$orderNumber} annulée par la boutique {$store->name}. Raison: {$reason}");
 
             return response()->json([
                 'success' => true,
@@ -539,6 +586,119 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'annulation de la commande'
+            ], 500);
+        }
+    }
+
+    /**
+     * Marquer une commande comme livrée
+     */
+    public function markAsDelivered(Request $request, $orderNumber)
+    {
+        $user = auth()->user() ?? $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $request->validate([
+            'reason' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $order = Order::where('order_number', $orderNumber)
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->first();
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Commande non trouvée'
+                ], 404);
+            }
+
+            // Utiliser le nouveau système de statut
+            $order->changeStatus(OrderStatusService::STATUS_DELIVERED, $request->reason);
+
+            // Log de la livraison
+            \Log::info("Commande {$orderNumber} marquée comme livrée par la boutique {$store->name}. Raison: {$request->reason}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Commande marquée comme livrée avec succès',
+                'order' => [
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'updated_at' => $order->updated_at
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur marquage livraison: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du marquage de la livraison'
+            ], 500);
+        }
+    }
+
+    /**
+     * Changer le statut de paiement d'une commande
+     */
+    public function changePaymentStatus(Request $request, $orderNumber)
+    {
+        $user = auth()->user() ?? $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Boutique non trouvée'], 404);
+        }
+
+        $request->validate([
+            'payment_status' => 'required|in:pending,paid,failed,refunded',
+            'reason' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $order = Order::where('order_number', $orderNumber)
+                ->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })
+                ->first();
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Commande non trouvée'
+                ], 404);
+            }
+
+            // Utiliser le nouveau système de statut de paiement
+            $order->changePaymentStatus($request->payment_status, $request->reason);
+
+            // Log du changement de statut de paiement
+            \Log::info("Statut de paiement de la commande {$orderNumber} changé vers '{$request->payment_status}' par la boutique {$store->name}. Raison: {$request->reason}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Statut de paiement mis à jour avec succès',
+                'order' => [
+                    'order_number' => $order->order_number,
+                    'payment_status' => $order->payment_status,
+                    'updated_at' => $order->updated_at
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur changement statut paiement: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du changement du statut de paiement'
             ], 500);
         }
     }

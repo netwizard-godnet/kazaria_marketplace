@@ -148,7 +148,7 @@
                                 <i class="bi bi-check-circle me-2"></i>Valider la commande
                             </button>
                             
-                            <a href="{{ route('product-cart') }}" class="btn btn-outline-secondary w-100">
+                            <a href="{{ route('product-cart') }}" class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-arrow-left me-2"></i>Retour au panier
                             </a>
 

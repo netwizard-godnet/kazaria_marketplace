@@ -1,213 +1,163 @@
 /**
  * Gestion de l'authentification côté client
  */
-class AuthManager {
-    constructor() {
-        this.token = localStorage.getItem('auth_token');
-        this.user = JSON.parse(localStorage.getItem('user_data') || 'null');
-        this.init();
+
+// Fonction pour initialiser les dropdowns Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser tous les dropdowns Bootstrap
+    const dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+    dropdownElements.forEach(function(dropdownElement) {
+        new bootstrap.Dropdown(dropdownElement);
+    });
+});
+
+// Obtenir les headers avec authentification ou session (fonction globale)
+window.getHeaders = function() {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    };
+    
+    // Ajouter le token si l'utilisateur est connecté
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    } else {
+        // Ajouter l'ID de session pour les invités
+        headers['X-Session-ID'] = getSessionId();
     }
+    
+    return headers;
+};
 
-    init() {
-        this.updateHeaderAuthState();
-        this.setupLogoutHandler();
+// Fonction pour obtenir l'ID de session
+function getSessionId() {
+    let sessionId = localStorage.getItem('guest_session_id');
+    if (!sessionId) {
+        sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('guest_session_id', sessionId);
     }
-
-    // Vérifier si l'utilisateur est connecté
-    isAuthenticated() {
-        return this.token && this.user;
-    }
-
-    // Obtenir les informations de l'utilisateur
-    getUser() {
-        return this.user;
-    }
-
-    // Obtenir le token
-    getToken() {
-        return this.token;
-    }
-
-    // Connecter l'utilisateur
-    login(token, user) {
-        this.token = token;
-        this.user = user;
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_data', JSON.stringify(user));
-        this.updateHeaderAuthState();
-    }
-
-    // Déconnecter l'utilisateur
-    async logout() {
-        try {
-            // Appeler l'API de déconnexion si un token existe
-            if (this.token) {
-                await fetch('/api/logout-client', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${this.token}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Erreur lors de la déconnexion:', error);
-        } finally {
-            // Nettoyer les données locales dans tous les cas
-            this.token = null;
-            this.user = null;
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user_data');
-            this.updateHeaderAuthState();
-            
-            // Rediriger vers l'accueil
-            window.location.href = '/';
-        }
-    }
-
-    // Mettre à jour l'affichage du header selon l'état de connexion
-    updateHeaderAuthState() {
-        const authElement = document.querySelector('#auth-section');
-        if (!authElement) return;
-
-        if (this.isAuthenticated()) {
-            this.showUserProfile(authElement);
-        } else {
-            this.showLoginButton(authElement);
-        }
-    }
-
-    // Afficher le profil utilisateur
-    showUserProfile(authElement) {
-        const userName = this.user.prenoms ? 
-            `${this.user.prenoms} ${this.user.nom}` : 
-            this.user.email;
-
-        authElement.innerHTML = `
-            <li class="nav-item px-1 d-flex align-items-center justify-content-center">
-                <a class="nav-link d-flex align-items-center" href="/profil?token=${this.token}" onclick="return handleProfileClick(event)">
-                    <i class="fa-solid fa-user-circle text-white fa-2x"></i>
-                    <div class="vstack text-white ms-2">
-                        <span class="fs-8 fw-lighter">Bonjour</span>
-                        <span class="fs-8 fw-bold">${userName}</span>
-                    </div>
-                </a>
-            </li>
-        `;
-    }
-
-    // Afficher le bouton de connexion
-    showLoginButton(authElement) {
-        authElement.innerHTML = `
-            <li class="nav-item px-1 d-flex align-items-center justify-content-center">
-                <a class="nav-link d-flex align-items-center" href="/authentification">
-                    <i class="fa-solid fa-user text-white fa-2x"></i>
-                    <div class="vstack text-white ms-2">
-                        <span class="fs-8 fw-lighter">Connexion</span>
-                        <span class="fs-8 fw-lighter">Inscription</span>
-                    </div>
-                </a>
-            </li>
-        `;
-    }
-
-    // Configurer le gestionnaire de déconnexion
-    setupLogoutHandler() {
-        // Écouter les clics sur les liens de déconnexion
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('[data-action="logout"]')) {
-                e.preventDefault();
-                this.logout();
-            }
-        });
-    }
-
-
-    // Vérifier la validité du token avec le serveur
-    async validateToken() {
-        if (!this.token) return false;
-
-        try {
-            const response = await fetch('/api/me', {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    this.user = data.user;
-                    localStorage.setItem('user_data', JSON.stringify(data.user));
-                    return true;
-                }
-            }
-        } catch (error) {
-            console.error('Erreur de validation du token:', error);
-        }
-
-        // Si le token n'est pas valide, déconnecter
-        this.logout();
-        return false;
-    }
+    return sessionId;
 }
 
-// Initialiser le gestionnaire d'authentification
-let authManager;
-document.addEventListener('DOMContentLoaded', () => {
-    authManager = new AuthManager();
-    
-        // Valider le token au chargement de la page
-        authManager.validateToken();
-    });
+// Fonction pour ajouter au panier
+window.addToCart = async function(productId, quantity = 1, attributes = {}) {
+    try {
+        const headers = window.getHeaders();
+        
+        const response = await fetch('/cart/add', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                product_id: productId,
+                quantity: quantity,
+                attributes: attributes
+            })
+        });
 
-    // Fonction globale pour gérer le clic sur le profil
-    window.handleProfileClick = function(event) {
-        const token = localStorage.getItem('auth_token');
+        const data = await response.json();
         
-        if (!token) {
-            event.preventDefault();
-            alert('Vous devez être connecté pour accéder à votre profil.');
-            return false;
-        }
-        
-        // Ajouter le token à l'URL si pas déjà présent
-        const url = new URL(event.target.closest('a').href);
-        if (!url.searchParams.has('token')) {
-            url.searchParams.set('token', token);
-            event.target.closest('a').href = url.toString();
-        }
-        
-        return true;
-    };
-
-    // Fonction pour vérifier l'authentification avant d'accéder au profil
-    window.checkAuthBeforeProfile = function() {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-            window.location.href = '/authentification';
-            return false;
-        }
-        return true;
-    };
-
-    // Fonction pour aller vers les favoris
-    window.goToFavorites = function(event) {
-        event.preventDefault();
-        const token = localStorage.getItem('auth_token');
-        
-        if (!token) {
-            // Si non connecté, demander de se connecter
-            if (confirm('Vous devez être connecté pour voir vos favoris. Se connecter maintenant ?')) {
-                localStorage.setItem('redirect_after_login', 'favorites');
-                window.location.href = '/authentification';
+        if (data.success) {
+            // Afficher notification
+            if (window.showNotification) {
+                window.showNotification('success', data.message);
             }
-            return false;
+            
+            // Mettre à jour le compteur du panier
+            if (window.updateCartCount) {
+                window.updateCartCount(data.cart_count);
+            }
+        } else {
+            if (window.showNotification) {
+                window.showNotification('error', data.message || 'Erreur lors de l\'ajout au panier');
+            }
+        }
+    } catch (error) {
+        console.error('Erreur complète:', error);
+        if (window.showNotification) {
+            window.showNotification('error', 'Erreur de connexion. Veuillez réessayer.');
+        }
+    }
+};
+
+// Fonction pour basculer un favori
+window.toggleFavorite = async function(productId, button) {
+    try {
+        const response = await fetch('/favorites/toggle', {
+            method: 'POST',
+            headers: window.getHeaders(),
+            body: JSON.stringify({
+                product_id: productId
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mettre à jour TOUS les boutons favoris de ce produit sur la page
+            const allButtons = document.querySelectorAll(`[data-product-id="${productId}"]`);
+            allButtons.forEach(btn => {
+                if (data.is_favorite) {
+                    btn.classList.add('favorited');
+                    btn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+                } else {
+                    btn.classList.remove('favorited');
+                    btn.innerHTML = '<i class="fa-regular fa-heart"></i>';
+                }
+            });
+            
+            // Mettre à jour le compteur des favoris
+            if (window.updateFavoritesCount) {
+                window.updateFavoritesCount(data.favorites_count);
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors du basculement du favori:', error);
+    }
+};
+
+// Fonction pour mettre à jour le compteur du panier
+window.updateCartCount = function(count) {
+    const cartCountElements = document.querySelectorAll('.cart-count, .badge-cart-count');
+    cartCountElements.forEach(element => {
+        element.textContent = count;
+        element.classList.add('badge-pulse');
+        setTimeout(() => element.classList.remove('badge-pulse'), 600);
+    });
+};
+
+// Fonction pour aller aux favoris
+window.goToFavorites = function() {
+    window.location.href = '/profil#favorites';
+};
+
+// Fonction pour gérer la déconnexion
+window.logout = function() {
+    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+        // Créer un formulaire de déconnexion
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/logout';
+        
+        // Ajouter le token CSRF
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
         }
         
-        // Si connecté, aller vers le profil avec l'ancre favorites
-        window.location.href = `/profil?token=${token}#favorites`;
-        return true;
-    };
+        document.body.appendChild(form);
+        form.submit();
+    }
+};
+
+// Fonction pour vérifier l'état d'authentification
+window.checkAuthStatus = function() {
+    // Cette fonction peut être utilisée pour vérifier l'état d'authentification
+    // Elle sera appelée par d'autres scripts si nécessaire
+    return true;
+};

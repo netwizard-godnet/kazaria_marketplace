@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <main class="container-fluid">
         <!-- SECTION BREADCRUMB -->
         <section class="bg-light py-2">
@@ -19,17 +20,32 @@
         <div class="row g-2 d-flex align-items-center justify-content-center">
             <div class="col-md-12">
                 <div class="">
+                    <!-- Carousel Boutique -->
+                    @php
+                        $boutiqueCarouselImages = App\Models\Banner::getBoutiqueCarouselImages();
+                    @endphp
                     <div id="carouselExampleAutoplaying" class="carousel slide h-400px" data-bs-ride="carousel">
                         <div class="carousel-inner h-400px">
+                            @forelse($boutiqueCarouselImages as $index => $image)
+                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}" data-bs-interval="2000">
+                                @if($image->image_url)
+                                    <img src="{{ $image->image_url }}" class="d-block w-100 h-400px" alt="Carousel {{ $index + 1 }}">
+                                @else
+                                    <div class="d-block w-100 h-400px bg-light d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-image text-muted fa-5x"></i>
+                                    </div>
+                                @endif
+                            </div>
+                            @empty
                             <div class="carousel-item active" data-bs-interval="2000">
-                                <img src="{{ asset('images/bg-1.jpg') }}" class="d-block w-100 h-400px" alt="...">
+                                <div class="d-block w-100 h-400px bg-light d-flex align-items-center justify-content-center">
+                                    <div class="text-center">
+                                        <i class="fas fa-image text-muted fa-5x mb-3"></i>
+                                        <p class="text-muted">Aucune image dans le carousel</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="carousel-item" data-bs-interval="2000">
-                                <img src="{{ asset('images/bg-1.jpg') }}" class="d-block w-100 h-400px" alt="...">
-                            </div>
-                            <div class="carousel-item" data-bs-interval="2000">
-                                <img src="{{ asset('images/bg-1.jpg') }}" class="d-block w-100 h-400px" alt="...">
-                            </div>
+                            @endforelse
                         </div>
                         <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -40,6 +56,7 @@
                             <span class="visually-hidden">Next</span>
                         </button>
                     </div>
+                    <!-- Carousel Boutique End -->
                 </div>
             </div>
         </div>
@@ -73,13 +90,49 @@
         <section class="py-5">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Boutique pub 1 -->
+                    @php
+                        $boutiquePub1 = App\Models\Banner::getBoutiquePub1();
+                        $boutiquePub1Image = $boutiquePub1 ? $boutiquePub1->image_url : null;
+                    @endphp
+                    @if($boutiquePub1Image)
+                        <img src="{{ $boutiquePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 1">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Boutique pub 1 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Boutique pub 2 -->
+                    @php
+                        $boutiquePub2 = App\Models\Banner::getBoutiquePub2();
+                        $boutiquePub2Image = $boutiquePub2 ? $boutiquePub2->image_url : null;
+                    @endphp
+                    @if($boutiquePub2Image)
+                        <img src="{{ $boutiquePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 2">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Boutique pub 2 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Boutique pub 3 -->
+                    @php
+                        $boutiquePub3 = App\Models\Banner::getBoutiquePub3();
+                        $boutiquePub3Image = $boutiquePub3 ? $boutiquePub3->image_url : null;
+                    @endphp
+                    @if($boutiquePub3Image)
+                        <img src="{{ $boutiquePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 3">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Boutique pub 3 end -->
                 </div>
             </div>
         </section>
@@ -225,7 +278,7 @@
                         <!-- Pagination -->
                         @if($products->hasPages())
                         <div class="d-flex justify-content-center mt-4">
-                            {{ $products->links() }}
+                            {{ $products->links('pagination.custom') }}
                         </div>
                         @endif
                     </div>
@@ -238,10 +291,34 @@
         <section class="py-5">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <img src="{{ asset('images/bg-1.jpg') }}" class="w-100 h-300px object-fit-cover" alt="">
+                    <!-- Boutique pub 4 -->
+                    @php
+                        $boutiquePub4 = App\Models\Banner::getBoutiquePub4();
+                        $boutiquePub4Image = $boutiquePub4 ? $boutiquePub4->image_url : null;
+                    @endphp
+                    @if($boutiquePub4Image)
+                        <img src="{{ $boutiquePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 4">
+                    @else
+                        <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Boutique pub 4 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-300px object-fit-cover" alt="">
+                    <!-- Boutique pub 5 -->
+                    @php
+                        $boutiquePub5 = App\Models\Banner::getBoutiquePub5();
+                        $boutiquePub5Image = $boutiquePub5 ? $boutiquePub5->image_url : null;
+                    @endphp
+                    @if($boutiquePub5Image)
+                        <img src="{{ $boutiquePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 5">
+                    @else
+                        <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Boutique pub 5 end -->
                 </div>
             </div>
         </section>

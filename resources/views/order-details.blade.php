@@ -198,7 +198,7 @@
                             <a href="{{ route('order-download', $order->order_number) }}" class="btn orange-bg text-white w-100 mb-2">
                                 <i class="bi bi-download me-2"></i>Télécharger la facture
                             </a>
-                            <a href="{{ route('profil') }}?token={{ request('token') }}" class="btn btn-outline-secondary w-100">
+                            <a href="{{ route('profil') }}?token={{ request('token') }}" class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-arrow-left me-2"></i>Retour à mes commandes
                             </a>
                         </div>

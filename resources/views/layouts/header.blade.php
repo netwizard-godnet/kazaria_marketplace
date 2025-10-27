@@ -1,11 +1,15 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         {{-- Composant SEO --}}
         <x-seo 
-            :title="$seoTitle ?? 'KAZARIA - Votre marketplace en ligne en Côte d\'Ivoire'"
-            :description="$seoDescription ?? 'Découvrez une large gamme de produits électroniques, électroménagers et accessoires sur KAZARIA. Livraison gratuite, paiement sécurisé et satisfaction garantie.'"
-            :keywords="$seoKeywords ?? 'e-commerce, marketplace, Côte d\'Ivoire, Abidjan, téléphones, électronique, électroménager, ordinateurs, livraison gratuite'"
+            :title="$seoTitle ?? ($settings['site_name'] ?? 'KAZARIA') . ' - Votre marketplace en ligne en Côte d\'Ivoire'"
+            :description="$seoDescription ?? ($settings['site_description'] ?? 'Découvrez une large gamme de produits électroniques, électroménagers et accessoires sur KAZARIA. Livraison gratuite, paiement sécurisé et satisfaction garantie.')"
+            :keywords="$seoKeywords ?? ($settings['site_keywords'] ?? 'e-commerce, marketplace, Côte d\'Ivoire, Abidjan, téléphones, électronique, électroménager, ordinateurs, livraison gratuite')"
             :image="$seoImage ?? null"
             :url="$seoUrl ?? null"
             :type="$seoType ?? 'website'"
@@ -24,11 +28,11 @@
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
         <!-- SLICK -->
-        <link rel="stylesheet" href="{{ asset('slick/slick.css') }}">
-        <link rel="stylesheet" href="{{ asset('slick/slick-theme.css') }}">
+        <!-- <link rel="stylesheet" href="{{ asset('slick/slick.css') }}">
+        <link rel="stylesheet" href="{{ asset('slick/slick-theme.css') }}"> -->
         <!-- CUSTOM CSS -->
         <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/profil.css') }}">
+        <!-- <link rel="stylesheet" href="{{ asset('css/profil.css') }}"> -->
         <link rel="stylesheet" href="{{ asset('css/carousel.css') }}">
         
         <!-- Styles pour l'autocomplétion -->
@@ -94,7 +98,7 @@
                 <nav class="navbar navbar-expand-lg py-0">
                     <div class="container-fluid">
                         <a class="navbar-brand fw-bolder text-white fs-2" href="{{ route('accueil') }}">
-                            <img src="{{ asset('images/logo.png') }}" class="logo-size-header" alt="Bienvenue sur KAZARIA">
+                            <img src="{{ asset('storage/' . ($settings['site_logo'] ?? 'logo.png')) }}" class="logo-size-header" alt="{{ $settings['site_name'] ?? 'KAZARIA' }}">
                         </a>
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
                         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,13 +114,13 @@
                                         <ul class="bg-light dropdown-menu">
                                             <li><a class="dropdown-item" href="{{ route('search_product') }}">Toutes les catégories</a></li>
                                             @if(isset($allCategories))
-                                                @foreach($allCategories as $cat)
+                                                @foreach($allCategories as $category)
                                                 <li>
-                                                    <a class="dropdown-item" href="{{ route('categorie', $cat->slug) }}">
-                                                        @if($cat->icon)
-                                                        <i class="{{ $cat->icon }} me-2"></i>
+                                                    <a class="dropdown-item d-flex align-items-center" href="{{ route('categorie', $category->slug) }}">
+                                                        @if($category->image && !empty($category->image))
+                                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-2">
                                                         @endif
-                                                        {{ $cat->name }}
+                                                        {{ $category->name }}
                                                     </a>
                                                 </li>
                                                 @endforeach
@@ -138,26 +142,55 @@
                                 </button>
                             </form>
                             <ul class="navbar-nav">
-                                <li class="nav-item px-1 d-flex align-items-center justify-content-center">
+                                <li class="nav-item d-flex align-items-center justify-content-center">
                                     <a class="nav-link position-relative" aria-current="page" href="#" onclick="goToFavorites(event)">
                                         <i class="fa-solid fa-heart text-white fa-2x"></i>
                                         <span class="position-absolute bottom-0 end-0 orange-bg px-2 rounded-2 fw-lighter fs-8 text-white favorites-count d-none">0</span>
                                     </a>
                                 </li>
-                                <li class="nav-item px-1 d-flex align-items-center justify-content-center">
+                                <li class="nav-item d-flex align-items-center justify-content-center">
                                     <a class="nav-link position-relative" aria-current="page" href="{{ route('product-cart') }}">
                                         <i class="fa-solid fa-shopping-cart text-white fa-2x"></i>
                                         <span class="position-absolute bottom-0 end-0 orange-bg px-2 rounded-2 fw-lighter fs-8 text-white cart-count">0</span>
                                     </a>
                                 </li>
-                                <li id="auth-section" class="nav-item px-1 d-flex align-items-center justify-content-center">
-                                    <a class="nav-link d-flex align-items-center" aria-current="page" href="/authentification">
-                                    <i class="fa-solid fa-user text-white fa-2x"></i>
-                                        <div class="vstack text-white ms-2">
-                                    <span class="fs-8 fw-lighter">Connexion</span>
-                                    <span class="fs-8 fw-lighter">Inscription</span>
-                                    </div>
-                                </a>
+                                <li id="auth-section" class="nav-item d-flex align-items-center justify-content-center">
+                                    @auth
+                                        <div class="dropdown">
+                                            <button class="nav-link d-flex align-items-center btn btn-link text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
+                                                <i class="fa-solid fa-user text-white fa-2x"></i>
+                                                <div class="vstack text-white ms-1">
+                                                    <span class="fs-8 fw-bold fw-lighter">{{ Auth::user()->prenoms ?? 'Utilisateur' }}</span>
+                                                    <span class="fs-8 fw-lighter">Connecté(e)<i class="fa-solid fa-chevron-down text-white"></i></span>
+                                                </div>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
+                                                @if(Auth::user()->is_seller)
+                                                    @if(Auth::user()->store)
+                                                        <li><a class="dropdown-item" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
+                                                    @else
+                                                        <li><a class="dropdown-item" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
+                                                    @endif
+                                                @endif
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li class="">
+                                                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item bg-danger text-white"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <a class="nav-link d-flex align-items-center" aria-current="page" href="/authentification">
+                                            <i class="fa-solid fa-user text-white fa-2x"></i>
+                                            <div class="vstack text-white ms-1">
+                                                <span class="fs-8 fw-lighter">Connexion</span>
+                                                <span class="fs-8 fw-lighter">Inscription</span>
+                                            </div>
+                                        </a>
+                                    @endauth
                                 </li>
                             </ul>
                         </div>
@@ -176,26 +209,27 @@
                             @foreach($allCategories->take(4) as $menuCategory)
                         <div class="header-menu d-flex align-items-center justify-content-start">
                                 <a class="btn btn-sm text-white fs-7 text-nowrap" type="button">
-                                    @if($menuCategory->icon)
-                                    <i class="{{ $menuCategory->icon }} me-1"></i>
+                                    @if($menuCategory->image && !empty($menuCategory->image))
+                                    <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-1">
                                     @endif
                                     {{ $menuCategory->name }} <i class="fa-solid fas fa-chevron-down fs-8"></i>
                                 </a>
                                 <div class="w-100 bg-light py-2 position-absolute top-100 start-0 z-index-9x d-none container-fluid">
                                 <div class="row g-3">
+                                        @if($menuCategory->subcategories->count() > 0)
                                         @foreach($menuCategory->subcategories->chunk(ceil($menuCategory->subcategories->count() / 4)) as $chunk)
                                     <div class="col-md-3">
                                         <div class="list-group">
                                                 <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none">
-                                                    @if($menuCategory->icon)
-                                                    <i class="{{ $menuCategory->icon }} me-2"></i>
+                                                    @if($menuCategory->image && !empty($menuCategory->image))
+                                                    <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" alt="{{ $menuCategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     @endif
                                                     {{ $menuCategory->name }}
                                                 </a>
                                                 @foreach($chunk as $subcat)
                                                 <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action">
-                                                    @if($subcat->icon)
-                                                    <i class="{{ $subcat->icon }} me-2"></i>
+                                                    @if($subcat->image && !empty($subcat->image))
+                                                    <img src="{{ str_starts_with($subcat->image, 'http') ? $subcat->image : (str_starts_with($subcat->image, 'images/') ? asset($subcat->image) : Storage::url($subcat->image)) }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     @endif
                                                     {{ $subcat->name }}
                                                 </a>
@@ -203,6 +237,18 @@
                                     </div>
                                         </div>
                                         @endforeach
+                                        @else
+                                        <div class="col-md-12">
+                                            <div class="list-group">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0">
+                                                    @if($menuCategory->image && !empty($menuCategory->image))
+                                                    <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" alt="{{ $menuCategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
+                                                    @endif
+                                                    {{ $menuCategory->name }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -215,8 +261,36 @@
                     </div>
                     <div class="col-md-3">
                         <div class="d-flex align-items-center justify-content-start">
-                            <a href="#" id="sellerButton" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;" onclick="goToSell(event)">Vendez sur KAZARIA</a>
-                            <a href="#" class="btn btn-sm fs-7 text-white rounded-0 ps-3" onclick="goToOrders()">Suivre ma commande</a>
+                            @auth
+                                @if(Auth::user()->is_seller)
+                                    @if(Auth::user()->store)
+                                        <a href="{{ route('store.dashboard') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                            <i class="fa-solid fa-store me-1"></i>Ma boutique
+                                        </a>
+                                    @else
+                                        <a href="{{ route('store.create') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                            <i class="fa-solid fa-plus me-1"></i>Créer ma boutique
+                                        </a>
+                                    @endif
+                                @else
+                                    <a href="{{ route('store.create') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
+                                    </a>
+                                @endif
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                    <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
+                                </a>
+                            @endauth
+                            @auth
+                                <a href="{{ route('profil') }}#orders" class="btn btn-sm fs-7 text-white rounded-0 ps-3">
+                                    <i class="fa-solid fa-box me-1"></i>Suivre ma commande
+                                </a>
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-sm fs-7 text-white rounded-0 ps-3">
+                                    <i class="fa-solid fa-box me-1"></i>Suivre ma commande
+                                </a>
+                            @endauth
                         </div>
                     </div>
                     <!--  -->
@@ -231,24 +305,49 @@
                     <div class="vstack gap-2">
                         <div class="w-100 d-flex align-items-center justify-content-between">
                             <a class="" href="#">
-                                <img src="{{ asset('images/logo.png') }}" class="logo-size-header" alt="Bienvenue sur KAZARIA">
+                                <img src="{{ asset('storage/' . ($settings['site_logo'] ?? 'logo.png')) }}" class="logo-size-header" alt="{{ $settings['site_name'] ?? 'KAZARIA' }}">
                             </a>
                             <ul class="d-flex align-items-center justify-content-evenly m-0">
-                                <li class="nav-item px-1 d-flex align-items-center justify-content-center">
+                                <li class="nav-item px-1 d-flex align-items-center justify-content-center me-2">
                                     <a class="nav-link position-relative" aria-current="page" href="{{ route('product-cart') }}">
                                         <i class="fa-solid fas fa-shopping-cart text-white fa-2x"></i>
                                         <span class="position-absolute bottom-0 end-0 bg-danger px-2 rounded-2 fw-lighter fs-8 text-white">0</span>
                                     </a>
                                 </li>
+                                @auth
+                                    <div class="dropdown">
+                                        <button class="nav-link d-flex align-items-center btn btn-link text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
+                                            <i class="fa-solid fa-user-check text-white fa-2x"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
+                                            @if(Auth::user()->is_seller)
+                                                @if(Auth::user()->store)
+                                                    <li><a class="dropdown-item" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
+                                                @else
+                                                    <li><a class="dropdown-item" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
+                                                @endif
+                                            @endif
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li class="">
+                                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="dropdown-item bg-danger text-white"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                @else
                                 <li class="nav-item px-1 d-flex align-items-center justify-content-center">
                                     <a class="nav-link d-flex align-items-center" aria-current="page" href="/authentification">
                                         <i class="fa-solid fa-user text-white fa-2x"></i>
                                     </a>
                                 </li>
+                                @endauth
                             </ul>
                         </div>
                         <div class="">
-                            <form class="d-flex ms-auto position-relative" action="{{ route('search_product') }}" method="GET" role="search" id="mobileSearchForm">
+                            <form class="w-100 d-flex justify-content-center position-relative" action="{{ route('search_product') }}" method="GET" role="search" id="mobileSearchForm">
                                 <div class="bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
                                     <div class="position-relative">
                                         <input class="form-control px-4 me-2 border-0 width-400" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="mobileSearchInput" autocomplete="off"/>

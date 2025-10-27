@@ -4,7 +4,7 @@
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">BESOIN D'AIDE ?</p>
                 <div class="vstack gap-1 text-start ms-2">
-                    <a href="https://wa.me/2250701234567" class="btn btn-sm text-secondary text-start fs-8" target="_blank">Discuter avec nous</a>
+                    <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '2250701234567') }}" class="btn btn-sm text-secondary text-start fs-8" target="_blank">Discuter avec nous</a>
                     <a href="{{ route('help-faq') }}" class="btn btn-sm text-secondary text-start fs-8">Aide & FAQ</a>
                     <a href="{{ route('contact') }}" class="btn btn-sm text-secondary text-start fs-8">Contactez-nous</a>
                 </div>
@@ -44,8 +44,8 @@
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">CATEGORIES</p>
                 <div class="vstack gap-1 ms-2">
-                    @if(isset($footerCategories) && $footerCategories->count() > 0)
-                        @foreach($footerCategories as $category)
+                    @if(isset($allCategories) && $allCategories->count() > 0)
+                        @foreach($allCategories as $category)
                             <a href="{{ route('categorie', $category->slug) }}" class="btn btn-sm text-secondary text-start fs-8">{{ $category->name }}</a>
                         @endforeach
                     @else
@@ -127,9 +127,9 @@
                 <div class="list-group-item p-0">
                     <!-- Catégorie principale -->
                     <a href="{{ route('categorie', $category->slug) }}" class="d-flex align-items-center p-3 text-decoration-none category-main-link">
-                        @if($category->icon)
-                        <i class="{{ $category->icon }} me-3 orange-color" style="font-size: 1.2rem;"></i>
-                        @endif
+                                        @if($category->image && !empty($category->image))
+                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" alt="{{ $category->name }}" style="width: 24px; height: 24px; object-fit: contain;" class="me-3">
+                                        @endif
                         <div class="flex-grow-1">
                             <span class="fw-bold text-dark">{{ $category->name }}</span>
                         </div>
@@ -142,9 +142,9 @@
                         <div class="px-3 pb-2">
                             @foreach($category->subcategories->take(6) as $subcategory)
                             <a href="{{ route('categorie', $category->slug) }}" class="d-flex align-items-center py-2 px-3 text-decoration-none subcategory-link">
-                                @if($subcategory->icon)
-                                <i class="{{ $subcategory->icon }} me-2 text-muted" style="font-size: 1rem;"></i>
-                                @endif
+                                            @if($subcategory->image && !empty($subcategory->image))
+                                            <img src="{{ str_starts_with($subcategory->image, 'http') ? $subcategory->image : (str_starts_with($subcategory->image, 'images/') ? asset($subcategory->image) : Storage::url($subcategory->image)) }}" alt="{{ $subcategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
+                                            @endif
                                 <span class="text-muted">{{ $subcategory->name }}</span>
                             </a>
                             @endforeach
@@ -299,15 +299,34 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
+
+<!-- Script pour initialiser les dropdowns Bootstrap -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser tous les dropdowns Bootstrap
+    const dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+    dropdownElements.forEach(function(dropdownElement) {
+        new bootstrap.Dropdown(dropdownElement);
+    });
+});
+</script>
+
 <!-- MAIN JS -->
  <script src="{{ asset('js/main.js') }}"></script>
  <script src="{{ asset('js/carousel.js') }}"></script>
 <script src="{{ asset('js/cart.js') }}"></script>
 <script src="{{ asset('js/filters.js') }}"></script>
 <script src="{{ asset('js/search-autocomplete.js') }}"></script>
-<script src="{{ asset('js/auth.js') }}"></script>
+{{-- auth.js supprimé - fonctionnalités intégrées dans Blade --}}
  <script>
     document.addEventListener("DOMContentLoaded", () => {
+        // Initialiser les dropdowns Bootstrap
+        const dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+        dropdownElements.forEach(function(dropdownElement) {
+            new bootstrap.Dropdown(dropdownElement);
+        });
+        console.log('Dropdowns Bootstrap initialisés');
+        
         // Initialiser les carousels
         document.querySelectorAll("[data-multi-carousel]").forEach(el => {
             const options = {
@@ -422,57 +441,12 @@
         });
     });
 
-    // Fonction simple pour aller directement aux commandes
-    window.goToOrders = function() {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-            // Utilisateur connecté → Ajouter le token dans l'URL
-            window.location.href = '/profil?token=' + token + '&tab=orders';
-        } else {
-            // Utilisateur non connecté → Rediriger vers authentification
-            window.location.href = '/authentification';
-        }
-    }
-
-    // Fonction pour gérer le bouton "Vendez sur KAZARIA" / "Ma boutique"
-    window.goToSell = function(event) {
+    // Fonction pour aller vers les favoris (conservée pour d'autres usages)
+    window.goToFavorites = function(event) {
         event.preventDefault();
-        const token = localStorage.getItem('auth_token');
-        
-        if (token) {
-            // Utilisateur connecté → Vérifier s'il est déjà vendeur
-            fetch('/api/check-seller-status', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.is_seller && data.has_store) {
-                    // Rediriger vers le dashboard de la boutique
-                    window.location.href = '/store/dashboard?token=' + token;
-                } else if (data.is_seller && !data.has_store) {
-                    // En attente de validation
-                    window.location.href = '/store/pending?token=' + token;
-                } else {
-                    // Créer une boutique
-                    window.location.href = '/store/create?token=' + token;
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                // Par défaut, rediriger vers la création
-                window.location.href = '/store/create?token=' + token;
-            });
-        } else {
-            // Utilisateur non connecté → Demander de se connecter
-            if (confirm('Pour vendre sur KAZARIA, vous devez d\'abord vous connecter.\n\nVoulez-vous vous connecter maintenant ?')) {
-                // Stocker l'intention de devenir vendeur
-                localStorage.setItem('redirect_after_login', 'sell');
-                window.location.href = '/authentification';
-            }
-        }
+        // Redirection directe vers le profil (l'authentification est gérée par le middleware)
+        window.location.href = '/profil#favorites';
+        return true;
     }
 
     // Fonction pour mettre à jour le texte du bouton vendeur

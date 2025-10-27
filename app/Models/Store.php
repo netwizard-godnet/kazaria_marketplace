@@ -28,6 +28,11 @@ class Store extends Model
         'commerce_register',
         'status',
         'is_verified',
+        'approved_at',
+        'rejected_at',
+        'rejection_reason',
+        'approved_by',
+        'rejected_by',
         'is_official',
         'commission_rate',
         'business_hours',
@@ -37,6 +42,10 @@ class Store extends Model
         'total_sales',
         'rating',
         'reviews_count',
+        'validation_notes',
+        'validated_at',
+        'validated_by',
+        'rejection_reason',
     ];
 
     protected $casts = [
@@ -47,6 +56,9 @@ class Store extends Model
         'rating' => 'decimal:2',
         'business_hours' => 'array',
         'social_links' => 'array',
+        'validated_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
 
     /**
@@ -127,6 +139,46 @@ class Store extends Model
     }
 
     /**
+     * Vérifier si la boutique est rejetée
+     */
+    public function isRejected()
+    {
+        return $this->status === 'rejected';
+    }
+
+    /**
+     * Vérifier si la boutique est suspendue
+     */
+    public function isSuspended()
+    {
+        return $this->status === 'suspended';
+    }
+
+    /**
+     * Relation avec l'admin qui a validé la boutique
+     */
+    public function validator()
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    /**
+     * Utilisateur qui a approuvé la boutique
+     */
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Utilisateur qui a rejeté la boutique
+     */
+    public function rejector()
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    /**
      * Obtenir l'URL complète du logo
      */
     public function getLogoUrlAttribute()
@@ -174,5 +226,51 @@ class Store extends Model
         
         // Fallback vers une image par défaut
         return asset('images/bg-1.jpg');
+    }
+
+    /**
+     * Obtenir l'URL complète du document DFE
+     */
+    public function getDfeDocumentUrlAttribute()
+    {
+        if (!$this->dfe_document) {
+            return null;
+        }
+        
+        // Vérifier si c'est une URL externe
+        if (filter_var($this->dfe_document, FILTER_VALIDATE_URL)) {
+            return $this->dfe_document;
+        }
+        
+        // Vérifier si le fichier existe dans storage
+        $storagePath = storage_path('app/public/' . $this->dfe_document);
+        if (file_exists($storagePath)) {
+            return asset('storage/' . $this->dfe_document);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Obtenir l'URL complète du registre de commerce
+     */
+    public function getCommerceRegisterUrlAttribute()
+    {
+        if (!$this->commerce_register) {
+            return null;
+        }
+        
+        // Vérifier si c'est une URL externe
+        if (filter_var($this->commerce_register, FILTER_VALIDATE_URL)) {
+            return $this->commerce_register;
+        }
+        
+        // Vérifier si le fichier existe dans storage
+        $storagePath = storage_path('app/public/' . $this->commerce_register);
+        if (file_exists($storagePath)) {
+            return asset('storage/' . $this->commerce_register);
+        }
+        
+        return null;
     }
 }

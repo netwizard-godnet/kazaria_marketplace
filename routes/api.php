@@ -10,28 +10,40 @@ Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
-Route::get('/verify-email/{token}', [AuthController::class, 'verifyEmail'])->name('api.verify-email');
+// Route de vérification d'email supprimée - utilise la route web
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all-devices', [AuthController::class, 'logoutAllDevices']);
     Route::get('/me', [AuthController::class, 'me']);
-    Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'update']);
-    Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePassword']);
-    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhoto']);
-    
-    // Activité récente
-    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivity']);
+    // Routes API pour le profil (utilisent des tokens)
+    Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'updateApi']);
+    Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePasswordApi']);
+});
+
+// Route pour la photo de profil (support session et token)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
+});
+
+// Routes protégées par authentification (suite)
+// Route pour l'activité récente (support session et token)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Autres routes API avec tokens uniquement
 });
 
 // Route de déconnexion publique (pour les tokens stockés côté client)
 Route::post('/logout-client', [AuthController::class, 'logoutClient']);
 
-// Routes du panier (public - fonctionne avec session ou user)
-Route::prefix('cart')->group(function () {
-    Route::get('/', [App\Http\Controllers\CartController::class, 'getCart']);
-    Route::post('/add', [App\Http\Controllers\CartController::class, 'add']);
+// Routes du panier (API - Tokens uniquement, sans CSRF)
+Route::prefix('cart')->middleware('auth:sanctum')->group(function () {
+    Route::post('/add', [App\Http\Controllers\CartController::class, 'addApi']);
+    Route::get('/items', [App\Http\Controllers\CartController::class, 'getCartApi']);
     Route::put('/update/{id}', [App\Http\Controllers\CartController::class, 'update']);
     Route::delete('/remove/{id}', [App\Http\Controllers\CartController::class, 'remove']);
     Route::delete('/clear', [App\Http\Controllers\CartController::class, 'clear']);
@@ -43,11 +55,17 @@ Route::prefix('favorites')->group(function () {
     Route::post('/toggle', [App\Http\Controllers\CartController::class, 'toggleFavorite']);
 });
 
+// Route de mise à jour produit (API - sans CSRF pour test)
+Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
+
 // Routes de commande (protégées)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
+Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
 });
 
 // Routes des avis
@@ -79,11 +97,14 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
     Route::delete('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'deleteImage']);
     
     // Gestion des commandes vendeur
-    Route::get('/orders/stats', [App\Http\Controllers\Seller\OrderController::class, 'getOrderStats']);
-    Route::get('/orders/{orderNumber}', [App\Http\Controllers\Seller\OrderController::class, 'getOrderDetails']);
-    Route::put('/orders/{orderNumber}/status', [App\Http\Controllers\Seller\OrderController::class, 'updateOrderStatus']);
-    Route::post('/orders/{orderNumber}/ship', [App\Http\Controllers\Seller\OrderController::class, 'markAsShipped']);
-    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\Seller\OrderController::class, 'cancelOrder']);
+    Route::get('/orders', [App\Http\Controllers\Seller\OrderController::class, 'getOrders'])->name('store.api.orders');
+    Route::get('/orders/stats', [App\Http\Controllers\Seller\OrderController::class, 'getOrderStats'])->name('store.api.orders.stats');
+    Route::get('/orders/{orderNumber}', [App\Http\Controllers\Seller\OrderController::class, 'getOrderDetails'])->name('store.api.order-details');
+    Route::put('/orders/{orderNumber}/status', [App\Http\Controllers\Seller\OrderController::class, 'updateOrderStatus'])->name('store.api.order-status');
+    Route::post('/orders/{orderNumber}/ship', [App\Http\Controllers\Seller\OrderController::class, 'markAsShipped'])->name('store.api.order-ship');
+    Route::post('/orders/{orderNumber}/deliver', [App\Http\Controllers\Seller\OrderController::class, 'markAsDelivered'])->name('store.api.order-deliver');
+    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\Seller\OrderController::class, 'cancelOrder'])->name('store.api.order-cancel');
+    Route::put('/orders/{orderNumber}/payment-status', [App\Http\Controllers\Seller\OrderController::class, 'changePaymentStatus'])->name('store.api.order-payment-status');
     
     // Paramètres de la boutique
     Route::post('/update', [App\Http\Controllers\StoreController::class, 'updateStore']);
@@ -93,4 +114,7 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
     Route::post('/toggle-status', [App\Http\Controllers\StoreController::class, 'toggleStatus']);
     Route::delete('/delete', [App\Http\Controllers\StoreController::class, 'deleteStore']);
 });
+
+// Route pour récupérer les sous-catégories d'une catégorie
+Route::get('/categories/{categoryId}/subcategories', [App\Http\Controllers\Admin\CategoryController::class, 'getSubcategories']);
 

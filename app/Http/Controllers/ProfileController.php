@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Product;
 use App\Models\Favorite;
@@ -20,8 +21,8 @@ class ProfileController extends Controller
      */
     public function index(Request $request)
     {
-        // L'utilisateur est maintenant authentifié via le middleware
-        $user = $request->user();
+        // L'utilisateur est authentifié via le middleware auth:web
+        $user = auth()->user();
         
         if (!$user) {
             return redirect()->route('login')->with('error', 'Utilisateur non authentifié.');
@@ -41,11 +42,11 @@ class ProfileController extends Controller
     }
 
     /**
-     * Mettre à jour les informations du profil
+     * Mettre à jour les informations du profil (WEB - Sessions)
      */
     public function update(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
         
         if (!$user) {
             return response()->json([
@@ -102,11 +103,11 @@ class ProfileController extends Controller
     }
 
     /**
-     * Changer le mot de passe
+     * Changer le mot de passe (WEB - Sessions)
      */
     public function changePassword(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
         
         if (!$user) {
             return response()->json([
@@ -155,11 +156,11 @@ class ProfileController extends Controller
     }
 
     /**
-     * Mettre à jour la photo de profil
+     * Mettre à jour la photo de profil (WEB - Sessions)
      */
     public function updatePhoto(Request $request)
     {
-        $user = $this->getCurrentUser();
+        $user = auth()->user();
         
         if (!$user) {
             return response()->json([
@@ -252,11 +253,11 @@ class ProfileController extends Controller
     }
 
     /**
-     * Obtenir l'activité récente de l'utilisateur
+     * Obtenir l'activité récente de l'utilisateur (WEB - Sessions)
      */
     public function getRecentActivity(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
         
         if (!$user) {
             return response()->json([
@@ -382,7 +383,245 @@ class ProfileController extends Controller
     }
 
     /**
-     * Vérifier le statut de vendeur de l'utilisateur
+     * Mettre à jour le profil (API - Tokens)
+     */
+    public function updateApi(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'prenoms' => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'telephone' => 'required|string|max:20',
+            'adresse' => 'nullable|string|max:500',
+            'code_postal' => 'nullable|string|max:10',
+            'ville' => 'nullable|string|max:100',
+            'pays' => 'nullable|string|max:2',
+            'bio' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'prenoms' => $request->prenoms,
+                'nom' => $request->nom,
+                'email' => $request->email,
+                'telephone' => $request->telephone,
+                'adresse' => $request->adresse,
+                'code_postal' => $request->code_postal,
+                'ville' => $request->ville,
+                'pays' => $request->pays,
+                'bio' => $request->bio,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profil mis à jour avec succès',
+                'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'adresse', 'code_postal', 'ville', 'pays', 'bio'])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du profil'
+            ], 500);
+        }
+    }
+
+    /**
+     * Changer le mot de passe (API - Tokens)
+     */
+    public function changePasswordApi(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mot de passe actuel incorrect'
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'password' => Hash::make($request->new_password)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mot de passe mis à jour avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du mot de passe'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mettre à jour la photo (API - Tokens)
+     */
+    public function updatePhotoApi(Request $request)
+    {
+        // Support à la fois session et token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        if ($request->hasFile('photo')) {
+            try {
+                $file = $request->file('photo');
+                
+                // Créer un nom de fichier unique
+                $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                
+                // Créer le dossier s'il n'existe pas
+                $uploadPath = public_path('images/profiles');
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0777, true);
+                }
+                
+                // Supprimer l'ancienne photo si elle existe
+                if ($user->profile_pic_url && file_exists(public_path($user->profile_pic_url))) {
+                    unlink(public_path($user->profile_pic_url));
+                }
+                
+                // Déplacer le fichier
+                $file->move($uploadPath, $filename);
+                
+                // Mettre à jour l'URL de la photo dans la base de données
+                $photoUrl = 'images/profiles/' . $filename;
+                $user->update([
+                    'profile_pic_url' => $photoUrl
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Photo de profil mise à jour avec succès',
+                    'photo_url' => asset($photoUrl),
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'profile_pic_url'])
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de l\'upload de la photo: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Aucune photo fournie'
+        ], 422);
+    }
+
+    /**
+     * Activité récente (API - Tokens)
+     */
+    public function getRecentActivityApi(Request $request)
+    {
+        // Support à la fois session et token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        // Récupérer les activités récentes
+        $recentOrders = Order::where('user_id', $user->id)
+            ->latest()
+            ->take(5)
+            ->get();
+            
+        $recentFavorites = Favorite::where('user_id', $user->id)
+            ->with('product')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // Construire la liste des activités
+        $activities = [];
+        
+        // Ajouter les commandes récentes
+        foreach ($recentOrders as $order) {
+            $activities[] = [
+                'type' => 'order',
+                'title' => 'Nouvelle commande',
+                'description' => "Commande #{$order->order_number} pour " . number_format($order->total, 0, ',', ' ') . " FCFA",
+                'date' => $order->created_at->diffForHumans(),
+                'icon' => 'bag'
+            ];
+        }
+        
+        // Ajouter les favoris récents
+        foreach ($recentFavorites as $favorite) {
+            $activities[] = [
+                'type' => 'favorite',
+                'title' => 'Produit ajouté aux favoris',
+                'description' => $favorite->product->name ?? 'Produit inconnu',
+                'date' => $favorite->created_at->diffForHumans(),
+                'icon' => 'heart'
+            ];
+        }
+        
+        // Trier par date (plus récent en premier)
+        usort($activities, function($a, $b) {
+            return $a['date'] <=> $b['date'];
+        });
+
+        return response()->json([
+            'success' => true,
+            'activities' => $activities
+        ]);
+    }
+
+    /**
+     * Vérifier le statut de vendeur de l'utilisateur (API - Tokens)
      */
     public function checkSellerStatus(Request $request)
     {

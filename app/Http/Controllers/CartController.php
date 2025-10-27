@@ -11,11 +11,32 @@ use Illuminate\Support\Facades\Auth;
 class CartController extends Controller
 {
     /**
-     * Obtenir l'ID utilisateur ou session
+     * Obtenir l'ID utilisateur ou session (WEB - Sessions)
      */
     private function getUserOrSession(Request $request)
     {
-        // Vérifier si l'utilisateur est authentifié
+        // Pour les pages web, utiliser l'authentification par session
+        if (auth()->check()) {
+            return ['user_id' => auth()->user()->id, 'session_id' => null];
+        }
+        
+        // Pour les invités, utiliser un ID de session depuis le header
+        $sessionId = $request->header('X-Session-ID');
+        
+        if (!$sessionId) {
+            // Générer un nouvel ID si non fourni
+            $sessionId = uniqid('guest_', true);
+        }
+        
+        return ['user_id' => null, 'session_id' => $sessionId];
+    }
+
+    /**
+     * Obtenir l'ID utilisateur ou session (API - Tokens)
+     */
+    private function getUserOrSessionApi(Request $request)
+    {
+        // Pour les API, utiliser l'authentification par token
         $token = $request->bearerToken();
         
         if ($token) {
@@ -46,7 +67,98 @@ class CartController extends Controller
         $cartItems = collect([]); // Collection vide par défaut
         $total = 0;
         
-        return view('cart', compact('cartItems', 'total'));
+        // Récupérer les paramètres de livraison depuis la base de données
+        $shippingCostSetting = \App\Models\Setting::where('key', 'shipping_cost')->first();
+        $freeThresholdSetting = \App\Models\Setting::where('key', 'free_shipping_threshold')->first();
+        $currencySymbolSetting = \App\Models\Setting::where('key', 'currency_symbol')->first();
+        $minOrderQuantitySetting = \App\Models\Setting::where('key', 'min_order_quantity')->first();
+        
+        $shippingSettings = [
+            'min_order_quantity' => $minOrderQuantitySetting ? (int) $minOrderQuantitySetting->value : 1,
+            'currency_symbol' => $currencySymbolSetting ? $currencySymbolSetting->value : 'FCFA',
+            'shipping_cost' => $shippingCostSetting ? (float) $shippingCostSetting->value : 0,
+            'free_shipping_threshold' => $freeThresholdSetting ? (float) $freeThresholdSetting->value : 0
+        ];
+        
+        // Debug: Log des paramètres récupérés
+        \Log::info('Paramètres de livraison récupérés:', $shippingSettings);
+        \Log::info('Vérification des clés:', array_keys($shippingSettings));
+        \Log::info('shipping_cost existe:', ['exists' => isset($shippingSettings['shipping_cost']) ? 'OUI' : 'NON']);
+        
+        // Vérifications supplémentaires
+        \Log::info('$shippingSettings existe:', ['exists' => isset($shippingSettings) ? 'OUI' : 'NON']);
+        \Log::info('$shippingSettings est un array:', ['is_array' => is_array($shippingSettings) ? 'OUI' : 'NON']);
+        \Log::info('Type de $shippingSettings:', ['type' => gettype($shippingSettings)]);
+        \Log::info('Contenu de $shippingSettings:', ['content' => $shippingSettings]);
+        
+        return view('cart', compact('cartItems', 'total', 'shippingSettings'));
+    }
+
+    /**
+     * Ajouter un produit au panier (API - Tokens)
+     */
+    public function addApi(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'integer|min:1|max:100',
+            'attributes' => 'array'
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+        $quantity = $request->quantity ?? 1;
+        // Enforce min order quantity from settings
+        $minQty = \App\Models\Setting::get('min_order_quantity', 1);
+        if ($quantity < (int)$minQty) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quantité minimale de commande: ' . (int)$minQty,
+            ], 422);
+        }
+        $identifier = $this->getUserOrSessionApi($request);
+
+        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
+        $attributes = $request->attributes ?? [];
+        $existingItem = CartItem::where('product_id', $product->id)
+            ->where('user_id', $identifier['user_id'])
+            ->where('session_id', $identifier['session_id'])
+            ->where('attributes', json_encode($attributes))
+            ->first();
+
+        if ($existingItem) {
+            $existingItem->increment('quantity', $quantity);
+        } else {
+            CartItem::create([
+                'product_id' => $product->id,
+                'user_id' => $identifier['user_id'],
+                'session_id' => $identifier['session_id'],
+                'quantity' => $quantity,
+                'attributes' => $attributes,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Produit ajouté au panier',
+            'cart_count' => CartItem::getCartCount($identifier['user_id'], $identifier['session_id'])
+        ]);
+    }
+
+    /**
+     * Obtenir le contenu du panier (API - Tokens)
+     */
+    public function getCartApi(Request $request)
+    {
+        $identifier = $this->getUserOrSessionApi($request);
+        $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
+        $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
+
+        return response()->json([
+            'success' => true,
+            'cart_items' => $cartItems,
+            'total' => $total,
+            'count' => $cartItems->count()
+        ]);
     }
 
     /**
@@ -56,14 +168,24 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'integer|min:1|max:100'
+            'quantity' => 'integer|min:1|max:100',
+            'attributes' => 'array'
         ]);
 
         $product = Product::findOrFail($request->product_id);
         $quantity = $request->quantity ?? 1;
+        // Enforce min order quantity from settings
+        $minQty = \App\Models\Setting::get('min_order_quantity', 1);
+        if ($quantity < (int)$minQty) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quantité minimale de commande: ' . (int)$minQty,
+            ], 422);
+        }
         $identifier = $this->getUserOrSession($request);
 
-        // Vérifier si le produit est déjà dans le panier
+        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
+        $attributes = $request->attributes ?? [];
         $cartItem = CartItem::where('product_id', $product->id)
             ->where(function($query) use ($identifier) {
                 if ($identifier['user_id']) {
@@ -72,11 +194,15 @@ class CartController extends Controller
                     $query->where('session_id', $identifier['session_id']);
                 }
             })
+            ->where('attributes', json_encode($attributes))
             ->first();
 
         if ($cartItem) {
-            // Mettre à jour la quantité
+            // Mettre à jour la quantité (et respecter le min)
             $cartItem->quantity += $quantity;
+            if ($cartItem->quantity < (int)$minQty) {
+                $cartItem->quantity = (int)$minQty;
+            }
             $cartItem->save();
         } else {
             // Déterminer le prix à utiliser (prix promo si disponible)
@@ -89,8 +215,9 @@ class CartController extends Controller
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'product_id' => $product->id,
-                'quantity' => $quantity,
-                'price' => $priceToUse
+                'quantity' => max($quantity, (int)$minQty),
+                'price' => $priceToUse,
+                'attributes' => $attributes
             ]);
         }
 
@@ -106,15 +233,17 @@ class CartController extends Controller
     /**
      * Mettre à jour la quantité d'un article
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
         $request->validate([
+            'item_id' => 'required|integer|exists:cart_items,id',
             'quantity' => 'required|integer|min:1|max:100'
         ]);
 
         $identifier = $this->getUserOrSession($request);
+        $minQty = \App\Models\Setting::get('min_order_quantity', 1);
         
-        $cartItem = CartItem::where('id', $id)
+        $cartItem = CartItem::where('id', $request->item_id)
             ->where(function($query) use ($identifier) {
                 if ($identifier['user_id']) {
                     $query->where('user_id', $identifier['user_id']);
@@ -124,6 +253,12 @@ class CartController extends Controller
             })
             ->firstOrFail();
 
+        if ((int)$request->quantity < (int)$minQty) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quantité minimale de commande: ' . (int)$minQty,
+            ], 422);
+        }
         $cartItem->quantity = $request->quantity;
         $cartItem->save();
 
@@ -140,11 +275,15 @@ class CartController extends Controller
     /**
      * Supprimer un article du panier
      */
-    public function remove(Request $request, $id)
+    public function remove(Request $request)
     {
+        $request->validate([
+            'item_id' => 'required|integer|exists:cart_items,id'
+        ]);
+        
         $identifier = $this->getUserOrSession($request);
         
-        $cartItem = CartItem::where('id', $id)
+        $cartItem = CartItem::where('id', $request->item_id)
             ->where(function($query) use ($identifier) {
                 if ($identifier['user_id']) {
                     $query->where('user_id', $identifier['user_id']);
@@ -268,4 +407,5 @@ class CartController extends Controller
             'favorites' => $favorites
         ]);
     }
+
 }

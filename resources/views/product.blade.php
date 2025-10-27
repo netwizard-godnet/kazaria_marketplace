@@ -32,18 +32,9 @@
                                 <div class="col-12">
                                     @php
                                         $mainImageUrl = asset('images/produit.jpg');
-                                        if ($product->images && is_array($product->images) && count($product->images) > 0) {
-                                            $firstImg = $product->images[0];
-                                            if (filter_var($firstImg, FILTER_VALIDATE_URL)) {
-                                                $mainImageUrl = $firstImg;
-                                            } elseif (strpos($firstImg, 'products/') === 0) {
-                                                $mainImageUrl = asset('storage/' . $firstImg);
-                                            } elseif (str_starts_with($firstImg, 'images/')) {
-                                                $mainImageUrl = asset($firstImg);
-                                            } else {
-                                                $mainImageUrl = asset('images/' . $firstImg);
-                                            }
-                                        } elseif ($product->image) {
+                                        
+                                        // Priorité 1: Champ image principale
+                                        if ($product->image) {
                                             if (filter_var($product->image, FILTER_VALIDATE_URL)) {
                                                 $mainImageUrl = $product->image;
                                             } elseif (strpos($product->image, 'storage/') === 0) {
@@ -55,6 +46,18 @@
                                             } else {
                                                 $mainImageUrl = asset($product->image);
                                             }
+                                        // Priorité 2: Première image du tableau
+                                        } elseif ($product->images && is_array($product->images) && count($product->images) > 0) {
+                                            $firstImg = $product->images[0];
+                                            if (filter_var($firstImg, FILTER_VALIDATE_URL)) {
+                                                $mainImageUrl = $firstImg;
+                                            } elseif (strpos($firstImg, 'products/') === 0) {
+                                                $mainImageUrl = asset('storage/' . $firstImg);
+                                            } elseif (str_starts_with($firstImg, 'images/')) {
+                                                $mainImageUrl = asset($firstImg);
+                                            } else {
+                                                $mainImageUrl = asset('images/' . $firstImg);
+                                            }
                                         }
                                     @endphp
                                     <img src="{{ $mainImageUrl }}" 
@@ -64,8 +67,26 @@
                                          style="cursor: zoom-in;"
                                          onclick="openImageModal()">
                                 </div>
-                                @if($product->images && is_array($product->images) && count($product->images) > 0)
-                                    @foreach($product->images as $index => $image)
+                                @php
+                                    // Construire la liste complète des images (image principale + images additionnelles)
+                                    $allImages = [];
+                                    
+                                    // Ajouter l'image principale si elle existe
+                                    if ($product->image) {
+                                        $allImages[] = $product->image;
+                                    }
+                                    
+                                    // Ajouter les autres images (sans dupliquer l'image principale)
+                                    if ($product->images && is_array($product->images)) {
+                                        foreach ($product->images as $img) {
+                                            if ($img !== $product->image && $img) {
+                                                $allImages[] = $img;
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                @if(count($allImages) > 0)
+                                    @foreach($allImages as $index => $image)
                                     <div class="col-2">
                                         @php
                                             $thumbUrl = asset('images/produit.jpg');
@@ -158,6 +179,53 @@
                                     </p>
                                 </div>
                                 <hr>
+                                
+                                <!-- Attributs du produit -->
+                                @if($product->attributeValues->count() > 0)
+                                <div class="mb-4">
+                                    <h6 class="fw-bold mb-3">Options disponibles :</h6>
+                                    <form id="attributesForm">
+                                        @php
+                                            $groupedAttributes = $product->attributeValues->groupBy('attribute.name');
+                                        @endphp
+                                        @foreach($groupedAttributes as $attributeName => $values)
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ $attributeName }}:</label>
+                                            <div class="row">
+                                                @foreach($values as $value)
+                                                <div class="col-auto">
+                                                    <div class="form-check">
+                                                        @if($values->first()->attribute->type === 'radio')
+                                                        <input class="form-check-input attribute-radio" 
+                                                               type="radio" 
+                                                               name="attribute_{{ $value->attribute->id }}" 
+                                                               value="{{ $value->id }}" 
+                                                               id="attr_{{ $value->id }}"
+                                                               data-attribute="{{ $value->attribute->name }}"
+                                                               data-value="{{ $value->value }}"
+                                                               required>
+                                                        @else
+                                                        <input class="form-check-input attribute-checkbox" 
+                                                               type="checkbox" 
+                                                               name="attribute_{{ $value->attribute->id }}[]" 
+                                                               value="{{ $value->id }}" 
+                                                               id="attr_{{ $value->id }}"
+                                                               data-attribute="{{ $value->attribute->name }}"
+                                                               data-value="{{ $value->value }}">
+                                                        @endif
+                                                        <label class="form-check-label" for="attr_{{ $value->id }}">
+                                                            {{ $value->value }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </form>
+                                </div>
+                                @endif
+                                
                                 @if($product->stock > 0)
                                 <div class="mb-3">
                                     <span class="badge bg-success">En stock ({{ $product->stock }} disponibles)</span>
@@ -214,7 +282,38 @@
                                     // Ajouter au panier depuis la page produit
                                     function addToCartFromProduct() {
                                         const quantity = parseInt(document.getElementById('quantityInput')?.value || 1);
-                                        addToCart({{ $product->id }}, quantity);
+                                        
+                                        // Récupérer les attributs sélectionnés
+                                        const selectedAttributes = getSelectedAttributes();
+                                        
+                                        addToCart({{ $product->id }}, quantity, selectedAttributes);
+                                    }
+                                    
+                                    // Récupérer les attributs sélectionnés
+                                    function getSelectedAttributes() {
+                                        const attributes = {};
+                                        
+                                        // Récupérer les boutons radio sélectionnés
+                                        document.querySelectorAll('.attribute-radio:checked').forEach(radio => {
+                                            const attributeName = radio.dataset.attribute;
+                                            const value = radio.dataset.value;
+                                            if (!attributes[attributeName]) {
+                                                attributes[attributeName] = [];
+                                            }
+                                            attributes[attributeName].push(value);
+                                        });
+                                        
+                                        // Récupérer les cases à cocher sélectionnées
+                                        document.querySelectorAll('.attribute-checkbox:checked').forEach(checkbox => {
+                                            const attributeName = checkbox.dataset.attribute;
+                                            const value = checkbox.dataset.value;
+                                            if (!attributes[attributeName]) {
+                                                attributes[attributeName] = [];
+                                            }
+                                            attributes[attributeName].push(value);
+                                        });
+                                        
+                                        return attributes;
                                     }
                                     
                                     // Toggle favori sur la page produit
@@ -904,12 +1003,9 @@
         // Afficher le formulaire
         function showReviewForm() {
             const token = localStorage.getItem('auth_token');
-            if (!token) {
-                if (confirm('Vous devez être connecté pour laisser un avis. Se connecter maintenant ?')) {
-                    window.location.href = '/authentification';
-                }
-                return;
-            }
+            // Redirection directe vers le profil (l'authentification est gérée par le middleware)
+            window.location.href = '/profil#reviews';
+            return;
             
             document.getElementById('reviewFormContainer').style.display = 'block';
             document.getElementById('addReviewBtn').style.display = 'none';
@@ -973,7 +1069,8 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     },
                     body: JSON.stringify({
                         product_id: productId,
@@ -1052,7 +1149,8 @@
             
             const headers = {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             };
             
             if (token) {

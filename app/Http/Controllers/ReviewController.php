@@ -57,7 +57,7 @@ class ReviewController extends Controller
     }
 
     /**
-     * Ajouter un avis
+     * Ajouter un avis (API - Tokens)
      */
     public function store(Request $request)
     {
@@ -128,6 +128,45 @@ class ReviewController extends Controller
                 'success' => false,
                 'message' => 'Erreur lors de l\'ajout de l\'avis'
             ], 500);
+        }
+    }
+
+    /**
+     * Ajouter un avis (WEB - Sessions)
+     */
+    public function storeWeb(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Vous devez être connecté pour laisser un avis');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|exists:products,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'title' => 'nullable|string|max:255',
+            'comment' => 'required|string|min:10',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            $review = Review::create([
+                'user_id' => $user->id,
+                'product_id' => $request->product_id,
+                'rating' => $request->rating,
+                'title' => $request->title,
+                'comment' => $request->comment,
+                'is_approved' => true,
+            ]);
+
+            return back()->with('success', 'Avis ajouté avec succès');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erreur lors de l\'ajout de l\'avis');
         }
     }
 

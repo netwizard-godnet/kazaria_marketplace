@@ -7,6 +7,10 @@ use App\Models\OrderItem;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Store;
+use App\Services\StockService;
+use App\Services\OrderStatusService;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -16,25 +20,16 @@ use App\Mail\OrderConfirmationMail;
 class OrderController extends Controller
 {
     /**
-     * Vérifier l'authentification et rediriger si nécessaire
+     * Page de checkout (WEB - Sessions)
      */
     public function checkout(Request $request)
     {
-        // Vérifier si l'utilisateur est connecté
-        $token = $request->query('token') ?? $request->bearerToken();
+        // Vérifier si l'utilisateur est connecté via session
+        $user = auth()->user();
         
-        if (!$token) {
+        if (!$user) {
             return redirect()->route('login')->with('message', 'Veuillez vous connecter pour passer commande');
         }
-        
-        // Vérifier la validité du token
-        $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        
-        if (!$personalAccessToken) {
-            return redirect()->route('login')->with('message', 'Session expirée. Veuillez vous reconnecter');
-        }
-        
-        $user = $personalAccessToken->tokenable;
         
         // Récupérer les articles du panier
         $cartItems = CartItem::getCartItems($user->id, null);
@@ -49,7 +44,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Traiter la commande et afficher la page de livraison
+     * Traiter la commande et afficher la page de livraison (API - Tokens)
      */
     public function processCheckout(Request $request)
     {
@@ -79,31 +74,28 @@ class OrderController extends Controller
     }
 
     /**
-     * Afficher la page de détails de livraison
+     * Afficher la page de détails de livraison (WEB - Sessions)
      */
     public function shipping(Request $request)
     {
-        $token = $request->query('token') ?? $request->bearerToken();
+        $user = auth()->user();
         
-        if (!$token) {
+        if (!$user) {
             return redirect()->route('login');
         }
-        
-        $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        
-        if (!$personalAccessToken) {
-            return redirect()->route('login');
-        }
-        
-        $user = $personalAccessToken->tokenable;
         $cartItems = CartItem::getCartItems($user->id, null);
-        $total = CartItem::getCartTotal($user->id, null);
+        $subtotal = CartItem::getCartTotal($user->id, null);
+        // Calculs avec paramètres
+        $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 0);
+        $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 0);
+        $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
+        $total = $subtotal + $shippingCost;
         
-        return view('shipping', compact('user', 'cartItems', 'total'));
+        return view('shipping', compact('user', 'cartItems', 'subtotal', 'shippingCost', 'total'));
     }
 
     /**
-     * Créer la commande
+     * Créer la commande (API - Tokens)
      */
     public function createOrder(Request $request)
     {
@@ -151,10 +143,23 @@ class OrderController extends Controller
             
             // Calculer les montants
             $subtotal = CartItem::getCartTotal($user->id, null);
-            $shippingCost = 0; // Livraison gratuite
+            // Frais et seuil depuis paramètres
+            $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 0);
+            $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 0);
+            $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
             $tax = 0;
             $discount = 0;
             $total = $subtotal + $shippingCost + $tax - $discount;
+            
+            // Vérifier la disponibilité du stock
+            $stockErrors = StockService::checkStockAvailability($cartItems);
+            if (!empty($stockErrors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stock insuffisant',
+                    'errors' => $stockErrors
+                ], 400);
+            }
             
             // Créer la commande
             $order = Order::create([
@@ -172,8 +177,8 @@ class OrderController extends Controller
                 'tax' => $tax,
                 'discount' => $discount,
                 'total' => $total,
-                'status' => 'pending',
-                'payment_status' => 'pending',
+                'status' => OrderStatusService::STATUS_PENDING,
+                'payment_status' => OrderStatusService::PAYMENT_PENDING,
                 'payment_method' => $request->payment_method,
                 'customer_notes' => $request->customer_notes
             ]);
@@ -183,6 +188,7 @@ class OrderController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
+                    'store_id' => $cartItem->product->store_id,
                     'product_name' => $cartItem->product->name,
                     'product_image' => $cartItem->product->image,
                     'price' => $cartItem->price,
@@ -191,16 +197,14 @@ class OrderController extends Controller
                 ]);
             }
             
+            // Réserver le stock
+            StockService::reserveStock($order);
+            
             // Vider le panier
             CartItem::where('user_id', $user->id)->delete();
             
-            // Marquer comme payée si paiement à la livraison
-            if ($request->payment_method === 'cash_on_delivery') {
-                $order->update([
-                    'status' => 'paid',
-                    'payment_status' => 'pending'
-                ]);
-            }
+            // NE PAS marquer comme payée si paiement à la livraison
+            // Le statut de paiement reste "pending" jusqu'à la livraison effective
             
             // Générer le PDF de la facture
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', ['order' => $order]);
@@ -226,6 +230,13 @@ class OrderController extends Controller
             } catch (\Exception $e) {
                 \Log::error('Erreur envoi email commande: ' . $e->getMessage());
                 // On continue même si l'email échoue
+            }
+            
+            // Notifier les vendeurs des nouvelles commandes
+            try {
+                $this->notifySellers($order);
+            } catch (\Exception $e) {
+                \Log::error('Erreur notification vendeurs: ' . $e->getMessage());
             }
             
             DB::commit();
@@ -281,7 +292,8 @@ class OrderController extends Controller
      */
     public function myOrders(Request $request)
     {
-        $user = $request->user();
+        // Support à la fois pour session et token
+        $user = auth()->user() ?? $request->user();
         
         if (!$user) {
             return response()->json([
@@ -350,5 +362,28 @@ class OrderController extends Controller
         }
         
         return view('order-details', compact('order'));
+    }
+    
+    /**
+     * Notifier les vendeurs d'une nouvelle commande
+     */
+    private function notifySellers(Order $order)
+    {
+        $storeIds = $order->orderItems->pluck('store_id')->unique();
+        $stores = Store::whereIn('id', $storeIds)
+            ->where('status', 'active')
+            ->with('user')
+            ->get();
+
+        foreach ($stores as $store) {
+            if ($store->user && $store->user->email) {
+                try {
+                    $store->user->notify(new NewOrderNotification($order, $store));
+                    \Log::info("Notification envoyée au vendeur {$store->name} pour la commande {$order->order_number}");
+                } catch (\Exception $e) {
+                    \Log::error("Erreur envoi notification vendeur {$store->name}: " . $e->getMessage());
+                }
+            }
+        }
     }
 }

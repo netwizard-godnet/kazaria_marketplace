@@ -128,6 +128,12 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    // Articles de commande liés à ce produit
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function getAttributesByName($attributeName)
     {
         return $this->attributeValues()
@@ -209,5 +215,85 @@ class Product extends Model
         
         // Définir la nouvelle sous-catégorie principale
         $this->subcategories()->updateExistingPivot($subcategoryId, ['is_primary' => true]);
+    }
+
+    // Méthodes d'accès aux images
+    public function getImageUrlAttribute()
+    {
+        if ($this->image) {
+            // Vérifier si c'est un chemin storage (commence par "products/")
+            if (strpos($this->image, 'products/') === 0) {
+                return asset('storage/' . $this->image);
+            }
+            // Vérifier si c'est un chemin public (commence par "images/")
+            elseif (strpos($this->image, 'images/') === 0) {
+                return asset('storage/' . $this->image);
+            }
+            // URL complète ou autre format
+            else {
+                return filter_var($this->image, FILTER_VALIDATE_URL) ? $this->image : asset('storage/' . $this->image);
+            }
+        }
+        return null;
+    }
+
+    public function getImagesUrlsAttribute()
+    {
+        if ($this->images && is_array($this->images)) {
+            return array_map(function($image) {
+                // Vérifier si c'est un chemin storage (commence par "products/")
+                if (strpos($image, 'products/') === 0) {
+                    return asset('storage/' . $image);
+                }
+                // Vérifier si c'est un chemin public (commence par "images/")
+                elseif (strpos($image, 'images/') === 0) {
+                    return asset('storage/' . $image);
+                }
+                // URL complète ou autre format
+                else {
+                    return filter_var($image, FILTER_VALIDATE_URL) ? $image : asset('storage/' . $image);
+                }
+            }, $this->images);
+        }
+        return [];
+    }
+
+    public function getFirstImageUrlAttribute()
+    {
+        // Priorité 1: Tableau images (plus récent et plus complet)
+        if ($this->images && is_array($this->images) && count($this->images) > 0) {
+            $firstImage = $this->images[0];
+            
+            // Vérifier si c'est un chemin storage (commence par "products/")
+            if (strpos($firstImage, 'products/') === 0) {
+                return asset('storage/' . $firstImage);
+            }
+            // Vérifier si c'est un chemin public (commence par "images/")
+            elseif (strpos($firstImage, 'images/') === 0) {
+                return asset('storage/' . $firstImage);
+            }
+            // URL complète ou autre format
+            else {
+                return filter_var($firstImage, FILTER_VALIDATE_URL) ? $firstImage : asset('storage/' . $firstImage);
+            }
+        }
+        
+        // Priorité 2: Champ image (string) - fallback
+        if ($this->image) {
+            // Vérifier si c'est un chemin storage (commence par "products/")
+            if (strpos($this->image, 'products/') === 0) {
+                return asset('storage/' . $this->image);
+            }
+            // Vérifier si c'est un chemin public (commence par "images/")
+            elseif (strpos($this->image, 'images/') === 0) {
+                return asset('storage/' . $this->image);
+            }
+            // URL complète ou autre format
+            else {
+                return filter_var($this->image, FILTER_VALIDATE_URL) ? $this->image : asset('storage/' . $this->image);
+            }
+        }
+        
+        return null;
     }
 }

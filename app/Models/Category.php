@@ -66,4 +66,18 @@ class Category extends Model
     {
         return $query->orderBy('order');
     }
+
+    // Méthodes d'accès aux images
+    public function getImageUrlAttribute()
+    {
+        if ($this->image) {
+            return asset('storage/' . $this->image);
+        }
+        return null;
+    }
+
+    public function getIconClassAttribute()
+    {
+        return $this->icon ?: 'fas fa-folder';
+    }
 }

@@ -13,13 +13,48 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'client.auth' => \App\Http\Middleware\ClientAuth::class,
+            'web' => \Illuminate\Session\Middleware\StartSession::class,
+            'api' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'csrf' => \App\Http\Middleware\ValidateCsrfToken::class,
+            'client.auth' => \App\Http\Middleware\ClientAuthMiddleware::class,
             'seo' => \App\Http\Middleware\SeoMiddleware::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'hybrid.auth' => \App\Http\Middleware\HybridAuthMiddleware::class,
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'auth.redirect' => \App\Http\Middleware\RedirectIfNotAuthenticated::class,
+            'seller' => \App\Http\Middleware\RedirectIfNotSeller::class,
+            'admin.redirect' => \App\Http\Middleware\RedirectIfNotAdmin::class,
+            'force.session' => \App\Http\Middleware\ForceSessionSave::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
         
-        // Appliquer le middleware SEO globalement
+        // Remplacer le middleware CSRF par défaut par notre version personnalisée
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+            '/logout',
+            // Exclure toutes les routes API pour mobile
+            'api/*',
+        ]);
+        
+        // Appliquer les middlewares web globalement
         $middleware->web(append: [
             \App\Http\Middleware\SeoMiddleware::class,
+        ]);
+        
+        // NE PAS appliquer ForceSessionSave car il modifie la session
+        // et invalide le token CSRF
+        
+        // Ne pas appliquer auth globalement pour éviter les boucles
+        // L'authentification sera appliquée via les routes spécifiques
+        
+        // Ne pas appliquer auth globalement pour éviter les boucles
+        // L'authentification sera appliquée via les routes spécifiques
+        
+        // Configuration des middlewares d'authentification
+        // Ne pas appliquer auth globalement pour éviter les boucles
+        
+        $middleware->api(append: [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

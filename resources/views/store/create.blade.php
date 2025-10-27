@@ -191,7 +191,7 @@
 
                         <!-- Boutons -->
                         <div class="d-flex justify-content-between">
-                            <a href="{{ route('accueil') }}" class="btn btn-secondary">
+                            <a href="{{ route('accueil') }}" class="btn btn-secondary btn-sm">
                                 <i class="bi bi-arrow-left me-2"></i>Annuler
                             </a>
                             <button type="submit" class="btn orange-bg text-white px-5" id="submitBtn">

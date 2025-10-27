@@ -439,31 +439,12 @@
                 if (data.success) {
                             showMessage('codeAlert', 'Connexion réussie ! Redirection...', 'success');
                             
-                            // Stocker le token et les données utilisateur
-                            localStorage.setItem('auth_token', data.token);
-                            localStorage.setItem('user_data', JSON.stringify(data.user));
-                            
-                            // Notifier le gestionnaire d'authentification si disponible
-                            if (typeof authManager !== 'undefined') {
-                                authManager.login(data.token, data.user);
-                            }
-                            
-                            // Vérifier s'il y a une redirection après connexion
-                            const redirectAfter = localStorage.getItem('redirect_after_login');
+                            // Rediriger vers la page d'accueil avec session
                             setTimeout(() => {
-                                if (redirectAfter === 'checkout') {
-                                    localStorage.removeItem('redirect_after_login');
-                                    window.location.href = '/checkout?token=' + data.token;
-                                } else if (redirectAfter === 'favorites') {
-                                    localStorage.removeItem('redirect_after_login');
-                                    window.location.href = '/profil?token=' + data.token + '#favorites';
-                                } else if (redirectAfter === 'sell') {
-                                    localStorage.removeItem('redirect_after_login');
-                                    window.location.href = '/store/create?token=' + data.token;
-                                } else {
-                                    window.location.href = '{{ route("accueil") }}';
-                                }
-                            }, 2000);
+                                // Forcer un rechargement complet pour s'assurer que la session est chargée
+                                window.location.href = data.redirect || '{{ route("accueil") }}';
+                                window.location.reload();
+                            }, 1000);
                         } else {
                             showMessage('codeAlert', data.message, 'danger');
                         }

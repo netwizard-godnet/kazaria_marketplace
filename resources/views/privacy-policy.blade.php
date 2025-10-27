@@ -48,7 +48,7 @@
                             <i class="bi bi-info-circle orange-color me-2"></i>Introduction
                         </h4>
                         <p>
-                            Bienvenue sur <strong class="orange-color">KAZARIA</strong>. Nous respectons votre vie privée et nous nous engageons 
+                            Bienvenue sur <strong class="orange-color">{{ $settings['site_name'] ?? 'KAZARIA' }}</strong>. Nous respectons votre vie privée et nous nous engageons 
                             à protéger vos données personnelles. Cette politique de confidentialité vous informe sur la manière dont 
                             nous traitons vos données personnelles lorsque vous visitez notre site web et vous informe de vos droits 
                             en matière de confidentialité et de la manière dont la loi vous protège.
@@ -303,7 +303,7 @@
                         </div>
                         <div class="alert alert-success mt-4">
                             <i class="bi bi-info-circle me-2"></i>
-                            Pour exercer vos droits, contactez-nous à : <strong>privacy@kazaria.ci</strong>
+                            Pour exercer vos droits, contactez-nous à : <strong>{{ $settings['contact_email'] ?? 'privacy@kazaria.ci' }}</strong>
                         </div>
                     </section>
 
@@ -333,18 +333,17 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-geo-alt me-2"></i>Adresse</h6>
-                                        <p class="mb-0">KAZARIA Marketplace<br>Abidjan, Cocody<br>Côte d'Ivoire</p>
+                                        <p class="mb-0">{{ $settings['site_name'] ?? 'KAZARIA' }}<br>{{ $settings['contact_address'] ?? "Abidjan, Côte d'Ivoire" }}</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-envelope me-2"></i>Email</h6>
                                         <p class="mb-0">
-                                            Support : <a href="mailto:support@kazaria.ci">support@kazaria.ci</a><br>
-                                            Confidentialité : <a href="mailto:privacy@kazaria.ci">privacy@kazaria.ci</a>
+                                            <a href="mailto:{{ $settings['contact_email'] ?? 'support@kazaria.ci' }}">{{ $settings['contact_email'] ?? 'support@kazaria.ci' }}</a>
                                         </p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-telephone me-2"></i>Téléphone</h6>
-                                        <p class="mb-0">+225 XX XX XX XX XX</p>
+                                        <p class="mb-0">{{ $settings['contact_phone'] ?? '+225 00 00 00 00' }}</p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-clock me-2"></i>Horaires</h6>
@@ -362,7 +361,7 @@
                         <a href="{{ route('accueil') }}" class="btn btn-sm orange-bg text-white me-2">
                             <i class="bi bi-house me-2"></i>Retour à l'accueil
                         </a>
-                        <a href="mailto:privacy@kazaria.ci" class="btn btn-sm btn-outline-secondary">
+                        <a href="mailto:{{ $settings['contact_email'] ?? 'privacy@kazaria.ci' }}" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-envelope me-2"></i>Nous contacter
                         </a>
                     </section>

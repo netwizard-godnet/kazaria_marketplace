@@ -7,15 +7,55 @@
                 <div class="">
                     <div id="carouselExampleAutoplaying" class="carousel slide h-400px" data-bs-ride="carousel">
                         <div class="carousel-inner h-400px">
+                            @php
+                                use App\Models\CarouselSlide;
+                                $carouselSlides = CarouselSlide::where('is_active', true)
+                                    ->where(function($query) {
+                                        $query->whereNull('starts_at')
+                                              ->orWhere('starts_at', '<=', now());
+                                    })
+                                    ->where(function($query) {
+                                        $query->whereNull('ends_at')
+                                              ->orWhere('ends_at', '>=', now());
+                                    })
+                                    ->orderBy('sort_order')
+                                    ->get();
+                            @endphp
+                            
+                            @forelse($carouselSlides as $index => $slide)
+                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}" data-bs-interval="2000">
+                                @if($slide->link_url)
+                                <a href="{{ $slide->link_url }}" class="d-block">
+                                @endif
+                                    <img src="{{ $slide->image_url }}" class="d-block w-100 h-400px" alt="{{ $slide->title }}" style="object-fit: cover;">
+                                    @if($slide->title || $slide->description)
+                                    <div class="carousel-caption d-none d-md-block">
+                                        @if($slide->title)
+                                        <h3 class="text-white">{{ $slide->title }}</h3>
+                                        @endif
+                                        @if($slide->description)
+                                        <p class="text-white">{{ $slide->description }}</p>
+                                        @endif
+                                        @if($slide->button_text && $slide->link_url)
+                                        <a href="{{ $slide->link_url }}" class="btn btn-primary btn-lg mt-2">{{ $slide->button_text }}</a>
+                                        @endif
+                                    </div>
+                                    @endif
+                                @if($slide->link_url)
+                                </a>
+                                @endif
+                            </div>
+                            @empty
+                            <!-- Message si aucun slide -->
                             <div class="carousel-item active" data-bs-interval="2000">
-                                <img src="{{ asset('images/bg-1.jpg') }}" class="d-block w-100 h-400px" alt="...">
+                                <div class="d-flex align-items-center justify-content-center h-400px bg-light">
+                                    <div class="text-center">
+                                        <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                                        <h4 class="text-muted">Aucun slide configuré</h4>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="carousel-item" data-bs-interval="2000">
-                                <img src="{{ asset('images/bg-1.jpg') }}" class="d-block w-100 h-400px" alt="...">
-                            </div>
-                            <div class="carousel-item" data-bs-interval="2000">
-                                <img src="{{ asset('images/bg-1.jpg') }}" class="d-block w-100 h-400px" alt="...">
-                            </div>
+                            @endforelse
                         </div>
                         <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -31,10 +71,22 @@
             <div class="col-md-4">
                 <div class="row gy-2">
                     <div class="col-md-12">
-                        <div style="background: url('{{ asset('images/bg-2.jpg') }}'); background-size: cover; background-repeat: no-repeat;height: 200px;"></div>
+                        <!-- Première bannière accueil -->
+                        @php
+                            $banner1 = App\Models\Banner::getHomepageBanner1();
+                            $banner1Image = $banner1 ? $banner1->image_url : null;
+                        @endphp
+                        <div style="background: url('{{ $banner1Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
+                        <!-- Première bannière accueil end -->
                     </div>
                     <div class="col-md-12">
-                        <div style="background: url('{{ asset('images/bg-2.jpg') }}'); background-size: cover; background-repeat: no-repeat;height: 200px;"></div>
+                        <!-- Deuxième bannière accueil -->
+                        @php
+                            $banner2 = App\Models\Banner::getHomepageBanner2();
+                            $banner2Image = $banner2 ? $banner2->image_url : null;
+                        @endphp
+                        <div style="background: url('{{ $banner2Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
+                        <!-- Deuxième bannière accueil end -->
                     </div>
                 </div>
             </div>
@@ -58,7 +110,7 @@
                             <i class="fa-solid fa-shield-halved fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">90 Jours Garantie</p>
-                                <span class="fs-8 text-secondary">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
+                                <span class="fs-8 text-secondary">Garantie complète sur tous les produits électroniques achetés, réparation ou remboursement.</span>
                             </div>
                         </div>
                     </div>
@@ -67,7 +119,7 @@
                             <i class="fa-solid fa-credit-card fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Paiement sécurisé</p>
-                                <span class="fs-8 text-secondary">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
+                                <span class="fs-8 text-secondary">Transactions protégées par carte bancaire ou Mobile Money, vos données sont sécurisées.</span>
                             </div>
                         </div>
                     </div>
@@ -76,7 +128,7 @@
                             <i class="fa-solid fa-comment-dots fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Service Client 24/7</p>
-                                <span class="fs-8 text-secondary">Lorem ipsum dolor sit amet, consectetur adipisicing elit.</span>
+                                <span class="fs-8 text-secondary">Support disponible à tout moment via chat, email ou téléphone pour vous aider.</span>
                             </div>
                         </div>
                     </div>
@@ -89,7 +141,7 @@
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
                 <h5 class="mb-0 me-4">Deals du jour</h5>
-                <span class="orange-bg px-3 fs-7 text-white">Fin dans 00:00:00</span>
+                <span class="orange-bg px-3 fs-7 text-white" id="dealsCountdown">Fin dans <span id="countdownTime">00:00:00</span></span>
             </div>
             <div class="multi-carousel-track d-flex">
                 @foreach ($dealsProducts as $product)
@@ -108,13 +160,49 @@
         <section class="py-5">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Publicité 1 -->
+                    @php
+                        $publicite1 = App\Models\Banner::getPublicite1();
+                        $publicite1Image = $publicite1 ? $publicite1->image_url : null;
+                    @endphp
+                    @if($publicite1Image)
+                        <img src="{{ $publicite1Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 1">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Publicité 1 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Publicité 2 -->
+                    @php
+                        $publicite2 = App\Models\Banner::getPublicite2();
+                        $publicite2Image = $publicite2 ? $publicite2->image_url : null;
+                    @endphp
+                    @if($publicite2Image)
+                        <img src="{{ $publicite2Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 2">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Publicité 2 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Publicité 3 -->
+                    @php
+                        $publicite3 = App\Models\Banner::getPublicite3();
+                        $publicite3Image = $publicite3 ? $publicite3->image_url : null;
+                    @endphp
+                    @if($publicite3Image)
+                        <img src="{{ $publicite3Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 3">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Publicité 3 end -->
                 </div>
             </div>
         </section>
@@ -126,18 +214,17 @@
                 <h5 class="mb-0 me-4">Top Catégories du Mois</h5>
             </div>
             <div class="row g-3">
-                @foreach ($categories as $category)
-                <div class="col-6 col-sm-4 col-md-3">
-                    <a class="px-1 card text-decoration-none hover-shadow" href="{{ route('categorie', $category->slug) }}">
-                        <div class="position-relative text-center py-5">
-                            @if($category->icon)
-                            <i class="{{ $category->icon }} fa-5x orange-color mb-3"></i>
-                            @else
-                            <img src="{{ str_starts_with($category->image, 'http') ? $category->image : asset($category->image) }}" class="w-100 h-200px object-fit-contain" alt="{{ $category->name }}">
-                            @endif
+                @foreach ($categories as $item)
+                <div class="col-6 col-md-4 col-lg-3 col-xl">
+                    <a class="px-1 card text-decoration-none hover-shadow h-100" href="{{ $item['route'] ?? '#' }}">
+                        <div class="position-relative text-center py-2">
+                                    @if(isset($item['image']) && !empty($item['image']))
+                                    <img src="{{ str_starts_with($item['image'], 'http') ? $item['image'] : (str_starts_with($item['image'], 'images/') ? asset($item['image']) : Storage::url($item['image'])) }}" class="w-100" style="height: 80px; object-fit: contain;" alt="{{ $item['name'] }}">
+                                    @endif
                         </div>
                         <div class="py-3 border-top">
-                            <p class="fs-6 my-0 orange-color text-center fw-bold">{{ $category->name }}</p>
+                            <p class="fs-6 my-0 orange-color text-center fw-bold">{{ $item['name'] }}</p>
+                            <small class="text-muted text-center d-block">{{ $item['type'] === 'category' ? 'Catégorie' : 'Sous-catégorie' }}</small>
                         </div>
                     </a>
                 </div>
@@ -222,10 +309,34 @@
         <section class="py-5">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <img src="{{ asset('images/bg-1.jpg') }}" class="w-100 h-300px object-fit-cover" alt="">
+                    <!-- Publicité 4 -->
+                    @php
+                        $publicite4 = App\Models\Banner::getPublicite4();
+                        $publicite4Image = $publicite4 ? $publicite4->image_url : null;
+                    @endphp
+                    @if($publicite4Image)
+                        <img src="{{ $publicite4Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
+                    @else
+                        <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Publicité 4 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-300px object-fit-cover" alt="">
+                    <!-- Publicité 5 -->
+                    @php
+                        $publicite5 = App\Models\Banner::getPublicite5();
+                        $publicite5Image = $publicite5 ? $publicite5->image_url : null;
+                    @endphp
+                    @if($publicite5Image)
+                        <img src="{{ $publicite5Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
+                    @else
+                        <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Publicité 5 end -->
                 </div>
             </div>
         </section>
@@ -417,5 +528,50 @@
         </section>
         <!-- SECTION Politique de confidentialité END -->
     </main>
+
+    <script>
+        // Countdown pour les deals du jour
+        (function() {
+            const endTime = {{ $countdownEndTime }}; // Temps de fin en millisecondes
+            
+            function updateCountdown() {
+                const now = Date.now();
+                const remaining = endTime - now;
+                
+                if (remaining <= 0) {
+                    // Le countdown est terminé
+                    const countdownEl = document.getElementById('countdownTime');
+                    if (countdownEl) {
+                        countdownEl.textContent = '00:00:00';
+                    }
+                    return;
+                }
+                
+                // Calculer les heures, minutes et secondes restantes
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                
+                // Formater avec des zéros à gauche si nécessaire
+                const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                // Mettre à jour l'affichage
+                const countdownEl = document.getElementById('countdownTime');
+                if (countdownEl) {
+                    countdownEl.textContent = formatted;
+                }
+            }
+            
+            // Attendre que le DOM soit chargé
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', updateCountdown);
+            } else {
+                updateCountdown();
+            }
+            
+            // Mettre à jour le countdown toutes les secondes
+            setInterval(updateCountdown, 1000);
+        })();
+    </script>
 
 @endsection

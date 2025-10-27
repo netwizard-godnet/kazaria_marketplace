@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\StockService;
+use App\Services\OrderStatusService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -84,39 +86,67 @@ class Order extends Model
     }
 
     /**
-     * Obtenir le statut formaté
+     * Obtenir le statut de paiement formaté
      */
-    public function getStatusLabelAttribute()
+    public function getPaymentStatusLabelAttribute()
     {
-        $labels = [
-            'pending' => 'En attente',
-            'paid' => 'Payée',
-            'processing' => 'En préparation',
-            'shipped' => 'Expédiée',
-            'delivered' => 'Livrée',
-            'cancelled' => 'Annulée',
-            'refunded' => 'Remboursée'
-        ];
-        
-        return $labels[$this->status] ?? $this->status;
+        return OrderStatusService::getPaymentStatusLabel($this->payment_status);
     }
 
     /**
-     * Obtenir la classe CSS du badge de statut
+     * Changer le statut de la commande
      */
-    public function getStatusBadgeClassAttribute()
+    public function changeStatus(string $newStatus, string $reason = null)
     {
-        $classes = [
-            'pending' => 'bg-warning',
-            'paid' => 'bg-info',
-            'processing' => 'bg-primary',
-            'shipped' => 'bg-success',
-            'delivered' => 'bg-success',
-            'cancelled' => 'bg-danger',
-            'refunded' => 'bg-secondary'
-        ];
-        
-        return $classes[$this->status] ?? 'bg-secondary';
+        return OrderStatusService::changeOrderStatus($this, $newStatus, $reason);
+    }
+
+    /**
+     * Changer le statut de paiement
+     */
+    public function changePaymentStatus(string $newPaymentStatus, string $reason = null)
+    {
+        return OrderStatusService::changePaymentStatus($this, $newPaymentStatus, $reason);
+    }
+
+    /**
+     * Obtenir les statuts disponibles
+     */
+    public function getAvailableStatuses()
+    {
+        return OrderStatusService::getAvailableStatuses($this->status);
+    }
+
+    /**
+     * Obtenir les statuts de paiement disponibles
+     */
+    public function getAvailablePaymentStatuses()
+    {
+        return OrderStatusService::getAvailablePaymentStatuses($this->payment_status);
+    }
+
+    /**
+     * Obtenir le label du statut
+     */
+    public function getStatusLabelAttribute()
+    {
+        return OrderStatusService::getStatusLabel($this->status);
+    }
+
+    /**
+     * Obtenir la classe CSS du statut
+     */
+    public function getStatusClassAttribute()
+    {
+        return OrderStatusService::getStatusClass($this->status);
+    }
+
+    /**
+     * Obtenir la classe CSS du statut de paiement
+     */
+    public function getPaymentStatusClassAttribute()
+    {
+        return OrderStatusService::getPaymentStatusClass($this->payment_status);
     }
 
     /**

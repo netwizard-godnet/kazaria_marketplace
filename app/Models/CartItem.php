@@ -14,12 +14,14 @@ class CartItem extends Model
         'session_id',
         'product_id',
         'quantity',
-        'price'
+        'price',
+        'attributes'
     ];
 
     protected $casts = [
         'quantity' => 'integer',
-        'price' => 'decimal:2'
+        'price' => 'decimal:2',
+        'attributes' => 'array'
     ];
 
     /**

@@ -50,19 +50,19 @@
                         
                         <div class="d-flex justify-content-between mb-2">
                             <span>Sous-total:</span>
-                            <span id="subtotal">0 FCFA</span>
+                            <span id="subtotal">0 {{ $settings['currency_symbol'] ?? 'FCFA' }}</span>
                         </div>
                         
                         <div class="d-flex justify-content-between mb-2">
                             <span>Livraison:</span>
-                            <span class="text-success">Gratuite</span>
+                            <span id="shippingCost" class="text-success"></span>
                         </div>
                         
                         <hr>
                         
                         <div class="d-flex justify-content-between mb-3">
                             <span class="fw-bold">Total:</span>
-                            <span class="fw-bold fs-5 orange-color" id="total">0 FCFA</span>
+                            <span class="fw-bold fs-5 orange-color" id="total">0 {{ $settings['currency_symbol'] ?? 'FCFA' }}</span>
                         </div>
 
                         <button class="btn orange-bg text-white w-100 mb-2" id="checkoutBtn" style="display: none;" onclick="proceedToCheckout()">
@@ -123,7 +123,7 @@
                 const headers = getHeaders();
                 console.log('Headers générés:', headers);
                 
-                const response = await fetch('/api/cart/', { headers });
+                const response = await fetch('/cart/get', { headers });
                 console.log('Response status:', response.status);
                 
                 const data = await response.json();
@@ -182,13 +182,23 @@
                                     <p class="text-muted small mb-0">
                                         ${product.brand ? 'Marque: ' + product.brand : ''}
                                     </p>
+                                    ${item.attributes && Object.keys(item.attributes).length > 0 ? `
+                                        <div class="mt-2">
+                                            ${Object.entries(item.attributes).map(([attrName, values]) => `
+                                                <div class="mb-1">
+                                                    <small class="text-muted fw-bold">${attrName}:</small>
+                                                    <small class="text-primary"> ${Array.isArray(values) ? values.join(', ') : values}</small>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
                                 </div>
                                 <div class="col-md-2 text-center">
                                     ${product.old_price && product.old_price > product.price ? `
-                                        <p class="mb-0 text-decoration-line-through text-muted small">${new Intl.NumberFormat('fr-FR').format(product.old_price)} FCFA</p>
-                                        <p class="mb-0 fw-bold orange-color">${new Intl.NumberFormat('fr-FR').format(product.price)} FCFA</p>
+                                        <p class="mb-0 text-decoration-line-through text-muted small">${new Intl.NumberFormat('fr-FR').format(product.old_price)} ${settings.currencySymbol}</p>
+                                        <p class="mb-0 fw-bold orange-color">${new Intl.NumberFormat('fr-FR').format(product.price)} ${settings.currencySymbol}</p>
                                     ` : `
-                                        <p class="mb-0 fw-bold">${new Intl.NumberFormat('fr-FR').format(item.price)} FCFA</p>
+                                        <p class="mb-0 fw-bold">${new Intl.NumberFormat('fr-FR').format(item.price)} ${settings.currencySymbol}</p>
                                     `}
                                 </div>
                                 <div class="col-md-2 text-center">
@@ -207,7 +217,7 @@
                                 </div>
                                 <div class="col-md-2 text-end">
                                     <p class="mb-0 fw-bold item-total" id="item-total-${item.id}">
-                                        ${new Intl.NumberFormat('fr-FR').format(item.price * item.quantity)} FCFA
+                                        ${new Intl.NumberFormat('fr-FR').format(item.price * item.quantity)} ${settings.currencySymbol}
                                     </p>
                                     <button class="btn btn-sm btn-outline-danger mt-2" onclick="removeFromCart(${item.id})">
                                         <i class="bi bi-trash me-1"></i>Retirer
@@ -219,9 +229,8 @@
                         container.appendChild(itemDiv);
                     });
                     
-                    // Mettre à jour les totaux
-                    document.getElementById('subtotal').textContent = new Intl.NumberFormat('fr-FR').format(data.total) + ' FCFA';
-                    document.getElementById('total').textContent = new Intl.NumberFormat('fr-FR').format(data.total) + ' FCFA';
+                    // Mettre à jour les totaux avec calcul de livraison
+                    updateTotals(data.total);
                 } else {
                     // Panier vide
                     container.innerHTML = `
@@ -236,18 +245,9 @@
                     `;
                     
                     // Réinitialiser le résumé à 0
-                    const subtotal = document.getElementById('subtotal');
-                    const total = document.getElementById('total');
+                    updateTotals(0);
                     const cartItemsCount = document.getElementById('cartItemsCount');
                     const pluriel = document.getElementById('pluriel');
-                    
-                    if (subtotal) {
-                        subtotal.textContent = '0 FCFA';
-                    }
-                    
-                    if (total) {
-                        total.textContent = '0 FCFA';
-                    }
                     
                     if (cartItemsCount) {
                         cartItemsCount.textContent = '0';
@@ -272,6 +272,75 @@
             }
         }
 
+        // Configuration des paramètres ({{ now() }})
+        console.log('Debug $shippingSettings:', {
+            isset: {{ isset($shippingSettings) ? 'true' : 'false' }},
+            is_array: {{ isset($shippingSettings) && is_array($shippingSettings) ? 'true' : 'false' }},
+            content: @json($shippingSettings ?? 'UNDEFINED')
+        });
+        
+        @if(isset($shippingSettings) && is_array($shippingSettings))
+            console.log('ShippingSettings reçus:', @json($shippingSettings));
+            const settings = {
+                minOrderQuantity: {{ $shippingSettings['min_order_quantity'] ?? 1 }},
+                currencySymbol: '{{ $shippingSettings['currency_symbol'] ?? 'FCFA' }}',
+                shippingCost: {{ $shippingSettings['shipping_cost'] ?? 0 }},
+                freeShippingThreshold: {{ $shippingSettings['free_shipping_threshold'] ?? 0 }}
+            };
+        @else
+            console.error('ShippingSettings non définis ou invalides');
+            const settings = {
+                minOrderQuantity: 1,
+                currencySymbol: 'FCFA',
+                shippingCost: 0,
+                freeShippingThreshold: 0
+            };
+        @endif
+        
+        // Debug: Afficher les paramètres dans la console
+        console.log('Paramètres de livraison chargés:', settings);
+
+        // Fonction pour calculer la livraison
+        function calculateShipping(subtotal) {
+            console.log('Calcul de livraison:', {
+                subtotal: subtotal,
+                freeShippingThreshold: settings.freeShippingThreshold,
+                shippingCost: settings.shippingCost,
+                comparison: subtotal + ' >= ' + settings.freeShippingThreshold + ' = ' + (subtotal >= settings.freeShippingThreshold)
+            });
+            
+            if (subtotal >= settings.freeShippingThreshold) {
+                console.log('Livraison GRATUITE car subtotal >= seuil');
+                return { cost: 0, isFree: true };
+            } else {
+                console.log('Livraison PAYANTE:', settings.shippingCost);
+                return { cost: settings.shippingCost, isFree: false };
+            }
+        }
+
+        // Fonction pour mettre à jour les totaux avec livraison
+        function updateTotals(subtotal) {
+            console.log('updateTotals appelée avec subtotal:', subtotal);
+            const shipping = calculateShipping(subtotal);
+            const total = subtotal + shipping.cost;
+            
+            // Mettre à jour le sous-total
+            document.getElementById('subtotal').textContent = new Intl.NumberFormat('fr-FR').format(subtotal) + ' ' + settings.currencySymbol;
+            
+            // Mettre à jour la livraison
+            const shippingElement = document.getElementById('shippingCost');
+            if (shipping.isFree) {
+                shippingElement.textContent = 'Gratuite';
+                shippingElement.className = 'text-success';
+            } else {
+                shippingElement.textContent = new Intl.NumberFormat('fr-FR').format(shipping.cost) + ' ' + settings.currencySymbol;
+                shippingElement.className = 'text-muted';
+            }
+            
+            // Mettre à jour le total
+            document.getElementById('total').textContent = new Intl.NumberFormat('fr-FR').format(total) + ' ' + settings.currencySymbol;
+        }
+
         // Fonction pour mettre à jour la quantité
         async function updateQuantity(itemId, change) {
             console.log('updateQuantity appelée:', itemId, change);
@@ -282,10 +351,8 @@
             
             console.log('Quantité actuelle:', currentQuantity, 'Nouvelle:', newQuantity);
             
-            if (newQuantity < 1) {
-                if (confirm('Voulez-vous retirer ce produit du panier ?')) {
-                    removeFromCart(itemId);
-                }
+            if (newQuantity < settings.minOrderQuantity) {
+                showNotification('error', `Quantité minimale de commande : ${settings.minOrderQuantity}`);
                 return;
             }
             
@@ -298,10 +365,13 @@
                 const headers = getHeaders();
                 console.log('Headers pour update:', headers);
                 
-                const response = await fetch(`/api/cart/update/${itemId}`, {
+                const response = await fetch(`/cart/update`, {
                     method: 'PUT',
                     headers: headers,
-                    body: JSON.stringify({ quantity: newQuantity })
+                    body: JSON.stringify({ 
+                        item_id: itemId,
+                        quantity: newQuantity 
+                    })
                 });
 
                 console.log('Status response:', response.status);
@@ -313,20 +383,13 @@
                     quantityInput.value = newQuantity;
                     
                     const itemTotal = document.getElementById('item-total-' + itemId);
-                    const subtotal = document.getElementById('subtotal');
-                    const total = document.getElementById('total');
                     
                     if (itemTotal) {
-                        itemTotal.textContent = new Intl.NumberFormat('fr-FR').format(data.item_total) + ' FCFA';
+                        itemTotal.textContent = new Intl.NumberFormat('fr-FR').format(data.item_total) + ' ' + settings.currencySymbol;
                     }
                     
-                    if (subtotal) {
-                        subtotal.textContent = new Intl.NumberFormat('fr-FR').format(data.cart_total) + ' FCFA';
-                    }
-                    
-                    if (total) {
-                        total.textContent = new Intl.NumberFormat('fr-FR').format(data.cart_total) + ' FCFA';
-                    }
+                    // Mettre à jour les totaux avec calcul de livraison
+                    updateTotals(data.cart_total);
                     
                     showNotification('success', 'Quantité mise à jour');
                 } else {
@@ -346,9 +409,12 @@
                 const headers = getHeaders();
                 console.log('Headers pour remove:', headers);
                 
-                const response = await fetch(`/api/cart/remove/${itemId}`, {
+                const response = await fetch(`/cart/remove`, {
                     method: 'DELETE',
-                    headers: headers
+                    headers: headers,
+                    body: JSON.stringify({
+                        item_id: itemId
+                    })
                 });
 
                 console.log('Status response:', response.status);
@@ -364,8 +430,6 @@
                     
                     // Mettre à jour les totaux
                     const cartItemsCount = document.getElementById('cartItemsCount');
-                    const subtotal = document.getElementById('subtotal');
-                    const total = document.getElementById('total');
                     const pluriel = document.getElementById('pluriel');
                     
                     if (cartItemsCount) {
@@ -376,13 +440,8 @@
                         pluriel.textContent = data.cart_count > 1 ? 's' : '';
                     }
                     
-                    if (subtotal) {
-                        subtotal.textContent = new Intl.NumberFormat('fr-FR').format(data.cart_total) + ' FCFA';
-                    }
-                    
-                    if (total) {
-                        total.textContent = new Intl.NumberFormat('fr-FR').format(data.cart_total) + ' FCFA';
-                    }
+                    // Mettre à jour les totaux avec calcul de livraison
+                    updateTotals(data.cart_total);
                     
                     // Mettre à jour le compteur du header
                     updateCartCount(data.cart_count);
@@ -409,7 +468,7 @@
             }
             
             try {
-                const response = await fetch('/api/cart/clear', {
+                const response = await fetch('/cart/clear', {
                     method: 'DELETE',
                     headers: getHeaders()
                 });
@@ -428,21 +487,42 @@
             }
         }
         
-        // Les fonctions getHeaders, showToast et showNotification sont maintenant globales via cart.js
+        // S'assurer que getHeaders est disponible localement si cart.js n'est pas chargé
+        if (typeof window.getHeaders === 'undefined') {
+            window.getHeaders = function() {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                };
+                
+                const token = localStorage.getItem('auth_token');
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                } else {
+                    headers['X-Session-ID'] = getSessionId();
+                }
+                
+                return headers;
+            };
+            
+            function getSessionId() {
+                let sessionId = localStorage.getItem('guest_session_id');
+                if (!sessionId) {
+                    sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('guest_session_id', sessionId);
+                }
+                return sessionId;
+            }
+        }
         
         // Fonction pour procéder au checkout
         function proceedToCheckout() {
             const token = localStorage.getItem('auth_token');
             
-            if (!token) {
-                // Utilisateur non connecté, rediriger vers la page de connexion
-                if (confirm('Vous devez vous connecter pour passer commande. Se connecter maintenant ?')) {
-                    // Sauvegarder l'intention de checkout
-                    localStorage.setItem('redirect_after_login', 'checkout');
-                    window.location.href = '/authentification';
-                }
-                return;
-            }
+            // Redirection directe vers le checkout (l'authentification est gérée par le middleware)
+            window.location.href = '/checkout';
+            return;
             
             // Utilisateur connecté, aller au checkout
             window.location.href = '/checkout?token=' + token;

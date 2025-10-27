@@ -1,11 +1,145 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.app')
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/store.css') }}">
 <link rel="stylesheet" href="{{ asset('css/seller-dashboard.css') }}">
 
+<!-- Fonctions globales pour les boutons d'action -->
+<script>
+// Cette section charge en PREMIER pour que les fonctions soient disponibles globalement
+console.log('Chargement des fonctions globales du dashboard...');
+
+window.getStatusLabel = function(status) {
+    const labels = {
+        'pending': 'En cours de validation',
+        'processing': 'En cours de livraison',
+        'delivered': 'Livrée',
+        'cancelled': 'Annulée'
+    };
+    return labels[status] || status;
+};
+
+window.updateOrderStatus = async function(orderNumber, newStatus) {
+    console.log('updateOrderStatus appelé:', orderNumber, newStatus);
+    if (!confirm(`Êtes-vous sûr de vouloir marquer cette commande comme "${window.getStatusLabel(newStatus)}" ?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/store/api/orders/${orderNumber}/status`, {
+            method: 'PUT',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: newStatus
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', `Commande ${orderNumber} mise à jour avec succès !`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification('error', data.message || 'Erreur lors de la mise à jour');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('error', 'Erreur de connexion. Veuillez réessayer.');
+    }
+};
+
+window.cancelOrder = async function(orderNumber) {
+    if (!confirm(`Êtes-vous sûr de vouloir annuler la commande ${orderNumber} ? Cette action est irréversible.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/store/api/orders/${orderNumber}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', `Commande ${orderNumber} annulée avec succès !`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification('error', data.message || 'Erreur lors de l\'annulation');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('error', 'Erreur de connexion. Veuillez réessayer.');
+    }
+};
+
+window.updatePaymentStatus = async function(orderNumber, newPaymentStatus) {
+    console.log('updatePaymentStatus appelé:', orderNumber, newPaymentStatus);
+    const statusLabels = {
+        'pending': 'En attente',
+        'paid': 'Payé',
+        'failed': 'Échoué',
+        'refunded': 'Remboursé'
+    };
+    
+    const statusLabel = statusLabels[newPaymentStatus] || newPaymentStatus;
+    
+    if (!confirm(`Êtes-vous sûr de vouloir marquer le paiement de cette commande comme "${statusLabel}" ?`)) {
+        return;
+    }
+    
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        
+        const response = await fetch(`/store/api/orders/${orderNumber}/payment-status`, {
+            method: 'PUT',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                payment_status: newPaymentStatus
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', `Statut de paiement de la commande ${orderNumber} mis à jour avec succès !`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification('error', data.message || 'Erreur lors de la mise à jour du statut de paiement');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('error', 'Erreur de connexion. Veuillez réessayer.');
+    }
+};
+
+console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.includes('update') || k.includes('cancel') || k.includes('Status')));
+</script>
+
 <!-- Container pour les notifications toast du dashboard -->
-<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+<div class="toast-container position-fixed top-0 end-0 p-3 z-index-9x">
     <div id="dashboardNotificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
             <i id="dashboardToastIcon" class="bi me-2"></i>
@@ -53,6 +187,7 @@
     background-color: rgba(13, 202, 240, 0.1) !important;
     border-left: 4px solid #0dcaf0;
 }
+
 </style>
 
 <div class="container-fluid my-4 store-dashboard">
@@ -244,13 +379,117 @@
                             <a href="#" onclick="showTab('orders')" class="btn btn-sm btn-outline-primary">Voir tout</a>
                         </div>
                         <div class="card-body">
-                            <div id="recentOrdersContainer">
-                                <div class="text-center py-4">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Chargement...</span>
+                            @if($orders->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Commande</th>
+                                                <th>Client</th>
+                                                <th>Total</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($orders->take(5) as $order)
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold">{{ $order->order_number }}</div>
+                                                        <small class="text-muted">{{ $order->created_at->format('d/m/Y H:i') }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                                {{ substr($order->user->nom ?? 'A', 0, 1) }}
                                     </div>
+                                                            <div>
+                                                                <div class="fw-bold">{{ $order->user->nom ?? 'Client' }}</div>
+                                                                <small class="text-muted">{{ $order->user->email ?? '' }}</small>
                                 </div>
                             </div>
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ number_format($order->total, 0, ',', ' ') }} FCFA</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-@orderStatusColor($order->status)">
+                                                            @orderStatus($order->status)
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="badge bg-@paymentStatusColor($order->payment_status) me-2">
+                                                                @paymentStatus($order->payment_status)
+                                                            </span>
+                                                            @if($order->payment_status == 'pending')
+                                                                <button class="btn btn-outline-success btn-sm" 
+                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'paid')"
+                                                                        title="Marquer comme payé">
+                                                                    <i class="bi bi-check-circle me-1"></i>Payé
+                                                                </button>
+                                                            @elseif($order->payment_status == 'paid')
+                                                                <button class="btn btn-outline-warning btn-sm" 
+                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        title="Remettre en attente">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>En attente
+                                                                </button>
+                                                            @endif
+                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <a href="{{ route('store.order-details', $order->order_number) }}" 
+                                                               class="btn btn-outline-primary btn-sm" 
+                                                               title="Voir les détails">
+                                                                <i class="bi bi-eye me-1"></i>Détails
+                                                            </a>
+                                                            @if($order->status == 'pending')
+                                                                <button class="btn btn-outline-info btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        title="Traiter la commande">
+                                                                    <i class="bi bi-play-circle me-1"></i>Traiter
+                                                                </button>
+                                                            @elseif($order->status == 'processing')
+                                                                <button class="btn btn-outline-success btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'delivered')"
+                                                                        title="Marquer comme livrée">
+                                                                    <i class="bi bi-check-circle me-1"></i>Livrée
+                                                                </button>
+                                                            @elseif($order->status == 'delivered')
+                                                                <button class="btn btn-outline-warning btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        title="Remettre en cours de traitement">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
+                                                                </button>
+                                                            @elseif($order->status == 'cancelled')
+                                                                <button class="btn btn-outline-info btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        title="Remettre en cours de traitement">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
+                                                                </button>
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                                @if($orders->count() > 5)
+                                    <div class="text-center mt-3">
+                                        <a href="#" onclick="showTab('orders')" class="btn btn-outline-primary">
+                                            Voir toutes les commandes ({{ $orders->count() }})
+                                        </a>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="text-center py-4">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted mt-3">Aucune commande récente</h5>
+                                    <p class="text-muted">Les nouvelles commandes apparaîtront ici.</p>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -269,13 +508,226 @@
                     <!-- Liste des produits -->
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <div id="productsContainer">
-                                <div class="text-center py-5">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Chargement...</span>
-                                    </div>
-                                    <p class="mt-2">Chargement des produits...</p>
+                            @if($products->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Produit</th>
+                                                <th>Prix</th>
+                                                <th>Stock</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($products as $product)
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            @php
+                                                                // Utiliser l'image principale ou la première image du tableau
+                                                                $productImage = $product->image;
+                                                                if (!$productImage && $product->images && is_array($product->images) && count($product->images) > 0) {
+                                                                    $productImage = $product->images[0];
+                                                                }
+                                                            @endphp
+                                                            
+                                                            @if($productImage)
+                                                                <img src="{{ asset('storage/' . $productImage) }}" 
+                                                                     alt="{{ $product->name }}" 
+                                                                     class="me-3" 
+                                                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;"
+                                                                     onerror="this.src='{{ asset('images/produit.jpg') }}'">
+                                                            @else
+                                                                <div class="bg-light rounded d-flex align-items-center justify-content-center me-3" 
+                                                                     style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                                    <i class="bi bi-phone text-white" style="font-size: 1.2rem;"></i>
+                                                                </div>
+                                                            @endif
+                                                            <div>
+                                                                <div class="fw-bold">{{ $product->name }}</div>
+                                                                <small class="text-muted">{{ $product->category->name ?? 'N/A' }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ number_format($product->price, 0, ',', ' ') }} FCFA</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $product->stock > 0 ? 'success' : 'danger' }}">
+                                                            {{ $product->stock }} en stock
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $product->is_active ? 'success' : 'warning' }}">
+                                                            {{ $product->is_active ? 'Actif' : 'Inactif' }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                onclick="editProduct({{ $product->id }})"
+                                                title="Modifier le produit">
+                                            <i class="bi bi-pencil me-1"></i>Modifier
+                                        </button>
+                                                            <button class="btn btn-outline-danger btn-sm" 
+                                                                    onclick="window.deleteProduct({{ $product->id }})"
+                                                                    title="Supprimer le produit">
+                                                                <i class="bi bi-trash me-1"></i>Supprimer
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
+                            @else
+                                <div class="text-center py-5">
+                                    <i class="bi bi-box text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted mt-3">Aucun produit trouvé</h5>
+                                    <p class="text-muted">Commencez par ajouter votre premier produit.</p>
+                                    <button class="btn orange-bg text-white" onclick="showAddProductModal()">
+                                        <i class="bi bi-plus-circle me-2"></i>Ajouter un produit
+                                    </button>
+                                    </div>
+                            @endif
+                                </div>
+                            </div>
+                        </div>
+
+                <!-- Modal de modification de produit (STATIQUE) -->
+                <div class="modal fade z-index-9x" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true" style="z-index: 999999999 !important;">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editProductModalLabel">
+                                    <i class="bi bi-pencil me-2"></i>Modifier le produit
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editProductForm" method="POST" action="" enctype="multipart/form-data">
+                                    @csrf
+                                    <input type="hidden" name="product_id" id="edit_product_id">
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label">Nom du produit <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="name" id="edit_name" required>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Catégorie <span class="text-danger">*</span></label>
+                                            <select class="form-select" name="category_id" id="edit_category_id" required>
+                                                <option value="">Sélectionnez une catégorie</option>
+                                                @foreach($categories ?? [] as $category)
+                                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Sous-catégorie (optionnel)</label>
+                                            <select class="form-select" name="subcategory_id" id="edit_subcategory_id">
+                                                <option value="">Sélectionnez une sous-catégorie</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label">Description <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" name="description" id="edit_description" rows="4" required></textarea>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" name="price" id="edit_price" step="0.01" required>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Stock <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" name="stock" id="edit_stock" required>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Marque</label>
+                                            <input type="text" class="form-control" name="brand" id="edit_brand">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Modèle</label>
+                                            <input type="text" class="form-control" name="model" id="edit_model">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Garantie</label>
+                                            <input type="text" class="form-control" name="warranty" id="edit_warranty">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Prix promo (FCFA)</label>
+                                            <input type="number" class="form-control" name="promo_price" id="edit_promo_price" step="0.01">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Réduction (%)</label>
+                                            <input type="number" class="form-control" name="discount" id="edit_discount" min="0" max="100">
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <label class="form-label">Statut</label>
+                                            <select class="form-select" name="status" id="edit_status">
+                                                <option value="active">Actif</option>
+                                                <option value="inactive">Inactif</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label">Tags (séparés par virgule)</label>
+                                            <input type="text" class="form-control" name="tags" id="edit_tags" placeholder="Ex: nouveau, promo, tendance">
+                                            <small class="text-muted">Séparez les tags par des virgules</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Séparation pour les images -->
+                                    <hr class="my-4">
+                                    <h6 class="mb-3 text-primary">
+                                        <i class="bi bi-images me-2"></i>Modification des images
+                                    </h6>
+                                    
+                                    <div class="row g-3">
+                                        <!-- Images existantes -->
+                                        <div class="col-12">
+                                            <label class="form-label">Images actuelles</label>
+                                            <div id="current_images_container" class="d-flex flex-wrap gap-2 mb-3">
+                                                <!-- Les images seront injectées ici par JavaScript -->
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <hr class="my-3">
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label">Nouvelle image principale</label>
+                                            <input type="file" class="form-control" name="image" accept="image/*">
+                                            <small class="text-muted">Formats acceptés: JPG, PNG, GIF. Taille max: 5MB</small>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label">Nouvelles images supplémentaires</label>
+                                            <input type="file" class="form-control" name="images[]" accept="image/*" multiple>
+                                            <small class="text-muted">Maximum 5 images supplémentaires</small>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="button" class="btn orange-bg text-white" onclick="submitEditForm()">
+                                    <i class="bi bi-check-lg me-1"></i>Mettre à jour
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -336,7 +788,7 @@
                                 </div>
                                 <div class="col-md-1">
                                     <label class="form-label small">&nbsp;</label>
-                                    <button class="btn btn-primary w-100" onclick="loadOrders()" title="Filtrer">
+                                    <button class="btn orange-bg text-white w-100" onclick="loadOrders()" title="Filtrer">
                                         <i class="bi bi-search"></i>
                                     </button>
                                 </div>
@@ -346,38 +798,48 @@
                             <div class="row g-3 mt-3" id="orderStatsContainer">
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-light rounded">
-                                        <div class="fw-bold text-primary" id="statTotalOrders">-</div>
+                                        <div class="fw-bold text-primary" id="statTotalOrders">{{ $orderStats['total_orders'] }}</div>
                                         <small class="text-muted">Total</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
-                                        <div class="fw-bold text-warning" id="statPendingOrders">-</div>
+                                        <div class="fw-bold text-warning" id="statPendingOrders">{{ $orderStats['pending_orders'] }}</div>
                                         <small class="text-muted">En attente</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-info bg-opacity-10 rounded">
-                                        <div class="fw-bold text-info" id="statProcessingOrders">-</div>
-                                        <small class="text-muted">En préparation</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
-                                        <div class="fw-bold text-primary" id="statShippedOrders">-</div>
-                                        <small class="text-muted">Expédiées</small>
+                                        <div class="fw-bold text-info" id="statProcessingOrders">{{ $orderStats['processing_orders'] }}</div>
+                                        <small class="text-muted">En cours de livraison</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-success bg-opacity-10 rounded">
-                                        <div class="fw-bold text-success" id="statDeliveredOrders">-</div>
+                                        <div class="fw-bold text-success" id="statDeliveredOrders">{{ $orderStats['delivered_orders'] }}</div>
                                         <small class="text-muted">Livrées</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
-                                        <div class="fw-bold text-danger" id="statCancelledOrders">-</div>
+                                        <div class="fw-bold text-danger" id="statCancelledOrders">{{ $orderStats['cancelled_orders'] }}</div>
                                         <small class="text-muted">Annulées</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Statuts de paiement -->
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
+                                        <div class="fw-bold text-warning" id="statPendingPayment">{{ $orderStats['pending_payment'] }}</div>
+                                        <small class="text-muted">Paiement en attente</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                        <div class="fw-bold text-success" id="statPaidOrders">{{ $orderStats['paid_orders'] }}</div>
+                                        <small class="text-muted">Payées</small>
                                     </div>
                                 </div>
                             </div>
@@ -387,14 +849,157 @@
                     <!-- Liste des commandes -->
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <div id="ordersContainer">
-                                <div class="text-center py-5">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Chargement...</span>
+                            @if($orders->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>N° Commande</th>
+                                                <th>Date</th>
+                                                <th>Client</th>
+                                                <th>Produits</th>
+                                                <th>Total</th>
+                                                <th>Statut</th>
+                                                <th>Paiement</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($orders as $order)
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ $order->order_number }}</strong>
+                                                    </td>
+                                                    <td>
+                                                        <small>{{ $order->created_at->format('d/m/Y H:i') }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <div>
+                                                            <strong>{{ $order->user->nom }} {{ $order->user->prenoms }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">{{ $order->user->email }}</small>
                                     </div>
-                                    <p class="mt-2">Chargement des commandes...</p>
+                                                    </td>
+                                                    <td>
+                                                        @foreach($order->items as $item)
+                                                            @if($item->product && $item->product->store_id == $store->id)
+                                                                <div class="d-flex align-items-center mb-1">
+                                                                    @if($item->product->image)
+                                                                        <img src="{{ Storage::url($item->product->image) }}" 
+                                                                             alt="{{ $item->product->nom }}" 
+                                                                             class="me-2" 
+                                                                             style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                                                                    @endif
+                                                                    <div>
+                                                                        <small class="fw-bold">{{ $item->product->nom }}</small>
+                                                                        <br>
+                                                                        <small class="text-muted">Qté: {{ $item->quantity }}</small>
                                 </div>
                             </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </td>
+                                                    <td>
+                                                        <strong>{{ number_format($order->total, 0, ',', ' ') }} FCFA</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-@orderStatusColor($order->status)">
+                                                            @orderStatus($order->status)
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="badge bg-@paymentStatusColor($order->payment_status) me-2">
+                                                                @paymentStatus($order->payment_status)
+                                                            </span>
+                                                            @if($order->payment_status == 'pending')
+                                                                <button class="btn btn-outline-success btn-sm" 
+                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'paid')"
+                                                                        title="Marquer comme payé">
+                                                                    <i class="bi bi-check-circle me-1"></i>Payé
+                                                                </button>
+                                                            @elseif($order->payment_status == 'paid')
+                                                                <button class="btn btn-outline-warning btn-sm" 
+                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        title="Remettre en attente">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>En attente
+                                                                </button>
+                                                            @elseif($order->payment_status == 'failed')
+                                                                <button class="btn btn-outline-warning btn-sm" 
+                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        title="Remettre en attente">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>En attente
+                                                                </button>
+                                                            @elseif($order->payment_status == 'refunded')
+                                                                <button class="btn btn-outline-info btn-sm" 
+                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        title="Remettre en attente">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>En attente
+                                                                </button>
+                                                            @endif
+                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group btn-group-sm" role="group">
+                                                            <!-- Bouton Voir détails -->
+                                                            <a href="{{ route('store.order-details', $order->order_number) }}" 
+                                                               class="btn btn-outline-primary btn-sm" 
+                                                               title="Voir les détails de la commande">
+                                                                <i class="bi bi-eye me-1"></i>Détails
+                                                            </a>
+                                                            
+                                                            @if($order->status == 'pending')
+                                                                <!-- Bouton Traiter la commande -->
+                                                                <button class="btn btn-outline-info btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        title="Marquer comme en cours de traitement">
+                                                                    <i class="bi bi-play-circle me-1"></i>Traiter
+                                                                </button>
+                                                            @elseif($order->status == 'processing')
+                                                                <!-- Bouton Marquer comme livrée -->
+                                                                <button class="btn btn-outline-success btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'delivered')"
+                                                                        title="Marquer comme livrée">
+                                                                    <i class="bi bi-check-circle me-1"></i>Livrée
+                                                                </button>
+                                                            @elseif($order->status == 'delivered')
+                                                                <!-- Bouton pour remettre en cours -->
+                                                                <button class="btn btn-outline-warning btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        title="Remettre en cours de traitement">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
+                                                                </button>
+                                                            @elseif($order->status == 'cancelled')
+                                                                <!-- Bouton pour remettre en cours -->
+                                                                <button class="btn btn-outline-info btn-sm" 
+                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        title="Remettre en cours de traitement">
+                                                                    <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
+                                                                </button>
+                                                            @endif
+                                                            
+                                                            @if($order->status != 'cancelled')
+                                                                <!-- Bouton Annuler -->
+                                                                <button class="btn btn-outline-danger btn-sm" 
+                                                                        onclick="cancelOrder('{{ $order->order_number }}')"
+                                                                        title="Annuler la commande">
+                                                                    <i class="bi bi-x-circle me-1"></i>Annuler
+                                                                </button>
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-center py-5">
+                                    <i class="bi bi-bag display-1 text-muted"></i>
+                                    <h5 class="mt-3 text-muted">Aucune commande trouvée</h5>
+                                    <p class="text-muted">Les commandes de vos produits apparaîtront ici.</p>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -472,7 +1077,7 @@
                                         <img id="storeLogoSettings" src="{{ $store->logo_url }}" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
                                     </div>
                                     <input type="file" class="form-control" id="new_logo" accept="image/*">
-                                    <button class="btn btn-sm btn-primary mt-2" onclick="uploadLogo()">
+                                    <button class="btn btn-sm orange-bg text-white mt-2" onclick="uploadLogo()">
                                         <i class="bi bi-upload me-1"></i>Changer le logo
                                     </button>
                                     <small class="text-muted d-block mt-1">Format recommandé : PNG, JPG (max 5MB)</small>
@@ -483,7 +1088,7 @@
                                         <img id="storeBannerSettings" src="{{ $store->banner_url }}" alt="Bannière" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
                                     </div>
                                     <input type="file" class="form-control" id="new_banner" accept="image/*">
-                                    <button class="btn btn-sm btn-primary mt-2" onclick="uploadBanner()">
+                                    <button class="btn btn-sm orange-bg text-white mt-2" onclick="uploadBanner()">
                                         <i class="bi bi-upload me-1"></i>Changer la bannière
                                     </button>
                                     <small class="text-muted d-block mt-1">Format recommandé : PNG, JPG (max 5MB)</small>
@@ -649,6 +1254,9 @@
 const storeId = {{ $store->id }};
 const token = localStorage.getItem('auth_token');
 
+// Les fonctions globales sont déjà déclarées en haut de page
+// La fonction showNotification est définie plus bas dans le fichier pour utiliser les toasts
+
 // Fonction pour changer d'onglet
 function showTab(tabName) {
     const tab = document.querySelector(`a[href="#${tabName}"]`);
@@ -660,20 +1268,14 @@ function showTab(tabName) {
 
 // Charger les données au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
+    // Attendre que l'onglet soit restauré avant de charger les données
+    setTimeout(() => {
     loadRecentOrders();
+    loadOrderStats(); // Charger les statistiques
     
-    // Test de la fonction de notification
-    console.log('🔔 Test de showNotification disponible:', typeof showNotification);
-    if (typeof showNotification === 'function') {
-        console.log('✅ showNotification est disponible');
-        
-        // Test d'affichage d'une notification
-        setTimeout(() => {
-            console.log('🧪 Test d\'affichage d\'une notification...');
-            showNotification('info', 'Dashboard chargé avec succès !');
-        }, 1000);
-    } else {
-        console.error('❌ showNotification n\'est pas disponible');
+    // Charger les commandes si on est sur l'onglet commandes
+    if (document.querySelector('a[href="#orders"]').classList.contains('active')) {
+        loadOrders();
     }
     
     // Charger les produits quand l'onglet est affiché
@@ -686,6 +1288,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadOrders();
         loadOrderStats();
     });
+    }, 100); // Petit délai pour laisser le temps à restoreActiveTab de s'exécuter
     
     // Auto-reload des commandes toutes les 30 secondes si l'onglet est actif
     setInterval(() => {
@@ -699,10 +1302,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastOrderCount = 0;
     async function checkForNewOrders() {
         try {
-            const response = await fetch('/api/store/orders/stats', {
+            const response = await fetch('/store/api/orders/stats', {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 }
             });
             
@@ -749,10 +1352,10 @@ async function loadRecentOrders() {
     const container = document.getElementById('recentOrdersContainer');
     
     try {
-        const response = await fetch(`/api/store/recent-orders?limit=5`, {
+        const response = await fetch(`/store/api/recent-orders?limit=5`, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
@@ -788,10 +1391,10 @@ async function loadProducts() {
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
     
     try {
-        const response = await fetch(`/api/store/products`, {
+        const response = await fetch(`/store/api/products`, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
@@ -823,10 +1426,10 @@ async function loadProducts() {
                                     <td>${product.stock}</td>
                                     <td><span class="badge bg-${product.stock > 0 ? 'success' : 'danger'}">${product.stock > 0 ? 'En stock' : 'Rupture'}</span></td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${product.id})">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="window.editProduct(${product.id})">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${product.id})">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="window.deleteProduct(${product.id})">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </td>
@@ -859,6 +1462,7 @@ async function loadOrders() {
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
     
     try {
+        
         // Récupérer les paramètres de filtrage
         const params = new URLSearchParams();
         const status = document.getElementById('orderStatusFilter').value;
@@ -872,15 +1476,20 @@ async function loadOrders() {
         if (dateTo) params.append('date_to', dateTo);
         if (search) params.append('search', search);
         if (sort) {
-            const [sortBy, sortOrder] = sort.split('_');
-            params.append('sort_by', sortBy);
-            params.append('sort_order', sortOrder || 'desc');
+            if (sort.includes('_')) {
+                const [sortBy, sortOrder] = sort.split('_');
+                params.append('sort_by', sortBy);
+                params.append('sort_order', sortOrder || 'desc');
+            } else {
+                params.append('sort_by', sort);
+                params.append('sort_order', 'desc');
+            }
         }
         
-        const response = await fetch(`/api/store/orders?${params.toString()}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+        const url = `/store/api/orders?${params.toString()}`;
+        
+        const response = await fetch(url, {
+            headers: {'Accept': 'application/json'
             }
         });
         
@@ -916,7 +1525,11 @@ async function loadOrders() {
                                         <span class="badge bg-secondary">${order.items_count} article${order.items_count > 1 ? 's' : ''}</span>
                                     </td>
                                     <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
-                                    <td><span class="badge bg-${getStatusColor(order.status)}">${getStatusLabel(order.status)}</span></td>
+                                    <td>
+                                        <span class="badge bg-${getStatusColor(order.status)}">${getStatusLabel(order.status)}</span>
+                                        <br>
+                                        <small class="text-muted">Paiement: <span class="badge bg-${getPaymentStatusColor(order.payment_status)}">${getPaymentStatusLabel(order.payment_status)}</span></small>
+                                    </td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <button class="btn btn-sm btn-outline-primary" onclick="viewOrder('${order.order_number}')" title="Voir les détails">
@@ -956,10 +1569,11 @@ async function loadOrders() {
 // Charger les statistiques des commandes
 async function loadOrderStats() {
     try {
-        const response = await fetch('/api/store/orders/stats', {
+        
+        const response = await fetch('/store/api/orders/stats', {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
@@ -970,9 +1584,10 @@ async function loadOrderStats() {
             document.getElementById('statTotalOrders').textContent = stats.total_orders || 0;
             document.getElementById('statPendingOrders').textContent = stats.pending_orders || 0;
             document.getElementById('statProcessingOrders').textContent = stats.processing_orders || 0;
-            document.getElementById('statShippedOrders').textContent = stats.shipped_orders || 0;
             document.getElementById('statDeliveredOrders').textContent = stats.delivered_orders || 0;
             document.getElementById('statCancelledOrders').textContent = stats.cancelled_orders || 0;
+            document.getElementById('statPendingPayment').textContent = stats.pending_payment || 0;
+            document.getElementById('statPaidOrders').textContent = stats.paid_orders || 0;
         }
     } catch (error) {
         console.error('Erreur chargement stats commandes:', error);
@@ -1033,9 +1648,14 @@ function loadOrdersPage(page) {
     if (dateTo) params.append('date_to', dateTo);
     if (search) params.append('search', search);
     if (sort) {
-        const [sortBy, sortOrder] = sort.split('_');
-        params.append('sort_by', sortBy);
-        params.append('sort_order', sortOrder || 'desc');
+        if (sort.includes('_')) {
+            const [sortBy, sortOrder] = sort.split('_');
+            params.append('sort_by', sortBy);
+            params.append('sort_order', sortOrder || 'desc');
+        } else {
+            params.append('sort_by', sort);
+            params.append('sort_order', 'desc');
+        }
     }
     params.append('page', page);
     
@@ -1049,10 +1669,11 @@ async function loadOrdersWithParams(params) {
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
     
     try {
-        const response = await fetch(`/api/store/orders?${params}`, {
+        
+        const response = await fetch(`/store/api/orders?${params}`, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
@@ -1088,7 +1709,11 @@ async function loadOrdersWithParams(params) {
                                         <span class="badge bg-secondary">${order.items_count} article${order.items_count > 1 ? 's' : ''}</span>
                                     </td>
                                     <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
-                                    <td><span class="badge bg-${getStatusColor(order.status)}">${getStatusLabel(order.status)}</span></td>
+                                    <td>
+                                        <span class="badge bg-${getStatusColor(order.status)}">${getStatusLabel(order.status)}</span>
+                                        <br>
+                                        <small class="text-muted">Paiement: <span class="badge bg-${getPaymentStatusColor(order.payment_status)}">${getPaymentStatusLabel(order.payment_status)}</span></small>
+                                    </td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <button class="btn btn-sm btn-outline-primary" onclick="viewOrder('${order.order_number}')" title="Voir les détails">
@@ -1129,26 +1754,44 @@ function clearFilters() {
 }
 
 // Fonctions utilitaires
-function getStatusColor(status) {
+window.getStatusColor = function(status) {
     const colors = {
         'pending': 'warning',
         'processing': 'info',
-        'shipped': 'primary',
         'delivered': 'success',
         'cancelled': 'danger'
     };
     return colors[status] || 'secondary';
 }
 
-function getStatusLabel(status) {
+window.getStatusLabel = function(status) {
     const labels = {
-        'pending': 'En attente',
-        'processing': 'En préparation',
-        'shipped': 'Expédiée',
+        'pending': 'En cours de validation',
+        'processing': 'En cours de livraison',
         'delivered': 'Livrée',
         'cancelled': 'Annulée'
     };
     return labels[status] || status;
+}
+
+window.getPaymentStatusColor = function(paymentStatus) {
+    const colors = {
+        'pending': 'warning',
+        'paid': 'success',
+        'failed': 'danger',
+        'refunded': 'secondary'
+    };
+    return colors[paymentStatus] || 'secondary';
+}
+
+window.getPaymentStatusLabel = function(paymentStatus) {
+    const labels = {
+        'pending': 'En attente',
+        'paid': 'Payé',
+        'failed': 'Échec',
+        'refunded': 'Remboursé'
+    };
+    return labels[paymentStatus] || paymentStatus;
 }
 
 // Afficher le modal d'ajout de produit
@@ -1170,6 +1813,21 @@ function showAddProductModal() {
                                 <div class="col-12">
                                     <label class="form-label">Nom du produit <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Catégorie <span class="text-danger">*</span></label>
+                                    <select class="form-control" name="category_id" required>
+                                        <option value="">Sélectionnez une catégorie</option>
+                                        @foreach($categories ?? [] as $category)
+                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Sous-catégorie (optionnel)</label>
+                                    <select class="form-control" name="subcategory_id" id="subcategory_select">
+                                        <option value="">Sélectionnez une sous-catégorie</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
@@ -1292,6 +1950,15 @@ async function submitProduct() {
     const form = document.getElementById('addProductForm');
     const formData = new FormData(form);
     
+    // Ajouter le token CSRF
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (csrfToken) {
+        formData.append('_token', csrfToken);
+    } else {
+        showNotification('error', 'Token CSRF manquant');
+        return;
+    }
+    
     // Validation de la description
     const description = formData.get('description');
     if (description.length < 50) {
@@ -1300,11 +1967,11 @@ async function submitProduct() {
     }
     
     try {
-        const response = await fetch('/api/store/products', {
+        const response = await fetch('/store/api/products', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken || ''
             },
             body: formData
         });
@@ -1315,11 +1982,10 @@ async function submitProduct() {
             showNotification('success', data.message);
             bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
             
-            // Recharger la liste
-            loadProducts();
-            
-            // Mettre à jour les statistiques
-            updateStats();
+            // Recharger la page pour afficher le nouveau produit
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } else {
             showNotification('danger', data.message);
         }
@@ -1329,215 +1995,328 @@ async function submitProduct() {
     }
 }
 
-// Éditer un produit
-async function editProduct(id) {
-    console.log('✏️ Édition du produit:', id);
-    
-    // Récupérer les données du produit
+// Éditer un produit - VERSION REFACTORISÉE
+async function editProductInternal(id) {
     try {
-        const response = await fetch(`/api/store/products/${id}`, {
+        // Afficher un loader
+        showNotification('info', 'Chargement du produit...');
+        
+        const response = await fetch(`/store/api/products/${id}`, {
+            method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
         if (!response.ok) {
-            throw new Error('Erreur lors de la récupération du produit');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Erreur lors de la récupération du produit');
         }
         
         const data = await response.json();
-        console.log('📦 Données du produit:', data);
         
-        if (data.success) {
-            showEditProductModal(data.product);
+        if (data.success && data.product) {
+            // Charger les données du produit dans le modal statique Blade
+            const product = data.product;
+            
+            // Remplir les champs du formulaire
+            
+            const nameField = document.getElementById('edit_name');
+            const descriptionField = document.getElementById('edit_description');
+            const priceField = document.getElementById('edit_price');
+            const stockField = document.getElementById('edit_stock');
+            
+            if (!nameField || !descriptionField || !priceField || !stockField) {
+                console.error('❌ Champs du formulaire non trouvés!');
+                throw new Error('Formulaire non trouvé');
+            }
+            
+            document.getElementById('edit_product_id').value = product.id || '';
+            nameField.value = product.name || '';
+            descriptionField.value = product.description || '';
+            priceField.value = product.price || '';
+            stockField.value = product.stock || '';
+            document.getElementById('edit_brand').value = product.brand || '';
+            document.getElementById('edit_model').value = product.model || '';
+            document.getElementById('edit_warranty').value = product.warranty || '';
+            document.getElementById('edit_promo_price').value = product.promo_price || '';
+            document.getElementById('edit_discount').value = product.discount || '';
+            document.getElementById('edit_status').value = product.status || 'active';
+            
+            // Remplir la catégorie et charger les sous-catégories
+            if (product.category_id) {
+                document.getElementById('edit_category_id').value = product.category_id;
+                loadSubcategories(product.category_id, product.subcategory_id);
+            }
+            
+            // Remplir les tags (convertir le tableau en string séparée par virgules)
+            const tagsField = document.getElementById('edit_tags');
+            if (tagsField && product.tags) {
+                tagsField.value = Array.isArray(product.tags) ? product.tags.join(', ') : product.tags;
+            }
+            
+                name: nameField.value,
+                description: descriptionField.value,
+                price: priceField.value,
+                stock: stockField.value
+            });
+            
+            // Réinitialiser les images à supprimer
+            window.imagesToDelete = [];
+            
+            // Afficher les images existantes (inclure l'image principale)
+            let allImages = [];
+            
+            // Ajouter l'image principale si elle existe
+            if (product.image) {
+                allImages.push(product.image);
+            }
+            
+            // Ajouter les autres images (sans dupliquer l'image principale)
+            if (product.images && Array.isArray(product.images)) {
+                product.images.forEach(img => {
+                    if (img !== product.image && img) {
+                        allImages.push(img);
+                    }
+                });
+            }
+            
+            // Dédupliquer les images au cas où
+            allImages = [...new Set(allImages)];
+            
+            
+            displayCurrentImages(allImages);
+            
+            // Afficher le modal statique
+            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+            modal.show();
         } else {
-            showNotification('danger', data.message || 'Produit non trouvé');
+            throw new Error(data.message || 'Produit non trouvé');
         }
     } catch (error) {
-        console.error('❌ Erreur:', error);
-        showNotification('danger', 'Erreur lors du chargement du produit');
+        console.error('❌ Erreur lors de l\'édition:', error);
+        showNotification('error', error.message || 'Erreur lors du chargement du produit');
     }
 }
 
-// Afficher le modal d'édition
-function showEditProductModal(product) {
-    const modalHtml = `
-        <div class="modal fade z-index-9x" id="editProductModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-pencil me-2"></i>Modifier le produit
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="editProductForm">
-                            <input type="hidden" name="product_id" value="${product.id}">
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label">Nom du produit</label>
-                                    <input type="text" class="form-control" name="name" value="${product.name}" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Prix (FCFA)</label>
-                                    <input type="number" class="form-control" name="price" value="${product.price}" min="0" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Stock</label>
-                                    <input type="number" class="form-control" name="stock" value="${product.stock}" min="0" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Marque</label>
-                                    <input type="text" class="form-control" name="brand" value="${product.brand || ''}">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Modèle</label>
-                                    <input type="text" class="form-control" name="model" value="${product.model || ''}">
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-bold">Promotion (optionnel)</label>
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <label class="form-label small">Prix promo (FCFA)</label>
-                                            <input type="number" class="form-control" id="edit_promo_price" name="promo_price" value="${product.old_price || ''}" min="0" placeholder="Ex: 750000">
-                                            <small class="text-muted">Prix de vente après réduction</small>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label small">OU Réduction (%)</label>
-                                            <input type="number" class="form-control" id="edit_discount_percent" name="discount" value="${product.discount || 0}" min="0" max="100" placeholder="Ex: 15">
-                                            <small class="text-muted">Pourcentage de réduction</small>
-                                        </div>
-                                    </div>
-                                    <small class="text-info d-block mt-2">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Le prix actuel est ${new Intl.NumberFormat('fr-FR').format(product.price)} FCFA
-                                    </small>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Description</label>
-                                    <textarea class="form-control" name="description" rows="4" required>${product.description}</textarea>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Garantie</label>
-                                    <input type="text" class="form-control" name="warranty" value="${product.warranty || ''}">
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="button" class="btn orange-bg text-white" onclick="updateProduct(${product.id})">
-                            <i class="bi bi-check-circle me-2"></i>Enregistrer
+// Afficher les images existantes du produit
+function displayCurrentImages(images) {
+    const container = document.getElementById('current_images_container');
+    container.innerHTML = ''; // Vider le conteneur
+    
+    if (!images || images.length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucune image pour ce produit</p>';
+        return;
+    }
+    
+    // Affichage des images avec boutons de suppression
+    images.forEach((image, index) => {
+        const imageUrl = image.startsWith('products/') || image.startsWith('images/') 
+            ? `/storage/${image}` 
+            : image;
+        
+        const imageCard = document.createElement('div');
+        imageCard.className = 'position-relative';
+        imageCard.style.width = '120px';
+        imageCard.style.height = '120px';
+        imageCard.innerHTML = `
+            <img src="${imageUrl}" 
+                 alt="Image ${index + 1}" 
+                 style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid #dee2e6;"
+                 onerror="this.src='/images/placeholder.jpg'">
+            <button type="button" 
+                    class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                    style="padding: 0.25rem 0.5rem; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
+                    onclick="removeImage(${index})"
+                    data-image-url="${image}"
+                    title="Supprimer cette image">
+                <i class="bi bi-x-lg" style="font-size: 0.8rem;"></i>
                         </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
-    
-    // Gérer le calcul automatique entre prix promo et réduction
-    setTimeout(() => {
-        const priceInput = document.querySelector('#editProductForm input[name="price"]');
-        const promoInput = document.getElementById('edit_promo_price');
-        const discountInput = document.getElementById('edit_discount_percent');
-        
-        // Calcul automatique du pourcentage quand on saisit un prix promo
-        promoInput.addEventListener('input', function() {
-            if (this.value && priceInput.value) {
-                const price = parseFloat(priceInput.value);
-                const promo = parseFloat(this.value);
-                const discount = ((price - promo) / price * 100).toFixed(2);
-                discountInput.value = discount > 0 ? discount : 0;
-            }
-        });
-        
-        // Calcul automatique du prix promo quand on saisit un pourcentage
-        discountInput.addEventListener('input', function() {
-            if (this.value && priceInput.value) {
-                const price = parseFloat(priceInput.value);
-                const discount = parseFloat(this.value);
-                const promo = price * (1 - discount / 100);
-                promoInput.value = Math.round(promo);
-            }
-        });
-        
-        // Recalculer si le prix change
-        priceInput.addEventListener('input', function() {
-            if (discountInput.value && discountInput.value > 0) {
-                const price = parseFloat(this.value);
-                const discount = parseFloat(discountInput.value);
-                const promo = price * (1 - discount / 100);
-                promoInput.value = Math.round(promo);
-            }
-        });
-    }, 100);
-    
-    document.getElementById('editProductModal').addEventListener('hidden.bs.modal', function() {
-        this.remove();
+        `;
+        container.appendChild(imageCard);
     });
     
-    modal.show();
+    // Sauvegarder la liste complète des images pour la suppression
+    window.allImages = images;
+    // Sauvegarder l'index des images à supprimer
+    window.imagesToDelete = window.imagesToDelete || [];
 }
 
+// Variable globale pour stocker les images à supprimer
+window.imagesToDelete = [];
+
+// Fonction pour marquer une image comme à supprimer
+function removeImage(index) {
+    if (confirm('Voulez-vous vraiment supprimer cette image ?')) {
+        // Récupérer l'URL de l'image à partir du bouton
+        const buttons = document.querySelectorAll('#current_images_container button');
+        if (buttons[index]) {
+            const imageUrl = buttons[index].dataset.imageUrl;
+            if (imageUrl && !window.imagesToDelete.includes(imageUrl)) {
+                window.imagesToDelete.push(imageUrl);
+            }
+            
+            // Marquer visuellement l'image comme supprimée
+            const imageDiv = buttons[index].closest('div.position-relative');
+            if (imageDiv) {
+                imageDiv.style.opacity = '0.5';
+                imageDiv.style.pointerEvents = 'none';
+            }
+            
+            showNotification('success', 'Image marquée pour suppression');
+        } else {
+            showNotification('error', 'Erreur: Image non trouvée');
+        }
+    }
+}
+
+// Ancienne fonction supprimée - remplacée par editProduct() et submitEditForm()
+
 // Mettre à jour un produit
-async function updateProduct(productId) {
+// Fonction simplifiée pour ouvrir le modal de modification
+function editProduct(productId) {
+    console.log('🔧 Ouverture du modal pour le produit:', productId);
+    
+    // Remplir le formulaire avec les données du produit
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    if (!csrfToken) {
+        console.error('❌ Token CSRF non trouvé !');
+        showNotification('error', 'Token CSRF manquant. Veuillez recharger la page.');
+        return;
+    }
+    
+    fetch(`/store/api/products/${productId}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.product) {
+            const product = data.product;
+            
+            // Remplir les champs du formulaire
+            document.getElementById('edit_product_id').value = product.id;
+            document.getElementById('edit_name').value = product.name;
+            document.getElementById('edit_description').value = product.description;
+            document.getElementById('edit_price').value = product.price;
+            document.getElementById('edit_stock').value = product.stock;
+            document.getElementById('edit_brand').value = product.brand || '';
+            document.getElementById('edit_model').value = product.model || '';
+            document.getElementById('edit_warranty').value = product.warranty || '';
+            document.getElementById('edit_status').value = product.status;
+            
+            // Afficher l'image actuelle
+            if (product.image) {
+                document.getElementById('current_image_preview').innerHTML = `
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="/storage/${product.image}" alt="Image actuelle" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                        <div class="ms-3">
+                            <small class="text-muted">Image actuelle</small>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Ouvrir le modal
+            const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+    modal.show();
+        } else {
+            showNotification('error', 'Erreur lors du chargement du produit');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('error', 'Erreur lors du chargement du produit');
+    });
+}
+
+// Fonction simplifiée pour soumettre le formulaire
+function submitEditForm() {
     const form = document.getElementById('editProductForm');
+    const productId = document.getElementById('edit_product_id').value;
+    
+    console.log('🔧 Soumission du formulaire pour le produit:', productId);
+    
+    // Vérifier le token CSRF
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    if (!csrfToken) {
+        console.error('❌ Token CSRF non trouvé pour la soumission !');
+        showNotification('error', 'Token CSRF manquant. Veuillez recharger la page.');
+        return;
+    }
+    
+    // Créer FormData
     const formData = new FormData(form);
     
-    try {
-        const response = await fetch(`/api/store/products/${productId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name: formData.get('name'),
-                description: formData.get('description'),
-                price: formData.get('price'),
-                promo_price: formData.get('promo_price'),
-                stock: formData.get('stock'),
-                discount: formData.get('discount'),
-                brand: formData.get('brand'),
-                model: formData.get('model'),
-                warranty: formData.get('warranty')
-            })
+    // Convertir le statut en is_active
+    const status = formData.get('status');
+    formData.append('is_active', status === 'active' ? '1' : '0');
+    
+    // Ajouter les indices des images à supprimer
+    if (window.imagesToDelete && window.imagesToDelete.length > 0) {
+        window.imagesToDelete.forEach(index => {
+            formData.append('images_to_delete[]', index);
         });
-        
-        const data = await response.json();
-        
+        console.log('🗑️ Images à supprimer:', window.imagesToDelete);
+    }
+    
+    // Debug: Afficher le contenu du FormData
+    console.log('🔍 Contenu du FormData:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+    }
+    
+    // Envoyer la requête en POST avec _method=PUT pour que Laravel puisse parser le FormData
+    formData.append('_method', 'PUT');
+    
+    fetch(`/store/api/products/${productId}`, {
+            method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
         if (data.success) {
             showNotification('success', data.message);
             bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
-            loadProducts();
-            updateStats();
+            
+            // Recharger la page pour voir les changements
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } else {
-            showNotification('danger', data.message);
+            showNotification('error', data.message);
         }
-    } catch (error) {
+    })
+    .catch(error => {
         console.error('Erreur:', error);
-        showNotification('danger', 'Erreur lors de la mise à jour');
-    }
+        showNotification('error', 'Erreur lors de la mise à jour');
+    });
 }
 
 // Supprimer un produit
-async function deleteProduct(id) {
+async function deleteProductInternal(id) {
     if (!confirm('Voulez-vous vraiment supprimer ce produit ? Cette action est irréversible.')) {
         return;
     }
     
     try {
-        const response = await fetch(`/api/store/products/${id}`, {
+        const response = await fetch(`/store/api/products/${id}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
@@ -1545,16 +2324,47 @@ async function deleteProduct(id) {
         
         if (data.success) {
             showNotification('success', data.message);
-            loadProducts();
-            updateStats();
+            // Recharger la page pour voir les changements
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } else {
-            showNotification('danger', data.message);
+            showNotification('error', data.message);
         }
     } catch (error) {
         console.error('Erreur:', error);
-        showNotification('danger', 'Erreur lors de la suppression');
+        showNotification('error', 'Erreur lors de la suppression');
     }
 }
+
+// Fonctions globales pour les boutons d'action des produits
+window.editProduct = function(id) {
+    console.log('🔧 DEBUG: window.editProduct appelé avec ID:', id);
+    try {
+        editProductInternal(id);
+    } catch (error) {
+        console.error('❌ Erreur dans window.editProduct:', error);
+        alert('Erreur lors de l\'édition: ' + error.message);
+    }
+};
+
+window.deleteProduct = function(id) {
+    console.log('🔧 DEBUG: window.deleteProduct appelé avec ID:', id);
+    try {
+        deleteProductInternal(id);
+    } catch (error) {
+        console.error('❌ Erreur dans window.deleteProduct:', error);
+        alert('Erreur lors de la suppression: ' + error.message);
+    }
+};
+
+// Test de débogage au chargement de la page
+console.log('🔧 DEBUG: Fonctions définies:', {
+    'window.editProduct': typeof window.editProduct,
+    'window.deleteProduct': typeof window.deleteProduct,
+    'editProductInternal': typeof editProductInternal,
+    'deleteProductInternal': typeof deleteProductInternal
+});
 
 function viewOrder(orderNumber) {
     // Rediriger vers la page de détails de la commande
@@ -1562,30 +2372,51 @@ function viewOrder(orderNumber) {
 }
 
 // Obtenir les boutons d'action pour les commandes
-function getOrderActionButtons(status, orderNumber) {
+window.getOrderActionButtons = function(status, orderNumber) {
     const buttons = [];
     
     if (status === 'pending') {
         buttons.push(`
-            <button class="btn btn-sm btn-outline-success" onclick="quickAction('ship', '${orderNumber}')" title="Marquer comme expédiée">
-                <i class="bi bi-truck"></i>
+            <button class="btn btn-sm btn-outline-warning" onclick="quickAction('process', '${orderNumber}')" title="Marquer en cours de livraison">
+                <i class="bi bi-gear"></i>
             </button>
         `);
         buttons.push(`
-            <button class="btn btn-sm btn-outline-warning" onclick="quickAction('process', '${orderNumber}')" title="Marquer en préparation">
-                <i class="bi bi-gear"></i>
+            <button class="btn btn-sm btn-outline-danger" onclick="quickAction('cancel', '${orderNumber}')" title="Annuler la commande">
+                <i class="bi bi-x-circle"></i>
             </button>
         `);
     } else if (status === 'processing') {
         buttons.push(`
-            <button class="btn btn-sm btn-outline-success" onclick="quickAction('ship', '${orderNumber}')" title="Marquer comme expédiée">
-                <i class="bi bi-truck"></i>
-            </button>
-        `);
-    } else if (status === 'shipped') {
-        buttons.push(`
             <button class="btn btn-sm btn-outline-success" onclick="quickAction('deliver', '${orderNumber}')" title="Marquer comme livrée">
                 <i class="bi bi-check-circle"></i>
+            </button>
+        `);
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-danger" onclick="quickAction('cancel', '${orderNumber}')" title="Annuler la commande">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        `);
+    } else if (status === 'delivered') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-info" onclick="quickAction('process', '${orderNumber}')" title="Retour en cours de livraison">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+        `);
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-danger" onclick="quickAction('cancel', '${orderNumber}')" title="Annuler la commande">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        `);
+    } else if (status === 'cancelled') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-primary" onclick="quickAction('pending', '${orderNumber}')" title="Réactiver la commande">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        `);
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-warning" onclick="quickAction('process', '${orderNumber}')" title="Marquer en cours de livraison">
+                <i class="bi bi-gear"></i>
             </button>
         `);
     }
@@ -1593,38 +2424,112 @@ function getOrderActionButtons(status, orderNumber) {
     return buttons.join('');
 }
 
+// Obtenir les boutons d'action pour les statuts de paiement
+window.getPaymentActionButtons = function(paymentStatus, orderNumber) {
+    const buttons = [];
+    
+    if (paymentStatus === 'pending') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-success" onclick="quickPaymentAction('paid', '${orderNumber}')" title="Marquer comme payé">
+                <i class="bi bi-check-circle"></i>
+            </button>
+        `);
+    } else if (paymentStatus === 'paid') {
+        buttons.push(`
+            <button class="btn btn-sm btn-outline-warning" onclick="quickPaymentAction('pending', '${orderNumber}')" title="Paiement en attente">
+                <i class="bi bi-clock"></i>
+            </button>
+        `);
+    }
+    
+    return buttons.join('');
+}
+
+// Actions rapides sur les statuts de paiement
+window.quickPaymentAction = async function(action, orderNumber) {
+    try {
+        let paymentStatus = '';
+        let message = '';
+        
+        switch (action) {
+            case 'paid':
+                paymentStatus = 'paid';
+                message = 'Commande marquée comme payée';
+                break;
+            case 'pending':
+                paymentStatus = 'pending';
+                message = 'Statut de paiement remis en attente';
+                break;
+            default:
+                throw new Error('Action de paiement non reconnue');
+        }
+        
+        const response = await fetch(`/store/api/orders/${orderNumber}/payment-status`, {
+            method: 'PUT',
+            headers: {'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                payment_status: paymentStatus,
+                reason: 'Action rapide depuis le dashboard'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('success', message);
+            loadOrders(); // Recharger la liste des commandes
+        } else {
+            showNotification('danger', data.message);
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('danger', 'Erreur lors de l\'action de paiement');
+    }
+}
+
 // Actions rapides sur les commandes
 async function quickAction(action, orderNumber) {
     try {
         let endpoint = '';
         let message = '';
+        let status = '';
         
         switch (action) {
-            case 'ship':
-                endpoint = `/api/store/orders/${orderNumber}/ship`;
-                message = 'Commande marquée comme expédiée';
-                break;
             case 'process':
-                endpoint = `/api/store/orders/${orderNumber}/status`;
-                message = 'Commande mise en préparation';
+                endpoint = `/store/api/orders/${orderNumber}/status`;
+                status = 'processing';
+                message = 'Commande marquée en cours de livraison';
                 break;
             case 'deliver':
-                endpoint = `/api/store/orders/${orderNumber}/status`;
+                endpoint = `/store/api/orders/${orderNumber}/status`;
+                status = 'delivered';
                 message = 'Commande marquée comme livrée';
                 break;
+            case 'cancel':
+                endpoint = `/store/api/orders/${orderNumber}/status`;
+                status = 'cancelled';
+                message = 'Commande annulée';
+                break;
+            case 'pending':
+                endpoint = `/store/api/orders/${orderNumber}/status`;
+                status = 'pending';
+                message = 'Commande réactivée';
+                break;
+            default:
+                throw new Error('Action non reconnue');
         }
         
-        const body = action === 'process' ? { status: 'processing' } : 
-                    action === 'deliver' ? { status: 'delivered' } : {};
-        
         const response = await fetch(endpoint, {
-            method: action === 'ship' ? 'POST' : 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json',
+            method: 'PUT',
+            headers: {'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                status: status,
+                reason: 'Action rapide depuis le dashboard'
+            })
         });
         
         const data = await response.json();
@@ -1675,12 +2580,12 @@ async function updateStoreInfo() {
     try {
         showNotification('info', 'Mise à jour en cours...');
         
-        const response = await fetch('/api/store/update', {
+        const response = await fetch('/store/api/update', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
             body: JSON.stringify(formData)
         });
@@ -1724,11 +2629,11 @@ async function uploadLogo() {
     try {
         showNotification('info', 'Upload du logo en cours...');
         
-        const response = await fetch('/api/store/upload-logo', {
+        const response = await fetch('/store/api/upload-logo', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
             body: formData
         });
@@ -1805,11 +2710,11 @@ async function uploadBanner() {
     try {
         showNotification('info', 'Upload de la bannière en cours...');
         
-        const response = await fetch('/api/store/upload-banner', {
+        const response = await fetch('/store/api/upload-banner', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
             body: formData
         });
@@ -1858,10 +2763,8 @@ async function uploadBanner() {
 // Mettre à jour les statistiques
 async function updateStats() {
     try {
-        const response = await fetch('/api/store/stats', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+        const response = await fetch('/store/api/stats', {
+            headers: {'Accept': 'application/json'
             }
         });
         
@@ -1899,12 +2802,12 @@ async function updateSocialLinks() {
     try {
         showNotification('info', 'Mise à jour des liens sociaux...');
         
-        const response = await fetch('/api/store/update-social', {
+        const response = await fetch('/store/api/update-social', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
             body: JSON.stringify(formData)
         });
@@ -1933,12 +2836,12 @@ async function toggleStoreStatus(status) {
     try {
         showNotification('info', `${action.charAt(0).toUpperCase() + action.slice(1)} la boutique...`);
         
-        const response = await fetch('/api/store/toggle-status', {
+        const response = await fetch('/store/api/toggle-status', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
             body: JSON.stringify({ status })
         });
@@ -1973,11 +2876,11 @@ async function deleteStore() {
     try {
         showNotification('warning', 'Suppression de la boutique en cours...');
         
-        const response = await fetch('/api/store/delete', {
+        const response = await fetch('/store/api/delete', {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
@@ -2124,7 +3027,7 @@ function refreshImages(imageType, newUrl) {
 }
 
 // Fonction de notification spécifique au dashboard
-function showNotification(type, message) {
+window.showNotification = function(type, message) {
     console.log('🔔 showNotification appelée:', type, message);
     
     const toastElement = document.getElementById('dashboardNotificationToast');
@@ -2189,6 +3092,239 @@ function showNotification(type, message) {
     toast.show();
     console.log('🚀 Toast affiché !');
 }
+
+// Fonction pour prévisualiser l'image principale sélectionnée
+function previewImage(input, type = 'main') {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Fonction pour prévisualiser plusieurs images
+function previewMultipleImages(input) {
+    const previewContainer = document.getElementById('multipleImagesPreview');
+    previewContainer.innerHTML = '';
+    
+    if (input.files && input.files.length > 0) {
+        const maxFiles = Math.min(input.files.length, 5); // Limiter à 5 images
+        
+        for (let i = 0; i < maxFiles; i++) {
+            const file = input.files[i];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'd-inline-block me-2 mb-2';
+                imageDiv.innerHTML = `
+                    <img src="${e.target.result}" 
+                         style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #dee2e6;" 
+                         class="img-thumbnail">
+                    <div class="small text-muted text-center">Image ${i + 1}</div>
+                `;
+                previewContainer.appendChild(imageDiv);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        if (input.files.length > 5) {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning small mt-2';
+            warningDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Seules les 5 premières images seront prises en compte.';
+            previewContainer.appendChild(warningDiv);
+        }
+    }
+}
+
+// Fonction pour supprimer l'image actuelle
+function removeCurrentImage() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer l\'image actuelle ?')) {
+        // Masquer l'image actuelle
+        const currentImageDiv = document.querySelector('#editProductModal .d-flex.align-items-center.mb-2');
+        if (currentImageDiv) {
+            currentImageDiv.style.display = 'none';
+        }
+        
+        // Ajouter un champ caché pour indiquer la suppression
+        const form = document.getElementById('editProductForm');
+        let hiddenInput = form.querySelector('input[name="remove_image"]');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'remove_image';
+            form.appendChild(hiddenInput);
+        }
+        hiddenInput.value = '1';
+        
+        // NE PAS désactiver le champ de fichier - permettre l'ajout d'une nouvelle image
+        const fileInput = form.querySelector('input[name="image"]');
+        if (fileInput) {
+            fileInput.disabled = false;
+            fileInput.value = ''; // Vider le champ
+        }
+        
+        // Masquer l'aperçu de l'image principale
+        const imagePreview = document.getElementById('imagePreview');
+        if (imagePreview) {
+            imagePreview.style.display = 'none';
+        }
+        
+        showNotification('success', 'Image marquée pour suppression. Vous pouvez ajouter une nouvelle image.');
+    }
+}
+
+// ========================================
+// GESTION DE LA PERSISTANCE DES ONGLETS
+// ========================================
+
+// Sauvegarder l'onglet actif dans le localStorage
+function saveActiveTab(tabId) {
+    localStorage.setItem('activeStoreTab', tabId);
+}
+
+// Restaurer l'onglet actif depuis le localStorage
+function restoreActiveTab() {
+    const savedTab = localStorage.getItem('activeStoreTab');
+    if (savedTab) {
+        
+        // Désactiver tous les onglets
+        document.querySelectorAll('#storeTabs .nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        
+        // Activer l'onglet sauvegardé
+        const tabLink = document.querySelector(`#storeTabs a[href="#${savedTab}"]`);
+        const tabPane = document.getElementById(savedTab);
+        
+        if (tabLink && tabPane) {
+            tabLink.classList.add('active');
+            tabPane.classList.add('show', 'active');
+        } else {
+        }
+    } else {
+    }
+}
+
+// Gérer les clics sur les onglets
+function setupTabListeners() {
+    document.querySelectorAll('#storeTabs .nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            const tabId = this.getAttribute('href').substring(1); // Enlever le #
+            saveActiveTab(tabId);
+        });
+    });
+}
+
+// Initialiser la gestion des onglets au chargement de la page
+// CHARGEMENT DES SOUS-CATÉGORIES
+// ===============================
+function loadSubcategories(categoryId, selectedSubcategoryId = null) {
+    const subcategorySelect = document.getElementById('edit_subcategory_id') || document.getElementById('subcategory_select');
+    
+    if (!subcategorySelect) {
+        console.warn('Champ sous-catégorie non trouvé');
+        return;
+    }
+    
+    // Vider les options existantes
+    subcategorySelect.innerHTML = '<option value="">Sélectionnez une sous-catégorie</option>';
+    
+    if (!categoryId) {
+        return;
+    }
+    
+    // Charger les sous-catégories via AJAX
+    fetch(`/api/categories/${categoryId}/subcategories`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.subcategories) {
+            data.subcategories.forEach(subcategory => {
+                const option = document.createElement('option');
+                option.value = subcategory.id;
+                option.textContent = subcategory.name;
+                if (selectedSubcategoryId && subcategory.id == selectedSubcategoryId) {
+                    option.selected = true;
+                }
+                subcategorySelect.appendChild(option);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement des sous-catégories:', error);
+    });
+}
+
+// SYNCHRONISATION PRIX PROMO / RÉDUCTION
+// ========================================
+function synchronizePriceAndDiscount() {
+    const priceInput = document.getElementById('edit_price');
+    const promoPriceInput = document.getElementById('edit_promo_price');
+    const discountInput = document.getElementById('edit_discount');
+    
+    // Si le prix promo change, calculer la réduction
+    promoPriceInput.addEventListener('input', function() {
+        const price = parseFloat(priceInput.value) || 0;
+        const promoPrice = parseFloat(this.value) || 0;
+        
+        if (price > 0 && promoPrice > 0) {
+            const discount = ((price - promoPrice) / price * 100).toFixed(2);
+            discountInput.value = discount > 0 ? discount : 0;
+        } else if (promoPrice === 0) {
+            discountInput.value = '';
+        }
+    });
+    
+    // Si la réduction change, calculer le prix promo
+    discountInput.addEventListener('input', function() {
+        const price = parseFloat(priceInput.value) || 0;
+        const discount = parseFloat(this.value) || 0;
+        
+        if (price > 0 && discount > 0) {
+            const promoPrice = price * (1 - discount / 100);
+            promoPriceInput.value = promoPrice.toFixed(2);
+        } else if (discount === 0) {
+            promoPriceInput.value = '';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // IMPORTANT: Restaurer l'onglet actif EN PREMIER pour éviter les conflits
+    restoreActiveTab();
+    
+    // Configurer les écouteurs d'événements
+    setupTabListeners();
+    
+    // Synchroniser prix promo et réduction
+    synchronizePriceAndDiscount();
+    
+    // Écouter les changements de catégorie pour charger les sous-catégories
+    const categorySelects = document.querySelectorAll('[name="category_id"]');
+    categorySelects.forEach(select => {
+        select.addEventListener('change', function() {
+            loadSubcategories(this.value);
+        });
+    });
+});
 </script>
 @endsection
+
+<!-- Script de modification de produit refactorisé -->
+{{-- <script src="{{ asset('js/product-edit.js') }}"></script> --}}
 

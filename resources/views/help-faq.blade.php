@@ -172,7 +172,7 @@
                         <p class="mb-3">Si vous ne trouvez pas la réponse à votre question, notre équipe est là pour vous aider :</p>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <a href="https://wa.me/2250701234567" class="btn btn-success w-100" target="_blank">
+                                <a href="https://wa.me/2250701234567" class="btn btn-success btn-sm w-100" target="_blank">
                                     <i class="bi bi-whatsapp me-2"></i>Discuter sur WhatsApp
                                 </a>
                             </div>

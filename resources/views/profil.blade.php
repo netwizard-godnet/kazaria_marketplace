@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @section('content')
     <style>
         /* Styles pour les boutons de navigation de la sidebar */
@@ -247,7 +251,7 @@
                                                     <label for="currentPassword" class="form-label">Mot de passe actuel</label>
                                                     <div class="input-group">
                                                         <input type="password" class="form-control" id="currentPassword" required>
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('currentPassword')">
+                                                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="togglePassword('currentPassword')">
                                                             <i class="bi bi-eye" id="currentPassword-icon"></i>
                                                         </button>
                                                     </div>
@@ -256,7 +260,7 @@
                                                     <label for="newPassword" class="form-label">Nouveau mot de passe</label>
                                                     <div class="input-group">
                                                         <input type="password" class="form-control" id="newPassword" required minlength="8">
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('newPassword')">
+                                                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="togglePassword('newPassword')">
                                                             <i class="bi bi-eye" id="newPassword-icon"></i>
                                                         </button>
                                                     </div>
@@ -266,7 +270,7 @@
                                                     <label for="confirmPassword" class="form-label">Confirmer le mot de passe</label>
                                                     <div class="input-group">
                                                         <input type="password" class="form-control" id="confirmPassword" required>
-                                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmPassword')">
+                                                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="togglePassword('confirmPassword')">
                                                             <i class="bi bi-eye" id="confirmPassword-icon"></i>
                                                         </button>
                                                     </div>
@@ -288,7 +292,7 @@
                                                     Activer l'authentification à deux facteurs
                                                 </label>
                                             </div>
-                                            <button type="button" class="btn btn-outline-secondary" disabled>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
                                                 <i class="bi bi-qr-code me-2"></i>Configurer avec une application
                                             </button>
                                             <p class="text-muted small mt-2">
@@ -371,21 +375,21 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 d-none">
                                             <h6 class="mb-3">Notifications</h6>
-                                            <div class="form-check mb-3">
+                                            <div class="form-check mb-3 d-none">
                                                 <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
                                                 <label class="form-check-label" for="emailNotifications">
                                                     Notifications par email
                                                 </label>
                                             </div>
-                                            <div class="form-check mb-3">
+                                            <div class="form-check mb-3 d-none">
                                                 <input class="form-check-input" type="checkbox" id="smsNotifications">
                                                 <label class="form-check-label" for="smsNotifications">
                                                     Notifications SMS
                                                 </label>
                                             </div>
-                                            <div class="form-check mb-3">
+                                            <div class="form-check mb-3 d-none">
                                                 <input class="form-check-input" type="checkbox" id="pushNotifications" checked>
                                                 <label class="form-check-label" for="pushNotifications">
                                                     Notifications push
@@ -399,8 +403,6 @@
                                                 <select class="form-control" id="language">
                                                     <option value="fr" selected>Français</option>
                                                     <option value="en">English</option>
-                                                    <option value="es">Español</option>
-                                                    <option value="de">Deutsch</option>
                                                 </select>
                                             </div>
                                             <div class="mb-3">
@@ -409,7 +411,6 @@
                                                     <option value="XOF" selected>Franc CFA (FCFA)</option>
                                                     <option value="EUR">Euro (€)</option>
                                                     <option value="USD">Dollar US ($)</option>
-                                                    <option value="GBP">Livre Sterling (£)</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -436,7 +437,7 @@
                                         <button type="button" class="btn">
                                             <i class="bi bi-check-lg me-2"></i>Enregistrer les préférences
                                         </button>
-                                        <button type="button" class="btn btn-outline-danger" onclick="logout()">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="logout()">
                                             <i class="bi bi-box-arrow-right me-2"></i>Se déconnecter
                                         </button>
                                     </div>
@@ -451,6 +452,37 @@
                                     <h5 class="card-title"><i class="bi bi-bag me-2"></i>Mes commandes</h5>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Filtres -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Filtrer par date</label>
+                                            <select class="form-select form-select-sm" id="filterDate">
+                                                <option value="">Toutes les dates</option>
+                                                <option value="today">Aujourd'hui</option>
+                                                <option value="week">Cette semaine</option>
+                                                <option value="month">Ce mois</option>
+                                                <option value="3months">3 derniers mois</option>
+                                                <option value="year">Cette année</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Filtrer par statut</label>
+                                            <select class="form-select form-select-sm" id="filterStatus">
+                                                <option value="">Commandes en cours (par défaut)</option>
+                                                <option value="pending">En cours de validation</option>
+                                                <option value="processing">En cours de livraison</option>
+                                                <option value="delivered">Livrée</option>
+                                                <option value="cancelled">Annulée</option>
+                                                <option value="all">Toutes les commandes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small">&nbsp;</label>
+                                            <button type="button" class="btn btn-sm orange-bg text-white w-100" onclick="loadOrders()">
+                                                <i class="bi bi-search me-1"></i>Filtrer
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-hover">
                                             <thead>
@@ -576,7 +608,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
                         <button type="button" class="btn" id="savePhotoBtn" disabled>
                             <i class="bi bi-check-lg me-2"></i>Enregistrer la photo
                         </button>
@@ -618,43 +650,8 @@
             }, 5000);
         }
 
-        // Vérifier l'authentification au chargement de la page
-        document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('auth_token');
-            
-            if (!token) {
-                alert('Vous devez être connecté pour accéder à votre profil.');
-                window.location.href = '/authentification';
-                return;
-            }
-            
-            // Vérifier la validité du token avec le serveur
-            fetch('/api/me', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Token invalide');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data.success) {
-                    throw new Error('Authentification échouée');
-                }
-                console.log('Utilisateur authentifié:', data.user);
-            })
-            .catch(error => {
-                console.error('Erreur d\'authentification:', error);
-                alert('Session expirée. Veuillez vous reconnecter.');
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('user_data');
-                window.location.href = '/authentification';
-            });
-        });
+        // L'authentification est maintenant gérée par Blade et le middleware hybride
+        // Plus besoin de vérifier les tokens côté client
 
         // Fonction de déconnexion
         function logout() {
@@ -697,7 +694,8 @@
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json'
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                             },
                             body: JSON.stringify(formData)
                         });
@@ -748,12 +746,8 @@
                         return;
                     }
                     
-                    const token = localStorage.getItem('auth_token');
-                    if (!token) {
-                        showToast('error', 'Session expirée. Veuillez vous reconnecter.');
-                        setTimeout(() => window.location.href = '/authentification', 2000);
-                        return;
-                    }
+                    // L'authentification est maintenant gérée par le middleware hybride
+                    // Plus besoin de vérifier les tokens côté client
                     
                     // Désactiver le bouton
                     const submitBtn = passwordForm.querySelector('button[type="submit"]');
@@ -767,7 +761,8 @@
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json'
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                             },
                             body: JSON.stringify({
                                 current_password: currentPassword,
@@ -847,15 +842,6 @@
                         return;
                     }
 
-                    const token = localStorage.getItem('auth_token');
-                    if (!token) {
-                        showToast('error', 'Session expirée. Veuillez vous reconnecter.');
-                        setTimeout(() => {
-                            window.location.href = '/authentification';
-                        }, 2000);
-                        return;
-                    }
-
                     // Créer le FormData
                     const formData = new FormData();
                     formData.append('photo', selectedFile);
@@ -892,13 +878,7 @@
                                 if (data.success) {
                                     showToast('success', 'Photo de profil mise à jour avec succès !');
                                     
-                                    // Mettre à jour la photo de profil dans la page
-                                    const profileAvatar = document.getElementById('profileAvatar');
-                                    if (profileAvatar && data.photo_url) {
-                                        profileAvatar.src = data.photo_url;
-                                    }
-                                    
-                                    // Mettre à jour les données locales
+                                    // La page va être rechargée, pas besoin de mettre à jour manuellement l'image
                                     if (typeof authManager !== 'undefined' && data.user) {
                                         authManager.user = data.user;
                                         localStorage.setItem('user_data', JSON.stringify(data.user));
@@ -942,8 +922,8 @@
                         });
 
                         xhr.open('POST', '/api/profile/update-photo', true);
-                        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
                         xhr.setRequestHeader('Accept', 'application/json');
+                        xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
                         xhr.send(formData);
 
                     } catch (error) {
@@ -1007,9 +987,7 @@
             const token = localStorage.getItem('auth_token');
             if (!token) {
                 showToast('error', 'Session expirée. Veuillez vous reconnecter.');
-                setTimeout(() => {
-                    window.location.href = '/authentification';
-                }, 2000);
+                showToast('error', 'Erreur lors de la déconnexion.');
                 return;
             }
 
@@ -1019,7 +997,8 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     }
                 });
 
@@ -1030,13 +1009,8 @@
                     
                     // Déconnecter l'utilisateur actuel
                     setTimeout(() => {
-                        if (typeof authManager !== 'undefined') {
-                            authManager.logout();
-                        } else {
-                            localStorage.removeItem('auth_token');
-                            localStorage.removeItem('user_data');
-                            window.location.href = '/authentification';
-                        }
+                        // Redirection vers la page d'accueil après déconnexion
+                        window.location.href = '/';
                     }, 2000);
                 } else {
                     showToast('error', 'Erreur: ' + data.message);
@@ -1049,24 +1023,77 @@
 
         // Charger les commandes de l'utilisateur
         async function loadOrders() {
-            const token = localStorage.getItem('auth_token');
-            if (!token) return;
-
             try {
                 const response = await fetch('/api/orders/my-orders', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     }
                 });
 
+                if (!response.ok) {
+                    console.error('Erreur HTTP:', response.status);
+                    const tbody = document.getElementById('ordersTableBody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-danger py-4">
+                                <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Erreur lors du chargement des commandes</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
                 const data = await response.json();
+                console.log('Données reçues:', data);
                 const tbody = document.getElementById('ordersTableBody');
                 
-                if (data.success && data.orders.length > 0) {
+                // Récupérer les filtres
+                const filterDate = document.getElementById('filterDate')?.value || '';
+                const filterStatus = document.getElementById('filterStatus')?.value || '';
+                
+                // Filtrer les commandes
+                let filteredOrders = data.orders || [];
+                
+                // Par défaut, afficher seulement les commandes en cours (pending ou processing)
+                if (!filterStatus) {
+                    // Aucun filtre sélectionné = afficher uniquement les commandes en cours
+                    filteredOrders = filteredOrders.filter(order => order.status === 'pending' || order.status === 'processing');
+                } else if (filterStatus === 'all') {
+                    // Afficher toutes les commandes
+                    filteredOrders = data.orders || [];
+                } else if (filterStatus) {
+                    // Filtrer par statut spécifique
+                    filteredOrders = filteredOrders.filter(order => order.status === filterStatus);
+                }
+                
+                if (filterDate) {
+                    const now = new Date();
+                    filteredOrders = filteredOrders.filter(order => {
+                        const orderDate = new Date(order.created_at);
+                        switch (filterDate) {
+                            case 'today':
+                                return orderDate.toDateString() === now.toDateString();
+                            case 'week':
+                                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                return orderDate >= weekAgo;
+                            case 'month':
+                                return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
+                            case '3months':
+                                const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                                return orderDate >= threeMonthsAgo;
+                            case 'year':
+                                return orderDate.getFullYear() === now.getFullYear();
+                            default:
+                                return true;
+                        }
+                    });
+                }
+                
+                if (filteredOrders.length > 0) {
                     tbody.innerHTML = '';
                     
-                    data.orders.forEach(order => {
+                    filteredOrders.forEach(order => {
                         const statusBadge = getStatusBadge(order.status);
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -1078,7 +1105,7 @@
                                 <button class="btn btn-sm btn-outline-success me-1" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
                                     <i class="bi bi-truck"></i>
                                 </button>
-                                <a href="/order/invoice/${order.order_number}?token=${token}" class="btn btn-sm btn-outline-primary me-1" title="Voir la facture">
+                                <a href="/order/invoice/${order.order_number}" class="btn btn-sm btn-outline-primary me-1" title="Voir la facture">
                                     <i class="bi bi-file-earmark-text"></i>
                                 </a>
                                 <a href="/order/download/${order.order_number}" class="btn btn-sm orange-bg text-white" title="Télécharger PDF">
@@ -1090,7 +1117,7 @@
                     });
                     
                     // Mettre à jour le compteur de commandes
-                    document.getElementById('totalOrders').textContent = data.orders.length;
+                    document.getElementById('totalOrders').textContent = filteredOrders.length;
                 } else {
                     tbody.innerHTML = `
                         <tr>
@@ -1113,11 +1140,7 @@
         async function trackOrder(orderNumber) {
             console.log('🚚 Suivi de la commande:', orderNumber);
             
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                showToast('error', 'Vous devez être connecté pour suivre vos commandes');
-                return;
-            }
+            // Pas besoin de vérifier le token avec l'authentification session
             
             try {
                 // Afficher un modal de chargement
@@ -1141,7 +1164,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fermer</button>
                                 </div>
                             </div>
                         </div>
@@ -1156,7 +1179,6 @@
                 // Charger les détails de la commande
                 const response = await fetch(`/api/orders/${orderNumber}`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     }
                 });
@@ -1214,6 +1236,18 @@
                 
                 <hr>
                 
+                ${order.status === 'cancelled' ? `
+                <!-- Commande annulée -->
+                <div class="mb-4">
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="bi bi-x-circle-fill me-3 fs-3"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Commande annulée</h6>
+                            <p class="mb-0 small">Cette commande a été annulée et n'est plus en cours de traitement.</p>
+                        </div>
+                    </div>
+                </div>
+                ` : `
                 <!-- Progression de livraison -->
                 <div class="mb-4">
                     <h6 class="fw-bold mb-3">Suivi de livraison</h6>
@@ -1221,25 +1255,19 @@
                         <div class="progress-bar orange-bg" role="progressbar" style="width: ${progressPercentage}%"></div>
                     </div>
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="text-center">
-                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
-                                <p class="mb-0 mt-1 small">Commande confirmée</p>
+                                <i class="bi ${order.status === 'pending' || order.status === 'processing' || order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
+                                <p class="mb-0 mt-1 small">En cours de validation</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="text-center">
-                                <i class="bi ${order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
-                                <p class="mb-0 mt-1 small">En préparation</p>
+                                <i class="bi ${order.status === 'processing' || order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
+                                <p class="mb-0 mt-1 small">En cours de livraison</p>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <i class="bi ${order.status === 'shipped' || order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
-                                <p class="mb-0 mt-1 small">Expédiée</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="text-center">
                                 <i class="bi ${order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
                                 <p class="mb-0 mt-1 small">Livrée</p>
@@ -1247,6 +1275,7 @@
                         </div>
                     </div>
                 </div>
+                `}
             `;
         }
         
@@ -1264,27 +1293,24 @@
             return methods[method] || method;
         }
 
-        // Calculer le pourcentage de progression
+        // Calculer le pourcentage de progression (3 étapes: pending=33%, processing=66%, delivered=100%)
         function getProgressPercentage(status) {
             switch (status) {
-                case 'pending': return 25;
-                case 'processing': return 50;
-                case 'shipped': return 75;
+                case 'pending': return 33;
+                case 'processing': return 66;
                 case 'delivered': return 100;
-                default: return 25;
+                case 'cancelled': return 0;
+                default: return 33;
             }
         }
 
-        // Obtenir le badge de statut
+        // Obtenir le badge de statut (selon OrderStatusService)
         function getStatusBadge(status) {
             const badges = {
-                'pending': { class: 'bg-warning', label: 'En attente' },
-                'paid': { class: 'bg-info', label: 'Payée' },
-                'processing': { class: 'bg-primary', label: 'En préparation' },
-                'shipped': { class: 'bg-success', label: 'Expédiée' },
+                'pending': { class: 'bg-warning', label: 'En cours de validation' },
+                'processing': { class: 'bg-info', label: 'En cours de livraison' },
                 'delivered': { class: 'bg-success', label: 'Livrée' },
-                'cancelled': { class: 'bg-danger', label: 'Annulée' },
-                'refunded': { class: 'bg-secondary', label: 'Remboursée' }
+                'cancelled': { class: 'bg-danger', label: 'Annulée' }
             };
             return badges[status] || { class: 'bg-secondary', label: status };
         }
@@ -1442,7 +1468,8 @@
             try {
                 const headers = {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 };
 
                 if (token) {
@@ -1492,6 +1519,8 @@
             if (ordersTab) {
                 ordersTab.addEventListener('shown.bs.tab', function() {
                     loadOrders();
+                    // Sauvegarder l'onglet actif
+                    localStorage.setItem('activeTab', 'orders');
                 });
             }
 
@@ -1500,20 +1529,9 @@
             if (favoritesTab) {
                 favoritesTab.addEventListener('shown.bs.tab', function() {
                     loadFavorites();
+                    // Sauvegarder l'onglet actif
+                    localStorage.setItem('activeTab', 'favorites');
                 });
-            }
-
-            // Si l'URL contient #favorites, activer automatiquement l'onglet favoris
-            if (window.location.hash === '#favorites') {
-                const favoritesTabTrigger = new bootstrap.Tab(favoritesTab);
-                favoritesTabTrigger.show();
-            }
-
-            // Si l'URL contient ?tab=orders, activer automatiquement l'onglet commandes
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('tab') === 'orders' && ordersTab) {
-                const ordersTabTrigger = new bootstrap.Tab(ordersTab);
-                ordersTabTrigger.show();
             }
 
             // Charger l'activité quand l'onglet est affiché
@@ -1521,15 +1539,65 @@
             if (activityTab) {
                 activityTab.addEventListener('shown.bs.tab', function() {
                     loadActivity();
+                    // Sauvegarder l'onglet actif
+                    localStorage.setItem('activeTab', 'activity');
                 });
+            }
+
+            // Sauvegarder l'onglet "Informations personnelles" quand affiché
+            const profileTab = document.querySelector('a[href="#profile"]');
+            if (profileTab) {
+                profileTab.addEventListener('shown.bs.tab', function() {
+                    localStorage.setItem('activeTab', 'profile');
+                });
+            }
+
+            // Sauvegarder l'onglet "Sécurité" quand affiché
+            const securityTab = document.querySelector('a[href="#security"]');
+            if (securityTab) {
+                securityTab.addEventListener('shown.bs.tab', function() {
+                    localStorage.setItem('activeTab', 'security');
+                });
+            }
+
+            // Sauvegarder l'onglet "Préférences" quand affiché
+            const preferencesTab = document.querySelector('a[href="#preferences"]');
+            if (preferencesTab) {
+                preferencesTab.addEventListener('shown.bs.tab', function() {
+                    localStorage.setItem('activeTab', 'preferences');
+                });
+            }
+
+            // Restaurer l'onglet actif
+            const activeTab = localStorage.getItem('activeTab') || 'profile';
+            const tabToShow = document.querySelector(`a[href="#${activeTab}"]`);
+            if (tabToShow) {
+                const tabTrigger = new bootstrap.Tab(tabToShow);
+                tabTrigger.show();
+            }
+
+            // Priorité aux hash de l'URL si présent
+            if (window.location.hash) {
+                const hashTab = document.querySelector(`a[href="${window.location.hash}"]`);
+                if (hashTab) {
+                    const hashTabTrigger = new bootstrap.Tab(hashTab);
+                    hashTabTrigger.show();
+                }
+            }
+
+            // Priorité aux paramètres URL si présents
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tab')) {
+                const urlTab = document.querySelector(`a[href="#${urlParams.get('tab')}"]`);
+                if (urlTab) {
+                    const urlTabTrigger = new bootstrap.Tab(urlTab);
+                    urlTabTrigger.show();
+                }
             }
         });
 
         // Charger l'activité récente de l'utilisateur
         async function loadActivity() {
-            const token = localStorage.getItem('auth_token');
-            if (!token) return;
-
             const activityContainer = document.getElementById('activityContainer');
             const noActivityMessage = document.getElementById('noActivityMessage');
 
@@ -1541,8 +1609,6 @@
                 const response = await fetch('/api/activity/recent', {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     }
                 });
@@ -1605,7 +1671,7 @@
                                 <h6 class="mb-0">${activity.title}</h6>
                             </div>
                             <p class="mb-1 text-muted">${activity.description}</p>
-                            <small class="text-muted"><i class="bi bi-clock me-1"></i>${activity.time_ago}</small>
+                            <small class="text-muted"><i class="bi bi-clock me-1"></i>${activity.date}</small>
                         </div>
                         <span class="badge ${badgeClass} ms-3">${badgeLabel}</span>
                     </div>

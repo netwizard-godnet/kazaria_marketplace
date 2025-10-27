@@ -47,7 +47,7 @@
                                     <i class="fa-solid fa-sign-in-alt me-1"></i>Retour à la connexion
                                 </a>
                                 
-                                <a href="{{ route('forgot-password') }}" class="btn btn-outline-primary">
+                                <a href="{{ route('forgot-password') }}" class="btn btn-outline-primary btn-sm">
                                     <i class="fa-solid fa-redo me-1"></i>Renvoyer l'email
                                 </a>
                             </div>

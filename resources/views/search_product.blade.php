@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <main class="container-fluid">
         <!-- SECTION BREADCRUMB -->
         <section class="bg-light py-2">
@@ -143,7 +144,7 @@
                         <!-- Pagination -->
                         @if($products->hasPages())
                         <div class="d-flex justify-content-center mt-4">
-                            {{ $products->links() }}
+                            {{ $products->links('pagination.custom') }}
                         </div>
                         @endif
                     </div>

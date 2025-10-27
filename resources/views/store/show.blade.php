@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
 <link rel="stylesheet" href="{{ asset('css/store.css') }}">
 <div class="store-public">
 <!-- Bannière de la boutique -->
@@ -187,7 +188,7 @@
                     <button class="btn orange-bg text-white w-100" onclick="applyFilters()">
                         <i class="bi bi-search me-2"></i>Appliquer
                     </button>
-                    <button class="btn btn-outline-secondary w-100 mt-2" onclick="resetFilters()">
+                    <button class="btn btn-outline-secondary btn-sm w-100 mt-2" onclick="resetFilters()">
                         <i class="bi bi-x-circle me-2"></i>Réinitialiser
                     </button>
                 </div>
@@ -259,7 +260,7 @@
             <!-- Pagination -->
             @if($products->hasPages())
                 <div class="d-flex justify-content-center mt-5">
-                    {{ $products->links() }}
+                    {{ $products->links('pagination.custom') }}
                 </div>
             @endif
         </div>
@@ -327,13 +328,9 @@ function applySort() {
 
 // Fonction pour suivre la boutique
 function followStore() {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-        if (confirm('Vous devez être connecté pour suivre une boutique.\n\nVoulez-vous vous connecter ?')) {
-            window.location.href = '/authentification';
-        }
-        return;
-    }
+    // Redirection directe vers le profil (l'authentification est gérée par le middleware)
+    window.location.href = '/profil#favorites';
+    return;
     
     // API à implémenter
     alert('Fonctionnalité en cours de développement');
@@ -356,13 +353,9 @@ function shareStore() {
 
 // Fonction pour ajouter aux favoris
 function addToFavorite(productId) {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-        if (confirm('Vous devez être connecté pour ajouter aux favoris.\n\nVoulez-vous vous connecter ?')) {
-            window.location.href = '/authentification';
-        }
-        return;
-    }
+    // Redirection directe vers le profil (l'authentification est gérée par le middleware)
+    window.location.href = '/profil#favorites';
+    return;
     
     // Utiliser la fonction globale si disponible
     if (typeof window.toggleFavorite === 'function') {

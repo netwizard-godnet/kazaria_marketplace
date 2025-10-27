@@ -170,14 +170,20 @@ class AuthController extends Controller
         // Marquer le code comme utilisé
         $authCode->markAsUsed();
 
-        // Créer le token d'authentification
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Créer une session web persistante
+        Auth::login($user, true);
+
+        // Forcer la sauvegarde de la session
+        request()->session()->save();
+        
+        // Régénérer le token CSRF
+        request()->session()->regenerateToken();
 
         return response()->json([
             'success' => true,
             'message' => 'Connexion réussie',
             'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
-            'token' => $token
+            'redirect' => route('accueil')
         ]);
     }
 
@@ -268,10 +274,11 @@ class AuthController extends Controller
         $user = User::where('email_verification_token', $token)->first();
 
         if (!$user) {
-            return response()->json([
+            return view('auth.email-verification', [
                 'success' => false,
-                'message' => 'Token de vérification invalide'
-            ], 401);
+                'message' => 'Token de vérification invalide ou expiré',
+                'title' => 'Vérification échouée'
+            ]);
         }
 
         $user->update([
@@ -280,9 +287,11 @@ class AuthController extends Controller
             'email_verification_token' => null,
         ]);
 
-        return response()->json([
+        return view('auth.email-verification', [
             'success' => true,
-            'message' => 'Email vérifié avec succès'
+            'message' => 'Email vérifié avec succès ! Votre compte est maintenant actif.',
+            'title' => 'Vérification réussie',
+            'user' => $user
         ]);
     }
 

@@ -30,6 +30,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'profile_pic_url',
         'is_verified',
         'is_seller',
+        'is_admin',
+        'role_id',
         'adresse',
         'code_postal',
         'ville',
@@ -78,6 +80,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'termes_condition' => 'boolean',
             'auth_code_verified' => 'boolean',
         ];
+    }
+
+    /**
+     * Accessor pour l'URL de la photo de profil
+     */
+    public function getProfilePicUrlAttribute($value)
+    {
+        // Toujours retourner la valeur brute telle quelle
+        // L'URL sera construite dans la vue avec /storage/
+        return $value;
     }
 
     /**
@@ -137,9 +149,73 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Relation avec la boutique
      */
+    /**
+     * Relation avec le rôle
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Vérifier si l'utilisateur a une permission spécifique
+     */
+    public function hasPermission($permissionSlug)
+    {
+        if (!$this->role) {
+            return false;
+        }
+        
+        return $this->role->hasPermission($permissionSlug);
+    }
+
+    /**
+     * Vérifier si l'utilisateur a un rôle spécifique
+     */
+    public function hasRole($roleSlug)
+    {
+        if (!$this->role) {
+            return false;
+        }
+        
+        return $this->role->slug === $roleSlug;
+    }
+
     public function store()
     {
         return $this->hasOne(Store::class);
+    }
+
+    /**
+     * Relation avec les commandes
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Relation avec les avis
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Relation avec les favoris
+     */
+    public function favorites()
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    /**
+     * Relation avec les articles du panier
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
     }
 
     /**

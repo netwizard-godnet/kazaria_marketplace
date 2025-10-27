@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <main class="container-fluid">
         <!-- SECTION BREADCRUMB -->
         <section class="bg-light py-2">
@@ -15,7 +16,7 @@
         </section>
         <!-- SECTION BREADCRUMB END -->
 
-        <!-- SECTION DEALS JOUR -->
+        <!-- SECTION MEILLEURES OFFRES -->
         <section class="multi-carousel pb-5 border-top" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
                 <h5 class="mb-0 me-4">Meilleures offres</h5>
@@ -37,19 +38,55 @@
             <div class="multi-carousel-dots text-center mt-2"></div>
             @endif
         </section>
-        <!-- SECTION DEALS JOUR END -->
+        <!-- SECTION MEILLEURES OFFRES END -->
 
         <!-- SECTION AFFICHES -->
         <section class="py-5">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Catégorie pub 1 -->
+                    @php
+                        $categoriePub1 = App\Models\Banner::getCategoriePub1();
+                        $categoriePub1Image = $categoriePub1 ? $categoriePub1->image_url : null;
+                    @endphp
+                    @if($categoriePub1Image)
+                        <img src="{{ $categoriePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 1">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Catégorie pub 1 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Catégorie pub 2 -->
+                    @php
+                        $categoriePub2 = App\Models\Banner::getCategoriePub2();
+                        $categoriePub2Image = $categoriePub2 ? $categoriePub2->image_url : null;
+                    @endphp
+                    @if($categoriePub2Image)
+                        <img src="{{ $categoriePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 2">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Catégorie pub 2 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-200px object-fit-cover" alt="">
+                    <!-- Catégorie pub 3 -->
+                    @php
+                        $categoriePub3 = App\Models\Banner::getCategoriePub3();
+                        $categoriePub3Image = $categoriePub3 ? $categoriePub3->image_url : null;
+                    @endphp
+                    @if($categoriePub3Image)
+                        <img src="{{ $categoriePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 3">
+                    @else
+                        <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Catégorie pub 3 end -->
                 </div>
             </div>
         </section>
@@ -86,9 +123,9 @@
                     <div class="blue-bg rounded-2 p-3 text-white">
                         <p class="mb-3 fw-bold d-flex align-items-center justify-content-between">
                             <span>
-                                @if($category->icon)
-                                <i class="{{ $category->icon }} me-2"></i>
-                                @endif
+                        @if($category->image && !empty($category->image))
+                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" alt="{{ $category->name }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-2">
+                        @endif
                                 Filtres
                             </span>
                             <a href="{{ route('categorie', $category->slug) }}" class="btn btn-sm btn-outline-light">
@@ -107,9 +144,9 @@
                                     <input class="form-check-input" type="radio" name="subcategory" value="{{ $subcategory->id }}" 
                                         id="subcat{{ $subcategory->id }}" {{ request('subcategory') == $subcategory->id ? 'checked' : '' }}>
                                     <label class="form-check-label fs-8" for="subcat{{ $subcategory->id }}">
-                                        @if($subcategory->icon)
-                                        <i class="{{ $subcategory->icon }} me-1"></i>
-                                        @endif
+                            @if($subcategory->image && !empty($subcategory->image))
+                            <img src="{{ str_starts_with($subcategory->image, 'http') ? $subcategory->image : (str_starts_with($subcategory->image, 'images/') ? asset($subcategory->image) : Storage::url($subcategory->image)) }}" alt="{{ $subcategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-1">
+                            @endif
                                         {{ $subcategory->name }}
                                     </label>
                                 </div>
@@ -240,7 +277,7 @@
                         <!-- Pagination -->
                         @if($products->hasPages())
                         <div class="d-flex justify-content-center mt-4">
-                            {{ $products->links() }}
+                            {{ $products->links('pagination.custom') }}
                         </div>
                         @endif
                     </div>
@@ -253,10 +290,34 @@
         <section class="py-5">
             <div class="row g-3">
                 <div class="col-md-8">
-                    <img src="{{ asset('images/bg-1.jpg') }}" class="w-100 h-300px object-fit-cover" alt="">
+                    <!-- Catégorie pub 4 -->
+                    @php
+                        $categoriePub4 = App\Models\Banner::getCategoriePub4();
+                        $categoriePub4Image = $categoriePub4 ? $categoriePub4->image_url : null;
+                    @endphp
+                    @if($categoriePub4Image)
+                        <img src="{{ $categoriePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 4">
+                    @else
+                        <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Catégorie pub 4 end -->
                 </div>
                 <div class="col-md-4">
-                    <img src="{{ asset('images/bg-2.jpg') }}" class="w-100 h-300px object-fit-cover" alt="">
+                    <!-- Catégorie pub 5 -->
+                    @php
+                        $categoriePub5 = App\Models\Banner::getCategoriePub5();
+                        $categoriePub5Image = $categoriePub5 ? $categoriePub5->image_url : null;
+                    @endphp
+                    @if($categoriePub5Image)
+                        <img src="{{ $categoriePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 5">
+                    @else
+                        <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-muted fa-3x"></i>
+                        </div>
+                    @endif
+                    <!-- Catégorie pub 5 end -->
                 </div>
             </div>
         </section>

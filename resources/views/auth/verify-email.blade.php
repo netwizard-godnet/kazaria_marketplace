@@ -28,7 +28,7 @@
                             </div>
                             
                             <div class="mt-4">
-                                <a href="{{ route('login') }}" class="btn blue-bg text-white">
+                                <a href="{{ route('login') }}" class="btn btn-sm orange-bg text-white">
                                     <i class="fa fa-arrow-left me-2"></i>Retour à la connexion
                                 </a>
                             </div>

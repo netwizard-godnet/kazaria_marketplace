@@ -66,8 +66,8 @@ class StoreController extends Controller
                 'email' => $request->email,
                 'address' => $request->address,
                 'city' => $request->city,
-                'status' => 'active', // Activation automatique (validation admin sera ajoutée plus tard)
-                'is_verified' => true, // Vérification automatique pour le moment
+                'status' => 'pending', // En attente de validation par l'admin
+                'is_verified' => false, // Non vérifiée jusqu'à validation admin
             ];
 
             // Upload du logo
@@ -115,9 +115,9 @@ class StoreController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Félicitations ! Votre boutique a été créée avec succès.',
+                'message' => 'Félicitations ! Votre boutique a été créée avec succès. Elle est maintenant en attente de validation par nos administrateurs. Vous recevrez une notification une fois qu\'elle sera approuvée.',
                 'store_id' => $store->id,
-                'redirect' => route('store.dashboard')
+                'redirect' => route('store.pending')
             ]);
 
         } catch (\Exception $e) {
@@ -132,7 +132,7 @@ class StoreController extends Controller
     }
 
     /**
-     * Page d'attente de validation
+     * Page d'attente de validation (WEB - Sessions)
      */
     public function pending()
     {
@@ -147,15 +147,38 @@ class StoreController extends Controller
             return redirect()->route('store.dashboard');
         }
 
+        if ($store->status === 'rejected') {
+            return redirect()->route('store.rejected');
+        }
+
         return view('store.pending', compact('store'));
     }
 
     /**
-     * Dashboard de la boutique
+     * Page de boutique rejetée (WEB - Sessions)
+     */
+    public function rejected()
+    {
+        $user = auth()->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return redirect()->route('store.create');
+        }
+
+        if ($store->status !== 'rejected') {
+            return redirect()->route('store.pending');
+        }
+
+        return view('store.rejected', compact('store'));
+    }
+
+    /**
+     * Dashboard de la boutique (WEB - Sessions)
      */
     public function dashboard(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
         $store = $user->store;
 
         if (!$store) {
@@ -166,19 +189,78 @@ class StoreController extends Controller
             return redirect()->route('store.pending');
         }
 
-        // Statistiques
+        // Récupérer les commandes de la boutique
+        $storeProducts = $store->products()->pluck('id')->toArray();
+        
+        $orders = collect([]);
+        $orderStats = [
+            'total_orders' => 0,
+            'pending_orders' => 0,
+            'processing_orders' => 0,
+            'delivered_orders' => 0,
+            'cancelled_orders' => 0,
+            'pending_payment' => 0,
+            'paid_orders' => 0
+        ];
+        
+        if (!empty($storeProducts)) {
+            $orders = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })
+            ->with(['items.product', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+            
+            // Calculer les statistiques
+            $orderStats['total_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->count();
+            
+            $orderStats['pending_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->where('status', 'pending')->count();
+            
+            $orderStats['processing_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->where('status', 'processing')->count();
+            
+            $orderStats['delivered_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->where('status', 'delivered')->count();
+            
+            $orderStats['cancelled_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->where('status', 'cancelled')->count();
+            
+            $orderStats['pending_payment'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->where('payment_status', 'pending')->count();
+            
+            $orderStats['paid_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->where('payment_status', 'paid')->count();
+        }
+
+        // Statistiques générales
         $stats = [
             'total_products' => $store->products()->count(),
-            'total_orders' => 0, // À implémenter plus tard avec les vraies commandes
-            'pending_orders' => 0,
+            'total_orders' => $orderStats['total_orders'],
+            'pending_orders' => $orderStats['pending_orders'],
             'total_sales' => $store->total_sales,
             'total_revenue' => $store->total_sales * (1 - $store->commission_rate / 100),
         ];
 
+        // Récupérer les produits de la boutique
+        $products = $store->products()
+            ->with(['category', 'subcategory'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Récupérer les catégories pour le formulaire de modification
         $categories = Category::all();
 
-        return view('store.dashboard', compact('store', 'stats', 'categories'));
+        return view('store.dashboard', compact('store', 'stats', 'categories', 'orders', 'orderStats', 'products'));
     }
 
     /**
@@ -325,7 +407,7 @@ class StoreController extends Controller
     }
 
     /**
-     * API: Récupérer les statistiques de la boutique
+     * API: Récupérer les statistiques de la boutique (API - Tokens)
      */
     public function getStats(Request $request)
     {

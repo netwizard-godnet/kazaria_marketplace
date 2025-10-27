@@ -97,7 +97,7 @@
 
                     <!-- Boutons -->
                     <div class="mt-4">
-                        <a href="{{ route('accueil') }}" class="btn btn-outline-primary me-2">
+                        <a href="{{ route('accueil') }}" class="btn btn-outline-primary btn-sm me-2">
                             <i class="bi bi-house me-2"></i>Retour à l'accueil
                         </a>
                         <a href="{{ route('profil') }}?token={{ request()->token }}" class="btn orange-bg text-white">

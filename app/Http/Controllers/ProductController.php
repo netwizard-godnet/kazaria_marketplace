@@ -249,22 +249,48 @@ class ProductController extends Controller
     
     public function boutique(Request $request)
     {
-        // Meilleures offres (produits en vedette)
+        // Meilleures offres (produits des boutiques officielles EN PROMO uniquement)
         $bestOffers = Product::active()
-            ->featured()
+            ->with('store')
+            ->whereHas('store', function($q) {
+                $q->where('is_official', true);
+            })
+            ->where(function($q) {
+                // Produit en promo si old_price est renseigné et différent de price
+                $q->where(function($subQ) {
+                    $subQ->whereNotNull('old_price')
+                         ->whereColumn('old_price', '>', 'price');
+                })
+                // OU si discount_percentage est renseigné et supérieur à 0
+                ->orWhere(function($subQ) {
+                    $subQ->whereNotNull('discount_percentage')
+                         ->where('discount_percentage', '>', 0);
+                })
+                // OU si is_best_offer est true (produit marqué comme meilleure offre)
+                ->orWhere('is_best_offer', true);
+            })
             ->inStock()
             ->take(12)
             ->get();
         
-        // Nouveautés
+        // Nouveautés des boutiques officielles (les plus récents, incluant aussi les produits en promo)
         $newProducts = Product::active()
-            ->new()
+            ->with('store')
+            ->whereHas('store', function($q) {
+                $q->where('is_official', true);
+            })
             ->inStock()
+            ->orderBy('created_at', 'desc')
             ->take(12)
             ->get();
         
-        // Tous les produits en vedette avec filtres
-        $query = Product::active()->featured()->inStock();
+        // Tous les produits des boutiques officielles avec filtres
+        $query = Product::active()
+            ->with('store')
+            ->whereHas('store', function($q) {
+                $q->where('is_official', true);
+            })
+            ->inStock();
         
         // Filtres
         if ($request->filled('category_id')) {
@@ -310,10 +336,116 @@ class ProductController extends Controller
             ->get();
         
         $priceRange = Product::active()
-            ->featured()
+            ->whereHas('store', function($q) {
+                $q->where('is_official', true);
+            })
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
             ->first();
         
         return view('boutique_officielle', compact('bestOffers', 'newProducts', 'products', 'categories', 'attributes', 'priceRange'));
+    }
+
+    /**
+     * Afficher les produits par attribut
+     */
+    public function byAttribute($attributeSlug, $valueSlug = null, Request $request)
+    {
+        $attribute = \App\Models\Attribute::where('slug', $attributeSlug)->firstOrFail();
+        
+        $query = Product::active()->inStock()->with(['categories', 'attributeValues.attribute']);
+        
+        if ($valueSlug) {
+            // Filtrer par valeur d'attribut spécifique
+            $attributeValue = \App\Models\AttributeValue::where('slug', $valueSlug)
+                ->where('attribute_id', $attribute->id)
+                ->firstOrFail();
+            
+            $query->whereHas('attributeValues', function($q) use ($attributeValue) {
+                $q->where('attribute_values.id', $attributeValue->id);
+            });
+            
+            $pageTitle = "Produits {$attribute->name}: {$attributeValue->value}";
+        } else {
+            // Afficher tous les produits ayant cet attribut
+            $query->whereHas('attributeValues', function($q) use ($attribute) {
+                $q->where('attribute_id', $attribute->id);
+            });
+            
+            $pageTitle = "Produits par {$attribute->name}";
+        }
+        
+        // Appliquer les filtres de recherche
+        if ($request->filled('q')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->q . '%')
+                  ->orWhere('description', 'like', '%' . $request->q . '%');
+            });
+        }
+        
+        // Filtre par prix
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+        
+        // Filtre par catégorie
+        if ($request->filled('category')) {
+            $query->whereHas('categories', function($q) use ($request) {
+                $q->where('categories.slug', $request->category);
+            });
+        }
+        
+        // Tri
+        $sortBy = $request->get('sort', 'name');
+        switch ($sortBy) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('views_count', 'desc');
+                break;
+            default:
+                $query->orderBy('name', 'asc');
+        }
+        
+        $products = $query->paginate(15)->withQueryString();
+        
+        // Récupérer les valeurs de cet attribut pour les filtres
+        $attributeValues = $attribute->attributeValues()->orderBy('order')->get();
+        
+        // Récupérer les autres attributs filtrables
+        $otherAttributes = \App\Models\Attribute::filterable()
+            ->where('id', '!=', $attribute->id)
+            ->ordered()
+            ->with('attributeValues')
+            ->get();
+        
+        $categories = Category::active()->ordered()->get();
+        
+        $priceRange = Product::active()
+            ->whereHas('attributeValues', function($q) use ($attribute) {
+                $q->where('attribute_id', $attribute->id);
+            })
+            ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
+            ->first();
+        
+        return view('products.by-attribute', compact(
+            'attribute', 
+            'attributeValue', 
+            'products', 
+            'attributeValues', 
+            'otherAttributes', 
+            'categories', 
+            'priceRange', 
+            'pageTitle'
+        ));
     }
 }

@@ -14,7 +14,8 @@ function getSessionId() {
 window.getHeaders = function() {
     const headers = {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     };
     
     // Ajouter le token si l'utilisateur est connecté
@@ -30,25 +31,28 @@ window.getHeaders = function() {
 };
 
 // Fonction pour ajouter un produit au panier (globale)
-window.addToCart = async function(productId, quantity = 1) {
-    console.log('Ajout au panier - Produit ID:', productId, 'Quantité:', quantity);
-    
+window.addToCart = async function(productId, quantity = 1, attributes = {}) {
     try {
         const headers = window.getHeaders();
-        console.log('Headers:', headers);
         
-        const response = await fetch('/api/cart/add', {
+        const response = await fetch('/cart/add', {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
                 product_id: productId,
-                quantity: quantity
+                quantity: quantity,
+                attributes: attributes
             })
         });
-
-        console.log('Réponse status:', response.status);
+        
+        // Si erreur 419, rafraîchir le token CSRF et réessayer
+        if (response.status === 419) {
+            // Ne pas recharger automatiquement pour éviter les boucles
+            window.showNotification('error', 'Erreur de session. Veuillez recharger la page et réessayer.');
+            return;
+        }
+        
         const data = await response.json();
-        console.log('Données reçues:', data);
         
         if (data.success) {
             // Afficher notification
@@ -68,7 +72,7 @@ window.addToCart = async function(productId, quantity = 1) {
 // Fonction pour basculer un favori (globale)
 window.toggleFavorite = async function(productId, button) {
     try {
-        const response = await fetch('/api/favorites/toggle', {
+        const response = await fetch('/favorites/toggle', {
             method: 'POST',
             headers: window.getHeaders(),
             body: JSON.stringify({
@@ -133,7 +137,6 @@ window.updateFavoritesCount = function(count) {
 
 // Fonction globale pour afficher une notification
 window.showNotification = function(type, message) {
-    console.log('showNotification globale appelée:', type, message);
     
     const alertContainer = document.getElementById('alertContainer');
     
@@ -158,7 +161,6 @@ window.showNotification = function(type, message) {
     `;
     
     alertContainer.appendChild(alertDiv);
-    console.log('✅ Alerte ajoutée au DOM');
     
     // Supprimer après 5 secondes
     setTimeout(() => {
@@ -218,7 +220,6 @@ window.updateAllFavoriteButtons = async function() {
                 }
             });
             
-            console.log('✅ États des favoris mis à jour:', favoriteIds.length, 'favoris');
         }
     } catch (error) {
         console.error('Erreur mise à jour boutons favoris:', error);
@@ -227,28 +228,22 @@ window.updateAllFavoriteButtons = async function() {
 
 // Charger les compteurs au chargement de la page
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('cart.js - DOMContentLoaded - Chargement des compteurs');
-    
     try {
         // Charger le nombre d'articles dans le panier
-        const cartResponse = await fetch('/api/cart/', {
+        const cartResponse = await fetch('/cart/get', {
             headers: window.getHeaders()
         });
         const cartData = await cartResponse.json();
-        
-        console.log('Panier chargé:', cartData);
         
         if (cartData.success) {
             window.updateCartCount(cartData.count);
         }
         
         // Charger le nombre de favoris
-        const favoritesResponse = await fetch('/api/favorites/', {
+        const favoritesResponse = await fetch('/favorites/', {
             headers: window.getHeaders()
         });
         const favoritesData = await favoritesResponse.json();
-        
-        console.log('Favoris chargés:', favoritesData);
         
         if (favoritesData.success) {
             window.updateFavoritesCount(favoritesData.favorites.length);
@@ -261,6 +256,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Erreur lors du chargement des compteurs:', error);
     }
 });
+
+// Fonction pour aller aux favoris
+window.goToFavorites = function() {
+    window.location.href = '/profil#favorites';
+};
 
 // Animation pour le badge
 const style = document.createElement('style');

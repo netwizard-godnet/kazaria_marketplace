@@ -88,7 +88,7 @@
                                 <i class="bi bi-arrow-right me-2"></i>Continuer vers la livraison
                             </button>
                             
-                            <a href="{{ route('product-cart') }}" class="btn btn-outline-secondary w-100">
+                            <a href="{{ route('product-cart') }}" class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-arrow-left me-2"></i>Retour au panier
                             </a>
                         </div>

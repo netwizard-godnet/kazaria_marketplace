@@ -15,7 +15,7 @@
                     <p class="text-muted mb-0" id="orderNumber">Chargement...</p>
                 </div>
                 <div>
-                    <a href="{{ route('store.dashboard') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('store.dashboard') }}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left me-2"></i>Retour au dashboard
                     </a>
                 </div>
@@ -61,8 +61,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" onclick="updateOrderStatus()">Mettre à jour</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="updateOrderStatus()">Mettre à jour</button>
             </div>
         </div>
     </div>
@@ -93,8 +93,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-success" onclick="markAsShipped()">Marquer comme expédiée</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="markAsShipped()">Marquer comme expédiée</button>
             </div>
         </div>
     </div>
@@ -121,22 +121,20 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-danger" onclick="cancelOrder()">Confirmer l'annulation</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="cancelOrder()">Confirmer l'annulation</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-const token = localStorage.getItem('auth_token');
 let currentOrder = null;
 
-// Récupérer le numéro de commande depuis l'URL
-const urlParams = new URLSearchParams(window.location.search);
-const orderNumber = urlParams.get('order');
+// Récupérer le numéro de commande depuis le paramètre Blade
+const orderNumber = '{{ $orderNumber }}';
 
-if (!orderNumber) {
+if (!orderNumber || orderNumber === 'order-details' || orderNumber === 'orders') {
     document.getElementById('orderDetailsContainer').innerHTML = `
         <div class="alert alert-danger">
             <i class="bi bi-exclamation-circle me-2"></i>
@@ -153,14 +151,23 @@ async function loadOrderDetails() {
     const container = document.getElementById('orderDetailsContainer');
     
     try {
-        const response = await fetch(`/api/store/orders/${orderNumber}`, {
+        const response = await fetch(`/store/api/orders/${orderNumber}`, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
         });
         
+        console.log('Réponse HTTP:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Erreur ' + response.status }));
+            throw new Error(errorData.message || 'Erreur HTTP ' + response.status);
+        }
+        
         const data = await response.json();
+        console.log('Données reçues:', data);
         
         if (data.success) {
             currentOrder = data.order;
@@ -174,11 +181,12 @@ async function loadOrderDetails() {
             `;
         }
     } catch (error) {
-        console.error('Erreur:', error);
+        console.error('Erreur complète:', error);
         container.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-circle me-2"></i>
-                Erreur lors du chargement des détails de la commande.
+                Erreur lors du chargement des détails de la commande: ${error.message}
+                <br><small>Détails dans la console du navigateur (F12)</small>
             </div>
         `;
     }
@@ -240,7 +248,7 @@ function displayOrderDetails(order) {
                 <!-- Articles de la commande -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Articles commandés (${order.items.length})</h5>
+                        <h5 class="card-title mb-0">Articles commandés (${Array.isArray(order.items) ? order.items.length : 0})</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -254,7 +262,7 @@ function displayOrderDetails(order) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${order.items.map(item => `
+                                    ${Array.isArray(order.items) ? order.items.map(item => `
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
@@ -272,7 +280,7 @@ function displayOrderDetails(order) {
                                             <td>${item.quantity}</td>
                                             <td><strong>${new Intl.NumberFormat('fr-FR').format(item.total)} FCFA</strong></td>
                                         </tr>
-                                    `).join('')}
+                                    `).join('') : '<tr><td colspan="4" class="text-center text-muted">Aucun article</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -361,53 +369,42 @@ function displayOrderDetails(order) {
     `;
 }
 
-// Obtenir les boutons d'action selon le statut
+// Obtenir les boutons d'action selon le statut (UTILISE LES FONCTIONS DU DASHBOARD)
 function getActionButtons(status) {
     const buttons = [];
     
     if (status === 'pending') {
         buttons.push(`
-            <button class="btn btn-primary" onclick="showStatusModal()">
-                <i class="bi bi-arrow-clockwise me-2"></i>Changer le statut
+            <button class="btn btn-outline-info btn-sm" onclick="updateOrderStatus('${orderNumber}', 'processing')" title="Traiter la commande">
+                <i class="bi bi-play-circle me-1"></i>Traiter
             </button>
         `);
         buttons.push(`
-            <button class="btn btn-success" onclick="showShipModal()">
-                <i class="bi bi-truck me-2"></i>Marquer comme expédiée
-            </button>
-        `);
-        buttons.push(`
-            <button class="btn btn-danger" onclick="showCancelModal()">
-                <i class="bi bi-x-circle me-2"></i>Annuler la commande
+            <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderNumber}')" title="Annuler la commande">
+                <i class="bi bi-x-circle me-1"></i>Annuler
             </button>
         `);
     } else if (status === 'processing') {
         buttons.push(`
-            <button class="btn btn-primary" onclick="showStatusModal()">
-                <i class="bi bi-arrow-clockwise me-2"></i>Changer le statut
+            <button class="btn btn-outline-success btn-sm" onclick="updateOrderStatus('${orderNumber}', 'delivered')" title="Marquer comme livrée">
+                <i class="bi bi-check-circle me-1"></i>Livrée
             </button>
         `);
         buttons.push(`
-            <button class="btn btn-success" onclick="showShipModal()">
-                <i class="bi bi-truck me-2"></i>Marquer comme expédiée
-            </button>
-        `);
-    } else if (status === 'shipped') {
-        buttons.push(`
-            <button class="btn btn-primary" onclick="showStatusModal()">
-                <i class="bi bi-arrow-clockwise me-2"></i>Changer le statut
+            <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderNumber}')" title="Annuler la commande">
+                <i class="bi bi-x-circle me-1"></i>Annuler
             </button>
         `);
     } else if (status === 'delivered') {
         buttons.push(`
-            <button class="btn btn-outline-primary" disabled>
-                <i class="bi bi-check-circle me-2"></i>Commande livrée
+            <button class="btn btn-outline-warning btn-sm" onclick="updateOrderStatus('${orderNumber}', 'processing')" title="Remettre en cours de traitement">
+                <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
             </button>
         `);
     } else if (status === 'cancelled') {
         buttons.push(`
-            <button class="btn btn-outline-danger" disabled>
-                <i class="bi bi-x-circle me-2"></i>Commande annulée
+            <button class="btn btn-outline-info btn-sm" onclick="updateOrderStatus('${orderNumber}', 'processing')" title="Remettre en cours de traitement">
+                <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
             </button>
         `);
     }
@@ -448,130 +445,72 @@ function getPaymentMethodLabel(method) {
     return labels[method] || method;
 }
 
-// Afficher le modal de changement de statut
-function showStatusModal() {
-    if (currentOrder) {
-        document.getElementById('newStatus').value = currentOrder.status;
-    }
-    new bootstrap.Modal(document.getElementById('statusModal')).show();
-}
-
-// Afficher le modal d'expédition
-function showShipModal() {
-    new bootstrap.Modal(document.getElementById('shipModal')).show();
-}
-
-// Afficher le modal d'annulation
-function showCancelModal() {
-    new bootstrap.Modal(document.getElementById('cancelModal')).show();
-}
-
-// Mettre à jour le statut de la commande
-async function updateOrderStatus() {
-    const newStatus = document.getElementById('newStatus').value;
-    const notes = document.getElementById('statusNotes').value;
-    
-    try {
-        const response = await fetch(`/api/store/orders/${orderNumber}/status`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                status: newStatus,
-                notes: notes
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('success', 'Statut mis à jour avec succès');
-            bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
-            loadOrderDetails(); // Recharger les détails
-        } else {
-            showNotification('danger', data.message);
+// Déclarer les fonctions GLOBALEMENT
+window.updateOrderStatus = async function(orderNumber, newStatus) {
+    console.log('updateOrderStatus appelé:', orderNumber, newStatus);
+        if (!confirm(`Êtes-vous sûr de vouloir marquer cette commande comme "${newStatus}" ?`)) {
+            return;
         }
-    } catch (error) {
-        console.error('Erreur:', error);
-        showNotification('danger', 'Erreur lors de la mise à jour du statut');
-    }
-}
-
-// Marquer comme expédiée
-async function markAsShipped() {
-    const trackingNumber = document.getElementById('trackingNumber').value;
-    const shippingCompany = document.getElementById('shippingCompany').value;
-    const notes = document.getElementById('shipNotes').value;
-    
-    try {
-        const response = await fetch(`/api/store/orders/${orderNumber}/ship`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                tracking_number: trackingNumber,
-                shipping_company: shippingCompany,
-                notes: notes
-            })
-        });
         
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('success', 'Commande marquée comme expédiée');
-            bootstrap.Modal.getInstance(document.getElementById('shipModal')).hide();
-            loadOrderDetails(); // Recharger les détails
-        } else {
-            showNotification('danger', data.message);
+        try {
+            const response = await fetch(`/store/api/orders/${orderNumber}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('success', `Commande ${orderNumber} mise à jour avec succès !`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showNotification('error', data.message || 'Erreur lors de la mise à jour');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('error', 'Erreur de connexion. Veuillez réessayer.');
         }
-    } catch (error) {
-        console.error('Erreur:', error);
-        showNotification('danger', 'Erreur lors du marquage de la commande');
-    }
-}
+};
 
-// Annuler la commande
-async function cancelOrder() {
-    const reason = document.getElementById('cancelReason').value;
-    
-    if (!reason.trim()) {
-        showNotification('warning', 'Veuillez indiquer la raison de l\'annulation');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/store/orders/${orderNumber}/cancel`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                reason: reason
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('success', 'Commande annulée avec succès');
-            bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
-            loadOrderDetails(); // Recharger les détails
-        } else {
-            showNotification('danger', data.message);
+window.cancelOrder = async function(orderNumber) {
+        if (!confirm(`Êtes-vous sûr de vouloir annuler la commande ${orderNumber} ? Cette action est irréversible.`)) {
+            return;
         }
-    } catch (error) {
-        console.error('Erreur:', error);
-        showNotification('danger', 'Erreur lors de l\'annulation de la commande');
-    }
-}
+        
+        try {
+            const response = await fetch(`/store/api/orders/${orderNumber}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('success', `Commande ${orderNumber} annulée avec succès !`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showNotification('error', data.message || 'Erreur lors de l\'annulation');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('error', 'Erreur de connexion. Veuillez réessayer.');
+        }
+};
 
 // Fonction de notification
 function showNotification(type, message) {
@@ -585,3 +524,6 @@ function showNotification(type, message) {
 }
 </script>
 @endsection
+
+
+
