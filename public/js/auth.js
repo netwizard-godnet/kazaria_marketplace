@@ -19,12 +19,14 @@ window.getHeaders = function() {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
     };
     
-    // Ajouter le token si l'utilisateur est connecté
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+    // Vérifier si l'utilisateur est connecté via session (pas seulement le token localStorage)
+    const isLoggedIn = document.querySelector('meta[name="user-logged-in"]')?.getAttribute('content') === 'true';
+    
+    if (isLoggedIn) {
+        // Utilisateur connecté via session - pas besoin de token Bearer
+        headers['X-Session-ID'] = getSessionId();
     } else {
-        // Ajouter l'ID de session pour les invités
+        // Utilisateur non connecté - utiliser seulement l'ID de session
         headers['X-Session-ID'] = getSessionId();
     }
     

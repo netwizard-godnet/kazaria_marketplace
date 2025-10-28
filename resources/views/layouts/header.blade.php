@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Storage;
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="user-logged-in" content="{{ auth()->check() ? 'true' : 'false' }}">
         {{-- Composant SEO --}}
         <x-seo 
             :title="$seoTitle ?? ($settings['site_name'] ?? 'KAZARIA') . ' - Votre marketplace en ligne en Côte d\'Ivoire'"
