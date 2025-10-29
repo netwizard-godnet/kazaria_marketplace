@@ -60,6 +60,11 @@ window.addToCart = async function(productId, quantity = 1, attributes = {}) {
             
             // Mettre à jour le compteur du panier
             window.updateCartCount(data.cart_count);
+            
+            // Démarrer le timer de rappel panier (affichera le pop-up après 5 secondes)
+            if (window.startCartReminderTimer) {
+                window.startCartReminderTimer();
+            }
         } else {
             window.showNotification('error', data.message || 'Erreur lors de l\'ajout au panier');
         }
@@ -274,4 +279,227 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ==============================
+// Rappel panier après ajout de produit
+// ==============================
+(function() {
+    const REMINDER_DELAY_MS = 2 * 60 * 1000; // 2 minutes après l'ajout d'un produit
+    const MIN_INTERVAL_BETWEEN_REMINDERS_MS = 2 * 60 * 1000; // 2 minutes entre deux rappels
+    let reminderTimer = null;
+
+    function isOnCartOrCheckout() {
+        const path = window.location.pathname;
+        return path.startsWith('/panier') || path.includes('/cart') || path.includes('/checkout');
+    }
+
+    async function fetchCartCountSafe() {
+        try {
+            const response = await fetch('/cart/get', { headers: window.getHeaders ? window.getHeaders() : {} });
+            if (!response.ok) return 0;
+            const data = await response.json();
+            return data && data.success ? (data.count || 0) : 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    async function fetchCartItemsSafe() {
+        try {
+            const response = await fetch('/cart/get', { headers: window.getHeaders ? window.getHeaders() : {} });
+            if (!response.ok) return [];
+            const data = await response.json();
+            // La méthode getCart retourne 'items' et non 'cart_items'
+            return data && data.success ? (data.items || []) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function formatPrice(price) {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'XOF',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(price).replace('XOF', 'FCFA');
+    }
+
+    function renderCartProducts(products) {
+        const container = document.getElementById('cartReminderProducts');
+        if (!container) return;
+
+        if (!products || products.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center">Aucun produit dans le panier</p>';
+            return;
+        }
+
+        const productsHTML = products.map(item => {
+            // Gérer différentes structures de données possibles
+            const product = item.product || item.product_id ? { 
+                image: item.product?.image || item.product_image || '',
+                name: item.product?.name || item.product_name || 'Produit'
+            } : null;
+            
+            const imageUrl = product?.image 
+                ? (product.image.startsWith('http') ? product.image : 
+                   (product.image.startsWith('/') ? product.image : `/storage/${product.image}`))
+                : '/images/placeholder.png';
+            const productName = product?.name || item.product_name || 'Produit';
+            const quantity = item.quantity || 1;
+            // Le prix peut être dans item.price ou item.product.price
+            const price = item.price || item.product?.price || 0;
+            const totalPrice = price * quantity;
+
+            return `
+                <div class="cart-reminder-product-item">
+                    <img src="${imageUrl}" alt="${productName}" class="cart-reminder-product-image" onerror="this.src='/images/placeholder.png'">
+                    <div class="cart-reminder-product-info">
+                        <p class="cart-reminder-product-name">${productName}</p>
+                        <p class="cart-reminder-product-details">Quantité: ${quantity}</p>
+                    </div>
+                    <div class="cart-reminder-product-price">
+                        ${formatPrice(totalPrice)}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = productsHTML;
+    }
+
+    function shouldShowReminder() {
+        try {
+            const lastShown = localStorage.getItem('cart_reminder_last_shown');
+            if (!lastShown) return true;
+            const last = parseInt(lastShown, 10) || 0;
+            return (Date.now() - last) > MIN_INTERVAL_BETWEEN_REMINDERS_MS;
+        } catch (e) {
+            return true;
+        }
+    }
+
+    function markReminderShown() {
+        try {
+            localStorage.setItem('cart_reminder_last_shown', String(Date.now()));
+        } catch (e) {}
+    }
+
+    function hideCartReminderPopup() {
+        const popup = document.getElementById('cartReminderPopup');
+        if (popup) {
+            popup.classList.add('hiding');
+            setTimeout(() => {
+                popup.style.display = 'none';
+                popup.classList.remove('hiding');
+            }, 300);
+            // Annuler le timer si le pop-up est fermé manuellement
+            if (reminderTimer) {
+                clearTimeout(reminderTimer);
+                reminderTimer = null;
+            }
+        }
+    }
+
+    // Rendre la fonction accessible globalement
+    window.hideCartReminderPopup = hideCartReminderPopup;
+
+    function showCartReminderPopup() {
+        const popup = document.getElementById('cartReminderPopup');
+        if (popup) {
+            popup.style.display = 'block';
+            // Vibration légère sur mobile si disponible
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+        }
+    }
+
+    async function checkCartAndRemind() {
+        if (isOnCartOrCheckout()) {
+            // Si on est sur le panier/checkout, annuler le timer
+            if (reminderTimer) {
+                clearTimeout(reminderTimer);
+                reminderTimer = null;
+            }
+            return;
+        }
+        
+        const count = await fetchCartCountSafe();
+        if (count > 0 && shouldShowReminder()) {
+            // Charger les produits du panier
+            const products = await fetchCartItemsSafe();
+            
+            // Mettre à jour le compteur
+            const countBadge = document.getElementById('cartReminderCount');
+            if (countBadge) {
+                countBadge.textContent = count;
+            }
+            
+            // Rendre les produits
+            renderCartProducts(products);
+            
+            // Afficher le pop-up
+            showCartReminderPopup();
+            
+            // Marquer comme affiché
+            markReminderShown();
+        }
+        
+        // Réinitialiser le timer pour qu'il ne soit plus actif
+        reminderTimer = null;
+    }
+
+    // Démarrer le timer après l'ajout d'un produit au panier
+    function startCartReminderTimer() {
+        // Annuler tout timer existant
+        if (reminderTimer) {
+            clearTimeout(reminderTimer);
+        }
+        
+        // Ne pas afficher le rappel si on est déjà sur le panier/checkout
+        if (isOnCartOrCheckout()) {
+            return;
+        }
+        
+        // Démarrer le timer
+        reminderTimer = setTimeout(checkCartAndRemind, REMINDER_DELAY_MS);
+    }
+
+    // Fonction globale pour démarrer le timer (appelée après ajout au panier)
+    window.startCartReminderTimer = startCartReminderTimer;
+
+    // Vérifier au chargement si le panier a des produits et démarrer le timer si nécessaire
+    async function checkCartOnLoad() {
+        if (isOnCartOrCheckout()) return;
+        
+        const count = await fetchCartCountSafe();
+        if (count > 0 && shouldShowReminder()) {
+            // Démarrer le timer si le panier contient des produits
+            startCartReminderTimer();
+        }
+    }
+
+    // Initialisation après chargement DOM
+    document.addEventListener('DOMContentLoaded', function() {
+        // Vérifier le panier au chargement de la page
+        checkCartOnLoad();
+        
+        // Gestion de la fermeture du pop-up
+        const closeBtn = document.getElementById('closeCartReminder');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', hideCartReminderPopup);
+        }
+
+        // Fermer le pop-up si on clique en dehors (optionnel, peut être retiré)
+        const popup = document.getElementById('cartReminderPopup');
+        if (popup) {
+            popup.addEventListener('click', function(e) {
+                if (e.target === popup) {
+                    hideCartReminderPopup();
+                }
+            });
+        }
+    });
+})();
 

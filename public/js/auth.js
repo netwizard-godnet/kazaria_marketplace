@@ -70,6 +70,11 @@ window.addToCart = async function(productId, quantity = 1, attributes = {}) {
             if (window.updateCartCount) {
                 window.updateCartCount(data.cart_count);
             }
+            
+            // Démarrer le timer de rappel panier (affichera le pop-up après 5 secondes)
+            if (window.startCartReminderTimer) {
+                window.startCartReminderTimer();
+            }
         } else {
             if (window.showNotification) {
                 window.showNotification('error', data.message || 'Erreur lors de l\'ajout au panier');

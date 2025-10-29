@@ -69,6 +69,652 @@
     </div>
 </footer>
 
+<!-- Pop-up Rappel Panier (en bas à droite) -->
+<div id="cartReminderPopup" class="cart-reminder-popup z-index-9x" style="display: none;">
+    <div class="cart-reminder-content">
+        <div class="cart-reminder-header">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-bag-check-fill me-2"></i>
+                    <h6 class="mb-0 fw-bold">Votre panier</h6>
+                    <span class="badge bg-danger ms-2" id="cartReminderCount">0</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" id="closeCartReminder" aria-label="Fermer"></button>
+            </div>
+        </div>
+        <div class="cart-reminder-body">
+            <p class="text-muted small mb-3">
+                <i class="bi bi-clock-history me-1"></i>
+                Ne ratez pas votre commande !
+            </p>
+            <div id="cartReminderProducts" class="cart-reminder-products">
+                <!-- Les produits seront chargés ici -->
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="cart-reminder-footer">
+            <a href="<?php echo e(route('product-cart')); ?>" class="btn orange-bg text-white w-100 fw-bold" onclick="if (window.hideCartReminderPopup) window.hideCartReminderPopup();">
+                <i class="bi bi-cart-check-fill me-2"></i>Voir mon panier
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Styles pour le pop-up rappel panier -->
+<style>
+    .cart-reminder-popup {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 380px;
+        max-width: calc(100vw - 40px);
+        max-height: calc(100vh - 40px);
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        z-index: 1050;
+        overflow: hidden;
+        animation: slideInFromRight 0.4s ease-out;
+    }
+    
+    .cart-reminder-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: 600px;
+    }
+    
+    .cart-reminder-header {
+        background: linear-gradient(135deg, #ff8c00 0%, #ffa64d 100%);
+        color: white;
+        padding: 1rem 1.25rem;
+        border-bottom: none;
+    }
+    
+    .cart-reminder-header .btn-close-white {
+        filter: invert(1);
+        opacity: 0.9;
+    }
+    
+    .cart-reminder-header .btn-close-white:hover {
+        opacity: 1;
+    }
+    
+    .cart-reminder-body {
+        padding: 1.25rem;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 200px;
+        max-height: 400px;
+    }
+    
+    .cart-reminder-products {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .cart-reminder-product-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+    }
+    
+    .cart-reminder-product-item:hover {
+        background: #f0f0f0;
+        transform: translateX(4px);
+    }
+    
+    .cart-reminder-product-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 6px;
+        background: #fff;
+        border: 1px solid #e9ecef;
+    }
+    
+    .cart-reminder-product-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .cart-reminder-product-name {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #212529;
+        margin: 0 0 0.25rem 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .cart-reminder-product-details {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .cart-reminder-product-price {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #ff8c00;
+        white-space: nowrap;
+    }
+    
+    .cart-reminder-footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+    
+    .cart-reminder-footer .btn {
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .cart-reminder-footer .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+    }
+    
+    @keyframes slideInFromRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutToRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .cart-reminder-popup.hiding {
+        animation: slideOutToRight 0.3s ease-in forwards;
+    }
+    
+    /* Styles pour mobile */
+    @media (max-width: 576px) {
+        .cart-reminder-popup {
+            bottom: 80px; /* Au-dessus du footer mobile */
+            right: 10px;
+            left: 10px;
+            width: auto;
+            max-width: calc(100vw - 20px);
+            max-height: calc(100vh - 100px);
+        }
+        
+        .cart-reminder-header {
+            padding: 0.875rem 1rem;
+        }
+        
+        .cart-reminder-header h6 {
+            font-size: 0.9rem;
+        }
+        
+        .cart-reminder-body {
+            padding: 1rem;
+            max-height: 300px;
+        }
+        
+        .cart-reminder-product-item {
+            padding: 0.625rem;
+        }
+        
+        .cart-reminder-product-image {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .cart-reminder-product-name {
+            font-size: 0.85rem;
+        }
+        
+        .cart-reminder-product-price {
+            font-size: 0.85rem;
+        }
+        
+        .cart-reminder-footer {
+            padding: 0.875rem 1rem;
+        }
+        
+        .cart-reminder-footer .btn {
+            font-size: 0.9rem;
+            padding: 0.625rem;
+        }
+    }
+    
+    /* Scrollbar personnalisée */
+    .cart-reminder-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .cart-reminder-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .cart-reminder-body::-webkit-scrollbar-thumb {
+        background: #ff8c00;
+        border-radius: 3px;
+    }
+    
+    .cart-reminder-body::-webkit-scrollbar-thumb:hover {
+        background: #ff9500;
+    }
+</style>
+
+<!-- Backdrop pour le pop-up cookies -->
+<div id="cookieConsentBackdrop" class="cookie-consent-backdrop" style="display: none;"></div>
+
+<!-- Pop-up Consentement Cookies -->
+<div id="cookieConsentBanner" class="cookie-consent-banner" style="display: none;">
+    <div class="cookie-consent-content">
+        <div class="cookie-consent-header">
+            <i class="bi bi-cookie me-2"></i>
+            <h6 class="mb-0 fw-bold">Nous utilisons des cookies</h6>
+        </div>
+        <div class="cookie-consent-body">
+            <p class="mb-3">Nous utilisons des cookies pour améliorer votre expérience de navigation, analyser le trafic du site et personnaliser le contenu. En continuant à utiliser notre site, vous acceptez notre utilisation des cookies.</p>
+            <div class="cookie-options mb-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="cookieNecessary" checked disabled>
+                    <label class="form-check-label" for="cookieNecessary">
+                        <strong>Cookies nécessaires</strong> <small class="text-muted">(obligatoires)</small>
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="cookieAnalytics">
+                    <label class="form-check-label" for="cookieAnalytics">
+                        <strong>Cookies analytiques</strong>
+                        <small class="text-muted d-block">Nous aident à comprendre comment vous utilisez le site</small>
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="cookieMarketing">
+                    <label class="form-check-label" for="cookieMarketing">
+                        <strong>Cookies marketing</strong>
+                        <small class="text-muted d-block">Pour personnaliser vos publicités et mesurer leur efficacité</small>
+                    </label>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="cookieRejectAll">
+                    <i class="bi bi-x-circle me-1"></i>Refuser tout
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="cookieCustomize">
+                    <i class="bi bi-gear me-1"></i>Personnaliser
+                </button>
+                <button type="button" class="btn orange-bg text-white btn-sm flex-fill" id="cookieAcceptAll">
+                    <i class="bi bi-check-circle me-1"></i>Accepter tout
+                </button>
+            </div>
+            <div class="mt-3">
+                <a href="<?php echo e(route('privacy-policy') ?? '#'); ?>" class="small text-muted text-decoration-none">
+                    <i class="bi bi-info-circle me-1"></i>En savoir plus sur notre politique de confidentialité
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles pour le pop-up cookies -->
+<style>
+    .cookie-consent-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .cookie-consent-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 3px solid #ff8c00;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+        z-index: 9999;
+        animation: slideUp 0.5s ease-out;
+    }
+    
+    .cookie-consent-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+    
+    .cookie-consent-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        color: #212529;
+    }
+    
+    .cookie-consent-header i {
+        font-size: 1.5rem;
+        color: #ff8c00;
+    }
+    
+    .cookie-consent-body {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    .cookie-options {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .cookie-options .form-check-label {
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    
+    .cookie-options .form-check-input {
+        cursor: pointer;
+        margin-top: 0.3rem;
+    }
+    
+    .cookie-options .form-check-input:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .cookie-consent-body .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+    }
+    
+    .cookie-consent-body .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideDown {
+        from {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+    }
+    
+    .cookie-consent-banner.hiding {
+        animation: slideDown 0.3s ease-in forwards;
+    }
+    
+    .cookie-consent-backdrop.hiding {
+        animation: fadeOut 0.3s ease-in forwards;
+    }
+    
+    /* Styles pour mobile */
+    @media (max-width: 768px) {
+        .cookie-consent-content {
+            padding: 1rem;
+        }
+        
+        .cookie-consent-header {
+            font-size: 1rem;
+        }
+        
+        .cookie-consent-body {
+            font-size: 0.85rem;
+        }
+        
+        .cookie-options {
+            padding: 0.75rem;
+        }
+        
+        .cookie-consent-body .btn {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .d-flex.gap-2 {
+            gap: 0.5rem !important;
+        }
+    }
+    
+    /* Ajustement pour le footer mobile */
+    @media (max-width: 576px) {
+        .cookie-consent-banner {
+            bottom: 80px; /* Au-dessus du footer mobile */
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+    }
+</style>
+
+<!-- Script de gestion des cookies -->
+<script>
+(function() {
+    const COOKIE_CONSENT_KEY = 'kazaria_cookie_consent';
+    
+    function getCookieConsent() {
+        try {
+            const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+            return consent ? JSON.parse(consent) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+    
+    function setCookieConsent(consent) {
+        try {
+            localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({
+                ...consent,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.error('Erreur sauvegarde consentement cookies:', e);
+        }
+    }
+    
+    function hideCookieBanner() {
+        const banner = document.getElementById('cookieConsentBanner');
+        const backdrop = document.getElementById('cookieConsentBackdrop');
+        
+        if (banner) {
+            banner.classList.add('hiding');
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 300);
+        }
+        
+        if (backdrop) {
+            backdrop.classList.add('hiding');
+            setTimeout(() => {
+                backdrop.style.display = 'none';
+            }, 300);
+        }
+    }
+    
+    function showCookieBanner() {
+        const banner = document.getElementById('cookieConsentBanner');
+        const backdrop = document.getElementById('cookieConsentBackdrop');
+        
+        if (backdrop) {
+            backdrop.style.display = 'block';
+        }
+        
+        if (banner) {
+            banner.style.display = 'block';
+        }
+    }
+    
+    function acceptAllCookies() {
+        setCookieConsent({
+            necessary: true,
+            analytics: true,
+            marketing: true
+        });
+        hideCookieBanner();
+        // Ici vous pouvez initialiser tous les scripts de tracking
+        initializeTrackingScripts();
+    }
+    
+    function rejectAllCookies() {
+        setCookieConsent({
+            necessary: true, // Toujours true car obligatoires
+            analytics: false,
+            marketing: false
+        });
+        hideCookieBanner();
+    }
+    
+    function saveCustomConsent() {
+        const analytics = document.getElementById('cookieAnalytics').checked;
+        const marketing = document.getElementById('cookieMarketing').checked;
+        
+        setCookieConsent({
+            necessary: true, // Toujours true
+            analytics: analytics,
+            marketing: marketing
+        });
+        hideCookieBanner();
+        
+        // Initialiser seulement les scripts autorisés
+        if (analytics) initializeAnalytics();
+        if (marketing) initializeMarketing();
+    }
+    
+    function initializeTrackingScripts() {
+        // Initialiser tous les scripts de tracking
+        initializeAnalytics();
+        initializeMarketing();
+    }
+    
+    function initializeAnalytics() {
+        // Ajouter votre code Google Analytics ou autre ici
+        console.log('Analytics initialisés');
+    }
+    
+    function initializeMarketing() {
+        // Ajouter votre code de marketing/tracking ici
+        console.log('Marketing initialisé');
+    }
+    
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const consent = getCookieConsent();
+        
+        if (!consent) {
+            // Afficher le banner si aucun consentement n'a été donné
+            showCookieBanner();
+        } else {
+            // Initialiser les scripts selon le consentement existant
+            if (consent.analytics) initializeAnalytics();
+            if (consent.marketing) initializeMarketing();
+        }
+        
+        // Gestion des boutons
+        const acceptBtn = document.getElementById('cookieAcceptAll');
+        const rejectBtn = document.getElementById('cookieRejectAll');
+        const customizeBtn = document.getElementById('cookieCustomize');
+        
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', acceptAllCookies);
+        }
+        
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', rejectAllCookies);
+        }
+        
+        if (customizeBtn) {
+            customizeBtn.addEventListener('click', function() {
+                // Sauvegarder les choix personnalisés
+                saveCustomConsent();
+            });
+        }
+        
+        // Permettre de modifier les préférences en cliquant sur "Personnaliser"
+        const cookieOptions = document.querySelectorAll('.cookie-options .form-check-input:not(:disabled)');
+        cookieOptions.forEach(input => {
+            input.addEventListener('change', function() {
+                // Permettre la sauvegarde immédiate si l'utilisateur change les options
+                const customizeBtn = document.getElementById('cookieCustomize');
+                if (customizeBtn) {
+                    customizeBtn.textContent = 'Enregistrer les préférences';
+                }
+            });
+        });
+        
+        // Empêcher la fermeture du pop-up en cliquant en dehors
+        // Le pop-up doit rester visible jusqu'à ce qu'un choix soit fait
+    });
+    
+    // Fonction globale pour vérifier le consentement
+    window.hasCookieConsent = function(type) {
+        const consent = getCookieConsent();
+        if (!consent) return false;
+        return consent[type] === true;
+    };
+})();
+</script>
+
 <!-- Footer Mobile Sticky -->
 <footer class="bg-white px-2 py-3 d-sm-none container-fluid shadow-lg border-top" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;">
     <div class="row g-1 text-center">
