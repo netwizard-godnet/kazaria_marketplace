@@ -79,11 +79,12 @@ use Illuminate\Support\Facades\Storage;
     </head>
 
     <body>
+        <div class="z-index-9x" style="position: sticky; top: 0;">
         <!-- Header Banner -->
         <div class="container-fluid p-0">
             <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
         </div>
-        <header class="z-index-9x shadow d-none d-sm-block" style="position: sticky; top: 0;">
+        <header class="z-index-9x shadow d-none d-sm-block">
             <div class="container-fluid blue-bg py-0 position-relative">
                 <nav class="navbar navbar-expand-lg py-0">
                     <div class="container-fluid">
@@ -359,3 +360,4 @@ use Illuminate\Support\Facades\Storage;
             </div>
         </header>
         <!-- Header end -->
+        </div>
