@@ -122,6 +122,19 @@
     height: 500px;
 }
 
+/* Écran de téléphone (max 480px) */
+@media (max-width: 480px) {
+    .h-300px{
+    height: 100%;
+    }
+    .h-400px{
+    height: 100%;
+    }
+    .h-500px{
+        height: 400px;
+    }
+}
+
 /* PRODUCT NAME TRUNCATION */
 .product-name-truncate {
     display: block;
