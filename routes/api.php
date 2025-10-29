@@ -96,15 +96,15 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
     Route::post('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'uploadImages']);
     Route::delete('/products/{id}/images', [App\Http\Controllers\Seller\ProductController::class, 'deleteImage']);
     
-    // Gestion des commandes vendeur
-    Route::get('/orders', [App\Http\Controllers\Seller\OrderController::class, 'getOrders'])->name('store.api.orders');
-    Route::get('/orders/stats', [App\Http\Controllers\Seller\OrderController::class, 'getOrderStats'])->name('store.api.orders.stats');
-    Route::get('/orders/{orderNumber}', [App\Http\Controllers\Seller\OrderController::class, 'getOrderDetails'])->name('store.api.order-details');
-    Route::put('/orders/{orderNumber}/status', [App\Http\Controllers\Seller\OrderController::class, 'updateOrderStatus'])->name('store.api.order-status');
-    Route::post('/orders/{orderNumber}/ship', [App\Http\Controllers\Seller\OrderController::class, 'markAsShipped'])->name('store.api.order-ship');
-    Route::post('/orders/{orderNumber}/deliver', [App\Http\Controllers\Seller\OrderController::class, 'markAsDelivered'])->name('store.api.order-deliver');
-    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\Seller\OrderController::class, 'cancelOrder'])->name('store.api.order-cancel');
-    Route::put('/orders/{orderNumber}/payment-status', [App\Http\Controllers\Seller\OrderController::class, 'changePaymentStatus'])->name('store.api.order-payment-status');
+    // Gestion des commandes vendeur (noms retirés car dupliqués dans web.php)
+    Route::get('/orders', [App\Http\Controllers\Seller\OrderController::class, 'getOrders']);
+    Route::get('/orders/stats', [App\Http\Controllers\Seller\OrderController::class, 'getOrderStats']);
+    Route::get('/orders/{orderNumber}', [App\Http\Controllers\Seller\OrderController::class, 'getOrderDetails']);
+    Route::put('/orders/{orderNumber}/status', [App\Http\Controllers\Seller\OrderController::class, 'updateOrderStatus']);
+    Route::post('/orders/{orderNumber}/ship', [App\Http\Controllers\Seller\OrderController::class, 'markAsShipped']);
+    Route::post('/orders/{orderNumber}/deliver', [App\Http\Controllers\Seller\OrderController::class, 'markAsDelivered']);
+    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\Seller\OrderController::class, 'cancelOrder']);
+    Route::put('/orders/{orderNumber}/payment-status', [App\Http\Controllers\Seller\OrderController::class, 'changePaymentStatus']);
     
     // Paramètres de la boutique
     Route::post('/update', [App\Http\Controllers\StoreController::class, 'updateStore']);
