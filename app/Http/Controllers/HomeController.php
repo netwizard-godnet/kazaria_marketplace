@@ -131,8 +131,21 @@ class HomeController extends Controller
         // Récupérer la durée du countdown pour les deals (en minutes, défaut: 60)
         $countdownDuration = \App\Helpers\SettingHelper::get('deals_countdown_duration', '60');
         
-        // Calculer la date de fin du countdown (maintenant + durée)
-        $countdownEndTime = now()->addMinutes((int)$countdownDuration)->timestamp * 1000; // Convertir en millisecondes pour JavaScript
+        // Calculer la date de fin du countdown de manière déterministe :
+        // - Prendre le début du jour (minuit) comme référence fixe
+        // - Ajouter la durée configurée depuis la base de données
+        // - Si cette heure est déjà passée aujourd'hui, utiliser minuit du jour suivant + durée
+        // Cela garantit que le compte à rebours reste identique toute la journée,
+        // même après plusieurs actualisations, tout en respectant la configuration admin
+        $todayStart = now()->startOfDay();
+        $calculatedEndTime = $todayStart->copy()->addMinutes((int)$countdownDuration);
+        
+        // Si l'heure calculée est déjà passée aujourd'hui, utiliser le jour suivant
+        if ($calculatedEndTime->isPast()) {
+            $countdownEndTime = now()->addDay()->startOfDay()->addMinutes((int)$countdownDuration)->timestamp * 1000;
+        } else {
+            $countdownEndTime = $calculatedEndTime->timestamp * 1000;
+        }
         
         // Récupérer la configuration des deals du jour
         $dealsCategories = \App\Helpers\SettingHelper::get('deals_categories', ''); // IDs de catégories séparées par des virgules

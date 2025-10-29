@@ -1,12 +1,12 @@
-@php
+<?php
 use Illuminate\Support\Facades\Storage;
-@endphp
+?>
 
-@extends('layouts.app')
 
-@section('content')
-<link rel="stylesheet" href="{{ asset('css/store.css') }}">
-<link rel="stylesheet" href="{{ asset('css/seller-dashboard.css') }}">
+
+<?php $__env->startSection('content'); ?>
+<link rel="stylesheet" href="<?php echo e(asset('css/store.css')); ?>">
+<link rel="stylesheet" href="<?php echo e(asset('css/seller-dashboard.css')); ?>">
 
 <!-- Fonctions globales pour les boutons d'action -->
 <script>
@@ -154,7 +154,7 @@ window.showAddProductModal = function() {
                     </div>
                     <div class="modal-body">
                         <form id="addProductForm" enctype="multipart/form-data">
-                            @csrf
+                            <?php echo csrf_field(); ?>
                             <div class="mb-3">
                                 <label for="name" class="form-label">Nom du produit *</label>
                                 <input type="text" class="form-control" id="name" name="name" required>
@@ -177,9 +177,9 @@ window.showAddProductModal = function() {
                                 <label for="category_id" class="form-label">Catégorie *</label>
                                 <select class="form-select" id="category_id" name="category_id" required>
                                     <option value="">Sélectionner une catégorie</option>
-                                    @foreach(\App\Models\Category::active()->get() as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                    @endforeach
+                                    <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($category->id); ?>"><?php echo e($category->name); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -765,19 +765,21 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                 <div class="card-body p-0">
                     <!-- Logo et nom de la boutique -->
                     <div class="text-center p-3 border-bottom">
-                        @if($store->logo)
-                            <img id="storeLogoSidebar" src="{{ $store->logo_url }}" alt="{{ $store->name }}" class="img-fluid rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
-                        @else
+                        <?php if($store->logo): ?>
+                            <img id="storeLogoSidebar" src="<?php echo e($store->logo_url); ?>" alt="<?php echo e($store->name); ?>" class="img-fluid rounded-circle mb-2" style="width: 80px; height: 80px; object-fit: cover;">
+                        <?php else: ?>
                             <div class="bg-light rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
                                 <i class="bi bi-shop orange-color" style="font-size: 2rem;"></i>
                             </div>
-                        @endif
-                        <h6 class="fw-bold mb-1">{{ $store->name }}</h6>
+                        <?php endif; ?>
+                        <h6 class="fw-bold mb-1"><?php echo e($store->name); ?></h6>
                         <small class="text-muted">
-                            {{ $store->category->name }}
-                            @if($store->subcategory)
-                                → {{ $store->subcategory->name }}
-                            @endif
+                            <?php echo e($store->category->name); ?>
+
+                            <?php if($store->subcategory): ?>
+                                → <?php echo e($store->subcategory->name); ?>
+
+                            <?php endif; ?>
                         </small>
                     </div>
 
@@ -793,16 +795,16 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                             <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#products" role="tab">
                                 <i class="bi bi-box-seam me-2"></i>
                                 <span>Produits</span>
-                                <span class="badge orange-bg ms-auto">{{ $stats['total_products'] }}</span>
+                                <span class="badge orange-bg ms-auto"><?php echo e($stats['total_products']); ?></span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link active d-flex align-items-center" data-bs-toggle="tab" href="#orders" role="tab">
                                 <i class="bi bi-bag me-2"></i>
                                 <span>Commandes</span>
-                                @if($stats['pending_orders'] > 0)
-                                    <span class="badge bg-danger ms-auto">{{ $stats['pending_orders'] }}</span>
-                                @endif
+                                <?php if($stats['pending_orders'] > 0): ?>
+                                    <span class="badge bg-danger ms-auto"><?php echo e($stats['pending_orders']); ?></span>
+                                <?php endif; ?>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -812,14 +814,14 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                             </a>
                         </li>
                         <li class="nav-item border-top">
-                            <a class="nav-link d-flex align-items-center" href="{{ route('store.show', $store->slug) }}" target="_blank">
+                            <a class="nav-link d-flex align-items-center" href="<?php echo e(route('store.show', $store->slug)); ?>" target="_blank">
                                 <i class="bi bi-eye me-2"></i>
                                 <span>Voir ma boutique</span>
                                 <i class="bi bi-box-arrow-up-right ms-auto"></i>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center" href="{{ route('accueil') }}">
+                            <a class="nav-link d-flex align-items-center" href="<?php echo e(route('accueil')); ?>">
                                 <i class="bi bi-house me-2"></i>
                                 <span>Retour au site</span>
                             </a>
@@ -853,7 +855,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <p class="text-muted mb-1 fs-7">Total Produits</p>
-                                            <h3 class="fw-bold mb-0 stats-number" id="statTotalProducts">{{ $stats['total_products'] }}</h3>
+                                            <h3 class="fw-bold mb-0 stats-number" id="statTotalProducts"><?php echo e($stats['total_products']); ?></h3>
                                         </div>
                                         <div class="bg-primary bg-opacity-10 p-3 rounded">
                                             <i class="bi bi-box-seam text-primary" style="font-size: 1.5rem;"></i>
@@ -868,7 +870,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <p class="text-muted mb-1 fs-7">Commandes</p>
-                                            <h3 class="fw-bold mb-0">{{ $stats['total_orders'] }}</h3>
+                                            <h3 class="fw-bold mb-0"><?php echo e($stats['total_orders']); ?></h3>
                                         </div>
                                         <div class="bg-success bg-opacity-10 p-3 rounded">
                                             <i class="bi bi-bag text-success" style="font-size: 1.5rem;"></i>
@@ -883,7 +885,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <p class="text-muted mb-1 fs-7">Ventes Totales</p>
-                                            <h3 class="fw-bold mb-0">{{ number_format($stats['total_sales'], 0, ',', ' ') }} <small class="fs-6">FCFA</small></h3>
+                                            <h3 class="fw-bold mb-0"><?php echo e(number_format($stats['total_sales'], 0, ',', ' ')); ?> <small class="fs-6">FCFA</small></h3>
                                         </div>
                                         <div class="bg-warning bg-opacity-10 p-3 rounded">
                                             <i class="bi bi-graph-up text-warning" style="font-size: 1.5rem;"></i>
@@ -897,8 +899,8 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <p class="text-muted mb-1 fs-7">Revenus ({{ 100 - $store->commission_rate }}%)</p>
-                                            <h3 class="fw-bold mb-0 orange-color">{{ number_format($stats['total_revenue'], 0, ',', ' ') }} <small class="fs-6">FCFA</small></h3>
+                                            <p class="text-muted mb-1 fs-7">Revenus (<?php echo e(100 - $store->commission_rate); ?>%)</p>
+                                            <h3 class="fw-bold mb-0 orange-color"><?php echo e(number_format($stats['total_revenue'], 0, ',', ' ')); ?> <small class="fs-6">FCFA</small></h3>
                                         </div>
                                         <div class="orange-bg bg-opacity-10 p-3 rounded">
                                             <i class="bi bi-currency-dollar orange-color" style="font-size: 1.5rem;"></i>
@@ -946,7 +948,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                             <a href="#" onclick="showTab('orders')" class="btn btn-sm btn-outline-primary">Voir tout</a>
                         </div>
                         <div class="card-body">
-                            @if($orders->count() > 0)
+                            <?php if($orders->count() > 0): ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover">
                                         <thead>
@@ -959,104 +961,105 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach($orders->take(5) as $order)
+                                            <?php $__currentLoopData = $orders->take(5); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <tr>
                                                     <td>
-                                                        <div class="fw-bold">{{ $order->order_number }}</div>
-                                                        <small class="text-muted">{{ $order->created_at->format('d/m/Y H:i') }}</small>
+                                                        <div class="fw-bold"><?php echo e($order->order_number); ?></div>
+                                                        <small class="text-muted"><?php echo e($order->created_at->format('d/m/Y H:i')); ?></small>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
                                                             <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                                {{ substr($order->user->nom ?? 'A', 0, 1) }}
+                                                                <?php echo e(substr($order->user->nom ?? 'A', 0, 1)); ?>
+
                                     </div>
                                                             <div>
-                                                                <div class="fw-bold">{{ $order->user->nom ?? 'Client' }}</div>
-                                                                <small class="text-muted">{{ $order->user->email ?? '' }}</small>
+                                                                <div class="fw-bold"><?php echo e($order->user->nom ?? 'Client'); ?></div>
+                                                                <small class="text-muted"><?php echo e($order->user->email ?? ''); ?></small>
                                 </div>
                             </div>
                                                     </td>
                                                     <td>
-                                                        <strong>{{ number_format($order->total, 0, ',', ' ') }} FCFA</strong>
+                                                        <strong><?php echo e(number_format($order->total, 0, ',', ' ')); ?> FCFA</strong>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-@orderStatusColor($order->status)">
-                                                            @orderStatus($order->status)
+                                                        <span class="badge bg-<?php echo \App\Helpers\OrderHelper::getStatusColor($order->status); ?>">
+                                                            <?php echo \App\Helpers\OrderHelper::getStatusLabel($order->status); ?>
                                                         </span>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <span class="badge bg-@paymentStatusColor($order->payment_status) me-2">
-                                                                @paymentStatus($order->payment_status)
+                                                            <span class="badge bg-<?php echo \App\Helpers\OrderHelper::getPaymentStatusColor($order->payment_status); ?> me-2">
+                                                                <?php echo \App\Helpers\OrderHelper::getPaymentStatusLabel($order->payment_status); ?>
                                                             </span>
-                                                            @if($order->payment_status == 'pending')
+                                                            <?php if($order->payment_status == 'pending'): ?>
                                                                 <button class="btn btn-outline-success btn-sm" 
-                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'paid')"
+                                                                        onclick="updatePaymentStatus('<?php echo e($order->order_number); ?>', 'paid')"
                                                                         title="Marquer comme payé">
                                                                     <i class="bi bi-check-circle me-1"></i>Payé
                                                                 </button>
-                                                            @elseif($order->payment_status == 'paid')
+                                                            <?php elseif($order->payment_status == 'paid'): ?>
                                                                 <button class="btn btn-outline-warning btn-sm" 
-                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        onclick="updatePaymentStatus('<?php echo e($order->order_number); ?>', 'pending')"
                                                                         title="Remettre en attente">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>En attente
                                                                 </button>
-                                                            @endif
+                                                            <?php endif; ?>
                         </div>
                                                     </td>
                                                     <td>
                                                         <div class="btn-group btn-group-sm">
-                                                            <a href="{{ route('store.order-details', $order->order_number) }}" 
+                                                            <a href="<?php echo e(route('store.order-details', $order->order_number)); ?>" 
                                                                class="btn btn-outline-primary btn-sm" 
                                                                title="Voir les détails">
                                                                 <i class="bi bi-eye me-1"></i>Détails
                                                             </a>
-                                                            @if($order->status == 'pending')
+                                                            <?php if($order->status == 'pending'): ?>
                                                                 <button class="btn btn-outline-info btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'processing')"
                                                                         title="Traiter la commande">
                                                                     <i class="bi bi-play-circle me-1"></i>Traiter
                                                                 </button>
-                                                            @elseif($order->status == 'processing')
+                                                            <?php elseif($order->status == 'processing'): ?>
                                                                 <button class="btn btn-outline-success btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'delivered')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'delivered')"
                                                                         title="Marquer comme livrée">
                                                                     <i class="bi bi-check-circle me-1"></i>Livrée
                                                                 </button>
-                                                            @elseif($order->status == 'delivered')
+                                                            <?php elseif($order->status == 'delivered'): ?>
                                                                 <button class="btn btn-outline-warning btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'processing')"
                                                                         title="Remettre en cours de traitement">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
                                                                 </button>
-                                                            @elseif($order->status == 'cancelled')
+                                                            <?php elseif($order->status == 'cancelled'): ?>
                                                                 <button class="btn btn-outline-info btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'processing')"
                                                                         title="Remettre en cours de traitement">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
                                                                 </button>
-                                                            @endif
+                                                            <?php endif; ?>
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </tbody>
                                     </table>
                                 </div>
-                                @if($orders->count() > 5)
+                                <?php if($orders->count() > 5): ?>
                                     <div class="text-center mt-3">
                                         <a href="#" onclick="showTab('orders')" class="btn btn-outline-primary">
-                                            Voir toutes les commandes ({{ $orders->count() }})
+                                            Voir toutes les commandes (<?php echo e($orders->count()); ?>)
                                         </a>
                                     </div>
-                                @endif
-                            @else
+                                <?php endif; ?>
+                            <?php else: ?>
                                 <div class="text-center py-4">
                                     <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-muted mt-3">Aucune commande récente</h5>
                                     <p class="text-muted">Les nouvelles commandes apparaîtront ici.</p>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1075,7 +1078,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                     <!-- Liste des produits -->
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            @if($products->count() > 0)
+                            <?php if($products->count() > 0): ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover">
                                         <thead>
@@ -1088,69 +1091,70 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach($products as $product)
+                                            <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <tr>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            @php
+                                                            <?php
                                                                 // Utiliser l'image principale ou la première image du tableau
                                                                 $productImage = $product->image;
                                                                 if (!$productImage && $product->images && is_array($product->images) && count($product->images) > 0) {
                                                                     $productImage = $product->images[0];
                                                                 }
-                                                            @endphp
+                                                            ?>
                                                             
-                                                            @if($productImage)
-                                                                <img src="{{ asset('storage/' . $productImage) }}" 
-                                                                     alt="{{ $product->name }}" 
+                                                            <?php if($productImage): ?>
+                                                                <img src="<?php echo e(asset('storage/' . $productImage)); ?>" 
+                                                                     alt="<?php echo e($product->name); ?>" 
                                                                      class="me-3" 
                                                                      style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;"
-                                                                     onerror="this.src='{{ asset('images/produit.jpg') }}'">
-                                                            @else
+                                                                     onerror="this.src='<?php echo e(asset('images/produit.jpg')); ?>'">
+                                                            <?php else: ?>
                                                                 <div class="bg-light rounded d-flex align-items-center justify-content-center me-3" 
                                                                      style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                                                     <i class="bi bi-phone text-white" style="font-size: 1.2rem;"></i>
                                                                 </div>
-                                                            @endif
+                                                            <?php endif; ?>
                                                             <div>
-                                                                <div class="fw-bold">{{ $product->name }}</div>
-                                                                <small class="text-muted">{{ $product->category->name ?? 'N/A' }}</small>
+                                                                <div class="fw-bold"><?php echo e($product->name); ?></div>
+                                                                <small class="text-muted"><?php echo e($product->category->name ?? 'N/A'); ?></small>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <strong>{{ number_format($product->price, 0, ',', ' ') }} FCFA</strong>
+                                                        <strong><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</strong>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-{{ $product->stock > 0 ? 'success' : 'danger' }}">
-                                                            {{ $product->stock }} en stock
+                                                        <span class="badge bg-<?php echo e($product->stock > 0 ? 'success' : 'danger'); ?>">
+                                                            <?php echo e($product->stock); ?> en stock
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-{{ $product->is_active ? 'success' : 'warning' }}">
-                                                            {{ $product->is_active ? 'Actif' : 'Inactif' }}
+                                                        <span class="badge bg-<?php echo e($product->is_active ? 'success' : 'warning'); ?>">
+                                                            <?php echo e($product->is_active ? 'Actif' : 'Inactif'); ?>
+
                                                         </span>
                                                     </td>
                                                     <td>
                                                         <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-primary btn-sm" 
-                                                onclick="window.editProduct({{ $product->id }})"
+                                                onclick="window.editProduct(<?php echo e($product->id); ?>)"
                                                 title="Modifier le produit">
                                             <i class="bi bi-pencil me-1"></i>Modifier
                                         </button>
                                                             <button class="btn btn-outline-danger btn-sm" 
-                                                                    onclick="window.deleteProduct({{ $product->id }})"
+                                                                    onclick="window.deleteProduct(<?php echo e($product->id); ?>)"
                                                                     title="Supprimer le produit">
                                                                 <i class="bi bi-trash me-1"></i>Supprimer
                                                             </button>
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </tbody>
                                     </table>
                                 </div>
-                            @else
+                            <?php else: ?>
                                 <div class="text-center py-5">
                                     <i class="bi bi-box text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-muted mt-3">Aucun produit trouvé</h5>
@@ -1159,7 +1163,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <i class="bi bi-plus-circle me-2"></i>Ajouter un produit
                                     </button>
                                     </div>
-                            @endif
+                            <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -1176,7 +1180,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                             </div>
                             <div class="modal-body">
                                 <form id="editProductForm" method="POST" action="" enctype="multipart/form-data">
-                                    @csrf
+                                    <?php echo csrf_field(); ?>
                                     <input type="hidden" name="product_id" id="edit_product_id">
                                     
                                     <div class="row g-3">
@@ -1189,9 +1193,9 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             <label class="form-label">Catégorie <span class="text-danger">*</span></label>
                                             <select class="form-select" name="category_id" id="edit_category_id" required>
                                                 <option value="">Sélectionnez une catégorie</option>
-                                                @foreach($categories ?? [] as $category)
-                                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                                @endforeach
+                                                <?php $__currentLoopData = $categories ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <option value="<?php echo e($category->id); ?>"><?php echo e($category->name); ?></option>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                             </select>
                                         </div>
                                         
@@ -1306,9 +1310,9 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                         <h2 class="fw-bold blue-color mb-0">
                             <i class="bi bi-bag me-2"></i>Commandes
                         </h2>
-                        @if($stats['pending_orders'] > 0)
-                            <span class="badge bg-danger fs-6">{{ $stats['pending_orders'] }} en attente</span>
-                        @endif
+                        <?php if($stats['pending_orders'] > 0): ?>
+                            <span class="badge bg-danger fs-6"><?php echo e($stats['pending_orders']); ?> en attente</span>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Filtres et statistiques -->
@@ -1365,31 +1369,31 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                             <div class="row g-3 mt-3" id="orderStatsContainer">
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-light rounded">
-                                        <div class="fw-bold text-primary" id="statTotalOrders">{{ $orderStats['total_orders'] }}</div>
+                                        <div class="fw-bold text-primary" id="statTotalOrders"><?php echo e($orderStats['total_orders']); ?></div>
                                         <small class="text-muted">Total</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
-                                        <div class="fw-bold text-warning" id="statPendingOrders">{{ $orderStats['pending_orders'] }}</div>
+                                        <div class="fw-bold text-warning" id="statPendingOrders"><?php echo e($orderStats['pending_orders']); ?></div>
                                         <small class="text-muted">En attente</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-info bg-opacity-10 rounded">
-                                        <div class="fw-bold text-info" id="statProcessingOrders">{{ $orderStats['processing_orders'] }}</div>
+                                        <div class="fw-bold text-info" id="statProcessingOrders"><?php echo e($orderStats['processing_orders']); ?></div>
                                         <small class="text-muted">En cours de livraison</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-success bg-opacity-10 rounded">
-                                        <div class="fw-bold text-success" id="statDeliveredOrders">{{ $orderStats['delivered_orders'] }}</div>
+                                        <div class="fw-bold text-success" id="statDeliveredOrders"><?php echo e($orderStats['delivered_orders']); ?></div>
                                         <small class="text-muted">Livrées</small>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
-                                        <div class="fw-bold text-danger" id="statCancelledOrders">{{ $orderStats['cancelled_orders'] }}</div>
+                                        <div class="fw-bold text-danger" id="statCancelledOrders"><?php echo e($orderStats['cancelled_orders']); ?></div>
                                         <small class="text-muted">Annulées</small>
                                     </div>
                                 </div>
@@ -1399,13 +1403,13 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                             <div class="row mt-3">
                                 <div class="col-md-6">
                                     <div class="text-center p-2 bg-warning bg-opacity-10 rounded">
-                                        <div class="fw-bold text-warning" id="statPendingPayment">{{ $orderStats['pending_payment'] }}</div>
+                                        <div class="fw-bold text-warning" id="statPendingPayment"><?php echo e($orderStats['pending_payment']); ?></div>
                                         <small class="text-muted">Paiement en attente</small>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="text-center p-2 bg-success bg-opacity-10 rounded">
-                                        <div class="fw-bold text-success" id="statPaidOrders">{{ $orderStats['paid_orders'] }}</div>
+                                        <div class="fw-bold text-success" id="statPaidOrders"><?php echo e($orderStats['paid_orders']); ?></div>
                                         <small class="text-muted">Payées</small>
                                     </div>
                                 </div>
@@ -1416,7 +1420,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                     <!-- Liste des commandes -->
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            @if($orders->count() > 0)
+                            <?php if($orders->count() > 0): ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover">
                                         <thead>
@@ -1432,141 +1436,141 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach($orders as $order)
+                                            <?php $__currentLoopData = $orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <tr>
                                                     <td>
-                                                        <strong>{{ $order->order_number }}</strong>
+                                                        <strong><?php echo e($order->order_number); ?></strong>
                                                     </td>
                                                     <td>
-                                                        <small>{{ $order->created_at->format('d/m/Y H:i') }}</small>
+                                                        <small><?php echo e($order->created_at->format('d/m/Y H:i')); ?></small>
                                                     </td>
                                                     <td>
                                                         <div>
-                                                            <strong>{{ $order->user->nom }} {{ $order->user->prenoms }}</strong>
+                                                            <strong><?php echo e($order->user->nom); ?> <?php echo e($order->user->prenoms); ?></strong>
                                                             <br>
-                                                            <small class="text-muted">{{ $order->user->email }}</small>
+                                                            <small class="text-muted"><?php echo e($order->user->email); ?></small>
                                     </div>
                                                     </td>
                                                     <td>
-                                                        @foreach($order->items as $item)
-                                                            @if($item->product && $item->product->store_id == $store->id)
+                                                        <?php $__currentLoopData = $order->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                            <?php if($item->product && $item->product->store_id == $store->id): ?>
                                                                 <div class="d-flex align-items-center mb-1">
-                                                                    @if($item->product->image)
-                                                                        <img src="{{ Storage::url($item->product->image) }}" 
-                                                                             alt="{{ $item->product->nom }}" 
+                                                                    <?php if($item->product->image): ?>
+                                                                        <img src="<?php echo e(Storage::url($item->product->image)); ?>" 
+                                                                             alt="<?php echo e($item->product->nom); ?>" 
                                                                              class="me-2" 
                                                                              style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                     <div>
-                                                                        <small class="fw-bold">{{ $item->product->nom }}</small>
+                                                                        <small class="fw-bold"><?php echo e($item->product->nom); ?></small>
                                                                         <br>
-                                                                        <small class="text-muted">Qté: {{ $item->quantity }}</small>
+                                                                        <small class="text-muted">Qté: <?php echo e($item->quantity); ?></small>
                                 </div>
                             </div>
-                                                            @endif
-                                                        @endforeach
+                                                            <?php endif; ?>
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                     </td>
                                                     <td>
-                                                        <strong>{{ number_format($order->total, 0, ',', ' ') }} FCFA</strong>
+                                                        <strong><?php echo e(number_format($order->total, 0, ',', ' ')); ?> FCFA</strong>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-@orderStatusColor($order->status)">
-                                                            @orderStatus($order->status)
+                                                        <span class="badge bg-<?php echo \App\Helpers\OrderHelper::getStatusColor($order->status); ?>">
+                                                            <?php echo \App\Helpers\OrderHelper::getStatusLabel($order->status); ?>
                                                         </span>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <span class="badge bg-@paymentStatusColor($order->payment_status) me-2">
-                                                                @paymentStatus($order->payment_status)
+                                                            <span class="badge bg-<?php echo \App\Helpers\OrderHelper::getPaymentStatusColor($order->payment_status); ?> me-2">
+                                                                <?php echo \App\Helpers\OrderHelper::getPaymentStatusLabel($order->payment_status); ?>
                                                             </span>
-                                                            @if($order->payment_status == 'pending')
+                                                            <?php if($order->payment_status == 'pending'): ?>
                                                                 <button class="btn btn-outline-success btn-sm" 
-                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'paid')"
+                                                                        onclick="updatePaymentStatus('<?php echo e($order->order_number); ?>', 'paid')"
                                                                         title="Marquer comme payé">
                                                                     <i class="bi bi-check-circle me-1"></i>Payé
                                                                 </button>
-                                                            @elseif($order->payment_status == 'paid')
+                                                            <?php elseif($order->payment_status == 'paid'): ?>
                                                                 <button class="btn btn-outline-warning btn-sm" 
-                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        onclick="updatePaymentStatus('<?php echo e($order->order_number); ?>', 'pending')"
                                                                         title="Remettre en attente">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>En attente
                                                                 </button>
-                                                            @elseif($order->payment_status == 'failed')
+                                                            <?php elseif($order->payment_status == 'failed'): ?>
                                                                 <button class="btn btn-outline-warning btn-sm" 
-                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        onclick="updatePaymentStatus('<?php echo e($order->order_number); ?>', 'pending')"
                                                                         title="Remettre en attente">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>En attente
                                                                 </button>
-                                                            @elseif($order->payment_status == 'refunded')
+                                                            <?php elseif($order->payment_status == 'refunded'): ?>
                                                                 <button class="btn btn-outline-info btn-sm" 
-                                                                        onclick="updatePaymentStatus('{{ $order->order_number }}', 'pending')"
+                                                                        onclick="updatePaymentStatus('<?php echo e($order->order_number); ?>', 'pending')"
                                                                         title="Remettre en attente">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>En attente
                                                                 </button>
-                                                            @endif
+                                                            <?php endif; ?>
                         </div>
                                                     </td>
                                                     <td>
                                                         <div class="btn-group btn-group-sm" role="group">
                                                             <!-- Bouton Voir détails -->
-                                                            <a href="{{ route('store.order-details', $order->order_number) }}" 
+                                                            <a href="<?php echo e(route('store.order-details', $order->order_number)); ?>" 
                                                                class="btn btn-outline-primary btn-sm" 
                                                                title="Voir les détails de la commande">
                                                                 <i class="bi bi-eye me-1"></i>Détails
                                                             </a>
                                                             
-                                                            @if($order->status == 'pending')
+                                                            <?php if($order->status == 'pending'): ?>
                                                                 <!-- Bouton Traiter la commande -->
                                                                 <button class="btn btn-outline-info btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'processing')"
                                                                         title="Marquer comme en cours de traitement">
                                                                     <i class="bi bi-play-circle me-1"></i>Traiter
                                                                 </button>
-                                                            @elseif($order->status == 'processing')
+                                                            <?php elseif($order->status == 'processing'): ?>
                                                                 <!-- Bouton Marquer comme livrée -->
                                                                 <button class="btn btn-outline-success btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'delivered')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'delivered')"
                                                                         title="Marquer comme livrée">
                                                                     <i class="bi bi-check-circle me-1"></i>Livrée
                                                                 </button>
-                                                            @elseif($order->status == 'delivered')
+                                                            <?php elseif($order->status == 'delivered'): ?>
                                                                 <!-- Bouton pour remettre en cours -->
                                                                 <button class="btn btn-outline-warning btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'processing')"
                                                                         title="Remettre en cours de traitement">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
                                                                 </button>
-                                                            @elseif($order->status == 'cancelled')
+                                                            <?php elseif($order->status == 'cancelled'): ?>
                                                                 <!-- Bouton pour remettre en cours -->
                                                                 <button class="btn btn-outline-info btn-sm" 
-                                                                        onclick="updateOrderStatus('{{ $order->order_number }}', 'processing')"
+                                                                        onclick="updateOrderStatus('<?php echo e($order->order_number); ?>', 'processing')"
                                                                         title="Remettre en cours de traitement">
                                                                     <i class="bi bi-arrow-clockwise me-1"></i>Remettre en cours
                                                                 </button>
-                                                            @endif
+                                                            <?php endif; ?>
                                                             
-                                                            @if($order->status != 'cancelled')
+                                                            <?php if($order->status != 'cancelled'): ?>
                                                                 <!-- Bouton Annuler -->
                                                                 <button class="btn btn-outline-danger btn-sm" 
-                                                                        onclick="cancelOrder('{{ $order->order_number }}')"
+                                                                        onclick="cancelOrder('<?php echo e($order->order_number); ?>')"
                                                                         title="Annuler la commande">
                                                                     <i class="bi bi-x-circle me-1"></i>Annuler
                                                                 </button>
-                                                            @endif
+                                                            <?php endif; ?>
                                                         </div>
                                                     </td>
                                                 </tr>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </tbody>
                                     </table>
                                 </div>
-                            @else
+                            <?php else: ?>
                                 <div class="text-center py-5">
                                     <i class="bi bi-bag display-1 text-muted"></i>
                                     <h5 class="mt-3 text-muted">Aucune commande trouvée</h5>
                                     <p class="text-muted">Les commandes de vos produits apparaîtront ici.</p>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1589,37 +1593,38 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label for="store_name" class="form-label">Nom de la boutique</label>
-                                        <input type="text" class="form-control" id="store_name" value="{{ $store->name }}" required>
+                                        <input type="text" class="form-control" id="store_name" value="<?php echo e($store->name); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="store_email" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="store_email" value="{{ $store->email }}" required>
+                                        <input type="email" class="form-control" id="store_email" value="<?php echo e($store->email); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="store_phone" class="form-label">Téléphone</label>
-                                        <input type="tel" class="form-control" id="store_phone" value="{{ $store->phone }}" required>
+                                        <input type="tel" class="form-control" id="store_phone" value="<?php echo e($store->phone); ?>" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="store_category" class="form-label">Catégorie</label>
                                         <select class="form-select" id="store_category" required>
-                                            @foreach($categories ?? [] as $cat)
-                                                <option value="{{ $cat->id }}" {{ $store->category_id == $cat->id ? 'selected' : '' }}>
-                                                    {{ $cat->name }}
+                                            <?php $__currentLoopData = $categories ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($cat->id); ?>" <?php echo e($store->category_id == $cat->id ? 'selected' : ''); ?>>
+                                                    <?php echo e($cat->name); ?>
+
                                                 </option>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </select>
                                     </div>
                                     <div class="col-12">
                                         <label for="store_description" class="form-label">Description</label>
-                                        <textarea class="form-control" id="store_description" rows="4" required>{{ $store->description }}</textarea>
+                                        <textarea class="form-control" id="store_description" rows="4" required><?php echo e($store->description); ?></textarea>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="store_address" class="form-label">Adresse</label>
-                                        <input type="text" class="form-control" id="store_address" value="{{ $store->address }}">
+                                        <input type="text" class="form-control" id="store_address" value="<?php echo e($store->address); ?>">
                                     </div>
                                     <div class="col-md-6">
                                         <label for="store_city" class="form-label">Ville</label>
-                                        <input type="text" class="form-control" id="store_city" value="{{ $store->city }}">
+                                        <input type="text" class="form-control" id="store_city" value="<?php echo e($store->city); ?>">
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn orange-bg text-white">
@@ -1641,7 +1646,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                 <div class="col-md-6">
                                     <label class="form-label">Logo actuel</label>
                                     <div class="mb-3">
-                                        <img id="storeLogoSettings" src="{{ $store->logo_url }}" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
+                                        <img id="storeLogoSettings" src="<?php echo e($store->logo_url); ?>" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
                                     </div>
                                     <input type="file" class="form-control" id="new_logo" accept="image/*">
                                     <button class="btn btn-sm orange-bg text-white mt-2" onclick="uploadLogo()">
@@ -1652,7 +1657,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                 <div class="col-md-6">
                                     <label class="form-label">Bannière actuelle</label>
                                     <div class="mb-3">
-                                        <img id="storeBannerSettings" src="{{ $store->banner_url }}" alt="Bannière" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
+                                        <img id="storeBannerSettings" src="<?php echo e($store->banner_url); ?>" alt="Bannière" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
                                     </div>
                                     <input type="file" class="form-control" id="new_banner" accept="image/*">
                                     <button class="btn btn-sm orange-bg text-white mt-2" onclick="uploadBanner()">
@@ -1677,7 +1682,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             <i class="bi bi-facebook text-primary me-2"></i>Facebook
                                         </label>
                                         <input type="url" class="form-control" id="facebook_url" 
-                                               value="{{ $store->social_links['facebook'] ?? '' }}" 
+                                               value="<?php echo e($store->social_links['facebook'] ?? ''); ?>" 
                                                placeholder="https://facebook.com/votre-page">
                                     </div>
                                     <div class="col-md-6">
@@ -1685,7 +1690,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             <i class="bi bi-instagram text-danger me-2"></i>Instagram
                                         </label>
                                         <input type="url" class="form-control" id="instagram_url" 
-                                               value="{{ $store->social_links['instagram'] ?? '' }}" 
+                                               value="<?php echo e($store->social_links['instagram'] ?? ''); ?>" 
                                                placeholder="https://instagram.com/votre-compte">
                                     </div>
                                     <div class="col-md-6">
@@ -1693,7 +1698,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             <i class="bi bi-twitter text-info me-2"></i>Twitter
                                         </label>
                                         <input type="url" class="form-control" id="twitter_url" 
-                                               value="{{ $store->social_links['twitter'] ?? '' }}" 
+                                               value="<?php echo e($store->social_links['twitter'] ?? ''); ?>" 
                                                placeholder="https://twitter.com/votre-compte">
                                     </div>
                                     <div class="col-md-6">
@@ -1701,7 +1706,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             <i class="bi bi-globe text-success me-2"></i>Site web
                                         </label>
                                         <input type="url" class="form-control" id="website_url" 
-                                               value="{{ $store->social_links['website'] ?? '' }}" 
+                                               value="<?php echo e($store->social_links['website'] ?? ''); ?>" 
                                                placeholder="https://votre-site.com">
                                     </div>
                                     <div class="col-12">
@@ -1726,7 +1731,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Statut de la boutique</h6>
                                             <small class="text-muted">Votre boutique est actuellement 
-                                                <span class="badge bg-success">{{ ucfirst($store->status) }}</span>
+                                                <span class="badge bg-success"><?php echo e(ucfirst($store->status)); ?></span>
                                             </small>
                                         </div>
                                         <div>
@@ -1739,16 +1744,16 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Vérification</h6>
                                             <small class="text-muted">
-                                                @if($store->is_verified)
+                                                <?php if($store->is_verified): ?>
                                                     <span class="badge bg-success">Vérifiée</span>
-                                                @else
+                                                <?php else: ?>
                                                     <span class="badge bg-warning">En attente</span>
-                                                @endif
+                                                <?php endif; ?>
                                             </small>
                                         </div>
                                         <div>
-                                            <i class="bi bi-{{ $store->is_verified ? 'check-circle-fill' : 'clock' }} 
-                                               text-{{ $store->is_verified ? 'success' : 'warning' }} fs-4"></i>
+                                            <i class="bi bi-<?php echo e($store->is_verified ? 'check-circle-fill' : 'clock'); ?> 
+                                               text-<?php echo e($store->is_verified ? 'success' : 'warning'); ?> fs-4"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -1756,7 +1761,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                     <div class="d-flex align-items-center">
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Commission</h6>
-                                            <small class="text-muted">Taux actuel : {{ $store->commission_rate }}%</small>
+                                            <small class="text-muted">Taux actuel : <?php echo e($store->commission_rate); ?>%</small>
                                         </div>
                                         <div>
                                             <i class="bi bi-percent text-info fs-4"></i>
@@ -1768,16 +1773,16 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Boutique officielle</h6>
                                             <small class="text-muted">
-                                                @if($store->is_official)
+                                                <?php if($store->is_official): ?>
                                                     <span class="badge bg-primary">Officielle</span>
-                                                @else
+                                                <?php else: ?>
                                                     <span class="badge bg-secondary">Standard</span>
-                                                @endif
+                                                <?php endif; ?>
                                             </small>
                                         </div>
                                         <div>
-                                            <i class="bi bi-{{ $store->is_official ? 'star-fill' : 'star' }} 
-                                               text-{{ $store->is_official ? 'warning' : 'secondary' }} fs-4"></i>
+                                            <i class="bi bi-<?php echo e($store->is_official ? 'star-fill' : 'star'); ?> 
+                                               text-<?php echo e($store->is_official ? 'warning' : 'secondary'); ?> fs-4"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -1818,7 +1823,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
 </div>
 
 <script>
-const storeId = {{ $store->id }};
+const storeId = <?php echo e($store->id); ?>;
 const token = localStorage.getItem('auth_token');
 
 // Les fonctions globales sont déjà déclarées en haut de page
@@ -2395,9 +2400,9 @@ window.getPaymentStatusLabel = function(paymentStatus) {
                                     <label class="form-label">Catégorie <span class="text-danger">*</span></label>
                                     <select class="form-control" name="category_id" required>
                                         <option value="">Sélectionnez une catégorie</option>
-                                        @foreach($categories ?? [] as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                        @endforeach
+                                        <?php $__currentLoopData = $categories ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($category->id); ?>"><?php echo e($category->name); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -3538,7 +3543,7 @@ function refreshImages(imageType, newUrl) {
         // Mettre à jour uniquement les images de logo de la boutique (pas le logo principal du site)
         const logoSelectors = [
             'img[alt="Logo"]',
-            'img[alt="' + '{{ $store->name }}' + '"]',
+            'img[alt="' + '<?php echo e($store->name); ?>' + '"]',
             '.card-body .img-fluid.rounded-circle'
         ];
         
@@ -3551,7 +3556,7 @@ function refreshImages(imageType, newUrl) {
             images.forEach(img => {
                 // Exclure le logo principal du site (qui contient 'logo.png')
                 if (!img.src.includes('logo.png') && 
-                    (img.src.includes('logo') || img.alt.includes('Logo') || img.alt.includes('{{ $store->name }}'))) {
+                    (img.src.includes('logo') || img.alt.includes('Logo') || img.alt.includes('<?php echo e($store->name); ?>'))) {
                     // Forcer le rechargement en vidant d'abord le src
                     const currentSrc = img.src;
                     img.src = '';
@@ -3884,8 +3889,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
 
 <!-- Script de modification de produit refactorisé -->
-{{-- <script src="{{ asset('js/product-edit.js') }}"></script> --}}
 
+
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/store/dashboard.blade.php ENDPATH**/ ?>
