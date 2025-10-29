@@ -305,7 +305,7 @@ use Illuminate\Support\Facades\Storage;
                 <nav class="py-0">
                     <div class="vstack gap-2">
                         <div class="w-100 d-flex align-items-center justify-content-between">
-                            <a class="" href="#">
+                            <a class="" href="{{ route('accueil') }}">
                                 <img src="{{ asset('storage/' . ($settings['site_logo'] ?? 'logo.png')) }}" class="logo-size-header" alt="{{ $settings['site_name'] ?? 'KAZARIA' }}">
                             </a>
                             <ul class="d-flex align-items-center justify-content-evenly m-0">
