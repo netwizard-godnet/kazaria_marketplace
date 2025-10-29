@@ -211,16 +211,107 @@ window.showAddProductModal = function() {
     const modal = new bootstrap.Modal(modalElement);
     
     // Charger les sous-catégories quand une catégorie est sélectionnée
+    // Utiliser un délai pour s'assurer que le DOM est complètement rendu
     setTimeout(() => {
-        document.getElementById('category_id').addEventListener('change', function() {
-            loadSubcategories(this.value);
-        });
+        const categorySelect = document.getElementById('category_id');
+        if (categorySelect) {
+            categorySelect.addEventListener('change', function() {
+                const categoryId = this.value;
+                console.log('🔍 Catégorie sélectionnée dans modal ajout:', categoryId);
+                
+                // Cibler directement le select dans le modal d'ajout
+                const addModal = document.getElementById('addProductModal');
+                const subcategorySelect = addModal ? addModal.querySelector('#subcategory_id') : null;
+                
+                if (!subcategorySelect) {
+                    console.error('❌ Select de sous-catégorie non trouvé dans le modal d\'ajout');
+                    return;
+                }
+                
+                console.log('✅ Select de sous-catégorie trouvé dans modal:', subcategorySelect);
+                
+                // Vider le select
+                subcategorySelect.innerHTML = '<option value="">Sélectionner une sous-catégorie</option>';
+                
+                if (!categoryId || categoryId === '') {
+                    console.log('ℹ️ Aucune catégorie sélectionnée');
+                    return;
+                }
+                
+                // Charger les sous-catégories directement
+                fetch(`/api/categories/${categoryId}/subcategories`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📋 Réponse API sous-catégories:', data);
+                    if (data.success && data.subcategories && data.subcategories.length > 0) {
+                        // Utiliser directement la référence au select trouvée au début
+                        // Vérifier qu'il est toujours dans le DOM
+                        if (!subcategorySelect || !subcategorySelect.parentNode) {
+                            console.error('❌ Select de sous-catégorie n\'est plus dans le DOM');
+                            // Essayer de le retrouver
+                            const addModalCheck = document.getElementById('addProductModal');
+                            const selectCheck = addModalCheck ? addModalCheck.querySelector('#subcategory_id') : null;
+                            if (!selectCheck) {
+                                console.error('❌ Impossible de retrouver le select de sous-catégorie');
+                                return;
+                            }
+                            // Utiliser le nouveau select trouvé
+                            data.subcategories.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.name;
+                                selectCheck.appendChild(option);
+                            });
+                            console.log(`✅ ${data.subcategories.length} sous-catégorie(s) ajoutée(s) au select (via nouvelle recherche)`);
+                        } else {
+                            // Utiliser la référence originale
+                            const optionsBefore = subcategorySelect.options.length;
+                            data.subcategories.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.name;
+                                subcategorySelect.appendChild(option);
+                            });
+                            const optionsAfter = subcategorySelect.options.length;
+                            console.log(`✅ ${data.subcategories.length} sous-catégorie(s) ajoutée(s) au select`);
+                            console.log(`📊 Options avant: ${optionsBefore}, après: ${optionsAfter}`);
+                            console.log('📋 Contenu du select:', Array.from(subcategorySelect.options).map(opt => `${opt.value}: ${opt.textContent}`));
+                            
+                            // Forcer la mise à jour visuelle et le rendu
+                            subcategorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            subcategorySelect.style.display = 'none';
+                            subcategorySelect.offsetHeight; // Force reflow
+                            subcategorySelect.style.display = '';
+                        }
+                    } else {
+                        console.log('ℹ️ Aucune sous-catégorie disponible pour cette catégorie');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Erreur lors du chargement des sous-catégories:', error);
+                });
+            });
+            console.log('✅ Event listener attaché au select de catégorie');
+        } else {
+            console.error('❌ Select de catégorie non trouvé dans le modal');
+        }
         
         // Supprimer le modal du DOM quand il est fermé
         modalElement.addEventListener('hidden.bs.modal', function() {
             this.remove();
         });
-    }, 100);
+    }, 200); // Augmenté à 200ms pour plus de sécurité
     
     modal.show();
 };
@@ -658,19 +749,46 @@ async function deleteProductInternal(id) {
 
 // Charger les sous-catégories
 function loadSubcategories(categoryId, selectedSubcategoryId = null) {
-    const subcategorySelect = document.getElementById('edit_subcategory_id') || document.getElementById('subcategory_select') || document.getElementById('subcategory_id');
+    // Chercher le select dans l'ordre de priorité
+    // 1. Dans le modal d'édition (edit_subcategory_id)
+    // 2. Dans le modal d'ajout ou autres formulaires (subcategory_id) 
+    // 3. Ancien format (subcategory_select)
+    let subcategorySelect = document.getElementById('edit_subcategory_id');
     
     if (!subcategorySelect) {
-        console.warn('Champ sous-catégorie non trouvé');
+        // Si on est dans le modal d'ajout, chercher subcategory_id dans le modal
+        const addModal = document.getElementById('addProductModal');
+        if (addModal) {
+            subcategorySelect = addModal.querySelector('#subcategory_id');
+        }
+        
+        // Sinon chercher globalement
+        if (!subcategorySelect) {
+            subcategorySelect = document.getElementById('subcategory_id');
+        }
+        
+        // Dernier recours
+        if (!subcategorySelect) {
+            subcategorySelect = document.getElementById('subcategory_select');
+        }
+    }
+    
+    if (!subcategorySelect) {
+        console.warn('⚠️ Champ sous-catégorie non trouvé. IDs recherchés: edit_subcategory_id, subcategory_id, subcategory_select');
         return;
     }
+    
+    console.log('✅ Select de sous-catégorie trouvé:', subcategorySelect.id);
     
     // Vider les options existantes
-    subcategorySelect.innerHTML = '<option value="">Sélectionnez une sous-catégorie</option>';
+    subcategorySelect.innerHTML = '<option value="">Sélectionner une sous-catégorie</option>';
     
-    if (!categoryId) {
+    if (!categoryId || categoryId === '') {
+        console.log('ℹ️ Aucune catégorie sélectionnée, sous-catégories vidées');
         return;
     }
+    
+    console.log('📡 Chargement des sous-catégories pour catégorie:', categoryId);
     
     // Charger les sous-catégories via AJAX
     fetch(`/api/categories/${categoryId}/subcategories`, {
@@ -680,9 +798,15 @@ function loadSubcategories(categoryId, selectedSubcategoryId = null) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
-        if (data.success && data.subcategories) {
+        console.log('📋 Réponse API sous-catégories:', data);
+        if (data.success && data.subcategories && data.subcategories.length > 0) {
             data.subcategories.forEach(subcategory => {
                 const option = document.createElement('option');
                 option.value = subcategory.id;
@@ -692,10 +816,13 @@ function loadSubcategories(categoryId, selectedSubcategoryId = null) {
                 }
                 subcategorySelect.appendChild(option);
             });
+            console.log(`✅ ${data.subcategories.length} sous-catégorie(s) chargée(s) avec succès`);
+        } else {
+            console.log('ℹ️ Aucune sous-catégorie disponible pour cette catégorie');
         }
     })
     .catch(error => {
-        console.error('Erreur lors du chargement des sous-catégories:', error);
+        console.error('❌ Erreur lors du chargement des sous-catégories:', error);
     });
 }
 
