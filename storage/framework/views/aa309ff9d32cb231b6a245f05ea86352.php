@@ -325,7 +325,7 @@ use Illuminate\Support\Facades\Storage;
                                 <li class="nav-item px-1 d-flex align-items-center justify-content-center me-2">
                                     <a class="nav-link position-relative" aria-current="page" href="<?php echo e(route('product-cart')); ?>">
                                         <i class="fa-solid fas fa-shopping-cart text-white fa-2x"></i>
-                                        <span class="position-absolute bottom-0 end-0 bg-danger px-2 rounded-2 fw-lighter fs-8 text-white">0</span>
+                                        <span class="position-absolute bottom-0 end-0 bg-danger px-2 rounded-2 fw-lighter fs-8 text-white cart-count">0</span>
                                     </a>
                                 </li>
                                 <?php if(auth()->guard()->check()): ?>

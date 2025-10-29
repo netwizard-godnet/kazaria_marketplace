@@ -118,13 +118,26 @@ window.toggleFavorite = async function(productId, button) {
 
 // Mettre à jour le compteur du panier dans le header (globale)
 window.updateCartCount = function(count) {
-    const cartBadge = document.querySelector('.cart-count');
-    if (cartBadge) {
-        cartBadge.textContent = count || 0;
-        
+    const countValue = count || 0;
+    
+    // Mettre à jour tous les badges avec la classe cart-count
+    const cartBadges = document.querySelectorAll('.cart-count');
+    cartBadges.forEach(badge => {
+        badge.textContent = countValue;
         // Animation de mise à jour
-        cartBadge.classList.add('badge-pulse');
-        setTimeout(() => cartBadge.classList.remove('badge-pulse'), 600);
+        badge.classList.add('badge-pulse');
+        setTimeout(() => badge.classList.remove('badge-pulse'), 600);
+    });
+    
+    // Mettre à jour aussi le badge dans le footer mobile par ID
+    const cartBadgeFooter = document.getElementById('cartBadge');
+    if (cartBadgeFooter) {
+        cartBadgeFooter.textContent = countValue;
+        if (countValue > 0) {
+            cartBadgeFooter.style.display = 'block';
+        } else {
+            cartBadgeFooter.style.display = 'none';
+        }
     }
 };
 
