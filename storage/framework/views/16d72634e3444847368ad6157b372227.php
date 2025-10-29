@@ -1,33 +1,33 @@
-@php
+<?php
 use App\Models\Setting;
 use App\Models\Category;
 use App\Models\Subcategory;
 use Illuminate\Support\Facades\Storage;
-@endphp
+?>
 
-@extends('admin.layouts.app')
 
-@section('title', 'Paramètres du site')
 
-@section('content')
+<?php $__env->startSection('title', 'Paramètres du site'); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="page-inner">
     <div class="page-header">
         <h4 class="page-title">Paramètres du site</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
-                <a href="{{ route('admin.dashboard') }}"><i class="flaticon-home"></i></a>
+                <a href="<?php echo e(route('admin.dashboard')); ?>"><i class="flaticon-home"></i></a>
             </li>
             <li class="separator"><i class="flaticon-right-arrow"></i></li>
             <li class="nav-item"><span>Paramètres</span></li>
         </ul>
     </div>
 
-    <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+    <form method="POST" action="<?php echo e(route('admin.settings.update')); ?>" enctype="multipart/form-data">
+                        <?php echo csrf_field(); ?>
+                        <?php echo method_field('PUT'); ?>
                         
                                 <div class="row">
-            @php
+            <?php
                 // Définir l'ordre d'affichage des groupes
                 $groupOrder = ['general', 'contact', 'ecommerce', 'deals', 'social', 'maintenance', 'cinetpay', 'stripe'];
                 // Réorganiser les groupes selon l'ordre défini
@@ -43,9 +43,9 @@ use Illuminate\Support\Facades\Storage;
                         $orderedGroups[$groupName] = $groupSettings;
                     }
                 }
-            @endphp
+            ?>
             
-            @php
+            <?php
                 // Séparer les groupes de paiement des autres
                 $paymentGroups = [];
                 $otherGroups = [];
@@ -56,50 +56,51 @@ use Illuminate\Support\Facades\Storage;
                         $otherGroups[$groupName] = $groupSettings;
                     }
                 }
-            @endphp
+            ?>
             
-            {{-- Afficher les groupes non-paiement --}}
-            @foreach($otherGroups as $groupName => $groupSettings)
-                @php
+            
+            <?php $__currentLoopData = $otherGroups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $groupName => $groupSettings): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php
                     $isGeneral = ($groupName === 'general');
                     $columnClass = $isGeneral ? 'col-12' : 'col-md-6';
-                @endphp
-            <div class="{{ $columnClass }} mb-4">
+                ?>
+            <div class="<?php echo e($columnClass); ?> mb-4">
                 <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title">
-                            @switch($groupName)
-                                @case('general')
+                            <?php switch($groupName):
+                                case ('general'): ?>
                                     <i class="fas fa-cog me-2"></i>Général
-                                    @break
-                                @case('contact')
+                                    <?php break; ?>
+                                <?php case ('contact'): ?>
                                     <i class="fas fa-phone me-2"></i>Contact
-                                    @break
-                                @case('social')
+                                    <?php break; ?>
+                                <?php case ('social'): ?>
                                     <i class="fas fa-share-alt me-2"></i>Réseaux sociaux
-                                    @break
-                                @case('ecommerce')
+                                    <?php break; ?>
+                                <?php case ('ecommerce'): ?>
                                     <i class="fas fa-shopping-cart me-2"></i>E-commerce
-                                    @break
-                                @case('deals')
+                                    <?php break; ?>
+                                <?php case ('deals'): ?>
                                     <i class="fas fa-fire me-2"></i>Deals du jour
-                                    @break
-                                @case('maintenance')
+                                    <?php break; ?>
+                                <?php case ('maintenance'): ?>
                                     <i class="fas fa-tools me-2"></i>Maintenance
-                                    @break
-                                @case('cinetpay')
+                                    <?php break; ?>
+                                <?php case ('cinetpay'): ?>
                                     <i class="fas fa-credit-card me-2"></i>CinetPay
-                                    @break
-                                @case('stripe')
+                                    <?php break; ?>
+                                <?php case ('stripe'): ?>
                                     <i class="fab fa-stripe me-2"></i>Stripe
-                                    @break
-                                @default
-                                    <i class="fas fa-cog me-2"></i>{{ ucfirst($groupName) }}
-                            @endswitch
+                                    <?php break; ?>
+                                <?php default: ?>
+                                    <i class="fas fa-cog me-2"></i><?php echo e(ucfirst($groupName)); ?>
+
+                            <?php endswitch; ?>
                                 </h5>
                             </div>
                             <div class="card-body">
-                        @php 
+                        <?php 
                             $isGeneral = ($groupName === 'general');
                             // Clés traitées comme booléens même si le type n'est pas "boolean" en BDD
                             $booleanKeys = [
@@ -107,12 +108,12 @@ use Illuminate\Support\Facades\Storage;
                                 'push_notifications',
                                 'maintenance_mode',
                             ];
-                        @endphp
-                        @if($isGeneral)
+                        ?>
+                        <?php if($isGeneral): ?>
                                 <div class="row">
-                        @endif
-                        @foreach($groupSettings as $setting)
-@php
+                        <?php endif; ?>
+                        <?php $__currentLoopData = $groupSettings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $setting): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<?php
     $label = $setting->description ?: match($setting->key) {
                                 // Général
                                 'site_name' => 'Nom du site',
@@ -166,107 +167,111 @@ use Illuminate\Support\Facades\Storage;
                                 'site_phone' => 'Téléphone du site',
                                 default => ucfirst(str_replace('_', ' ', $setting->key)),
                             };
-                        @endphp
-                        <div class="form-group mb-3 {{ $isGeneral ? 'col-md-6' : '' }}">
-                            <label for="setting_{{ $setting->key }}" class="form-label">
-                                {{ $label }}
-                                @if($setting->is_public)
+                        ?>
+                        <div class="form-group mb-3 <?php echo e($isGeneral ? 'col-md-6' : ''); ?>">
+                            <label for="setting_<?php echo e($setting->key); ?>" class="form-label">
+                                <?php echo e($label); ?>
+
+                                <?php if($setting->is_public): ?>
                                     <span class="badge badge-success badge-sm">Public</span>
-                                @endif
+                                <?php endif; ?>
                             </label>
                             
-                            @if($setting->key === 'deals_categories')
-                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}]" multiple>
+                            <?php if($setting->key === 'deals_categories'): ?>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>]" multiple>
                                     <option value="">Toutes les catégories</option>
-                                    @foreach(\App\Models\Category::active()->get() as $category)
-                                        <option value="{{ $category->id }}" {{ in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
-                                            {{ $category->name }}
+                                    <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($category->id); ?>" <?php echo e(in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
+                                            <?php echo e($category->name); ?>
+
                                         </option>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                                 <small class="text-muted">Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)</small>
-                            @elseif($setting->key === 'deals_subcategories')
-                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}]" multiple>
+                            <?php elseif($setting->key === 'deals_subcategories'): ?>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>]" multiple>
                                     <option value="">Toutes les sous-catégories</option>
-                                    @foreach(\App\Models\Subcategory::active()->get() as $subcategory)
-                                        <option value="{{ $subcategory->id }}" {{ in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
-                                            {{ $subcategory->name }}
+                                    <?php $__currentLoopData = \App\Models\Subcategory::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($subcategory->id); ?>" <?php echo e(in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
+                                            <?php echo e($subcategory->name); ?>
+
                                         </option>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                                 <small class="text-muted">Sélectionnez plusieurs sous-catégories en maintenant Ctrl (Cmd sur Mac)</small>
-                            @elseif($setting->type === 'boolean' || in_array($setting->key, $booleanKeys))
+                            <?php elseif($setting->type === 'boolean' || in_array($setting->key, $booleanKeys)): ?>
                                 <div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio"
-                                               id="setting_{{ $setting->key }}_1"
-                                               name="settings[{{ $setting->key }}]"
-                                               value="1" {{ ((string)$setting->value === '1') ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="setting_{{ $setting->key }}_1">Oui</label>
+                                               id="setting_<?php echo e($setting->key); ?>_1"
+                                               name="settings[<?php echo e($setting->key); ?>]"
+                                               value="1" <?php echo e(((string)$setting->value === '1') ? 'checked' : ''); ?>>
+                                        <label class="form-check-label" for="setting_<?php echo e($setting->key); ?>_1">Oui</label>
                             </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio"
-                                               id="setting_{{ $setting->key }}_0"
-                                               name="settings[{{ $setting->key }}]"
-                                               value="0" {{ ((string)$setting->value === '0') ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="setting_{{ $setting->key }}_0">Non</label>
+                                               id="setting_<?php echo e($setting->key); ?>_0"
+                                               name="settings[<?php echo e($setting->key); ?>]"
+                                               value="0" <?php echo e(((string)$setting->value === '0') ? 'checked' : ''); ?>>
+                                        <label class="form-check-label" for="setting_<?php echo e($setting->key); ?>_0">Non</label>
                                         </div>
                                     </div>
-                            @elseif($setting->type === 'integer' || $setting->type === 'float')
+                            <?php elseif($setting->type === 'integer' || $setting->type === 'float'): ?>
                                 <input type="number" 
                                        class="form-control" 
-                                       id="setting_{{ $setting->key }}" 
-                                       name="settings[{{ $setting->key }}]" 
-                                       value="{{ $setting->value }}"
-                                       step="{{ $setting->type === 'float' ? '0.01' : '1' }}">
-                            @elseif($setting->type === 'array' || $setting->type === 'json')
+                                       id="setting_<?php echo e($setting->key); ?>" 
+                                       name="settings[<?php echo e($setting->key); ?>]" 
+                                       value="<?php echo e($setting->value); ?>"
+                                       step="<?php echo e($setting->type === 'float' ? '0.01' : '1'); ?>">
+                            <?php elseif($setting->type === 'array' || $setting->type === 'json'): ?>
                                 <textarea class="form-control" 
-                                          id="setting_{{ $setting->key }}" 
-                                          name="settings[{{ $setting->key }}]" 
-                                          rows="3">{{ is_array($setting->value) ? json_encode($setting->value, JSON_PRETTY_PRINT) : $setting->value }}</textarea>
-                            @else
+                                          id="setting_<?php echo e($setting->key); ?>" 
+                                          name="settings[<?php echo e($setting->key); ?>]" 
+                                          rows="3"><?php echo e(is_array($setting->value) ? json_encode($setting->value, JSON_PRETTY_PRINT) : $setting->value); ?></textarea>
+                            <?php else: ?>
                                 <input type="text" 
                                        class="form-control" 
-                                       id="setting_{{ $setting->key }}" 
-                                       name="settings[{{ $setting->key }}]" 
-                                       value="{{ $setting->value }}">
-                            @endif
+                                       id="setting_<?php echo e($setting->key); ?>" 
+                                       name="settings[<?php echo e($setting->key); ?>]" 
+                                       value="<?php echo e($setting->value); ?>">
+                            <?php endif; ?>
                                         </div>
-                        @endforeach
-                        @if($isGeneral)
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php if($isGeneral): ?>
                                     </div>
-                        @endif
+                        <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             
-            {{-- Section spéciale pour les groupes de paiement (CinetPay et Stripe) côte à côte --}}
-            @if(count($paymentGroups) > 0)
+            
+            <?php if(count($paymentGroups) > 0): ?>
                 <div class="col-12 mb-4">
                     <h6 class="text-muted mb-3">
                         <i class="fas fa-money-bill-wave me-2"></i>Configuration des passerelles de paiement
                     </h6>
                 </div>
-                @foreach($paymentGroups as $groupName => $groupSettings)
+                <?php $__currentLoopData = $paymentGroups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $groupName => $groupSettings): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <div class="col-md-6 mb-4">
                 <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title">
-                            @switch($groupName)
-                                @case('cinetpay')
+                            <?php switch($groupName):
+                                case ('cinetpay'): ?>
                                     <i class="fas fa-credit-card me-2"></i>CinetPay
-                                    @break
-                                @case('stripe')
+                                    <?php break; ?>
+                                <?php case ('stripe'): ?>
                                     <i class="fab fa-stripe me-2"></i>Stripe
-                                    @break
-                                @default
-                                    <i class="fas fa-cog me-2"></i>{{ ucfirst($groupName) }}
-                            @endswitch
+                                    <?php break; ?>
+                                <?php default: ?>
+                                    <i class="fas fa-cog me-2"></i><?php echo e(ucfirst($groupName)); ?>
+
+                            <?php endswitch; ?>
                                 </h5>
                             </div>
                             <div class="card-body">
-                        @php 
+                        <?php 
                             $isGeneral = false; // Jamais général pour les paiements
                             // Clés traitées comme booléens même si le type n'est pas "boolean" en BDD
                             $booleanKeys = [
@@ -274,9 +279,9 @@ use Illuminate\Support\Facades\Storage;
                                 'push_notifications',
                                 'maintenance_mode',
                             ];
-                        @endphp
-                        @foreach($groupSettings as $setting)
-@php
+                        ?>
+                        <?php $__currentLoopData = $groupSettings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $setting): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<?php
     $label = $setting->description ?: match($setting->key) {
                                 // Général
                                 'site_name' => 'Nom du site',
@@ -330,58 +335,59 @@ use Illuminate\Support\Facades\Storage;
                                 'site_phone' => 'Téléphone du site',
                                 default => ucfirst(str_replace('_', ' ', $setting->key)),
                             };
-                        @endphp
+                        ?>
                         <div class="form-group mb-3">
-                            <label for="setting_{{ $setting->key }}" class="form-label">
-                                {{ $label }}
-                                @if($setting->is_public)
+                            <label for="setting_<?php echo e($setting->key); ?>" class="form-label">
+                                <?php echo e($label); ?>
+
+                                <?php if($setting->is_public): ?>
                                     <span class="badge badge-success badge-sm">Public</span>
-                                @endif
+                                <?php endif; ?>
                             </label>
                             
-                            @if($setting->type === 'boolean' || in_array($setting->key, $booleanKeys))
+                            <?php if($setting->type === 'boolean' || in_array($setting->key, $booleanKeys)): ?>
                                 <div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio"
-                                               id="setting_{{ $setting->key }}_1"
-                                               name="settings[{{ $setting->key }}]"
-                                               value="1" {{ ((string)$setting->value === '1') ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="setting_{{ $setting->key }}_1">Oui</label>
+                                               id="setting_<?php echo e($setting->key); ?>_1"
+                                               name="settings[<?php echo e($setting->key); ?>]"
+                                               value="1" <?php echo e(((string)$setting->value === '1') ? 'checked' : ''); ?>>
+                                        <label class="form-check-label" for="setting_<?php echo e($setting->key); ?>_1">Oui</label>
                             </div>
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input" type="radio"
-                                               id="setting_{{ $setting->key }}_0"
-                                               name="settings[{{ $setting->key }}]"
-                                               value="0" {{ ((string)$setting->value === '0') ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="setting_{{ $setting->key }}_0">Non</label>
+                                               id="setting_<?php echo e($setting->key); ?>_0"
+                                               name="settings[<?php echo e($setting->key); ?>]"
+                                               value="0" <?php echo e(((string)$setting->value === '0') ? 'checked' : ''); ?>>
+                                        <label class="form-check-label" for="setting_<?php echo e($setting->key); ?>_0">Non</label>
                                         </div>
                                     </div>
-                            @elseif($setting->type === 'integer' || $setting->type === 'float')
+                            <?php elseif($setting->type === 'integer' || $setting->type === 'float'): ?>
                                 <input type="number" 
                                        class="form-control" 
-                                       id="setting_{{ $setting->key }}" 
-                                       name="settings[{{ $setting->key }}]" 
-                                       value="{{ $setting->value }}"
-                                       step="{{ $setting->type === 'float' ? '0.01' : '1' }}">
-                            @elseif($setting->type === 'array' || $setting->type === 'json')
+                                       id="setting_<?php echo e($setting->key); ?>" 
+                                       name="settings[<?php echo e($setting->key); ?>]" 
+                                       value="<?php echo e($setting->value); ?>"
+                                       step="<?php echo e($setting->type === 'float' ? '0.01' : '1'); ?>">
+                            <?php elseif($setting->type === 'array' || $setting->type === 'json'): ?>
                                 <textarea class="form-control" 
-                                          id="setting_{{ $setting->key }}" 
-                                          name="settings[{{ $setting->key }}]" 
-                                          rows="3">{{ is_array($setting->value) ? json_encode($setting->value, JSON_PRETTY_PRINT) : $setting->value }}</textarea>
-                            @else
+                                          id="setting_<?php echo e($setting->key); ?>" 
+                                          name="settings[<?php echo e($setting->key); ?>]" 
+                                          rows="3"><?php echo e(is_array($setting->value) ? json_encode($setting->value, JSON_PRETTY_PRINT) : $setting->value); ?></textarea>
+                            <?php else: ?>
                                 <input type="text" 
                                        class="form-control" 
-                                       id="setting_{{ $setting->key }}" 
-                                       name="settings[{{ $setting->key }}]" 
-                                       value="{{ $setting->value }}">
-                            @endif
+                                       id="setting_<?php echo e($setting->key); ?>" 
+                                       name="settings[<?php echo e($setting->key); ?>]" 
+                                       value="<?php echo e($setting->value); ?>">
+                            <?php endif; ?>
                                         </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </div>
                                     </div>
                                 </div>
-                @endforeach
-            @endif
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <?php endif; ?>
                         </div>
 
         <!-- Section spéciale pour les fichiers -->
@@ -397,47 +403,47 @@ use Illuminate\Support\Facades\Storage;
                         <div class="form-group mb-3">
                             <label for="logo" class="form-label">Logo du site</label>
                             <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
-                            @php $siteLogo = Setting::get('site_logo'); @endphp
-                            @if($siteLogo)
+                            <?php $siteLogo = Setting::get('site_logo'); ?>
+                            <?php if($siteLogo): ?>
                                 <div class="mt-2">
-                                    @php 
+                                    <?php 
                                         $logoPath = ltrim($siteLogo, '/');
                                         $logoExists = Storage::disk('public')->exists($logoPath);
                                         $logoUrl = $logoExists ? asset('storage/' . $logoPath) : null;
-                                    @endphp
-                                    @if($logoExists)
-                                    <img src="{{ $logoUrl }}" 
+                                    ?>
+                                    <?php if($logoExists): ?>
+                                    <img src="<?php echo e($logoUrl); ?>" 
                                          alt="Logo actuel" 
                                          style="max-height: 50px;">
-                                    @else
-                                    <small class="text-danger d-block">Fichier introuvable: <code>{{ $siteLogo }}</code></small>
-                                    @endif
+                                    <?php else: ?>
+                                    <small class="text-danger d-block">Fichier introuvable: <code><?php echo e($siteLogo); ?></code></small>
+                                    <?php endif; ?>
                                     <small class="text-muted d-block">Logo actuel</small>
                                         </div>
-                            @endif
+                            <?php endif; ?>
                         </div>
 
                         <div class="form-group mb-3">
                             <label for="favicon" class="form-label">Favicon</label>
                             <input type="file" class="form-control" id="favicon" name="favicon" accept="image/*">
-                            @php $siteFavicon = Setting::get('site_favicon'); @endphp
-                            @if($siteFavicon)
+                            <?php $siteFavicon = Setting::get('site_favicon'); ?>
+                            <?php if($siteFavicon): ?>
                                 <div class="mt-2">
-                                    @php 
+                                    <?php 
                                         $faviconPath = ltrim($siteFavicon, '/');
                                         $faviconExists = Storage::disk('public')->exists($faviconPath);
                                         $faviconUrl = $faviconExists ? asset('storage/' . $faviconPath) : null;
-                                    @endphp
-                                    @if($faviconExists)
-                                    <img src="{{ $faviconUrl }}" 
+                                    ?>
+                                    <?php if($faviconExists): ?>
+                                    <img src="<?php echo e($faviconUrl); ?>" 
                                          alt="Favicon actuel" 
                                          style="max-height: 32px;">
-                                    @else
-                                    <small class="text-danger d-block">Fichier introuvable: <code>{{ $siteFavicon }}</code></small>
-                                    @endif
+                                    <?php else: ?>
+                                    <small class="text-danger d-block">Fichier introuvable: <code><?php echo e($siteFavicon); ?></code></small>
+                                    <?php endif; ?>
                                     <small class="text-muted d-block">Favicon actuel</small>
                             </div>
-                            @endif
+                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -475,17 +481,17 @@ use Illuminate\Support\Facades\Storage;
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form method="POST" action="{{ route('admin.settings.reset') }}" class="d-inline">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('admin.settings.reset')); ?>" class="d-inline">
+                    <?php echo csrf_field(); ?>
                     <button type="submit" class="btn btn-warning">Réinitialiser</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 function resetSettings() {
     const modal = new bootstrap.Modal(document.getElementById('resetModal'));
@@ -527,4 +533,5 @@ document.getElementById('favicon').addEventListener('change', function(e) {
     }
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/admin/settings/index.blade.php ENDPATH**/ ?>
