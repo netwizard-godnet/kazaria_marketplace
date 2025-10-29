@@ -326,7 +326,7 @@
 </style>
 
 <!-- Backdrop pour le pop-up cookies -->
-<div id="cookieConsentBackdrop" class="cookie-consent-backdrop" style="display: none;"></div>
+<div id="cookieConsentBackdrop" class="cookie-consent-backdrop z-index-9x" style="display: none;"></div>
 
 <!-- Pop-up Consentement Cookies -->
 <div id="cookieConsentBanner" class="cookie-consent-banner" style="display: none;">
@@ -388,7 +388,7 @@
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
-        z-index: 9998;
+        z-index: 99998;
         animation: fadeIn 0.3s ease-out;
     }
     
@@ -400,7 +400,7 @@
         background: white;
         border-top: 3px solid #ff8c00;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-        z-index: 9999;
+        z-index: 99999 !important;
         animation: slideUp 0.5s ease-out;
     }
     
@@ -540,10 +540,20 @@
     
     /* Ajustement pour le footer mobile */
     @media (max-width: 576px) {
+        .cookie-consent-backdrop {
+            z-index: 99998 !important;
+        }
+        
         .cookie-consent-banner {
-            bottom: 80px; /* Au-dessus du footer mobile */
+            bottom: 80px !important; /* Au-dessus du footer mobile */
             max-height: calc(100vh - 80px);
             overflow-y: auto;
+            z-index: 99999 !important;
+        }
+        
+        /* S'assurer que le footer mobile ne cache pas le pop-up */
+        footer[style*="position: fixed"] {
+            z-index: 1000 !important;
         }
     }
 </style>

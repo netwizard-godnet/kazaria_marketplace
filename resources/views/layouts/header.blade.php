@@ -79,20 +79,9 @@ use Illuminate\Support\Facades\Storage;
     </head>
 
     <body>
-        <!-- Header -->
-        <div class="container-fluid orange-bg py-2">
-            <div class="container flex-column d-flex align-items-center justify-content-between flex-md-row">
-                <div class="mb-3 mb-md-0">
-                    <p class="mb-0 fs-8 text-uppercase">Mega sale Season sale with discount up to 50%, Hurry up! Don’t miss out. 
-                        <a href="" class="text-white">Know More</a>
-                    </p>
-                </div>
-                <div class="d-flex align-items-center justify-content-evenly">
-                    <a href="" class="btn btn-sm border-end rounded-0 text-white fs-8">STORE LOCATION</a>
-                    <a href="" class="btn btn-sm border-end rounded-0 text-white fs-8">TRACK YOUR ORDER</a>
-                    <a href="" class="btn btn-sm rounded-0 text-white fs-8">Francs CFA</a>
-                </div>
-            </div>
+        <!-- Header Banner -->
+        <div class="container-fluid p-0">
+            <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
         </div>
         <header class="z-index-9x shadow d-none d-sm-block" style="position: sticky; top: 0;">
             <div class="container-fluid blue-bg py-0 position-relative">
@@ -301,7 +290,7 @@ use Illuminate\Support\Facades\Storage;
 
         <!-- Mobile Header -->
         <header class="z-index-9x shadow d-sm-none" style="position: sticky; top: 0;">
-            <div class="container-fluid blue-bg py-3 position-relative">
+            <div class="container-fluid blue-bg py-2 position-relative">
                 <nav class="py-0">
                     <div class="vstack gap-2">
                         <div class="w-100 d-flex align-items-center justify-content-between">
@@ -349,8 +338,8 @@ use Illuminate\Support\Facades\Storage;
                         </div>
                         <div class="">
                             <form class="w-100 d-flex justify-content-center position-relative" action="{{ route('search_product') }}" method="GET" role="search" id="mobileSearchForm">
-                                <div class="bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
-                                    <div class="position-relative">
+                                <div class="w-100 bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
+                                    <div class="w-100 position-relative">
                                         <input class="form-control px-4 me-2 border-0 width-400" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="mobileSearchInput" autocomplete="off"/>
                                         <div id="mobileSearchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
                                             <!-- Les suggestions apparaîtront ici -->
@@ -361,7 +350,7 @@ use Illuminate\Support\Facades\Storage;
                                     </button>
                                 </div>
                                 <button class="btn orange-bg text-white text-uppercase fw-bolder" type="submit">
-                                Rechercher
+                                <i class="fa-solid fa-magnifying-glass"></i>
                                 </button>
                             </form>
                         </div>
