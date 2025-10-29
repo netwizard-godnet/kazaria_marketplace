@@ -326,10 +326,10 @@
 </style>
 
 <!-- Backdrop pour le pop-up cookies -->
-<div id="cookieConsentBackdrop" class="cookie-consent-backdrop z-index-9x" style="display: none;"></div>
+<div id="cookieConsentBackdrop" class="cookie-consent-backdrop" style="display: none;"></div>
 
 <!-- Pop-up Consentement Cookies -->
-<div id="cookieConsentBanner" class="cookie-consent-banner z-index-9x" style="display: none;">
+<div id="cookieConsentBanner" class="cookie-consent-banner" style="display: none;">
     <div class="cookie-consent-content">
         <div class="cookie-consent-header">
             <i class="bi bi-cookie me-2"></i>
