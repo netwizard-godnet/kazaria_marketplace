@@ -27,8 +27,32 @@ use Illuminate\Support\Facades\Storage;
                         @method('PUT')
                         
                                 <div class="row">
-            @foreach($groups as $groupName => $groupSettings)
-            <div class="{{ $groupName === 'general' ? 'col-12' : 'col-md-6' }} mb-4">
+            @php
+                // Définir l'ordre d'affichage des groupes
+                $groupOrder = ['general', 'contact', 'ecommerce', 'deals', 'social', 'maintenance', 'cinetpay', 'stripe'];
+                // Réorganiser les groupes selon l'ordre défini
+                $orderedGroups = [];
+                foreach ($groupOrder as $orderedGroupName) {
+                    if (isset($groups[$orderedGroupName])) {
+                        $orderedGroups[$orderedGroupName] = $groups[$orderedGroupName];
+                    }
+                }
+                // Ajouter les groupes qui ne sont pas dans la liste (en fin)
+                foreach ($groups as $groupName => $groupSettings) {
+                    if (!in_array($groupName, $groupOrder)) {
+                        $orderedGroups[$groupName] = $groupSettings;
+                    }
+                }
+            @endphp
+            
+            @foreach($orderedGroups as $groupName => $groupSettings)
+                @php
+                    $isGeneral = ($groupName === 'general');
+                    $isPaymentGroup = ($groupName === 'cinetpay' || $groupName === 'stripe');
+                    // Si c'est CinetPay ou Stripe, utiliser col-md-6 pour les placer côte à côte
+                    $columnClass = $isGeneral ? 'col-12' : ($isPaymentGroup ? 'col-md-6' : 'col-md-6');
+                @endphp
+            <div class="{{ $columnClass }} mb-4">
                 <div class="card">
                             <div class="card-header">
                                 <h5 class="card-title">
@@ -50,6 +74,12 @@ use Illuminate\Support\Facades\Storage;
                                     @break
                                 @case('maintenance')
                                     <i class="fas fa-tools me-2"></i>Maintenance
+                                    @break
+                                @case('cinetpay')
+                                    <i class="fas fa-credit-card me-2"></i>CinetPay
+                                    @break
+                                @case('stripe')
+                                    <i class="fab fa-stripe me-2"></i>Stripe
                                     @break
                                 @default
                                     <i class="fas fa-cog me-2"></i>{{ ucfirst($groupName) }}
@@ -106,6 +136,9 @@ use Illuminate\Support\Facades\Storage;
                                 'cinetpay_api_key' => 'Clé API CinetPay',
                                 'cinetpay_site_id' => 'ID du site CinetPay',
                                 'cinetpay_currency' => 'Devise CinetPay',
+                                // Paiement (Stripe)
+                                'stripe_public_key' => 'Clé publique Stripe',
+                                'stripe_secret_key' => 'Clé secrète Stripe',
                                 // Autres paramètres (généraux / sécurité / email / commandes)
                                 'default_commission_rate' => 'Taux de commission par défaut (%)',
                                 'default_shipping_cost' => 'Frais de livraison par défaut (FCFA)',
