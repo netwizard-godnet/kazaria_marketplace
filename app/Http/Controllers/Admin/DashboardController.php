@@ -20,9 +20,10 @@ class DashboardController extends Controller
             'total_stores' => Store::count(),
             'total_products' => Product::count(),
             'total_orders' => Order::count(),
+            // Utiliser le statut réel des commandes livrées pour les revenus
             'monthly_revenue' => Order::whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
-                ->where('status', 'completed')
+                ->where('status', 'delivered')
                 ->sum('total'),
             'active_users' => User::where('updated_at', '>=', now()->subDays(30))->count(),
             'growth_rate' => $this->calculateGrowthRate(),
@@ -41,8 +42,10 @@ class DashboardController extends Controller
             ->get();
 
         // Données pour les graphiques
+        $salesChart = $this->getSalesChartData();
         $chart_data = [
-            'sales' => $this->getSalesChartData(),
+            'sales' => $salesChart['values'],
+            'sales_labels' => json_encode($salesChart['labels'], JSON_UNESCAPED_UNICODE),
             'monthly' => $this->getMonthlyChartData(),
             'active_users' => $this->getActiveUsersChartData(),
         ];
@@ -68,38 +71,51 @@ class DashboardController extends Controller
     private function getSalesChartData()
     {
         $sales = [];
+        $labels = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $amount = Order::whereMonth('created_at', $date->month)
                 ->whereYear('created_at', $date->year)
-                ->where('status', 'completed')
+                ->where('status', 'delivered')
                 ->sum('total');
             $sales[] = $amount;
+            // Labels en français
+            $labels[] = ucfirst(
+                $date->translatedFormat('M') // Nécessite locale fr_FR paramétrée sinon fallback anglais
+            );
         }
-        
-        return implode(',', $sales);
+        // On retourne à la fois les valeurs et les labels
+        return [
+            'values' => implode(',', $sales),
+            'labels' => $labels,
+        ];
     }
 
     private function getMonthlyChartData()
     {
-        $completed = Order::whereMonth('created_at', now()->month)
+        // Nombre de commandes livrées (validées)
+        $validated = Order::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->where('status', 'completed')
-            ->sum('total');
-            
+            ->where('status', 'delivered')
+            ->count();
+
+        // Nombre de commandes en cours (pending + processing)
+        $inProgress = Order::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->whereIn('status', ['pending', 'processing'])
+            ->count();
+
+        // Nombre de commandes annulées
         $cancelled = Order::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->where('status', 'cancelled')
-            ->sum('total');
-            
-        $total = $completed + $cancelled;
-        
-        if ($total == 0) return '100,0';
-        
-        $completedPercent = round(($completed / $total) * 100);
-        $cancelledPercent = 100 - $completedPercent;
-        
-        return $completedPercent . ',' . $cancelledPercent;
+            ->count();
+
+        return implode(',', [
+            $validated,
+            $inProgress,
+            $cancelled,
+        ]);
     }
 
     private function getActiveUsersChartData()

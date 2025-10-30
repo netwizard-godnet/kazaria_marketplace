@@ -171,5 +171,37 @@ class ProductController extends Controller
         
         return response()->json(['success' => false, 'message' => 'Image non trouvée'], 404);
     }
+
+    public function create()
+    {
+        $categories = Category::all();
+        $attributes = Attribute::with('attributeValues')->ordered()->get();
+        return view('admin.products.create', compact('categories', 'attributes'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        $data = $request->all();
+        $images = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $img) {
+                $images[] = $img->store('products', 'public');
+            }
+        }
+        $data['images'] = $images;
+        $data['is_active'] = true;
+        $data['status'] = 'pending';
+        $product = Product::create($data);
+        return redirect()->route('admin.products.index')->with('success', 'Produit ajouté avec succès.');
+    }
 }
 

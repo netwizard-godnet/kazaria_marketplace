@@ -55,15 +55,20 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
     // Products Management
     Route::prefix('products')->name('products.')->middleware('permission:view_products')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
         
+        // Routes d'édition/création doivent précéder la route paramétrée /{product}
         Route::middleware('permission:edit_products')->group(function () {
+            Route::get('/create', [ProductController::class, 'create'])->name('create');
+            Route::post('/', [ProductController::class, 'store'])->name('store');
             Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
             Route::put('/{product}', [ProductController::class, 'update'])->name('update');
             Route::post('/{product}/approve', [ProductController::class, 'approve'])->name('approve');
             Route::post('/{product}/reject', [ProductController::class, 'reject'])->name('reject');
             Route::post('/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggle-status');
         });
+
+        // Route paramétrée après pour ne pas matcher "create"
+        Route::get('/{product}', [ProductController::class, 'show'])->name('show');
         
         Route::middleware('permission:delete_products')->group(function () {
             Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
