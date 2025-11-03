@@ -21,6 +21,167 @@
 </div>
 
 <script>
+// Fonction globale pour ajouter des bulles dans le chat
+function appendBubble(text, who){
+    const thread = document.getElementById('kazarAIThread');
+    if(!thread) return; // Si le chat n'est pas initialisé, ne rien faire
+    const div = document.createElement('div');
+    div.className = 'mb-2 ' + (who==='me' ? 'text-end' : '');
+    const bubble = document.createElement('div');
+    bubble.className = 'kazar-ai-bubble '+(who==='me'?'me':'ai');
+    bubble.textContent = text; // préserver les \n avec CSS pre-wrap
+    div.appendChild(bubble);
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+}
+
+// Fonction globale pour les headers HTTP
+function baseHeaders(json=true){
+    const h = { 'Accept':'application/json' };
+    if(json) h['Content-Type'] = 'application/json';
+    const m = document.querySelector('meta[name="csrf-token"]');
+    if(m && m.content) h['X-CSRF-TOKEN'] = m.content;
+    return h;
+}
+
+// Fonction pour mettre à jour le compteur de panier dans le header
+async function updateCartCount(){
+    try{
+        const headers = (typeof getHeaders === 'function') ? getHeaders() : {'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]')?.content};
+        const res = await fetch('/cart/get', {headers});
+        const data = await res.json();
+        const count = data.count || data.cart_count || 0;
+        if(data.success){
+            const cartCounts = document.querySelectorAll('.cart-count');
+            cartCounts.forEach(el => {
+                el.textContent = count;
+                el.style.display = count > 0 ? 'block' : 'none';
+            });
+        }
+    }catch(e){ /* silencieux */ }
+}
+
+// Fonction pour afficher une notification toast
+function showNotification(message, type = 'success'){
+    // Créer un élément de notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed top-0 start-50 translate-middle-x mt-3`;
+    toast.style.zIndex = '999999';
+    toast.style.minWidth = '300px';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span>${message}</span>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-suppression après 3 secondes
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+async function getCartProductIds(){
+    try{
+        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
+            'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
+        };
+        const res = await fetch('/cart/get', {headers});
+        const data = await res.json();
+        if(data && data.items){
+            const set = new Set();
+            data.items.forEach(i=> { if(i.product && i.product.id) set.add(i.product.id); });
+            return set;
+        }
+    }catch(e){}
+    return new Set();
+}
+
+async function aiChangeQty(productId, delta){
+    try{
+        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
+            'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
+        };
+        const cartRes = await fetch('/cart/get', {headers});
+        const cart = await cartRes.json();
+        if(!cart.success){ appendBubble('Panier non disponible.', 'ai'); return; }
+        const item = (cart.items||[]).find(i=> i.product && i.product.id === productId);
+        if(!item){ appendBubble('Article non présent dans le panier.', 'ai'); return; }
+        const newQty = Math.max(1, (item.quantity||1) + delta);
+        const res = await fetch('/cart/update', {method:'PUT', headers, body: JSON.stringify({ item_id: item.id, quantity: newQty })});
+        const data = await res.json();
+        if(data.success){
+            appendBubble(`Quantité mise à jour: ${newQty}`, 'ai');
+            updateCartCount();
+            showNotification(`Quantité mise à jour : ${newQty}`, 'success');
+        } else {
+            appendBubble(data.message||'Impossible de mettre à jour.', 'ai');
+            showNotification(data.message||'Impossible de mettre à jour.', 'danger');
+        }
+    }catch(e){
+        appendBubble('Erreur de mise à jour du panier.', 'ai');
+        showNotification('Erreur de mise à jour du panier.', 'danger');
+    }
+}
+
+async function aiRemoveFromCart(productId){
+    try{
+        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
+            'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
+        };
+        const cartRes = await fetch('/cart/get', {headers});
+        const cart = await cartRes.json();
+        if(!cart.success){ appendBubble('Panier non disponible.', 'ai'); return; }
+        const item = (cart.items||[]).find(i=> i.product && i.product.id === productId);
+        if(!item){ appendBubble('Article non présent dans le panier.', 'ai'); return; }
+        const res = await fetch('/cart/remove', {method:'DELETE', headers, body: JSON.stringify({ item_id: item.id })});
+        const data = await res.json();
+        if(data.success){
+            appendBubble('Article retiré du panier 🗑️', 'ai');
+            updateCartCount();
+            showNotification('Article retiré du panier', 'success');
+        } else {
+            appendBubble(data.message||'Impossible de retirer.', 'ai');
+            showNotification(data.message||'Impossible de retirer.', 'danger');
+        }
+    }catch(e){
+        appendBubble('Erreur lors du retrait.', 'ai');
+        showNotification('Erreur lors du retrait.', 'danger');
+    }
+}
+
+async function aiAddToCart(productId){
+    try{
+        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
+            'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
+        };
+        const res = await fetch('/cart/add', {method:'POST', headers, body: JSON.stringify({ product_id: productId, quantity: 1 })});
+        const data = await res.json();
+        if(data.success){
+            appendBubble('Article ajouté au panier ✅', 'ai');
+            logAiInteraction('add_to_cart', productId);
+            updateCartCount();
+            showNotification('Article ajouté au panier', 'success');
+        }else{
+            appendBubble(data.message || "Impossible d'ajouter au panier", 'ai');
+            showNotification(data.message || "Impossible d'ajouter au panier", 'danger');
+        }
+    }catch(e){
+        appendBubble("Erreur lors de l'ajout au panier.", 'ai');
+        showNotification("Erreur lors de l'ajout au panier.", 'danger');
+    }
+}
+
+async function logAiInteraction(type, productId){
+    try{
+        const headers = (typeof getHeaders === 'function') ? getHeaders() : (typeof baseHeaders==='function'? baseHeaders(true): {'Accept':'application/json'});
+        await fetch('/api/ai/interaction', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify({ type, product_id: productId }) });
+    }catch(e){ /* silencieux */ }
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     const openBtn = document.getElementById('kazarAIOpen');
     const chat = document.getElementById('kazarAIChat');
@@ -32,25 +193,6 @@ document.addEventListener('DOMContentLoaded', function(){
         chat.style.display = chat.style.display==='block' ? 'none' : 'block'; 
         openBtn.classList.toggle('active');
     });
-
-    function appendBubble(text, who){
-        const div = document.createElement('div');
-        div.className = 'mb-2 ' + (who==='me' ? 'text-end' : '');
-        const bubble = document.createElement('div');
-        bubble.className = 'kazar-ai-bubble '+(who==='me'?'me':'ai');
-        bubble.textContent = text; // préserver les \n avec CSS pre-wrap
-        div.appendChild(bubble);
-        thread.appendChild(div);
-        thread.scrollTop = thread.scrollHeight;
-    }
-
-    function baseHeaders(json=true){
-        const h = { 'Accept':'application/json' };
-        if(json) h['Content-Type'] = 'application/json';
-        const m = document.querySelector('meta[name="csrf-token"]');
-        if(m && m.content) h['X-CSRF-TOKEN'] = m.content;
-        return h;
-    }
 
     async function ask(){
         const msg = input.value.trim();
@@ -142,81 +284,11 @@ document.addEventListener('DOMContentLoaded', function(){
     sendBtn.addEventListener('click', ask);
     input.addEventListener('keydown', e=>{ if(e.key==='Enter') ask(); });
 });
-
-async function getCartProductIds(){
-    try{
-        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
-            'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
-        };
-        const res = await fetch('/cart/get', {headers});
-        const data = await res.json();
-        if(data && data.items){
-            const set = new Set();
-            data.items.forEach(i=>{ if(i.product && i.product.id) set.add(i.product.id); });
-            return set;
-        }
-    }catch(e){}
-    return new Set();
-}
-
-async function aiChangeQty(productId, delta){
-    try{
-        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
-            'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
-        };
-        const cartRes = await fetch('/cart/get', {headers});
-        const cart = await cartRes.json();
-        if(!cart.success){ appendBubble('Panier non disponible.', 'ai'); return; }
-        const item = (cart.items||[]).find(i=> i.product && i.product.id === productId);
-        if(!item){ appendBubble('Article non présent dans le panier.', 'ai'); return; }
-        const newQty = Math.max(1, (item.quantity||1) + delta);
-        const res = await fetch('/cart/update', {method:'PUT', headers, body: JSON.stringify({ item_id: item.id, quantity: newQty })});
-        const data = await res.json();
-        if(data.success){ appendBubble(`Quantité mise à jour: ${newQty}`, 'ai'); } else { appendBubble(data.message||'Impossible de mettre à jour.', 'ai'); }
-    }catch(e){ appendBubble('Erreur de mise à jour du panier.', 'ai'); }
-}
-
-async function aiRemoveFromCart(productId){
-    try{
-        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
-            'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
-        };
-        const cartRes = await fetch('/cart/get', {headers});
-        const cart = await cartRes.json();
-        if(!cart.success){ appendBubble('Panier non disponible.', 'ai'); return; }
-        const item = (cart.items||[]).find(i=> i.product && i.product.id === productId);
-        if(!item){ appendBubble('Article non présent dans le panier.', 'ai'); return; }
-        const res = await fetch('/cart/remove', {method:'DELETE', headers, body: JSON.stringify({ item_id: item.id })});
-        const data = await res.json();
-        if(data.success){ appendBubble('Article retiré du panier 🗑️', 'ai'); } else { appendBubble(data.message||'Impossible de retirer.', 'ai'); }
-    }catch(e){ appendBubble('Erreur lors du retrait.', 'ai'); }
-}
-async function aiAddToCart(productId){
-    try{
-        const headers = (typeof getHeaders === 'function') ? getHeaders() : {
-            'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
-        };
-        const res = await fetch('/cart/add', {method:'POST', headers, body: JSON.stringify({ product_id: productId, quantity: 1 })});
-        const data = await res.json();
-        if(data.success){
-            appendBubble('Article ajouté au panier ✅', 'ai');
-            logAiInteraction('add_to_cart', productId);
-        }else{
-            appendBubble(data.message || "Impossible d'ajouter au panier", 'ai');
-        }
-    }catch(e){ appendBubble("Erreur lors de l'ajout au panier.", 'ai'); }
-}
-async function logAiInteraction(type, productId){
-    try{
-        const headers = (typeof getHeaders === 'function') ? getHeaders() : (typeof baseHeaders==='function'? baseHeaders(true): {'Accept':'application/json'});
-        await fetch('/api/ai/interaction', { method:'POST', headers, credentials:'same-origin', body: JSON.stringify({ type, product_id: productId }) });
-    }catch(e){ /* silencieux */ }
-}
 // end chat script
 </script>
 
 <style>
-.kazar-ai-wrap { right:20px; bottom:40px; z-index:9999999999!important; }
+.kazar-ai-wrap { right:20px; bottom:30px; z-index:9999999999!important; }
 .kazar-ai-chat { width: 350px; }
 .kazar-ai-thread { height: 350px; overflow:auto; }
 .kazar-ai-fab { width:60px; height:60px; animation: kazarPulse 2.4s infinite; transform-origin:center; }
