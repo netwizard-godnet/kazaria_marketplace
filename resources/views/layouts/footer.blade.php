@@ -20,7 +20,7 @@
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">A PROPOS</p>
                 <div class="vstack gap-1 ms-2">
-                    <a href="" class="btn btn-sm text-secondary text-start fs-8">Qui nous sommes ?</a>
+                    <a href="{{ route('qui-nous-sommes') }}" class="btn btn-sm text-secondary text-start fs-8">Qui nous sommes ?</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Carrières chez KAZARIA</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Conditions générales d'utilisation</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">KAZARIA Express</a>

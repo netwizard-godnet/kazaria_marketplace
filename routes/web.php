@@ -152,6 +152,9 @@ Route::get('/api/search-suggestions', [App\Http\Controllers\SearchController::cl
 Route::get('/avatar/kazaria', [App\Http\Controllers\AvatarController::class, 'kazariaAvatar'])->name('avatar.kazaria');
 Route::get('/avatar/generate', [App\Http\Controllers\AvatarController::class, 'generateEmailAvatar'])->name('avatar.generate');
 
+// A PROPOS
+Route::get('/qui-nous-sommes', function() { return view('qui-nous-sommes'); })->name('qui-nous-sommes');
+
 // Routes d'authentification
 Route::get('/verify-email/{token}', [App\Http\Controllers\AuthController::class, 'verifyEmail'])->name('verify-email');
 Route::get('/forgot-password', function() {
