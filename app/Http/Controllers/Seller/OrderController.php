@@ -13,6 +13,19 @@ use Illuminate\Support\Facades\DB;
 class OrderController extends Controller
 {
     /**
+     * Convertir un numéro de commande masqué en ID réel
+     */
+    private function unmaskOrderNumber($maskedNumber)
+    {
+        // Si c'est un format CMD-XXXXXX, extraire l'ID
+        if (preg_match('/^CMD-(\d+)$/', $maskedNumber, $matches)) {
+            return (int) $matches[1];
+        }
+        // Sinon, retourner le numéro tel quel (ancien format)
+        return $maskedNumber;
+    }
+    
+    /**
      * Récupérer les commandes de la boutique
      */
     public function getOrders(Request $request)
@@ -80,16 +93,17 @@ class OrderController extends Controller
 
                 return [
                     'id' => $order->id,
-                    'order_number' => $order->order_number,
+                    'order_number' => 'CMD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT), // Numéro masqué
                     'created_at' => $order->created_at,
                     'updated_at' => $order->updated_at,
                     'status' => $order->status,
                     'payment_status' => $order->payment_status,
-                    'shipping_name' => $order->shipping_name,
-                    'shipping_email' => $order->shipping_email,
-                    'shipping_phone' => $order->shipping_phone,
-                    'shipping_address' => $order->shipping_address,
-                    'shipping_city' => $order->shipping_city,
+                    // Masquer les informations sensibles du client
+                    'shipping_name' => 'Client KAZARIA',
+                    'shipping_email' => 'client@kazaria.com',
+                    'shipping_phone' => '***',
+                    'shipping_address' => '***',
+                    'shipping_city' => '***',
                     'total' => $storeTotal,
                     'items_count' => $order->orderItems->where('product.store_id', $store->id)->count(),
                     'items' => $order->orderItems->where('product.store_id', $store->id)->map(function($item) {
@@ -167,10 +181,11 @@ class OrderController extends Controller
 
                 return [
                     'id' => $order->id,
-                    'order_number' => $order->order_number,
+                    'order_number' => 'CMD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT), // Numéro masqué
                     'created_at' => $order->created_at,
                     'status' => $order->status,
-                    'shipping_name' => $order->shipping_name,
+                    // Masquer les informations sensibles du client
+                    'shipping_name' => 'Client KAZARIA',
                     'total' => $storeTotal,
                     'items_count' => $order->orderItems->where('product.store_id', $store->id)->count()
                 ];
@@ -204,9 +219,13 @@ class OrderController extends Controller
         }
 
         try {
-            $order = Order::where('order_number', $orderNumber)
-                ->with(['orderItems.product', 'user'])
-                ->first();
+            // Vérifier si c'est un numéro masqué (CMD-XXXXXX)
+            $orderId = $this->unmaskOrderNumber($orderNumber);
+            
+            // Rechercher par ID si c'est un numéro masqué, sinon par order_number
+            $order = $orderId !== $orderNumber 
+                ? Order::where('id', $orderId)->with(['orderItems.product', 'user'])->first()
+                : Order::where('order_number', $orderNumber)->with(['orderItems.product', 'user'])->first();
 
             if (!$order) {
                 return response()->json([
@@ -239,20 +258,21 @@ class OrderController extends Controller
 
             $formattedOrder = [
                 'id' => $order->id,
-                'order_number' => $order->order_number,
+                'order_number' => 'CMD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT), // Numéro masqué
                 'created_at' => $order->created_at,
                 'updated_at' => $order->updated_at,
                 'status' => $order->status,
                 'payment_status' => $order->payment_status,
                 'payment_method' => $order->payment_method,
-                'shipping_name' => $order->shipping_name,
-                'shipping_email' => $order->shipping_email,
-                'shipping_phone' => $order->shipping_phone,
-                'shipping_address' => $order->shipping_address,
-                'shipping_city' => $order->shipping_city,
-                'shipping_postal_code' => $order->shipping_postal_code,
-                'shipping_country' => $order->shipping_country,
-                'customer_notes' => $order->customer_notes,
+                // Masquer les informations sensibles du client
+                'shipping_name' => 'Client KAZARIA',
+                'shipping_email' => 'client@kazaria.com',
+                'shipping_phone' => '***',
+                'shipping_address' => '***',
+                'shipping_city' => '***',
+                'shipping_postal_code' => '***',
+                'shipping_country' => '***',
+                'customer_notes' => $order->customer_notes, // Garder les notes client pour contexte
                 'total' => $storeTotal,
                 'subtotal' => $storeSubtotal,
                 'shipping_cost' => $storeShippingCost,
@@ -316,11 +336,17 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order = Order::where('order_number', $orderNumber)
-                ->whereHas('orderItems.product', function($q) use ($store) {
+            // Vérifier si c'est un numéro masqué (CMD-XXXXXX)
+            $orderId = $this->unmaskOrderNumber($orderNumber);
+            
+            // Rechercher par ID si c'est un numéro masqué, sinon par order_number
+            $order = $orderId !== $orderNumber 
+                ? Order::where('id', $orderId)->whereHas('orderItems.product', function($q) use ($store) {
                     $q->where('store_id', $store->id);
-                })
-                ->first();
+                })->first()
+                : Order::where('order_number', $orderNumber)->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })->first();
 
             if (!$order) {
                 return response()->json([
@@ -485,11 +511,17 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order = Order::where('order_number', $orderNumber)
-                ->whereHas('orderItems.product', function($q) use ($store) {
+            // Vérifier si c'est un numéro masqué (CMD-XXXXXX)
+            $orderId = $this->unmaskOrderNumber($orderNumber);
+            
+            // Rechercher par ID si c'est un numéro masqué, sinon par order_number
+            $order = $orderId !== $orderNumber 
+                ? Order::where('id', $orderId)->whereHas('orderItems.product', function($q) use ($store) {
                     $q->where('store_id', $store->id);
-                })
-                ->first();
+                })->first()
+                : Order::where('order_number', $orderNumber)->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })->first();
 
             if (!$order) {
                 return response()->json([
@@ -550,11 +582,17 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order = Order::where('order_number', $orderNumber)
-                ->whereHas('orderItems.product', function($q) use ($store) {
+            // Vérifier si c'est un numéro masqué (CMD-XXXXXX)
+            $orderId = $this->unmaskOrderNumber($orderNumber);
+            
+            // Rechercher par ID si c'est un numéro masqué, sinon par order_number
+            $order = $orderId !== $orderNumber 
+                ? Order::where('id', $orderId)->whereHas('orderItems.product', function($q) use ($store) {
                     $q->where('store_id', $store->id);
-                })
-                ->first();
+                })->first()
+                : Order::where('order_number', $orderNumber)->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })->first();
 
             if (!$order) {
                 return response()->json([
@@ -607,11 +645,17 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order = Order::where('order_number', $orderNumber)
-                ->whereHas('orderItems.product', function($q) use ($store) {
+            // Vérifier si c'est un numéro masqué (CMD-XXXXXX)
+            $orderId = $this->unmaskOrderNumber($orderNumber);
+            
+            // Rechercher par ID si c'est un numéro masqué, sinon par order_number
+            $order = $orderId !== $orderNumber 
+                ? Order::where('id', $orderId)->whereHas('orderItems.product', function($q) use ($store) {
                     $q->where('store_id', $store->id);
-                })
-                ->first();
+                })->first()
+                : Order::where('order_number', $orderNumber)->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })->first();
 
             if (!$order) {
                 return response()->json([
@@ -664,11 +708,17 @@ class OrderController extends Controller
         ]);
 
         try {
-            $order = Order::where('order_number', $orderNumber)
-                ->whereHas('orderItems.product', function($q) use ($store) {
+            // Vérifier si c'est un numéro masqué (CMD-XXXXXX)
+            $orderId = $this->unmaskOrderNumber($orderNumber);
+            
+            // Rechercher par ID si c'est un numéro masqué, sinon par order_number
+            $order = $orderId !== $orderNumber 
+                ? Order::where('id', $orderId)->whereHas('orderItems.product', function($q) use ($store) {
                     $q->where('store_id', $store->id);
-                })
-                ->first();
+                })->first()
+                : Order::where('order_number', $orderNumber)->whereHas('orderItems.product', function($q) use ($store) {
+                    $q->where('store_id', $store->id);
+                })->first();
 
             if (!$order) {
                 return response()->json([

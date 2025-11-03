@@ -87,7 +87,7 @@ use Illuminate\Support\Facades\Storage;
         <header class="z-index-9x shadow d-none d-sm-block">
             <div class="container-fluid blue-bg py-0 position-relative">
                 <nav class="navbar navbar-expand-lg py-0">
-                    <div class="container-fluid">
+                    <div class="container-fluid py-0">
                         <a class="navbar-brand fw-bolder text-white fs-2" href="{{ route('accueil') }}">
                             <img src="{{ asset('storage/' . ($settings['site_logo'] ?? 'logo.png')) }}" class="logo-size-header" alt="{{ $settings['site_name'] ?? 'KAZARIA' }}">
                         </a>

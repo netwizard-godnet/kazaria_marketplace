@@ -80,7 +80,17 @@ class SettingController extends Controller
             'settings.*' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,ico|max:1024',
+        ], [
+            'logo.image' => 'Le logo doit être une image.',
+            'logo.mimes' => 'Le logo doit être au format : jpeg, png, jpg, gif ou svg.',
+            'logo.max' => 'Le logo ne doit pas dépasser 2 Mo.',
+            'favicon.image' => 'Le favicon doit être une image.',
+            'favicon.mimes' => 'Le favicon doit être au format : jpeg, png, jpg, gif, svg ou ico.',
+            'favicon.max' => 'Le favicon ne doit pas dépasser 1 Mo.',
         ]);
+
+        // Messages de succès pour les uploads
+        $uploadMessages = [];
 
         // Traiter les paramètres
         foreach ($request->settings as $key => $value) {
@@ -91,21 +101,85 @@ class SettingController extends Controller
 
         // Gérer l'upload du logo
         if ($request->hasFile('logo')) {
-            $logo = $request->file('logo');
-            $logoName = 'logo.' . $logo->getClientOriginalExtension();
-            $logo->storeAs('public', $logoName);
-            Setting::set('site_logo', $logoName, 'string', 'general', 'Logo du site', true);
+            try {
+                // Récupérer l'ancien logo AVANT la mise à jour
+                $oldLogo = Setting::get('site_logo', '');
+                
+                $logo = $request->file('logo');
+                $logoName = 'logo.' . $logo->getClientOriginalExtension();
+                
+                // Log pour debug
+                \Log::info('Upload logo', [
+                    'old_logo' => $oldLogo,
+                    'new_logo_name' => $logoName,
+                    'file_size' => $logo->getSize(),
+                    'mime_type' => $logo->getMimeType()
+                ]);
+                
+                // Stocker le fichier directement dans storage/app/public
+                Storage::disk('public')->putFileAs('', $logo, $logoName);
+                \Log::info('Logo stocké', ['filename' => $logoName]);
+                
+                // Mettre à jour en base
+                Setting::set('site_logo', $logoName, 'string', 'general', 'Logo du site', true);
+                
+                // Nettoyer l'ancien logo s'il existe et est différent
+                if ($oldLogo && $oldLogo !== $logoName && Storage::disk('public')->exists($oldLogo)) {
+                    Storage::disk('public')->delete($oldLogo);
+                    \Log::info('Ancien logo supprimé', ['filename' => $oldLogo]);
+                }
+                
+                $uploadMessages[] = 'Logo mis à jour avec succès.';
+            } catch (\Exception $e) {
+                \Log::error('Erreur upload logo', ['error' => $e->getMessage()]);
+                $uploadMessages[] = 'Erreur lors de l\'upload du logo : ' . $e->getMessage();
+            }
         }
 
         // Gérer l'upload du favicon
         if ($request->hasFile('favicon')) {
-            $favicon = $request->file('favicon');
-            $faviconName = 'favicon.' . $favicon->getClientOriginalExtension();
-            $favicon->storeAs('public', $faviconName);
-            Setting::set('site_favicon', $faviconName, 'string', 'general', 'Favicon du site', true);
+            try {
+                // Récupérer l'ancien favicon AVANT la mise à jour
+                $oldFavicon = Setting::get('site_favicon', '');
+                
+                $favicon = $request->file('favicon');
+                $faviconName = 'favicon.' . $favicon->getClientOriginalExtension();
+                
+                // Log pour debug
+                \Log::info('Upload favicon', [
+                    'old_favicon' => $oldFavicon,
+                    'new_favicon_name' => $faviconName,
+                    'file_size' => $favicon->getSize(),
+                    'mime_type' => $favicon->getMimeType()
+                ]);
+                
+                // Stocker le fichier directement dans storage/app/public
+                Storage::disk('public')->putFileAs('', $favicon, $faviconName);
+                \Log::info('Favicon stocké', ['filename' => $faviconName]);
+                
+                // Mettre à jour en base
+                Setting::set('site_favicon', $faviconName, 'string', 'general', 'Favicon du site', true);
+                
+                // Nettoyer l'ancien favicon s'il existe et est différent
+                if ($oldFavicon && $oldFavicon !== $faviconName && Storage::disk('public')->exists($oldFavicon)) {
+                    Storage::disk('public')->delete($oldFavicon);
+                    \Log::info('Ancien favicon supprimé', ['filename' => $oldFavicon]);
+                }
+                
+                $uploadMessages[] = 'Favicon mis à jour avec succès.';
+            } catch (\Exception $e) {
+                \Log::error('Erreur upload favicon', ['error' => $e->getMessage()]);
+                $uploadMessages[] = 'Erreur lors de l\'upload du favicon : ' . $e->getMessage();
+            }
         }
 
-        return redirect()->back()->with('success', 'Paramètres mis à jour avec succès.');
+        // Construire le message final
+        $successMessage = 'Paramètres mis à jour avec succès.';
+        if (!empty($uploadMessages)) {
+            $successMessage .= ' ' . implode(' ', $uploadMessages);
+        }
+
+        return redirect()->back()->with('success', $successMessage);
     }
 
     public function reset()

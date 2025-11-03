@@ -22,6 +22,33 @@ use Illuminate\Support\Facades\Storage;
         </ul>
     </div>
 
+    {{-- Messages de validation --}}
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>Les paramètres n'ont pas pu être mis à jour :
+            <ul class="mb-0 mt-2">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
@@ -403,12 +430,15 @@ use Illuminate\Support\Facades\Storage;
                                     @php 
                                         $logoPath = ltrim($siteLogo, '/');
                                         $logoExists = Storage::disk('public')->exists($logoPath);
-                                        $logoUrl = $logoExists ? asset('storage/' . $logoPath) : null;
+                                        // Ajouter un timestamp pour cache-busting
+                                        $logoUrl = $logoExists ? asset('storage/' . $logoPath . '?v=' . time()) : null;
                                     @endphp
                                     @if($logoExists)
                                     <img src="{{ $logoUrl }}" 
                                          alt="Logo actuel" 
-                                         style="max-height: 50px;">
+                                         style="max-height: 50px;"
+                                         class="img-thumbnail"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/logo.png') }}';">
                                     @else
                                     <small class="text-danger d-block">Fichier introuvable: <code>{{ $siteLogo }}</code></small>
                                     @endif
@@ -426,12 +456,15 @@ use Illuminate\Support\Facades\Storage;
                                     @php 
                                         $faviconPath = ltrim($siteFavicon, '/');
                                         $faviconExists = Storage::disk('public')->exists($faviconPath);
-                                        $faviconUrl = $faviconExists ? asset('storage/' . $faviconPath) : null;
+                                        // Ajouter un timestamp pour cache-busting
+                                        $faviconUrl = $faviconExists ? asset('storage/' . $faviconPath . '?v=' . time()) : null;
                                     @endphp
                                     @if($faviconExists)
                                     <img src="{{ $faviconUrl }}" 
                                          alt="Favicon actuel" 
-                                         style="max-height: 32px;">
+                                         style="max-height: 32px;"
+                                         class="img-thumbnail"
+                                         onerror="this.onerror=null; this.src='{{ asset('favicon.png') }}';">
                                     @else
                                     <small class="text-danger d-block">Fichier introuvable: <code>{{ $siteFavicon }}</code></small>
                                     @endif
@@ -498,11 +531,17 @@ document.getElementById('logo').addEventListener('change', function(e) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
+            // Supprimer l'ancien aperçu s'il existe
+            const oldPreview = e.target.parentNode.querySelector('div.preview-logo');
+            if (oldPreview) {
+                oldPreview.remove();
+            }
+            
             const preview = document.createElement('div');
-            preview.className = 'mt-2';
+            preview.className = 'mt-2 preview-logo';
             preview.innerHTML = `
-                <img src="${e.target.result}" alt="Aperçu" style="max-height: 50px;">
-                <small class="text-muted d-block">Aperçu du nouveau logo</small>
+                <img src="${e.target.result}" alt="Aperçu" style="max-height: 50px; border: 2px solid #28a745;">
+                <small class="text-success d-block">Aperçu du nouveau logo</small>
             `;
             e.target.parentNode.appendChild(preview);
         };
@@ -515,15 +554,34 @@ document.getElementById('favicon').addEventListener('change', function(e) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
+            // Supprimer l'ancien aperçu s'il existe
+            const oldPreview = e.target.parentNode.querySelector('div.preview-favicon');
+            if (oldPreview) {
+                oldPreview.remove();
+            }
+            
             const preview = document.createElement('div');
-            preview.className = 'mt-2';
+            preview.className = 'mt-2 preview-favicon';
             preview.innerHTML = `
-                <img src="${e.target.result}" alt="Aperçu" style="max-height: 32px;">
-                <small class="text-muted d-block">Aperçu du nouveau favicon</small>
+                <img src="${e.target.result}" alt="Aperçu" style="max-height: 32px; border: 2px solid #28a745;">
+                <small class="text-success d-block">Aperçu du nouveau favicon</small>
             `;
             e.target.parentNode.appendChild(preview);
         };
         reader.readAsDataURL(file);
+    }
+});
+
+// Recharger les images après soumission du formulaire
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[method="POST"][action="{{ route('admin.settings.update') }}"]');
+    if (form) {
+        form.addEventListener('submit', function() {
+            // Délai pour permettre la mise à jour du serveur
+            setTimeout(function() {
+                window.location.reload();
+            }, 1500);
+        });
     }
 });
 </script>

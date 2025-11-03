@@ -207,10 +207,23 @@ class StoreController extends Controller
             $orders = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
                 $query->whereIn('product_id', $storeProducts);
             })
-            ->with(['items.product', 'user'])
+            ->with(['items.product'])
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
+            
+            // Masquer les informations sensibles du client pour chaque commande
+            $orders->each(function($order) {
+                // Masquer le numéro de commande
+                $order->order_number = 'CMD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
+                
+                // Créer un objet anonyme pour représenter un client masqué
+                $order->user = new class {
+                    public $nom = 'Client KAZARIA';
+                    public $prenoms = '';
+                    public $email = 'client@kazaria.com';
+                };
+            });
             
             // Calculer les statistiques
             $orderStats['total_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
