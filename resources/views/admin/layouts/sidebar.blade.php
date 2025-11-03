@@ -257,6 +257,13 @@
                     </a>
                 </li>
 
+                <li class="nav-item {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.coupons.index') }}">
+                        <i class="fas fa-ticket-alt"></i>
+                        <p>Codes promo</p>
+                    </a>
+                </li>
+
                 <li class="nav-item {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.roles.index') }}">
                         <i class="fas fa-user-shield"></i>

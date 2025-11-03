@@ -196,6 +196,14 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::put('/', [SettingController::class, 'update'])->name('update');
         Route::post('/reset', [SettingController::class, 'reset'])->name('reset');
     });
+
+    // Coupons (Codes promo)
+    Route::prefix('coupons')->name('coupons.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CouponController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\CouponController::class, 'store'])->name('store');
+        Route::post('/{coupon}/toggle', [\App\Http\Controllers\Admin\CouponController::class, 'toggle'])->name('toggle');
+        Route::delete('/{coupon}', [\App\Http\Controllers\Admin\CouponController::class, 'destroy'])->name('destroy');
+    });
     
     // Roles & Permissions Management
     Route::prefix('roles')->name('roles.')->middleware('permission:manage_roles')->group(function () {

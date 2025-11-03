@@ -38,9 +38,16 @@ class OrderController extends Controller
             return redirect()->route('product-cart')->with('error', 'Votre panier est vide');
         }
         
-        $total = CartItem::getCartTotal($user->id, null);
+        $subtotal = CartItem::getCartTotal($user->id, null);
+        // Appliquer remise promo éventuelle (affichage checkout)
+        $promo = session('promo');
+        $discount = 0;
+        if ($promo && isset($promo['percent'])) {
+            $discount = round($subtotal * ((int)$promo['percent']) / 100);
+        }
+        $total = max(0, $subtotal - $discount); // livraison gérée plus tard
         
-        return view('checkout', compact('user', 'cartItems', 'total'));
+        return view('checkout', compact('user', 'cartItems', 'total', 'subtotal', 'discount', 'promo'));
     }
 
     /**
@@ -85,13 +92,18 @@ class OrderController extends Controller
         }
         $cartItems = CartItem::getCartItems($user->id, null);
         $subtotal = CartItem::getCartTotal($user->id, null);
+        $promo = session('promo');
+        $discount = 0;
+        if ($promo && isset($promo['percent'])) {
+            $discount = round($subtotal * ((int)$promo['percent']) / 100);
+        }
         // Calculs avec paramètres
         $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 0);
         $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 0);
         $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
-        $total = $subtotal + $shippingCost;
+        $total = max(0, $subtotal - $discount) + $shippingCost;
         
-        return view('shipping', compact('user', 'cartItems', 'subtotal', 'shippingCost', 'total'));
+        return view('shipping', compact('user', 'cartItems', 'subtotal', 'shippingCost', 'total', 'discount', 'promo'));
     }
 
     /**
@@ -148,7 +160,12 @@ class OrderController extends Controller
             $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 0);
             $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
             $tax = 0;
+            // Appliquer code promo éventuel
+            $promo = session('promo');
             $discount = 0;
+            if ($promo && isset($promo['percent'])) {
+                $discount = round($subtotal * ((int)$promo['percent']) / 100);
+            }
             $total = $subtotal + $shippingCost + $tax - $discount;
             
             // Vérifier la disponibilité du stock
@@ -202,6 +219,11 @@ class OrderController extends Controller
             
             // Vider le panier
             CartItem::where('user_id', $user->id)->delete();
+            // Consommer le code promo (incrément d'utilisation et nettoyer la session)
+            if ($promo && isset($promo['code'])) {
+                \App\Models\Coupon::where('code', $promo['code'])->increment('uses');
+            }
+            session()->forget('promo');
             
             // NE PAS marquer comme payée si paiement à la livraison
             // Le statut de paiement reste "pending" jusqu'à la livraison effective

@@ -1178,9 +1178,13 @@ use Illuminate\Support\Facades\Storage;
                 
                 // Charger les détails de la commande
                 const response = await fetch(`/api/orders/${orderNumber}`, {
+                    method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin' // Inclure les cookies de session
                 });
                 
                 const data = await response.json();

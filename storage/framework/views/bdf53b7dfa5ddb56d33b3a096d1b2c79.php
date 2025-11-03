@@ -69,8 +69,14 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Sous-total:</span>
-                                <span class="fw-bold"><?php echo e(number_format($total, 0, ',', ' ')); ?> FCFA</span>
+                                <span class="fw-bold"><?php echo e(number_format($subtotal ?? $total, 0, ',', ' ')); ?> FCFA</span>
                             </div>
+                            <?php if(($discount ?? 0) > 0): ?>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Réduction <?php if(($promo['code'] ?? null)): ?><small class="text-muted">(<?php echo e($promo['code']); ?>)</small><?php endif; ?>:</span>
+                                <span class="text-success">- <?php echo e(number_format($discount, 0, ',', ' ')); ?> FCFA</span>
+                            </div>
+                            <?php endif; ?>
                             
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>

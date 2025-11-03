@@ -69,8 +69,14 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Sous-total:</span>
-                                <span class="fw-bold">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                                <span class="fw-bold">{{ number_format($subtotal ?? $total, 0, ',', ' ') }} FCFA</span>
                             </div>
+                            @if(($discount ?? 0) > 0)
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Réduction @if(($promo['code'] ?? null))<small class="text-muted">({{ $promo['code'] }})</small>@endif:</span>
+                                <span class="text-success">- {{ number_format($discount, 0, ',', ' ') }} FCFA</span>
+                            </div>
+                            @endif
                             
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>

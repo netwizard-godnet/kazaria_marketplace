@@ -58,6 +58,11 @@
                             <span id="shippingCost" class="text-success"></span>
                         </div>
                         
+                        <div class="d-flex justify-content-between mb-2" id="promoRow" style="display:none;">
+                            <span>Réduction (code):</span>
+                            <span id="promoDiscount">- 0 {{ $settings['currency_symbol'] ?? 'FCFA' }}</span>
+                        </div>
+                        
                         <hr>
                         
                         <div class="d-flex justify-content-between mb-3">
@@ -318,11 +323,24 @@
             }
         }
 
+        // Etat courant promo
+        let appliedPromo = null; // { code, percent }
+        let currentSubtotal = 0;
+
         // Fonction pour mettre à jour les totaux avec livraison
         function updateTotals(subtotal) {
             console.log('updateTotals appelée avec subtotal:', subtotal);
+            currentSubtotal = subtotal;
             const shipping = calculateShipping(subtotal);
-            const total = subtotal + shipping.cost;
+            let discountAmount = 0;
+            if (appliedPromo && appliedPromo.percent > 0) {
+                discountAmount = Math.round(subtotal * appliedPromo.percent / 100);
+                document.getElementById('promoRow').style.display = 'flex';
+                document.getElementById('promoDiscount').textContent = '- ' + new Intl.NumberFormat('fr-FR').format(discountAmount) + ' ' + settings.currencySymbol;
+            } else {
+                document.getElementById('promoRow').style.display = 'none';
+            }
+            const total = Math.max(0, subtotal - discountAmount) + shipping.cost;
             
             // Mettre à jour le sous-total
             document.getElementById('subtotal').textContent = new Intl.NumberFormat('fr-FR').format(subtotal) + ' ' + settings.currencySymbol;
@@ -529,16 +547,29 @@
         }
         
         // Fonction pour appliquer un code promo
-        function applyPromo() {
-            const promoCode = document.getElementById('promoCode').value;
-            
+        async function applyPromo() {
+            const promoCode = document.getElementById('promoCode').value.trim();
             if (!promoCode) {
                 showNotification('error', 'Veuillez entrer un code promo');
                 return;
             }
-            
-            // TODO: Implémenter la logique de validation de code promo
-            showNotification('error', 'Code promo invalide');
+            try {
+                const response = await fetch('/api/coupons/apply', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ code: promoCode, subtotal: currentSubtotal })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    appliedPromo = { code: data.code, percent: data.discount_percent };
+                    updateTotals(currentSubtotal);
+                    showNotification('success', `Code appliqué (${data.discount_percent}%)`);
+                } else {
+                    showNotification('error', data.message || 'Code promo invalide');
+                }
+            } catch (e) {
+                showNotification('error', 'Erreur lors de la vérification du code');
+            }
         }
     </script>
 @endsection

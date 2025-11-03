@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CouponController;
 use App\Http\Controllers\AuthController;
 
 // Routes d'authentification publiques
@@ -74,6 +75,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store']);
 });
 Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::class, 'vote']);
+
+// Coupons (public, stateless)
+Route::post('/coupons/apply', [CouponController::class, 'apply']);
 
 // Route pour vérifier le statut de vendeur
 Route::get('/check-seller-status', [App\Http\Controllers\ProfileController::class, 'checkSellerStatus'])->middleware('auth:sanctum');
