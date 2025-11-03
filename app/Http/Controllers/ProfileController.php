@@ -195,9 +195,13 @@ class ProfileController extends Controller
                     mkdir($uploadPath, 0777, true);
                 }
                 
-                // Supprimer l'ancienne photo si elle existe
-                if ($user->profile_pic_url && file_exists(public_path($user->profile_pic_url))) {
-                    unlink(public_path($user->profile_pic_url));
+                // Supprimer l'ancienne photo si chemin relatif et fichier existant
+                $old = $user->profile_pic_url;
+                if ($old && !preg_match('/^https?:\/\//i', $old)) {
+                    $oldPath = public_path($old);
+                    if (is_file($oldPath)) {
+                        @unlink($oldPath);
+                    }
                 }
                 
                 // Déplacer le fichier
@@ -524,8 +528,12 @@ class ProfileController extends Controller
                 }
                 
                 // Supprimer l'ancienne photo si elle existe
-                if ($user->profile_pic_url && file_exists(public_path($user->profile_pic_url))) {
-                    unlink(public_path($user->profile_pic_url));
+                $old = $user->profile_pic_url;
+                if ($old && !preg_match('/^https?:\/\//i', $old)) {
+                    $oldPath = public_path($old);
+                    if (is_file($oldPath)) {
+                        @unlink($oldPath);
+                    }
                 }
                 
                 // Déplacer le fichier

@@ -922,6 +922,7 @@ use Illuminate\Support\Facades\Storage;
                         });
 
                         xhr.open('POST', '/api/profile/update-photo', true);
+                        xhr.withCredentials = true; // inclure les cookies de session
                         xhr.setRequestHeader('Accept', 'application/json');
                         xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
                         xhr.send(formData);
