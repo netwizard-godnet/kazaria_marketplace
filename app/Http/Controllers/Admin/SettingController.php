@@ -41,6 +41,13 @@ class SettingController extends Controller
             'shipping_cost' => 'ecommerce',
             'currency' => 'ecommerce',
             'currency_symbol' => 'ecommerce',
+
+            // Deals du jour (forcer l'appartenance au même groupe)
+            'deals_countdown_duration' => 'deals',
+            'deals_min_discount' => 'deals',
+            'deals_max_discount' => 'deals',
+            'deals_categories' => 'deals',
+            'deals_subcategories' => 'deals',
         ];
 
         // Ordre d'affichage par groupe
@@ -48,6 +55,8 @@ class SettingController extends Controller
             'general' => ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_favicon'],
             'contact' => ['contact_email', 'contact_phone', 'contact_address'],
             'ecommerce' => ['currency', 'currency_symbol', 'min_order_quantity', 'shipping_cost', 'free_shipping_threshold'],
+            // Toujours afficher les paramètres Deals ensemble et dans cet ordre
+            'deals' => ['deals_countdown_duration', 'deals_min_discount', 'deals_max_discount', 'deals_categories', 'deals_subcategories'],
         ];
 
         // Construire les groupes pour la vue

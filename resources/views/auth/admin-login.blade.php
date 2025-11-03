@@ -93,22 +93,35 @@
                             </div>
                         @endif
 
+                        @if($errors->any())
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Veuillez corriger les erreurs ci-dessous.
+                            </div>
+                        @endif
+
                         <form method="POST" action="{{ route('admin.login.post') }}">
                             @csrf
                             <div class="mb-3">
                                 <label for="email" class="form-label">
                                     <i class="fas fa-envelope me-2"></i>Email
                                 </label>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       required>
+                                <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" 
+                                       value="{{ old('email') }}" required>
+                                @error('email')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="mb-4">
                                 <label for="password" class="form-label">
                                     <i class="fas fa-lock me-2"></i>Mot de passe
                                 </label>
-                                <input type="password" class="form-control" id="password" name="password" 
+                                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" 
                                        required>
+                                @error('password')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <button type="submit" class="btn btn-login btn-primary w-100 mb-3">

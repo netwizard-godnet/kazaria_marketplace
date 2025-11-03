@@ -4,7 +4,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title><?php echo $__env->yieldContent('title', 'KAZARIA Admin Dashboard'); ?></title>
     <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport" />
-    <link rel="icon" href="<?php echo e(asset('favicon.png')); ?>" type="image/x-icon" />
+    <?php
+        $siteFavicon = \App\Models\Setting::get('site_favicon');
+        $faviconUrl = $siteFavicon ? asset('storage/' . ltrim($siteFavicon, '/')) : asset('favicon.png');
+    ?>
+    <link rel="icon" href="<?php echo e($faviconUrl); ?>" type="image/x-icon" />
     
     <!-- CSRF Token -->
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">

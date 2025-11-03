@@ -124,8 +124,12 @@ unset($__defined_vars, $__key, $__value); ?>
 <meta charset="utf-8">
 
 
-<link rel="icon" type="image/png" href="<?php echo e(asset('favicon.png')); ?>">
-<link rel="apple-touch-icon" href="<?php echo e(asset('favicon.png')); ?>">
+<?php
+    $siteFavicon = \App\Models\Setting::get('site_favicon');
+    $faviconUrl = $siteFavicon ? asset('storage/' . ltrim($siteFavicon, '/')) : asset('favicon.png');
+?>
+<link rel="icon" href="<?php echo e($faviconUrl); ?>">
+<link rel="apple-touch-icon" href="<?php echo e($faviconUrl); ?>">
 
 
 <?php if($jsonLdData): ?>

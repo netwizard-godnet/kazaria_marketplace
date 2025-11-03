@@ -56,6 +56,8 @@ class AuthController extends Controller
         
         // Connecter l'utilisateur
         Auth::login($user, $request->has('remember'));
+        // Sécuriser la session contre la fixation
+        $request->session()->regenerate();
         
         // Créer un token pour l'API
         $token = $user->createToken('admin-token')->plainTextToken;
