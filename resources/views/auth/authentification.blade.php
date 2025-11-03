@@ -3,7 +3,11 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+        @php
+            $siteFavicon = \App\Models\Setting::get('site_favicon');
+            $faviconUrl = $siteFavicon ? asset('storage/' . ltrim($siteFavicon, '/')) : asset('favicon.png');
+        @endphp
+        <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
 
         <title>{{ config('app.name', 'KAZARIA Connexion') }}</title>
 

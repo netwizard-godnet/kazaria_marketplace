@@ -85,8 +85,12 @@
 <meta charset="utf-8">
 
 {{-- Favicon et icônes --}}
-<link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
-<link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+@php
+    $siteFavicon = \App\Models\Setting::get('site_favicon');
+    $faviconUrl = $siteFavicon ? asset('storage/' . ltrim($siteFavicon, '/')) : asset('favicon.png');
+@endphp
+<link rel="icon" href="{{ $faviconUrl }}">
+<link rel="apple-touch-icon" href="{{ $faviconUrl }}">
 
 {{-- Données structurées JSON-LD --}}
 @if($jsonLdData)
