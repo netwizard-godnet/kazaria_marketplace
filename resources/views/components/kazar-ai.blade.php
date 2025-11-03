@@ -216,7 +216,7 @@ async function logAiInteraction(type, productId){
 </script>
 
 <style>
-.kazar-ai-wrap { right:20px; bottom:40px; z-index:9999999999!important; }
+.kazar-ai-wrap { right:20px; bottom:30px; z-index:9999999999!important; }
 .kazar-ai-chat { width: 350px; }
 .kazar-ai-thread { height: 350px; overflow:auto; }
 .kazar-ai-fab { width:60px; height:60px; animation: kazarPulse 2.4s infinite; transform-origin:center; }
