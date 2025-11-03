@@ -88,6 +88,7 @@ use Illuminate\Support\Facades\Storage;
     </head>
 
     <body>
+        <?php echo $__env->renderWhen(config('kazar_ai.enabled'), 'components.kazar-ai', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1])); ?>
         <div class="z-index-9x" style="position: sticky; top: 0;">
         <!-- Header Banner -->
         <div class="container-fluid p-0">

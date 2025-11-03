@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CouponController;
+use App\Http\Controllers\AIController;
 use App\Http\Controllers\AuthController;
 
 // Routes d'authentification publiques
@@ -78,6 +79,10 @@ Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::
 
 // Coupons (public, stateless)
 Route::post('/coupons/apply', [CouponController::class, 'apply']);
+
+// KAZAR I.A
+Route::post('/ai/query', [AIController::class, 'query']);
+Route::post('/ai/interaction', [AIController::class, 'logInteraction'])->name('ai.interaction');
 
 // Route pour vérifier le statut de vendeur
 Route::get('/check-seller-status', [App\Http\Controllers\ProfileController::class, 'checkSellerStatus'])->middleware('auth:sanctum');

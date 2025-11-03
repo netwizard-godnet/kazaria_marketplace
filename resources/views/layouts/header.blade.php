@@ -79,6 +79,7 @@ use Illuminate\Support\Facades\Storage;
     </head>
 
     <body>
+        @includeWhen(config('kazar_ai.enabled'), 'components.kazar-ai')
         <div class="z-index-9x" style="position: sticky; top: 0;">
         <!-- Header Banner -->
         <div class="container-fluid p-0">
