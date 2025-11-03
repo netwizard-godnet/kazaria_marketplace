@@ -514,33 +514,56 @@ class ProfileController extends Controller
             ], 401);
         }
 
+        $validator = Validator::make($request->all(), [
+            'photo' => 'required|image|mimes:jpeg,jpg,png,gif|max:5120', // 5 MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation: ' . $validator->errors()->first('photo'),
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
         if ($request->hasFile('photo')) {
             try {
                 $file = $request->file('photo');
                 
                 // Créer un nom de fichier unique
                 $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $storagePath = 'profiles';
                 
-                // Créer le dossier s'il n'existe pas
-                $uploadPath = public_path('images/profiles');
-                if (!file_exists($uploadPath)) {
-                    mkdir($uploadPath, 0777, true);
+                // S'assurer que le dossier existe dans storage/app/public/profiles
+                if (!Storage::disk('public')->exists($storagePath)) {
+                    Storage::disk('public')->makeDirectory($storagePath);
                 }
                 
-                // Supprimer l'ancienne photo si elle existe
+                // Supprimer l'ancienne photo si elle existe (stockée en public)
                 $old = $user->profile_pic_url;
-                if ($old && !preg_match('/^https?:\/\//i', $old)) {
-                    $oldPath = public_path($old);
-                    if (is_file($oldPath)) {
-                        @unlink($oldPath);
+                if ($old) {
+                    // Si chemin relatif (images/profiles/...)
+                    if (strpos($old, 'images/profiles/') !== false) {
+                        $oldFile = str_replace('images/profiles/', '', basename($old));
+                        if (Storage::disk('public')->exists($storagePath . '/' . $oldFile)) {
+                            Storage::disk('public')->delete($storagePath . '/' . $oldFile);
+                        }
+                    }
+                    // Si déjà dans storage/profiles
+                    elseif (strpos($old, 'profiles/') !== false) {
+                        $oldFile = basename($old);
+                        if (Storage::disk('public')->exists($storagePath . '/' . $oldFile)) {
+                            Storage::disk('public')->delete($storagePath . '/' . $oldFile);
+                        }
                     }
                 }
                 
-                // Déplacer le fichier
-                $file->move($uploadPath, $filename);
+                // Stocker le fichier dans storage/app/public/profiles
+                $path = $file->storeAs($storagePath, $filename, 'public');
                 
                 // Mettre à jour l'URL de la photo dans la base de données
-                $photoUrl = 'images/profiles/' . $filename;
+                // Le chemin sera accessible via storage/profiles/filename
+                $photoUrl = 'storage/' . $path;
                 $user->update([
                     'profile_pic_url' => $photoUrl
                 ]);
@@ -552,6 +575,12 @@ class ProfileController extends Controller
                     'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'profile_pic_url'])
                 ]);
             } catch (\Exception $e) {
+                \Log::error('Erreur upload photo profil', [
+                    'user_id' => $user->id ?? null,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Erreur lors de l\'upload de la photo: ' . $e->getMessage()
