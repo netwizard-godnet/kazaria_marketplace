@@ -22,14 +22,18 @@
 
 <script>
 // Fonction globale pour ajouter des bulles dans le chat
-function appendBubble(text, who){
+function appendBubble(text, who, isHtml = false){
     const thread = document.getElementById('kazarAIThread');
     if(!thread) return; // Si le chat n'est pas initialisé, ne rien faire
     const div = document.createElement('div');
     div.className = 'mb-2 ' + (who==='me' ? 'text-end' : '');
     const bubble = document.createElement('div');
     bubble.className = 'kazar-ai-bubble '+(who==='me'?'me':'ai');
-    bubble.textContent = text; // préserver les \n avec CSS pre-wrap
+    if(isHtml){
+        bubble.innerHTML = text; // Pour HTML
+    } else {
+        bubble.textContent = text; // Préserver les \n avec CSS pre-wrap
+    }
     div.appendChild(bubble);
     thread.appendChild(div);
     thread.scrollTop = thread.scrollHeight;
@@ -114,7 +118,7 @@ async function aiChangeQty(productId, delta){
         const res = await fetch('/cart/update', {method:'PUT', headers, body: JSON.stringify({ item_id: item.id, quantity: newQty })});
         const data = await res.json();
         if(data.success){
-            appendBubble(`Quantité mise à jour: ${newQty}`, 'ai');
+            appendBubble(`Quantité mise à jour: ${newQty}<br><a href="/panier" class="btn btn-sm orange-bg text-white mt-2" style="text-decoration:none;">Voir mon panier</a>`, 'ai', true);
             updateCartCount();
             showNotification(`Quantité mise à jour : ${newQty}`, 'success');
         } else {
@@ -140,7 +144,7 @@ async function aiRemoveFromCart(productId){
         const res = await fetch('/cart/remove', {method:'DELETE', headers, body: JSON.stringify({ item_id: item.id })});
         const data = await res.json();
         if(data.success){
-            appendBubble('Article retiré du panier 🗑️', 'ai');
+            appendBubble(`Article retiré du panier 🗑️<br><a href="/panier" class="btn btn-sm orange-bg text-white mt-2" style="text-decoration:none;">Voir mon panier</a>`, 'ai', true);
             updateCartCount();
             showNotification('Article retiré du panier', 'success');
         } else {
@@ -161,7 +165,7 @@ async function aiAddToCart(productId){
         const res = await fetch('/cart/add', {method:'POST', headers, body: JSON.stringify({ product_id: productId, quantity: 1 })});
         const data = await res.json();
         if(data.success){
-            appendBubble('Article ajouté au panier ✅', 'ai');
+            appendBubble(`Article ajouté au panier ✅<br><a href="/panier" class="btn btn-sm orange-bg text-white mt-2" style="text-decoration:none;">Voir mon panier</a>`, 'ai', true);
             logAiInteraction('add_to_cart', productId);
             updateCartCount();
             showNotification('Article ajouté au panier', 'success');
@@ -288,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 
 <style>
-.kazar-ai-wrap { right:20px; bottom:30px; z-index:9999999999!important; }
+.kazar-ai-wrap { left:20px; bottom:30px; z-index:9999999999!important; }
 .kazar-ai-chat { width: 350px; }
 .kazar-ai-thread { height: 350px; overflow:auto; }
 .kazar-ai-fab { width:60px; height:60px; animation: kazarPulse 2.4s infinite; transform-origin:center; }
@@ -303,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function(){
 }
 .kazar-ai-bubble.me { background: var(--bs-primary); color: #fff; }
 .kazar-ai-bubble.ai { background: #f8f9fa; color: #212529; }
+.kazar-ai-bubble.ai a.btn { display: inline-block; margin-top: 8px; }
 .kazar-ai-item { background:#f8f9fa; border:1px solid #e9ecef; border-radius:8px; padding:6px 8px; margin-bottom:6px; }
 
 @keyframes kazarPulse {
@@ -317,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function(){
 }
 
 @media (max-width: 576px) {
-  .kazar-ai-wrap { right:10px; bottom:15vh; }
+  .kazar-ai-wrap { left:10px; bottom:15vh; }
   .kazar-ai-chat { width: 90%; max-width:100%; margin:0 auto; }
   .kazar-ai-thread { height: 50vh; }
 }
