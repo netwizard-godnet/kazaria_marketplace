@@ -265,7 +265,14 @@ class CartController extends Controller
                     $query->where('session_id', $identifier['session_id']);
                 }
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$cartItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Article non trouvé dans votre panier. Il a peut-être déjà été retiré.'
+            ], 404);
+        }
 
         if ((int)$request->quantity < (int)$minQty) {
             return response()->json([
@@ -311,7 +318,14 @@ class CartController extends Controller
                     $query->where('session_id', $identifier['session_id']);
                 }
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$cartItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Article non trouvé dans votre panier. Il a peut-être déjà été retiré.'
+            ], 404);
+        }
 
         $cartItem->delete();
 

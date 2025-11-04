@@ -116,18 +116,27 @@ async function aiChangeQty(productId, delta){
         if(!item){ appendBubble('Article non présent dans le panier.', 'ai'); return; }
         const newQty = Math.max(1, (item.quantity||1) + delta);
         const res = await fetch('/cart/update', {method:'PUT', headers, body: JSON.stringify({ item_id: item.id, quantity: newQty })});
-        const data = await res.json();
-        if(data.success){
+        let data;
+        try {
+            data = await res.json();
+        } catch(e) {
+            data = { success: false, message: 'Erreur serveur. Veuillez réessayer.' };
+        }
+        
+        if(res.ok && data.success){
             appendBubble(`Quantité mise à jour: ${newQty}<br><a href="/panier" class="btn btn-sm orange-bg text-white mt-2" style="text-decoration:none;">Voir mon panier</a>`, 'ai', true);
             updateCartCount();
             showNotification(`Quantité mise à jour : ${newQty}`, 'success');
         } else {
-            appendBubble(data.message||'Impossible de mettre à jour.', 'ai');
-            showNotification(data.message||'Impossible de mettre à jour.', 'danger');
+            const errorMsg = data.message || (res.status === 404 ? 'Article non trouvé dans votre panier.' : 'Impossible de mettre à jour.');
+            appendBubble(errorMsg, 'ai');
+            showNotification(errorMsg, 'danger');
+            updateCartCount();
         }
     }catch(e){
-        appendBubble('Erreur de mise à jour du panier.', 'ai');
-        showNotification('Erreur de mise à jour du panier.', 'danger');
+        appendBubble('Erreur de mise à jour du panier. Veuillez réessayer.', 'ai');
+        showNotification('Erreur de mise à jour du panier. Veuillez réessayer.', 'danger');
+        updateCartCount();
     }
 }
 
@@ -142,18 +151,29 @@ async function aiRemoveFromCart(productId){
         const item = (cart.items||[]).find(i=> i.product && i.product.id === productId);
         if(!item){ appendBubble('Article non présent dans le panier.', 'ai'); return; }
         const res = await fetch('/cart/remove', {method:'DELETE', headers, body: JSON.stringify({ item_id: item.id })});
-        const data = await res.json();
-        if(data.success){
+        let data;
+        try {
+            data = await res.json();
+        } catch(e) {
+            // Si la réponse n'est pas du JSON valide
+            data = { success: false, message: 'Erreur serveur. Veuillez réessayer.' };
+        }
+        
+        if(res.ok && data.success){
             appendBubble(`Article retiré du panier 🗑️<br><a href="/panier" class="btn btn-sm orange-bg text-white mt-2" style="text-decoration:none;">Voir mon panier</a>`, 'ai', true);
             updateCartCount();
             showNotification('Article retiré du panier', 'success');
         } else {
-            appendBubble(data.message||'Impossible de retirer.', 'ai');
-            showNotification(data.message||'Impossible de retirer.', 'danger');
+            const errorMsg = data.message || (res.status === 404 ? 'Article non trouvé dans votre panier.' : 'Impossible de retirer.');
+            appendBubble(errorMsg, 'ai');
+            showNotification(errorMsg, 'danger');
+            // Rafraîchir le compteur au cas où
+            updateCartCount();
         }
     }catch(e){
-        appendBubble('Erreur lors du retrait.', 'ai');
-        showNotification('Erreur lors du retrait.', 'danger');
+        appendBubble('Erreur lors du retrait. Veuillez réessayer.', 'ai');
+        showNotification('Erreur lors du retrait. Veuillez réessayer.', 'danger');
+        updateCartCount();
     }
 }
 
