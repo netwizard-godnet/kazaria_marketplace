@@ -17,13 +17,14 @@ class CartController extends Controller
     {
         // Pour les pages web, utiliser l'authentification par session
         if (auth()->check()) {
-            // Utilisateur connecté - utiliser l'ID utilisateur ET l'ID de session pour la compatibilité
-            $sessionId = $request->header('X-Session-ID');
+            // Utilisateur connecté - utiliser l'ID utilisateur
+            // Utiliser la session Laravel si disponible, sinon header
+            $sessionId = $request->hasSession() ? $request->session()->getId() : $request->header('X-Session-ID');
             return ['user_id' => auth()->user()->id, 'session_id' => $sessionId];
         }
         
-        // Pour les invités, utiliser un ID de session depuis le header
-        $sessionId = $request->header('X-Session-ID');
+        // Pour les invités, utiliser un ID de session depuis la session Laravel ou header
+        $sessionId = $request->hasSession() ? $request->session()->getId() : $request->header('X-Session-ID');
         
         if (!$sessionId) {
             // Générer un nouvel ID si non fourni
@@ -251,14 +252,11 @@ class CartController extends Controller
         $identifier = $this->getUserOrSession($request);
         $minQty = \App\Models\Setting::get('min_order_quantity', 1);
         
+        // Recherche plus flexible : si utilisateur connecté, chercher par user_id (priorité)
         $cartItem = CartItem::where('id', $request->item_id)
             ->where(function($query) use ($identifier) {
-                if ($identifier['user_id'] && $identifier['session_id']) {
-                    // Utilisateur connecté avec session_id - chercher par les deux
-                    $query->where('user_id', $identifier['user_id'])
-                          ->where('session_id', $identifier['session_id']);
-                } elseif ($identifier['user_id']) {
-                    // Utilisateur connecté sans session_id - chercher par user_id seulement
+                if ($identifier['user_id']) {
+                    // Utilisateur connecté - chercher par user_id (priorité absolue)
                     $query->where('user_id', $identifier['user_id']);
                 } else {
                     // Utilisateur non connecté - chercher par session_id seulement
@@ -304,14 +302,12 @@ class CartController extends Controller
         
         $identifier = $this->getUserOrSession($request);
         
+        // Recherche plus flexible : si utilisateur connecté, chercher par user_id (priorité)
+        // Accepte même si session_id ne correspond pas exactement
         $cartItem = CartItem::where('id', $request->item_id)
             ->where(function($query) use ($identifier) {
-                if ($identifier['user_id'] && $identifier['session_id']) {
-                    // Utilisateur connecté avec session_id - chercher par les deux
-                    $query->where('user_id', $identifier['user_id'])
-                          ->where('session_id', $identifier['session_id']);
-                } elseif ($identifier['user_id']) {
-                    // Utilisateur connecté sans session_id - chercher par user_id seulement
+                if ($identifier['user_id']) {
+                    // Utilisateur connecté - chercher par user_id (priorité absolue)
                     $query->where('user_id', $identifier['user_id']);
                 } else {
                     // Utilisateur non connecté - chercher par session_id seulement
