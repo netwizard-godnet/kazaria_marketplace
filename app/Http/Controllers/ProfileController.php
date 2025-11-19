@@ -10,6 +10,7 @@ use App\Models\Favorite;
 use App\Models\Order;
 use App\Models\ProductView;
 use App\Models\CartItem;
+use App\Models\CrmTicket;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
@@ -38,7 +39,14 @@ class ProfileController extends Controller
         // Produits récemment vus
         $recentProducts = \App\Models\ProductView::getRecentViews(6, null);
 
-        return view('profil', compact('user', 'stats', 'recentProducts'));
+        $tickets = CrmTicket::forUser($user->id)
+            ->with(['messages' => function ($query) {
+                $query->orderBy('created_at')->with('author:id,nom,prenoms');
+            }])
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('profil', compact('user', 'stats', 'recentProducts', 'tickets'));
     }
 
     /**
@@ -668,7 +676,7 @@ class ProfileController extends Controller
             'success' => true,
             'is_seller' => $user->is_seller,
             'has_store' => $user->store()->exists(),
-            'store_status' => $user->store ? $user->store->status : null,
+            'store_status' => $user->store ? $user->store->effective_kyc_status : null,
         ]);
     }
 }

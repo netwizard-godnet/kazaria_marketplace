@@ -34,27 +34,8 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <h4 class="card-title">{{ $store->name }}</h4>
                         <div class="btn-group">
-                            @if(!$store->approved_at && !$store->rejected_at)
-                                <form action="{{ route('admin.stores.approve', $store) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approuver cette boutique ?')">
-                                        <i class="fas fa-check"></i> Approuver
-                                    </button>
-                                </form>
-                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                                    <i class="fas fa-times"></i> Rejeter
-                                </button>
-                            @else
-                                <form action="{{ route('admin.stores.toggle-status', $store) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-{{ $store->status === 'active' ? 'warning' : 'success' }} btn-sm" 
-                                            onclick="return confirm('{{ $store->status === 'active' ? 'Suspendre' : 'Réactiver' }} cette boutique ?')">
-                                        <i class="fas fa-{{ $store->status === 'active' ? 'pause' : 'play' }}"></i> 
-                                        {{ $store->status === 'active' ? 'Suspendre' : 'Réactiver' }}
-                                    </button>
-                                </form>
-                                @if($store->approved_at)
-                                    <form action="{{ route('admin.stores.toggle-official', $store) }}" method="POST" class="d-inline ms-2">
+                            @if($store->isKycValidated())
+                                <form action="{{ route('admin.stores.toggle-official', $store) }}" method="POST" class="d-inline">
                                         @csrf
                                         <button type="submit" class="btn btn-{{ $store->is_official ? 'secondary' : 'warning' }} btn-sm" 
                                                 title="{{ $store->is_official ? 'Désactiver boutique officielle' : 'Activer boutique officielle' }}"
@@ -63,7 +44,6 @@
                                             {{ $store->is_official ? 'Désactiver Officielle' : 'Activer Officielle' }}
                                         </button>
                                     </form>
-                                @endif
                             @endif
                         </div>
                     </div>
@@ -88,9 +68,13 @@
                                 <li><strong>ID :</strong> {{ $store->id }}</li>
                                 <li><strong>Nom :</strong> {{ $store->name }}</li>
                                 <li><strong>Slug :</strong> {{ $store->slug ?? 'N/A' }}</li>
-                                <li><strong>Statut :</strong> 
-                                    <span class="badge badge-{{ $store->status === 'active' ? 'success' : ($store->status === 'pending' ? 'warning' : 'danger') }}">
-                                        {{ ucfirst($store->status) }}
+                                @php
+                                    $kycLabel = $store->effective_kyc_status ? ucfirst($store->effective_kyc_status) : 'Inconnu';
+                                    $kycClass = $store->isKycValidated() ? 'success' : ($store->isKycPending() ? 'warning' : ($store->isKycRejected() ? 'danger' : 'secondary'));
+                                @endphp
+                                <li><strong>Statut KYC :</strong> 
+                                    <span class="badge badge-{{ $kycClass }}">
+                                        <i class="fas fa-id-card me-1"></i>{{ $kycLabel }}
                                     </span>
                                 </li>
                                 <li><strong>Vérifiée :</strong> 
@@ -98,6 +82,16 @@
                                         {{ $store->is_verified ? 'Oui' : 'Non' }}
                                     </span>
                                 </li>
+                                <li><strong>Taux commission (CRM) :</strong> {{ number_format($store->effective_commission_rate, 2, ',', ' ') }}%</li>
+                                @if($store->crm_scoring !== null)
+                                    <li><strong>Scoring CRM :</strong> {{ number_format($store->crm_scoring, 1, ',', ' ') }}</li>
+                                @endif
+                                @if($store->crm_validated_at)
+                                    <li><strong>Validé par CRM le :</strong> {{ $store->crm_validated_at->format('d/m/Y H:i') }}</li>
+                                @endif
+                                @if($store->crm_validation_notes)
+                                    <li><strong>Notes CRM :</strong> {{ $store->crm_validation_notes }}</li>
+                                @endif
                                 <li><strong>Officielle :</strong> 
                                     @if($store->is_official)
                                         <span class="badge badge-warning">
@@ -335,34 +329,5 @@
         </div>
     </div>
 </div>
-
-<!-- Modal de rejet -->
-@if(!$store->approved_at && !$store->rejected_at)
-<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="rejectModalLabel">Rejeter la boutique</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('admin.stores.reject', $store) }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <p>Vous êtes sur le point de rejeter la boutique <strong>{{ $store->name }}</strong>.</p>
-                    <div class="mb-3">
-                        <label for="rejection_reason" class="form-label">Raison du rejet <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="rejection_reason" name="rejection_reason" rows="4" 
-                                  placeholder="Expliquez pourquoi cette boutique est rejetée..." required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-danger">Rejeter la boutique</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
 
 @endsection

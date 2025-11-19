@@ -2,6 +2,7 @@
 
 @php
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 @endphp
 
 @section('content')
@@ -145,6 +146,11 @@ use Illuminate\Support\Facades\Storage;
                             <li class="nav-item">
                                 <a class="nav-link px-1 py-2" href="#orders" data-bs-toggle="pill">
                                     <i class="bi bi-bag me-2"></i>Mes commandes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link px-1 py-2" href="#inbox" data-bs-toggle="pill">
+                                    <i class="bi bi-inbox me-2"></i>Boîte de réception
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -510,6 +516,164 @@ use Illuminate\Support\Facades\Storage;
                             </div>
                         </div>
 
+                        <!-- Inbox -->
+                        <div class="tab-pane fade" id="inbox">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title mb-0"><i class="bi bi-inbox me-2"></i>Boîte de réception</h5>
+                                        <small class="text-muted">Messages de support qui vous sont attribués</small>
+                                    </div>
+                                    <span class="badge orange-bg text-white">{{ $tickets->count() }} message{{ $tickets->count() > 1 ? 's' : '' }}</span>
+                                </div>
+                                <div class="card-body">
+                                    @if($tickets->isEmpty())
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="mt-3 text-muted">Aucun message pour le moment</h5>
+                                            <p class="text-muted small">Les échanges avec le support apparaîtront ici dès qu'un message vous sera assigné.</p>
+                                            <a href="mailto:support@kazaria.com" class="btn btn-sm orange-bg text-white">
+                                                <i class="bi bi-envelope me-1"></i>Contacter le support
+                                            </a>
+                                        </div>
+                                    @else
+                                        <div class="row g-3">
+                                            <div class="col-lg-4">
+                                                <div class="list-group" id="ticketList">
+                                                    @foreach($tickets as $index => $ticket)
+                                                        @php
+                                                            $statusLabels = [
+                                                                'open' => 'Ouvert',
+                                                                'pending' => 'En attente',
+                                                                'resolved' => 'Résolu',
+                                                                'closed' => 'Fermé',
+                                                                'escalated' => 'Escaladé',
+                                                            ];
+                                                            $priorityLabels = [
+                                                                'low' => 'Basse',
+                                                                'medium' => 'Moyenne',
+                                                                'high' => 'Haute',
+                                                                'urgent' => 'Urgente',
+                                                            ];
+                                                            $statusClasses = [
+                                                                'open' => 'bg-primary',
+                                                                'pending' => 'bg-warning text-dark',
+                                                                'resolved' => 'bg-success',
+                                                                'closed' => 'bg-secondary',
+                                                                'escalated' => 'bg-danger',
+                                                            ];
+                                                            $priorityClasses = [
+                                                                'low' => 'badge bg-success-subtle text-success',
+                                                                'medium' => 'badge bg-warning-subtle text-warning',
+                                                                'high' => 'badge bg-danger-subtle text-danger',
+                                                                'urgent' => 'badge bg-danger text-white',
+                                                            ];
+                                                            $latestMessage = $ticket->messages->where('is_internal', false)->sortByDesc('created_at')->first();
+                                                        @endphp
+                                                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start {{ $index === 0 ? 'active' : '' }}"
+                                                           data-ticket="#ticket-thread-{{ $ticket->id }}">
+                                                            <div class="me-3">
+                                                                <div class="fw-bold">{{ $ticket->subject ?? 'Message #' . $ticket->ticket_number }}</div>
+                                                                <small class="text-muted d-block">{{ $latestMessage ? $latestMessage->created_at->format('d/m/Y H:i') : $ticket->created_at->format('d/m/Y H:i') }}</small>
+                                                                @if($latestMessage)
+                                                                    <small class="text-truncate d-block" style="max-width: 220px;">
+                                                                        {{ Str::limit(strip_tags($latestMessage->message), 50) }}
+                                                                    </small>
+                                                                @else
+                                                                    <small class="text-muted">En attente d'un premier message</small>
+                                                                @endif
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <span class="badge {{ $statusClasses[$ticket->status] ?? 'bg-secondary' }} mb-1">
+                                                                    {{ $statusLabels[$ticket->status] ?? ucfirst($ticket->status) }}
+                                                                </span>
+                                                                <div class="small text-muted">Priorité</div>
+                                                                <span class="{{ $priorityClasses[$ticket->priority] ?? 'badge bg-secondary' }}">{{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>
+                                                            </div>
+                                                        </a>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                @foreach($tickets as $index => $ticket)
+                                                    @php
+                                                        $visibleMessages = $ticket->messages->where('is_internal', false);
+                                                    @endphp
+                                                    <div class="ticket-thread {{ $index === 0 ? '' : 'd-none' }}" id="ticket-thread-{{ $ticket->id }}">
+                                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                                            <div>
+                                                                <h6 class="fw-bold mb-1">{{ $ticket->subject ?? 'Message #' . $ticket->ticket_number }}</h6>
+                                                                <div class="d-flex flex-wrap gap-2">
+                                                                    <span class="badge {{ $statusClasses[$ticket->status] ?? 'bg-secondary' }}">
+                                                                        {{ $statusLabels[$ticket->status] ?? ucfirst($ticket->status) }}
+                                                                    </span>
+                                                                    <span class="badge bg-light text-muted border">
+                                                                        <i class="bi bi-hash me-1"></i>{{ $ticket->ticket_number ?? $ticket->id }}
+                                                                    </span>
+                                                                    <span class="{{ $priorityClasses[$ticket->priority] ?? 'badge bg-secondary' }}">
+                                                                        <i class="bi bi-flag me-1"></i>{{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}
+                                                                    </span>
+                                                                    @if($ticket->order_id)
+                                                                        <span class="badge bg-light text-muted border">
+                                                                            <i class="bi bi-bag me-1"></i>Commande #{{ $ticket->order_id }}
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                            <small class="text-muted">Mis à jour le {{ $ticket->updated_at->format('d/m/Y à H:i') }}</small>
+                                                        </div>
+
+                                                        <div class="border rounded p-3 bg-light-subtle">
+                                                            <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Messages</h6>
+                                                            @if($visibleMessages->isEmpty())
+                                                        <p class="text-muted mb-0">Aucun message n'a encore été publié dans cette conversation.</p>
+                                                            @else
+                                                                <div class="timeline">
+                                                                    @foreach($visibleMessages as $message)
+                                                                        <div class="mb-4">
+                                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                                <div>
+                                                                                    <strong>{{ $message->user_id === $user->id ? 'Vous' : ($message->author?->prenoms . ' ' . $message->author?->nom ?? 'Support Kazaria') }}</strong>
+                                                                                    @if($message->user_id === $user->id)
+                                                                                        <span class="badge bg-primary-subtle text-primary ms-2">Client</span>
+                                                                                    @else
+                                                                                        <span class="badge bg-success-subtle text-success ms-2">Support</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                <small class="text-muted">{{ $message->created_at->format('d/m/Y à H:i') }}</small>
+                                                                            </div>
+                                                                            <div class="mt-2 ps-3 border-start">
+                                                                                <p class="mb-2">{!! nl2br(e($message->message)) !!}</p>
+                                                                                @if(!empty($message->attachments))
+                                                                                    <div class="mt-2">
+                                                                                        <small class="text-muted d-block mb-1"><i class="bi bi-paperclip me-1"></i>Pièces jointes :</small>
+                                                                                        @foreach($message->attachments as $attachment)
+                                                                                            <a href="{{ $attachment }}" target="_blank" class="btn btn-outline-secondary btn-sm me-2 mb-2">
+                                                                                                <i class="bi bi-file-earmark-arrow-down me-1"></i>Télécharger
+                                                                                            </a>
+                                                                                        @endforeach
+                                                                                    </div>
+                                                                                @endif
+                                                                            </div>
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
+                                                        </div>
+
+                                                        <div class="alert alert-info mt-3 mb-0">
+                                                            <i class="bi bi-info-circle me-2"></i>
+                                                            Pour répondre à ce message, merci de répondre directement à l'email reçu ou d'utiliser votre espace vendeur si vous êtes marchand.
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Favorites -->
                         <div class="tab-pane fade" id="favorites">
                             <div class="card">
@@ -792,6 +956,8 @@ use Illuminate\Support\Facades\Storage;
                     }
                 });
             }
+
+            initTicketThreads();
 
             // Gestion du modal de changement de photo
             const photoInput = document.getElementById('photoInput');
@@ -1098,12 +1264,21 @@ use Illuminate\Support\Facades\Storage;
                     filteredOrders.forEach(order => {
                         const statusBadge = getStatusBadge(order.status);
                         const row = document.createElement('tr');
+                        
+                        // Bouton d'annulation (seulement si statut = pending)
+                        const cancelButton = order.status === 'pending' 
+                            ? `<button class="btn btn-sm btn-outline-danger me-1" onclick="cancelOrder('${order.order_number}')" title="Annuler la commande">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>`
+                            : '';
+                        
                         row.innerHTML = `
                             <td><strong>${order.order_number}</strong></td>
                             <td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
                             <td><span class="badge ${statusBadge.class}">${statusBadge.label}</span></td>
                             <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
                             <td>
+                                ${cancelButton}
                                 <button class="btn btn-sm btn-outline-success me-1" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
                                     <i class="bi bi-truck"></i>
                                 </button>
@@ -1135,6 +1310,82 @@ use Illuminate\Support\Facades\Storage;
                 }
             } catch (error) {
                 console.error('Erreur lors du chargement des commandes:', error);
+            }
+        }
+
+        // Fonction pour annuler une commande
+        async function cancelOrder(orderNumber) {
+            // Demander confirmation
+            if (!confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.')) {
+                return;
+            }
+            
+            try {
+                // Trouver le bouton d'annulation pour cette commande
+                const buttons = document.querySelectorAll(`button[onclick*="cancelOrder('${orderNumber}')"]`);
+                const button = buttons.length > 0 ? buttons[0] : null;
+                let originalHTML = '';
+                
+                if (button) {
+                    originalHTML = button.innerHTML;
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Annulation...';
+                }
+                
+                const response = await fetch(`/api/orders/${orderNumber}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        reason: 'Annulation par le client'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Afficher un message de succès
+                    if (window.showNotification) {
+                        window.showNotification('success', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                    
+                    // Recharger les commandes
+                    loadOrders();
+                } else {
+                    // Afficher un message d'erreur
+                    if (window.showNotification) {
+                        window.showNotification('error', data.message);
+                    } else {
+                        alert('Erreur: ' + data.message);
+                    }
+                    
+                    // Restaurer le bouton
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = originalHTML;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'annulation:', error);
+                if (window.showNotification) {
+                    window.showNotification('error', 'Erreur lors de l\'annulation de la commande');
+                } else {
+                    alert('Erreur lors de l\'annulation de la commande');
+                }
+                
+                // Restaurer le bouton
+                const buttons = document.querySelectorAll(`button[onclick*="cancelOrder('${orderNumber}')"]`);
+                if (buttons.length > 0) {
+                    buttons[0].disabled = false;
+                    buttons[0].innerHTML = '<i class="bi bi-x-circle"></i>';
+                }
             }
         }
 
@@ -1462,6 +1713,29 @@ use Illuminate\Support\Facades\Storage;
             }
         }
 
+        function initTicketThreads() {
+            const ticketList = document.getElementById('ticketList');
+            if (!ticketList) {
+                return;
+            }
+
+            ticketList.querySelectorAll('[data-ticket]').forEach(item => {
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+
+                    ticketList.querySelectorAll('.list-group-item').forEach(li => li.classList.remove('active'));
+                    this.classList.add('active');
+
+                    document.querySelectorAll('.ticket-thread').forEach(thread => thread.classList.add('d-none'));
+                    const target = document.querySelector(this.dataset.ticket);
+                    if (target) {
+                        target.classList.remove('d-none');
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            });
+        }
+
         // Retirer un produit des favoris
         async function removeFavorite(productId) {
             if (!confirm('Voulez-vous vraiment retirer ce produit de vos favoris ?')) {
@@ -1537,6 +1811,30 @@ use Illuminate\Support\Facades\Storage;
                     loadFavorites();
                     // Sauvegarder l'onglet actif
                     localStorage.setItem('activeTab', 'favorites');
+                });
+            }
+
+            const inboxTab = document.querySelector('a[href="#inbox"]');
+            if (inboxTab) {
+                inboxTab.addEventListener('shown.bs.tab', function() {
+                    localStorage.setItem('activeTab', 'inbox');
+
+                    // S'assurer qu'un ticket est bien sélectionné
+                    const activeTicket = document.querySelector('#ticketList .list-group-item.active');
+                    if (!activeTicket) {
+                        const firstTicket = document.querySelector('#ticketList .list-group-item');
+                        if (firstTicket) {
+                            firstTicket.classList.add('active');
+                        }
+                    }
+
+                    const visibleThread = document.querySelector('.ticket-thread:not(.d-none)');
+                    if (!visibleThread) {
+                        const firstThread = document.querySelector('.ticket-thread');
+                        if (firstThread) {
+                            firstThread.classList.remove('d-none');
+                        }
+                    }
                 });
             }
 

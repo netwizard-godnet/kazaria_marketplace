@@ -1026,7 +1026,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <p class="text-muted mb-1 fs-7">Revenus (<?php echo e(100 - $store->commission_rate); ?>%)</p>
+                                            <p class="text-muted mb-1 fs-7">Revenus (<?php echo e(100 - $store->effective_commission_rate); ?>%)</p>
                                             <h3 class="fw-bold mb-0 orange-color"><?php echo e(number_format($stats['total_revenue'], 0, ',', ' ')); ?> <small class="fs-6">FCFA</small></h3>
                                         </div>
                                         <div class="orange-bg bg-opacity-10 p-3 rounded">
@@ -1857,7 +1857,11 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Statut de la boutique</h6>
                                             <small class="text-muted">Votre boutique est actuellement 
-                                                <span class="badge bg-success"><?php echo e(ucfirst($store->status)); ?></span>
+                                                <?php
+                                                    $kycStatus = $store->effective_kyc_status ? ucfirst($store->effective_kyc_status) : 'Inconnu';
+                                                    $kycClass = $store->isKycValidated() ? 'bg-success' : ($store->isKycPending() ? 'bg-warning text-dark' : ($store->isKycRejected() ? 'bg-danger' : 'bg-secondary'));
+                                                ?>
+                                                <span class="badge <?php echo e($kycClass); ?>"><?php echo e($kycStatus); ?></span>
                                             </small>
                                         </div>
                                         <div>
@@ -1887,13 +1891,26 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                     <div class="d-flex align-items-center">
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Commission</h6>
-                                            <small class="text-muted">Taux actuel : <?php echo e($store->commission_rate); ?>%</small>
+                                            <small class="text-muted">Taux actuel : <?php echo e(number_format($store->effective_commission_rate, 2, ',', ' ')); ?>%</small>
                                         </div>
                                         <div>
                                             <i class="bi bi-percent text-info fs-4"></i>
                                         </div>
                                     </div>
                                 </div>
+                                <?php if($store->crm_scoring !== null): ?>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">Évaluation du support</h6>
+                                                <small class="text-muted">Score actuel : <?php echo e(number_format($store->crm_scoring, 1, ',', ' ')); ?></small>
+                                            </div>
+                                            <div>
+                                                <i class="bi bi-speedometer2 text-primary fs-4"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center">
                                         <div class="flex-grow-1">

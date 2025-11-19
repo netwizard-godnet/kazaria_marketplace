@@ -64,6 +64,7 @@ Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\Produc
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
+    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

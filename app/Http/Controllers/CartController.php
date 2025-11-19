@@ -120,12 +120,38 @@ class CartController extends Controller
         }
         $identifier = $this->getUserOrSessionApi($request);
 
-        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
+        // Normaliser les attributs pour la comparaison
         $attributes = $request->attributes ?? [];
+        if (empty($attributes) || (is_array($attributes) && count(array_filter($attributes)) === 0)) {
+            $attributes = [];
+        }
+        
+        // Normaliser les attributs en JSON de manière cohérente
+        $attributesJson = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
         $existingItem = CartItem::where('product_id', $product->id)
             ->where('user_id', $identifier['user_id'])
             ->where('session_id', $identifier['session_id'])
-            ->where('attributes', json_encode($attributes))
+            ->where(function($query) use ($attributesJson, $attributes) {
+                // Si les attributs sont vides, chercher les entrées sans attributs ou avec attributs vides
+                if (empty($attributes)) {
+                    $query->where(function($q) use ($attributesJson) {
+                        $q->where('attributes', $attributesJson)
+                          ->orWhereNull('attributes')
+                          ->orWhere('attributes', '[]')
+                          ->orWhere('attributes', '{}')
+                          ->orWhere('attributes', '');
+                    });
+                } else {
+                    // Pour les attributs non vides, comparer avec JSON_EQUAL ou utiliser whereRaw
+                    // Utiliser JSON_CONTAINS avec les deux sens pour vérifier l'égalité
+                    $query->where(function($q) use ($attributesJson) {
+                        $q->where('attributes', $attributesJson)
+                          ->orWhereRaw('JSON_CONTAINS(attributes, ?) AND JSON_CONTAINS(?, attributes)', [$attributesJson, $attributesJson]);
+                    });
+                }
+            })
             ->first();
 
         if ($existingItem) {
@@ -187,8 +213,16 @@ class CartController extends Controller
         }
         $identifier = $this->getUserOrSession($request);
 
-        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
+        // Normaliser les attributs pour la comparaison
         $attributes = $request->attributes ?? [];
+        if (empty($attributes) || (is_array($attributes) && count(array_filter($attributes)) === 0)) {
+            $attributes = [];
+        }
+        
+        // Normaliser les attributs en JSON de manière cohérente
+        $attributesJson = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
         $cartItem = CartItem::where('product_id', $product->id)
             ->where(function($query) use ($identifier) {
                 if ($identifier['user_id'] && $identifier['session_id']) {
@@ -203,7 +237,25 @@ class CartController extends Controller
                     $query->where('session_id', $identifier['session_id']);
                 }
             })
-            ->where('attributes', json_encode($attributes))
+            ->where(function($query) use ($attributesJson, $attributes) {
+                // Si les attributs sont vides, chercher les entrées sans attributs ou avec attributs vides
+                if (empty($attributes)) {
+                    $query->where(function($q) use ($attributesJson) {
+                        $q->where('attributes', $attributesJson)
+                          ->orWhereNull('attributes')
+                          ->orWhere('attributes', '[]')
+                          ->orWhere('attributes', '{}')
+                          ->orWhere('attributes', '');
+                    });
+                } else {
+                    // Pour les attributs non vides, comparer avec JSON_EQUAL ou utiliser whereRaw
+                    // Utiliser JSON_CONTAINS avec les deux sens pour vérifier l'égalité
+                    $query->where(function($q) use ($attributesJson) {
+                        $q->where('attributes', $attributesJson)
+                          ->orWhereRaw('JSON_CONTAINS(attributes, ?) AND JSON_CONTAINS(?, attributes)', [$attributesJson, $attributesJson]);
+                    });
+                }
+            })
             ->first();
 
         if ($cartItem) {

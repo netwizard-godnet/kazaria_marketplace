@@ -1024,7 +1024,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <p class="text-muted mb-1 fs-7">Revenus ({{ 100 - $store->commission_rate }}%)</p>
+                                            <p class="text-muted mb-1 fs-7">Revenus ({{ 100 - $store->effective_commission_rate }}%)</p>
                                             <h3 class="fw-bold mb-0 orange-color">{{ number_format($stats['total_revenue'], 0, ',', ' ') }} <small class="fs-6">FCFA</small></h3>
                                         </div>
                                         <div class="orange-bg bg-opacity-10 p-3 rounded">
@@ -1853,7 +1853,11 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Statut de la boutique</h6>
                                             <small class="text-muted">Votre boutique est actuellement 
-                                                <span class="badge bg-success">{{ ucfirst($store->status) }}</span>
+                                                @php
+                                                    $kycStatus = $store->effective_kyc_status ? ucfirst($store->effective_kyc_status) : 'Inconnu';
+                                                    $kycClass = $store->isKycValidated() ? 'bg-success' : ($store->isKycPending() ? 'bg-warning text-dark' : ($store->isKycRejected() ? 'bg-danger' : 'bg-secondary'));
+                                                @endphp
+                                                <span class="badge {{ $kycClass }}">{{ $kycStatus }}</span>
                                             </small>
                                         </div>
                                         <div>
@@ -1883,13 +1887,26 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                     <div class="d-flex align-items-center">
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">Commission</h6>
-                                            <small class="text-muted">Taux actuel : {{ $store->commission_rate }}%</small>
+                                            <small class="text-muted">Taux actuel : {{ number_format($store->effective_commission_rate, 2, ',', ' ') }}%</small>
                                         </div>
                                         <div>
                                             <i class="bi bi-percent text-info fs-4"></i>
                                         </div>
                                     </div>
                                 </div>
+                                @if($store->crm_scoring !== null)
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">Évaluation du support</h6>
+                                                <small class="text-muted">Score actuel : {{ number_format($store->crm_scoring, 1, ',', ' ') }}</small>
+                                            </div>
+                                            <div>
+                                                <i class="bi bi-speedometer2 text-primary fs-4"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center">
                                         <div class="flex-grow-1">

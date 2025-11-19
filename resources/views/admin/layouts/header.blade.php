@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Facades\Storage;
+    use Illuminate\Support\Str;
 @endphp
 
 <div class="main-header">
@@ -116,12 +117,57 @@
                 <!-- User Profile -->
                 <li class="nav-item dropdown hidden-caret">
                     <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">
+                        @php
+                            $user = Auth::user();
+                            $profilePicUrl = null;
+
+                            if ($user) {
+                                $rawPath = trim($user->profile_pic_url ?? '');
+
+                                if (!empty($rawPath)) {
+                                    if (Str::startsWith($rawPath, ['http://', 'https://'])) {
+                                        $profilePicUrl = $rawPath;
+                                    } else {
+                                        $trimmed = ltrim($rawPath, '/');
+
+                                        $publicCandidates = [
+                                            $trimmed,
+                                            'storage/' . $trimmed,
+                                        ];
+
+                                        if (Str::startsWith($trimmed, 'public/')) {
+                                            $publicCandidates[] = Str::after($trimmed, 'public/');
+                                            $publicCandidates[] = 'storage/' . Str::after($trimmed, 'public/');
+                                        }
+
+                                        foreach ($publicCandidates as $candidate) {
+                                            if (file_exists(public_path($candidate))) {
+                                                $profilePicUrl = asset($candidate);
+                                                break;
+                                            }
+                                        }
+
+                                        if (!$profilePicUrl) {
+                                            $storagePath = Str::startsWith($trimmed, 'public/')
+                                                ? Str::after($trimmed, 'public/')
+                                                : $trimmed;
+
+                                            if (Storage::disk('public')->exists($storagePath)) {
+                                                $profilePicUrl = Storage::disk('public')->url($storagePath);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            $profilePicUrl = $profilePicUrl ?: null;
+                        @endphp
                         <div class="avatar-sm">
-                            @if(Auth::user()->profile_pic_url && !empty(Auth::user()->profile_pic_url))
-                                <img src="{{ str_starts_with(Auth::user()->profile_pic_url, 'http') ? Auth::user()->profile_pic_url : (str_starts_with(Auth::user()->profile_pic_url, 'images/') ? asset(Auth::user()->profile_pic_url) : Storage::url(Auth::user()->profile_pic_url)) }}" alt="{{ Auth::user()->prenoms ?? 'Admin' }}" class="avatar-img rounded-circle">
+                            @if($profilePicUrl)
+                                <img src="{{ $profilePicUrl }}" alt="{{ $user->prenoms ?? 'Admin' }}" class="avatar-img rounded-circle">
                             @else
                                 <div class="avatar-img rounded-circle bg-primary d-flex align-items-center justify-content-center text-white" style="width: 40px; height: 40px; font-size: 16px; font-weight: bold;">
-                                    {{ strtoupper(substr(Auth::user()->prenoms ?? 'A', 0, 1)) }}{{ strtoupper(substr(Auth::user()->nom ?? 'U', 0, 1)) }}
+                                    {{ strtoupper(substr($user->prenoms ?? 'A', 0, 1)) }}{{ strtoupper(substr($user->nom ?? 'U', 0, 1)) }}
                                 </div>
                             @endif
                         </div>

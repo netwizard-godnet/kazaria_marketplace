@@ -32,18 +32,33 @@ class Review extends Model
     {
         parent::boot();
         
-        // Mettre à jour les statistiques du produit quand un avis est créé/modifié/supprimé
+        // Mettre à jour les statistiques du produit et du vendeur quand un avis est créé/modifié/supprimé
         static::created(function ($review) {
             static::updateProductStats($review->product_id);
+            static::updateStoreRatingFromReview($review);
         });
         
         static::updated(function ($review) {
             static::updateProductStats($review->product_id);
+            static::updateStoreRatingFromReview($review);
         });
         
         static::deleted(function ($review) {
             static::updateProductStats($review->product_id);
+            static::updateStoreRatingFromReview($review);
         });
+    }
+
+    /**
+     * Mettre à jour la note du vendeur à partir d'un avis
+     */
+    protected static function updateStoreRatingFromReview($review)
+    {
+        // Charger le produit avec la relation store pour éviter les requêtes multiples
+        $product = $review->product ?? \App\Models\Product::find($review->product_id);
+        if ($product && $product->store_id) {
+            static::updateStoreRating($product->store_id);
+        }
     }
     
     /**
@@ -62,6 +77,32 @@ class Review extends Model
             
             $product->update([
                 'rating' => round($averageRating, 1),
+                'reviews_count' => $totalReviews,
+            ]);
+        }
+    }
+
+    /**
+     * Mettre à jour la note du vendeur basée sur les notes de ses produits
+     */
+    public static function updateStoreRating($storeId)
+    {
+        $store = \App\Models\Store::find($storeId);
+        if ($store) {
+            // Calculer la note moyenne des produits du vendeur
+            $averageRating = \App\Models\Product::where('store_id', $storeId)
+                ->where('rating', '>', 0) // Seulement les produits avec des notes
+                ->avg('rating') ?? 0;
+            
+            // Compter le nombre total d'avis sur tous les produits du vendeur
+            $totalReviews = static::whereHas('product', function($query) use ($storeId) {
+                    $query->where('store_id', $storeId);
+                })
+                ->approved()
+                ->count();
+            
+            $store->update([
+                'rating' => round($averageRating, 2),
                 'reviews_count' => $totalReviews,
             ]);
         }

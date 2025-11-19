@@ -39,16 +39,41 @@ class StockService
     public static function reserveStock(Order $order): bool
     {
         try {
-            foreach ($order->orderItems as $item) {
+            // S'assurer que les orderItems sont chargés
+            if (!$order->relationLoaded('orderItems')) {
+                $order->load('orderItems');
+            }
+            
+            // Si toujours vide, récupérer directement depuis la base
+            if ($order->orderItems->isEmpty()) {
+                $orderItems = \App\Models\OrderItem::where('order_id', $order->id)->get();
+            } else {
+                $orderItems = $order->orderItems;
+            }
+            
+            foreach ($orderItems as $item) {
                 $product = Product::find($item->product_id);
                 if ($product) {
-                    $product->decrement('stock', $item->quantity);
-                    Log::info("Stock réservé pour le produit {$product->name} (ID: {$product->id}). Quantité: {$item->quantity}. Nouveau stock: {$product->stock}");
+                    $oldStock = $product->stock;
+                    
+                    // Utiliser une mise à jour directe en base pour garantir la persistance
+                    DB::table('products')
+                        ->where('id', $product->id)
+                        ->decrement('stock', $item->quantity);
+                    
+                    // Recharger le produit pour vérifier le nouveau stock
+                    $product->refresh();
+                    $newStock = $product->stock;
+                    
+                    Log::info("Stock réservé pour le produit {$product->name} (ID: {$product->id}). Quantité: {$item->quantity}. Ancien stock: {$oldStock}, Nouveau stock: {$newStock}");
+                } else {
+                    Log::warning("Produit introuvable pour OrderItem ID: {$item->id}, Product ID: {$item->product_id}");
                 }
             }
             return true;
         } catch (\Exception $e) {
             Log::error("Erreur lors de la réservation du stock pour la commande {$order->id}: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }

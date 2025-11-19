@@ -115,18 +115,25 @@
                                     <td>{{ $store->user->prenoms ?? 'N/A' }} {{ $store->user->nom ?? '' }}</td>
                                     <td>{{ $store->user->email ?? 'N/A' }}</td>
                                     <td>
-                                        @if($store->approved_at)
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>Approuvée
+                                        @php
+                                            $statusLabel = $store->effective_kyc_status ? ucfirst($store->effective_kyc_status) : 'Inconnu';
+                                            $statusClass = 'bg-secondary';
+
+                                            if ($store->isKycValidated()) {
+                                                $statusClass = 'bg-success';
+                                            } elseif ($store->isKycPending()) {
+                                                $statusClass = 'bg-warning text-dark';
+                                            } elseif ($store->isKycRejected()) {
+                                                $statusClass = 'bg-danger';
+                                            }
+                                        @endphp
+                                        <span class="badge {{ $statusClass }}">
+                                            <i class="fas fa-id-card me-1"></i>{{ $statusLabel }}
                                             </span>
-                                        @elseif($store->rejected_at)
-                                            <span class="badge bg-danger">
-                                                <i class="fas fa-times me-1"></i>Rejetée
-                                            </span>
-                                        @else
-                                            <span class="badge bg-warning">
-                                                <i class="fas fa-clock me-1"></i>En attente
-                                            </span>
+                                        @if($store->crm_validated_at)
+                                            <small class="text-muted d-block">MAJ CRM : {{ $store->crm_validated_at->format('d/m/Y H:i') }}</small>
+                                        @elseif($store->approved_at)
+                                            <small class="text-muted d-block">Historique admin : {{ $store->approved_at->format('d/m/Y H:i') }}</small>
                                         @endif
                                     </td>
                                     <td>{{ $store->created_at->format('d/m/Y') }}</td>
@@ -162,25 +169,7 @@
                                             <a href="{{ route('admin.stores.show', $store) }}" class="btn btn-info btn-sm">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            @if(!$store->approved_at && !$store->rejected_at)
-                                                <form action="{{ route('admin.stores.approve', $store) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approuver cette boutique ?')">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                </form>
-                                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $store->id }}">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            @else
-                                                <form action="{{ route('admin.stores.toggle-status', $store) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-{{ $store->status === 'active' ? 'warning' : 'success' }} btn-sm" 
-                                                            onclick="return confirm('{{ $store->status === 'active' ? 'Suspendre' : 'Réactiver' }} cette boutique ?')">
-                                                        <i class="fas fa-{{ $store->status === 'active' ? 'pause' : 'play' }}"></i>
-                                                    </button>
-                                                </form>
-                                                @if($store->approved_at)
+                                            @if($store->isKycValidated())
                                                     <form action="{{ route('admin.stores.toggle-official', $store) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="btn btn-{{ $store->is_official ? 'secondary' : 'warning' }} btn-sm" 
@@ -189,7 +178,6 @@
                                                             <i class="fas fa-certificate"></i>
                                                         </button>
                                                     </form>
-                                                @endif
                                             @endif
                                         </div>
                                     </td>
@@ -207,36 +195,5 @@
         </div>
     </div>
 </div>
-
-<!-- Modals de rejet -->
-@foreach($stores as $store)
-@if(!$store->approved_at && !$store->rejected_at)
-<div class="modal fade" id="rejectModal{{ $store->id }}" tabindex="-1" aria-labelledby="rejectModalLabel{{ $store->id }}" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="rejectModalLabel{{ $store->id }}">Rejeter la boutique</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('admin.stores.reject', $store) }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <p>Vous êtes sur le point de rejeter la boutique <strong>{{ $store->name }}</strong>.</p>
-                    <div class="mb-3">
-                        <label for="rejection_reason{{ $store->id }}" class="form-label">Raison du rejet <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="rejection_reason{{ $store->id }}" name="rejection_reason" rows="4" 
-                                  placeholder="Expliquez pourquoi cette boutique est rejetée..." required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-danger">Rejeter la boutique</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endif
-@endforeach
 
 @endsection

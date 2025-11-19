@@ -960,6 +960,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<!-- <script>
+    window.WIDGET_API_URL = 'http://127.0.0.1:8001/api';
+    window.WIDGET_DOMAIN = 'http://127.0.0.1:8001';
+</script>
+<script src="http://127.0.0.1:8001/widget.js" async></script> -->
+
 <!-- MAIN JS -->
  <script src="<?php echo e(asset('js/main.js')); ?>"></script>
  <script src="<?php echo e(asset('js/carousel.js')); ?>"></script>
@@ -1251,11 +1257,33 @@ if (typeof window.showNotification !== 'function') {
 }
 </script>
 
+<?php if (isset($component)) { $__componentOriginal1c2f983aed04baf4e8352d945f0f624d = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal1c2f983aed04baf4e8352d945f0f624d = $attributes; } ?>
+<?php $component = App\View\Components\PopupLauncher::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('popup-launcher'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\PopupLauncher::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal1c2f983aed04baf4e8352d945f0f624d)): ?>
+<?php $attributes = $__attributesOriginal1c2f983aed04baf4e8352d945f0f624d; ?>
+<?php unset($__attributesOriginal1c2f983aed04baf4e8352d945f0f624d); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal1c2f983aed04baf4e8352d945f0f624d)): ?>
+<?php $component = $__componentOriginal1c2f983aed04baf4e8352d945f0f624d; ?>
+<?php unset($__componentOriginal1c2f983aed04baf4e8352d945f0f624d); ?>
+<?php endif; ?>
+
 <!-- JQUERY -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
+<?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/layouts/footer.blade.php ENDPATH**/ ?>

@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Storage;
         <link rel="stylesheet" href="{{ asset('css/style.css') }}">
         <!-- <link rel="stylesheet" href="{{ asset('css/profil.css') }}"> -->
         <link rel="stylesheet" href="{{ asset('css/carousel.css') }}">
+        @stack('styles')
         
         <!-- Styles pour l'autocomplétion -->
         <style>
@@ -100,17 +101,17 @@ use Illuminate\Support\Facades\Storage;
                             <form class="d-flex ms-auto position-relative" action="{{ route('search_product') }}" method="GET" role="search" id="searchForm">
                                 <div class="bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
                                     <div class="dropdown">
-                                        <button class="btn dropdown-toggle fs-7" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <button class="btn dropdown-toggle fs-8" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         Toutes les catégories
                                         </button>
                                         <ul class="bg-light dropdown-menu">
-                                            <li><a class="dropdown-item" href="{{ route('search_product') }}">Toutes les catégories</a></li>
+                                            <li><a class="dropdown-item fs-8" href="{{ route('search_product') }}">Toutes les catégories</a></li>
                                             @if(isset($allCategories))
                                                 @foreach($allCategories as $category)
                                                 <li>
-                                                    <a class="dropdown-item d-flex align-items-center" href="{{ route('categorie', $category->slug) }}">
+                                                    <a class="dropdown-item d-flex align-items-center fs-8" href="{{ route('categorie', $category->slug) }}">
                                                         @if($category->image && !empty($category->image))
-                                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-2">
+                                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" style="width: 15px; height: 15px; object-fit: contain;" class="me-2">
                                                         @endif
                                                         {{ $category->name }}
                                                     </a>
@@ -120,16 +121,16 @@ use Illuminate\Support\Facades\Storage;
                                         </ul>
                                     </div>
                                     <div class="position-relative">
-                                        <input class="form-control px-4 me-2 border-0 rounded-1 width-400" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="searchInput" autocomplete="off"/>
-                                        <div id="searchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
+                                        <input class="form-control py-2 px-4 me-2 border-0 rounded-0 width-400 fs-8" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="searchInput" autocomplete="off"/>
+                                        <div id="searchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none fs-8" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
                                             <!-- Les suggestions apparaîtront ici -->
                                         </div>
                                     </div>
-                                    <button type="button" class="btn btn-sm text-muted position-absolute end-0 me-2" id="clearSearch" style="display: none;">
+                                    <button type="button" class="btn btn-sm text-muted position-absolute end-0 me-2 fs-8" id="clearSearch" style="display: none;">
                                         <i class="fa-solid fa-times"></i>
                                     </button>
                                 </div>
-                                <button class="btn orange-bg rounded-1 text-white text-uppercase fw-bolder" type="submit">
+                                <button class="btn orange-bg rounded-1 text-white text-uppercase fw-bolder fs-8" type="submit">
                                 Rechercher
                                 </button>
                             </form>
@@ -157,19 +158,19 @@ use Illuminate\Support\Facades\Storage;
                                                 </div>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li><a class="dropdown-item" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
+                                                <li><a class="dropdown-item fs-8" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
                                                 @if(Auth::user()->is_seller)
                                                     @if(Auth::user()->store)
-                                                        <li><a class="dropdown-item" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
+                                                        <li><a class="dropdown-item fs-8" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
                                                     @else
-                                                        <li><a class="dropdown-item" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
+                                                        <li><a class="dropdown-item fs-8" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
                                                     @endif
                                                 @endif
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li class="">
                                                     <form method="POST" action="{{ route('logout') }}" class="d-inline">
                                                         @csrf
-                                                        <button type="submit" class="dropdown-item bg-danger text-white"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
+                                                        <button type="submit" class="dropdown-item bg-danger text-white fs-8"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
                                                     </form>
                                                 </li>
                                             </ul>
@@ -189,37 +190,37 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </nav>
                 <hr class="text-white my-1">
-                <div class="row gx-2 py-2">
+                <div class="row gx-2 py-0">
                     <!--  -->
                     <div class="col-md-8 hstack gap-1">
                         <div class="d-flex align-items-center justify-content-start">
-                            <a class="btn btn-sm orange-bg text-white fs-7 text-nowrap" href="{{ route('boutique_officielle') }}">
+                            <a class="btn btn-sm orange-bg text-white fs-8 text-nowrap" href="{{ route('boutique_officielle') }}">
                             Boutiques Officielles <i class="fa-solid fa-certificate"></i>
                             </a>
                         </div>
                         @if(isset($allCategories))
                             @foreach($allCategories->take(4) as $menuCategory)
                         <div class="header-menu d-flex align-items-center justify-content-start">
-                                <a class="btn btn-sm text-white fs-7 text-nowrap" type="button">
+                                <a class="btn btn-sm text-white fs-8 text-nowrap" type="button">
                                     @if($menuCategory->image && !empty($menuCategory->image))
                                     <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-1">
                                     @endif
                                     {{ $menuCategory->name }} <i class="fa-solid fas fa-chevron-down fs-8"></i>
                                 </a>
                                 <div class="w-100 bg-light py-2 position-absolute top-100 start-0 z-index-9x d-none container-fluid">
-                                <div class="row g-3">
+                                <div class="row g-1">
                                         @if($menuCategory->subcategories->count() > 0)
                                         @foreach($menuCategory->subcategories->chunk(ceil($menuCategory->subcategories->count() / 4)) as $chunk)
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <div class="list-group">
-                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none fs-8">
                                                     @if($menuCategory->image && !empty($menuCategory->image))
                                                     <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" alt="{{ $menuCategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     @endif
                                                     {{ $menuCategory->name }}
                                                 </a>
                                                 @foreach($chunk as $subcat)
-                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action fs-8">
                                                     @if($subcat->image && !empty($subcat->image))
                                                     <img src="{{ str_starts_with($subcat->image, 'http') ? $subcat->image : (str_starts_with($subcat->image, 'images/') ? asset($subcat->image) : Storage::url($subcat->image)) }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     @endif
@@ -256,30 +257,30 @@ use Illuminate\Support\Facades\Storage;
                             @auth
                                 @if(Auth::user()->is_seller)
                                     @if(Auth::user()->store)
-                                        <a href="{{ route('store.dashboard') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <a href="{{ route('store.dashboard') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                             <i class="fa-solid fa-store me-1"></i>Ma boutique
                                         </a>
                                     @else
-                                        <a href="{{ route('store.create') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                             <i class="fa-solid fa-plus me-1"></i>Créer ma boutique
                                         </a>
                                     @endif
                                 @else
-                                    <a href="{{ route('store.create') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                    <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                         <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
                                     </a>
                                 @endif
                             @else
-                                <a href="{{ route('login') }}" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                <a href="{{ route('login') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                     <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
                                 </a>
                             @endauth
                             @auth
-                                <a href="{{ route('profil') }}#orders" class="btn btn-sm fs-7 text-white rounded-0 ps-3">
+                                <a href="{{ route('profil') }}#orders" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
                                     <i class="fa-solid fa-box me-1"></i>Suivre ma commande
                                 </a>
                             @else
-                                <a href="{{ route('login') }}" class="btn btn-sm fs-7 text-white rounded-0 ps-3">
+                                <a href="{{ route('login') }}" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
                                     <i class="fa-solid fa-box me-1"></i>Suivre ma commande
                                 </a>
                             @endauth

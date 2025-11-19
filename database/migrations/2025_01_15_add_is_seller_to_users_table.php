@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            if (!Schema::hasColumn('users', 'is_seller')) {
             $table->boolean('is_seller')->default(false)->after('email_verified_at');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            if (Schema::hasColumn('users', 'is_seller')) {
             $table->dropColumn('is_seller');
+            }
         });
     }
 };

@@ -195,6 +195,13 @@
             </a>
         </li>
 
+        <li class="nav-item {{ request()->routeIs('admin.popups.*') ? 'active' : '' }}">
+            <a href="{{ route('admin.popups.index') }}">
+                <i class="fas fa-window-maximize"></i>
+                <p>Pop-ups</p>
+            </a>
+        </li>
+
         <li class="nav-item {{ request()->routeIs('admin.carousel.*') ? 'active' : '' }}">
             <a href="{{ route('admin.carousel.index') }}">
                 <i class="fas fa-images"></i>

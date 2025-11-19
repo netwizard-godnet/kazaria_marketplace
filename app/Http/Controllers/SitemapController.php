@@ -59,7 +59,7 @@ class SitemapController extends Controller
         }
         
         // Boutiques
-        $stores = Store::where('status', 'active')->get();
+        $stores = Store::kycValidated()->get();
         foreach ($stores as $store) {
             $sitemap .= $this->addUrl(
                 route('store.show', $store->slug), 

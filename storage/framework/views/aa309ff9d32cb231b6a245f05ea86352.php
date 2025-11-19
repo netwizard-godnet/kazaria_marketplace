@@ -44,6 +44,7 @@ use Illuminate\Support\Facades\Storage;
         <link rel="stylesheet" href="<?php echo e(asset('css/style.css')); ?>">
         <!-- <link rel="stylesheet" href="<?php echo e(asset('css/profil.css')); ?>"> -->
         <link rel="stylesheet" href="<?php echo e(asset('css/carousel.css')); ?>">
+        <?php echo $__env->yieldPushContent('styles'); ?>
         
         <!-- Styles pour l'autocomplétion -->
         <style>
@@ -109,17 +110,17 @@ use Illuminate\Support\Facades\Storage;
                             <form class="d-flex ms-auto position-relative" action="<?php echo e(route('search_product')); ?>" method="GET" role="search" id="searchForm">
                                 <div class="bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
                                     <div class="dropdown">
-                                        <button class="btn dropdown-toggle fs-7" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <button class="btn dropdown-toggle fs-8" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         Toutes les catégories
                                         </button>
                                         <ul class="bg-light dropdown-menu">
-                                            <li><a class="dropdown-item" href="<?php echo e(route('search_product')); ?>">Toutes les catégories</a></li>
+                                            <li><a class="dropdown-item fs-8" href="<?php echo e(route('search_product')); ?>">Toutes les catégories</a></li>
                                             <?php if(isset($allCategories)): ?>
                                                 <?php $__currentLoopData = $allCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <li>
-                                                    <a class="dropdown-item d-flex align-items-center" href="<?php echo e(route('categorie', $category->slug)); ?>">
+                                                    <a class="dropdown-item d-flex align-items-center fs-8" href="<?php echo e(route('categorie', $category->slug)); ?>">
                                                         <?php if($category->image && !empty($category->image)): ?>
-                                                        <img src="<?php echo e(str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image))); ?>" style="width: 20px; height: 20px; object-fit: contain;" class="me-2">
+                                                        <img src="<?php echo e(str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image))); ?>" style="width: 15px; height: 15px; object-fit: contain;" class="me-2">
                                                         <?php endif; ?>
                                                         <?php echo e($category->name); ?>
 
@@ -130,16 +131,16 @@ use Illuminate\Support\Facades\Storage;
                                         </ul>
                                     </div>
                                     <div class="position-relative">
-                                        <input class="form-control px-4 me-2 border-0 rounded-1 width-400" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="searchInput" autocomplete="off"/>
-                                        <div id="searchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
+                                        <input class="form-control py-2 px-4 me-2 border-0 rounded-0 width-400 fs-8" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="searchInput" autocomplete="off"/>
+                                        <div id="searchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none fs-8" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
                                             <!-- Les suggestions apparaîtront ici -->
                                         </div>
                                     </div>
-                                    <button type="button" class="btn btn-sm text-muted position-absolute end-0 me-2" id="clearSearch" style="display: none;">
+                                    <button type="button" class="btn btn-sm text-muted position-absolute end-0 me-2 fs-8" id="clearSearch" style="display: none;">
                                         <i class="fa-solid fa-times"></i>
                                     </button>
                                 </div>
-                                <button class="btn orange-bg rounded-1 text-white text-uppercase fw-bolder" type="submit">
+                                <button class="btn orange-bg rounded-1 text-white text-uppercase fw-bolder fs-8" type="submit">
                                 Rechercher
                                 </button>
                             </form>
@@ -167,19 +168,19 @@ use Illuminate\Support\Facades\Storage;
                                                 </div>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li><a class="dropdown-item" href="<?php echo e(route('profil')); ?>"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
+                                                <li><a class="dropdown-item fs-8" href="<?php echo e(route('profil')); ?>"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
                                                 <?php if(Auth::user()->is_seller): ?>
                                                     <?php if(Auth::user()->store): ?>
-                                                        <li><a class="dropdown-item" href="<?php echo e(route('store.dashboard')); ?>"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
+                                                        <li><a class="dropdown-item fs-8" href="<?php echo e(route('store.dashboard')); ?>"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
                                                     <?php else: ?>
-                                                        <li><a class="dropdown-item" href="<?php echo e(route('store.create')); ?>"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
+                                                        <li><a class="dropdown-item fs-8" href="<?php echo e(route('store.create')); ?>"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li class="">
                                                     <form method="POST" action="<?php echo e(route('logout')); ?>" class="d-inline">
                                                         <?php echo csrf_field(); ?>
-                                                        <button type="submit" class="dropdown-item bg-danger text-white"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
+                                                        <button type="submit" class="dropdown-item bg-danger text-white fs-8"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
                                                     </form>
                                                 </li>
                                             </ul>
@@ -199,30 +200,30 @@ use Illuminate\Support\Facades\Storage;
                     </div>
                 </nav>
                 <hr class="text-white my-1">
-                <div class="row gx-2 py-2">
+                <div class="row gx-2 py-0">
                     <!--  -->
                     <div class="col-md-8 hstack gap-1">
                         <div class="d-flex align-items-center justify-content-start">
-                            <a class="btn btn-sm orange-bg text-white fs-7 text-nowrap" href="<?php echo e(route('boutique_officielle')); ?>">
+                            <a class="btn btn-sm orange-bg text-white fs-8 text-nowrap" href="<?php echo e(route('boutique_officielle')); ?>">
                             Boutiques Officielles <i class="fa-solid fa-certificate"></i>
                             </a>
                         </div>
                         <?php if(isset($allCategories)): ?>
                             <?php $__currentLoopData = $allCategories->take(4); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $menuCategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <div class="header-menu d-flex align-items-center justify-content-start">
-                                <a class="btn btn-sm text-white fs-7 text-nowrap" type="button">
+                                <a class="btn btn-sm text-white fs-8 text-nowrap" type="button">
                                     <?php if($menuCategory->image && !empty($menuCategory->image)): ?>
                                     <img src="<?php echo e(str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image))); ?>" style="width: 20px; height: 20px; object-fit: contain;" class="me-1">
                                     <?php endif; ?>
                                     <?php echo e($menuCategory->name); ?> <i class="fa-solid fas fa-chevron-down fs-8"></i>
                                 </a>
                                 <div class="w-100 bg-light py-2 position-absolute top-100 start-0 z-index-9x d-none container-fluid">
-                                <div class="row g-3">
+                                <div class="row g-1">
                                         <?php if($menuCategory->subcategories->count() > 0): ?>
                                         <?php $__currentLoopData = $menuCategory->subcategories->chunk(ceil($menuCategory->subcategories->count() / 4)); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $chunk): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <div class="list-group">
-                                                <a href="<?php echo e(route('categorie', $menuCategory->slug)); ?>" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none">
+                                                <a href="<?php echo e(route('categorie', $menuCategory->slug)); ?>" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none fs-8">
                                                     <?php if($menuCategory->image && !empty($menuCategory->image)): ?>
                                                     <img src="<?php echo e(str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image))); ?>" alt="<?php echo e($menuCategory->name); ?>" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     <?php endif; ?>
@@ -230,7 +231,7 @@ use Illuminate\Support\Facades\Storage;
 
                                                 </a>
                                                 <?php $__currentLoopData = $chunk; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <a href="<?php echo e(route('categorie', $menuCategory->slug)); ?>" class="list-group-item list-group-item-action">
+                                                <a href="<?php echo e(route('categorie', $menuCategory->slug)); ?>" class="list-group-item list-group-item-action fs-8">
                                                     <?php if($subcat->image && !empty($subcat->image)): ?>
                                                     <img src="<?php echo e(str_starts_with($subcat->image, 'http') ? $subcat->image : (str_starts_with($subcat->image, 'images/') ? asset($subcat->image) : Storage::url($subcat->image))); ?>" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     <?php endif; ?>
@@ -269,30 +270,30 @@ use Illuminate\Support\Facades\Storage;
                             <?php if(auth()->guard()->check()): ?>
                                 <?php if(Auth::user()->is_seller): ?>
                                     <?php if(Auth::user()->store): ?>
-                                        <a href="<?php echo e(route('store.dashboard')); ?>" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <a href="<?php echo e(route('store.dashboard')); ?>" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                             <i class="fa-solid fa-store me-1"></i>Ma boutique
                                         </a>
                                     <?php else: ?>
-                                        <a href="<?php echo e(route('store.create')); ?>" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <a href="<?php echo e(route('store.create')); ?>" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                             <i class="fa-solid fa-plus me-1"></i>Créer ma boutique
                                         </a>
                                     <?php endif; ?>
                                 <?php else: ?>
-                                    <a href="<?php echo e(route('store.create')); ?>" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                    <a href="<?php echo e(route('store.create')); ?>" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                         <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
                                     </a>
                                 <?php endif; ?>
                             <?php else: ?>
-                                <a href="<?php echo e(route('login')); ?>" class="btn btn-sm fs-7 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                <a href="<?php echo e(route('login')); ?>" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                     <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
                                 </a>
                             <?php endif; ?>
                             <?php if(auth()->guard()->check()): ?>
-                                <a href="<?php echo e(route('profil')); ?>#orders" class="btn btn-sm fs-7 text-white rounded-0 ps-3">
+                                <a href="<?php echo e(route('profil')); ?>#orders" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
                                     <i class="fa-solid fa-box me-1"></i>Suivre ma commande
                                 </a>
                             <?php else: ?>
-                                <a href="<?php echo e(route('login')); ?>" class="btn btn-sm fs-7 text-white rounded-0 ps-3">
+                                <a href="<?php echo e(route('login')); ?>" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
                                     <i class="fa-solid fa-box me-1"></i>Suivre ma commande
                                 </a>
                             <?php endif; ?>

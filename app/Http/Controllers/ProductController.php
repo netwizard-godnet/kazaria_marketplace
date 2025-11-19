@@ -11,7 +11,31 @@ class ProductController extends Controller
 {
     public function show($slug, Request $request)
     {
-        $product = Product::where('slug', $slug)->with(['categories', 'subcategories', 'category', 'subcategory'])->firstOrFail();
+        // Charger le produit avec ses relations
+        $product = Product::where('slug', $slug)
+            ->with(['categories', 'subcategories', 'category', 'subcategory'])
+            ->firstOrFail();
+        
+        // Recharger le stock directement depuis la base de données AVANT de charger les relations
+        // Cela garantit que le stock est toujours à jour, même après des commandes récentes
+        $freshStock = \Illuminate\Support\Facades\DB::table('products')
+            ->where('id', $product->id)
+            ->value('stock');
+        
+        // Mettre à jour le stock du produit avec la valeur fraîche depuis la base
+        if ($freshStock !== null) {
+            $product->stock = (int)$freshStock;
+        }
+        
+        // Recharger complètement le produit depuis la base pour garantir la cohérence
+        // Cela force Laravel à récupérer toutes les données fraîches, y compris le stock
+        $freshProduct = Product::where('id', $product->id)
+            ->with(['categories', 'subcategories', 'category', 'subcategory'])
+            ->first();
+        
+        if ($freshProduct) {
+            $product = $freshProduct;
+        }
         
         // Métadonnées SEO
         $seoData = \App\Http\Controllers\SeoController::getProductSeo($product);
@@ -50,7 +74,13 @@ class ProductController extends Controller
             $recentProducts = $recentProducts->merge($popularProducts);
         }
         
-        return view('product', compact('product', 'similarProducts', 'recentProducts'));
+        // Ajouter des headers pour empêcher le cache navigateur et forcer le rechargement
+        $response = response()->view('product', compact('product', 'similarProducts', 'recentProducts'));
+        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+        
+        return $response;
     }
     
     public function category($slug, Request $request)

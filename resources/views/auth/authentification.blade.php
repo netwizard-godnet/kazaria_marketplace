@@ -45,6 +45,18 @@
                 <div class="w-100" style="max-width: 450px;">
                     <div class="card shadow-lg border-0">
                         <div class="card-body p-4 p-md-5">
+                            @if (session('error'))
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    {{ session('error') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                                </div>
+                            @endif
+                            @if (session('success'))
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    {{ session('success') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                                </div>
+                            @endif
                             <!-- Navigation Tabs -->
                             <ul class="nav nav-pills nav-fill mb-3" id="authTabs" role="tablist">
                                 <li class="nav-item" role="presentation">
@@ -95,12 +107,12 @@
                                         </div>
                                         
                                         <div class="d-grid gap-3">
-                                            <button type="button" class="btn btn-outline-danger fs-6">
+                                            <a href="{{ route('social.redirect', ['provider' => 'google']) }}" class="btn btn-outline-danger fs-6">
                                                 <i class="bi bi-google me-1 h4"></i>Google
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary fs-6">
+                                            </a>
+                                            <a href="{{ route('social.redirect', ['provider' => 'facebook']) }}" class="btn btn-outline-primary fs-6">
                                                 <i class="bi bi-facebook me-1 h4"></i>Facebook
-                                            </button>
+                                            </a>
                                         </div>
                                     </form>
                                 </div>
@@ -171,12 +183,12 @@
                                         </div>
                                         
                                         <div class="d-grid gap-3">
-                                            <button type="button" class="btn btn-outline-danger">
+                                            <a href="{{ route('social.redirect', ['provider' => 'google']) }}" class="btn btn-outline-danger">
                                                 <i class="bi bi-google me-1 h4"></i>Google
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary">
+                                            </a>
+                                            <a href="{{ route('social.redirect', ['provider' => 'facebook']) }}" class="btn btn-outline-primary">
                                                 <i class="bi bi-facebook me-1 h4"></i>Facebook
-                                            </button>
+                                            </a>
                                         </div>
                                     </form>
                                 </div>
@@ -193,11 +205,6 @@
         </main>
 
         <script>
-            // Vérifier si l'utilisateur est déjà connecté
-            if (localStorage.getItem('auth_token')) {
-                window.location.href = '{{ route("accueil") }}';
-            }
-
             let currentStep = 'login'; // 'login', 'code', 'register'
             let userEmail = '';
 

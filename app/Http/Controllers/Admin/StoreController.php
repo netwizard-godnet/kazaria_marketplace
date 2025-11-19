@@ -14,7 +14,11 @@ class StoreController extends Controller
         
         // Filtre par statut
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $status = strtolower($request->status);
+            $query->where(function ($q) use ($status) {
+                $q->where('status', $status)
+                  ->orWhereRaw('LOWER(crm_kyc_status) = ?', [$status]);
+            });
         }
         
         // Filtre par validation
@@ -77,10 +81,9 @@ class StoreController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:pending,active,suspended,rejected',
         ]);
 
-        $store->update($request->all());
+        $store->update($request->only(['name', 'description']));
 
         return redirect()->back()->with('success', 'Boutique mise à jour avec succès.');
     }
@@ -89,75 +92,6 @@ class StoreController extends Controller
     {
         $store->delete();
         return redirect()->back()->with('success', 'Boutique supprimée avec succès.');
-    }
-
-    public function approve(Store $store)
-    {
-        // Vérifier que la boutique n'est pas déjà approuvée ou rejetée
-        if ($store->approved_at) {
-            return redirect()->back()->with('error', 'Cette boutique a déjà été approuvée.');
-        }
-        
-        if ($store->rejected_at) {
-            return redirect()->back()->with('error', 'Cette boutique a été rejetée et ne peut pas être approuvée.');
-        }
-        
-        $store->update([
-            'status' => 'active',
-            'is_verified' => true,
-            'approved_at' => now(),
-            'approved_by' => auth()->id()
-        ]);
-        
-        // TODO: Envoyer un email de notification au vendeur
-        
-        return redirect()->back()->with('success', 'Boutique approuvée avec succès. Le vendeur a été notifié.');
-    }
-
-    public function reject(Request $request, Store $store)
-    {
-        // Vérifier que la boutique n'est pas déjà approuvée ou rejetée
-        if ($store->approved_at) {
-            return redirect()->back()->with('error', 'Cette boutique a déjà été approuvée et ne peut pas être rejetée.');
-        }
-        
-        if ($store->rejected_at) {
-            return redirect()->back()->with('error', 'Cette boutique a déjà été rejetée.');
-        }
-        
-        $request->validate([
-            'rejection_reason' => 'required|string|max:1000'
-        ]);
-        
-        $store->update([
-            'status' => 'rejected',
-            'rejected_at' => now(),
-            'rejected_by' => auth()->id(),
-            'rejection_reason' => $request->rejection_reason
-        ]);
-        
-        // TODO: Envoyer un email de notification au vendeur
-        
-        return redirect()->back()->with('success', 'Boutique rejetée avec succès. Le vendeur a été notifié.');
-    }
-
-    public function toggleStatus(Store $store)
-    {
-        // Logique pour basculer entre actif et suspendu
-        if ($store->status === 'active') {
-            $newStatus = 'suspended';
-            $message = 'Boutique suspendue avec succès.';
-        } elseif ($store->status === 'suspended') {
-            $newStatus = 'active';
-            $message = 'Boutique réactivée avec succès.';
-        } else {
-            // Pour les autres statuts (pending, rejected), on active la boutique
-            $newStatus = 'active';
-            $message = 'Boutique activée avec succès.';
-        }
-        
-        $store->update(['status' => $newStatus]);
-        return redirect()->back()->with('success', $message);
     }
 
     public function toggleOfficial(Store $store)

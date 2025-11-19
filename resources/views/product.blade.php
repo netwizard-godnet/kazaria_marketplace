@@ -228,7 +228,7 @@
                                 
                                 @if($product->stock > 0)
                                 <div class="mb-3">
-                                    <span class="badge bg-success">En stock ({{ $product->stock }} disponibles)</span>
+                                    <span class="badge bg-success">En stock ({{ number_format($product->stock, 0, ',', ' ') }} disponibles)</span>
                                 </div>
                                 
                                 <!-- Sélecteur de quantité -->
@@ -425,7 +425,7 @@
                                                 </tr>
                                                 <tr>
                                                     <th>Disponibilité</th>
-                                                    <td>{{ $product->stock > 0 ? $product->stock . ' en stock' : 'Rupture de stock' }}</td>
+                                                    <td>{{ $product->stock > 0 ? number_format($product->stock, 0, ',', ' ') . ' en stock' : 'Rupture de stock' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Note</th>
@@ -680,6 +680,7 @@
     <!-- Script pour les avis -->
     <script>
         const productId = {{ $product->id }};
+        const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
         let currentPage = 1;
 
         // Charger les avis au chargement de la page
@@ -1002,13 +1003,25 @@
 
         // Afficher le formulaire
         function showReviewForm() {
-            const token = localStorage.getItem('auth_token');
-            // Redirection directe vers le profil (l'authentification est gérée par le middleware)
-            window.location.href = '/profil#reviews';
-            return;
-            
-            document.getElementById('reviewFormContainer').style.display = 'block';
-            document.getElementById('addReviewBtn').style.display = 'none';
+            if (!isAuthenticated) {
+                const redirectUrl = `/login?redirect=${encodeURIComponent(window.location.pathname + '#reviews')}`;
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('warning', 'Veuillez vous connecter pour donner votre avis.');
+                } else {
+                    alert('Veuillez vous connecter pour donner votre avis.');
+                }
+                window.location.href = redirectUrl;
+                return;
+            }
+
+            const formContainer = document.getElementById('reviewFormContainer');
+            const addButton = document.getElementById('addReviewBtn');
+
+            if (formContainer && addButton) {
+                formContainer.style.display = 'block';
+                addButton.style.display = 'none';
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         // Masquer le formulaire
@@ -1044,8 +1057,7 @@
         async function submitReview(e) {
             e.preventDefault();
             
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
+            if (!isAuthenticated) {
                 showNotification('warning', 'Vous devez être connecté pour laisser un avis');
                 return;
             }
@@ -1064,14 +1076,15 @@
             btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Publication...';
             
             try {
-                const response = await fetch('/api/reviews', {
+                const response = await fetch('/reviews', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'Authorization': `Bearer ${token}`,
+                        'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         product_id: productId,
                         rating: rating,
@@ -1079,22 +1092,14 @@
                         comment: comment
                     })
                 });
-                
+
                 const data = await response.json();
-                
-                if (data.success) {
-                    // Message de succès plus visible
+
+                if (response.ok && data.success) {
                     showNotification('success', '🎉 ' + data.message);
-                    
-                    // Masquer le formulaire
                     hideReviewForm();
-                    
-                    // Recharger les avis pour afficher le nouveau
-                    console.log('🔄 Rechargement des avis après ajout réussi');
-                    
-                    // Attendre un peu pour la synchronisation automatique, puis recharger
+
                     setTimeout(() => {
-                        // Afficher un indicateur de rechargement
                         const container = document.getElementById('reviewsContainer');
                         if (container) {
                             container.innerHTML = `
@@ -1106,32 +1111,24 @@
                                 </div>
                             `;
                         }
-                        
+
                         loadReviews().then(() => {
-                            console.log('✅ Avis rechargés avec succès');
-                            
-                            // Faire défiler vers le nouvel avis après un petit délai
                             setTimeout(() => {
                                 const newReview = document.querySelector('.review-item-recent');
                                 if (newReview) {
-                                    newReview.scrollIntoView({ 
-                                        behavior: 'smooth', 
-                                        block: 'center' 
-                                    });
-                                    console.log('🎯 Défilement vers le nouvel avis');
+                                    newReview.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                 }
                             }, 300);
-                            
-                            // Message de confirmation (pas d'erreur)
+
                             showNotification('success', '✅ Avis publié et affiché !');
                         }).catch(error => {
                             console.error('❌ Erreur lors du rechargement:', error);
                             showNotification('warning', 'Avis ajouté mais erreur d\'affichage. Actualisez la page.');
                         });
-                    }, 500); // Petit délai pour la synchronisation
-                    
+                    }, 500);
                 } else {
-                    showNotification('danger', data.message);
+                    const message = data?.message || 'Erreur lors de la publication de votre avis';
+                    showNotification('danger', message);
                 }
             } catch (error) {
                 console.error('Erreur:', error);

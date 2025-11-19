@@ -478,7 +478,7 @@ class OrderController extends Controller
                     'recent_orders' => $recentOrders,
                     'this_week_orders' => $thisWeekOrders,
                     'today_orders' => $todayOrders,
-                    'total_revenue' => $totalSales * (1 - $store->commission_rate / 100)
+                    'total_revenue' => $totalSales * (1 - $store->effective_commission_rate / 100)
                 ]
             ]);
 

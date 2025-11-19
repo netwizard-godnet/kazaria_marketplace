@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StoreController;
@@ -16,6 +17,21 @@ Route::get('/search', [ProductController::class, 'search'])->name('search_produc
 Route::get('/boutique-officielle', [ProductController::class, 'boutique'])->name('boutique_officielle');
 
 Route::get('/produit/{slug}', [ProductController::class, 'show'])->name('product-page');
+
+Route::get('/blackfriday', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'black-friday',
+        'Black Friday KAZARIA',
+        'Profitez des meilleures offres Black Friday sur KAZARIA : réductions exceptionnelles sur l\'électronique, l\'électroménager et bien plus.',
+        'black friday, promotions, soldes, KAZARIA, bons plans, réductions'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
+
+    return view('blackfriday');
+})->name('blackfriday');
 
 // Routes pour les attributs
 Route::get('/attribut/{attributeSlug}', [ProductController::class, 'byAttribute'])->name('products.by-attribute');
@@ -136,6 +152,16 @@ Route::get('/images/products/{productId}/{filename}', [App\Http\Controllers\Imag
 Route::get('/authentification', function () {
     return view('auth.authentification');
 })->middleware('guest')->name('login');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+        ->name('social.redirect')
+        ->whereIn('provider', ['google', 'facebook']);
+
+    Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+        ->name('social.callback')
+        ->whereIn('provider', ['google', 'facebook']);
+});
 
 // Routes d'authentification admin
 Route::prefix('admin')->group(function () {

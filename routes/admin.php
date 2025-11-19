@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\HeaderController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\PopupController;
 use App\Http\Controllers\Admin\RoleController;
 
 /*
@@ -100,10 +101,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::get('/{store}', [StoreController::class, 'show'])->name('show');
         
         Route::middleware('permission:approve_stores')->group(function () {
-            Route::post('/{store}/approve', [StoreController::class, 'approve'])->name('approve');
-            Route::post('/{store}/reject', [StoreController::class, 'reject'])->name('reject');
             Route::put('/{store}', [StoreController::class, 'update'])->name('update');
-            Route::post('/{store}/toggle-status', [StoreController::class, 'toggleStatus'])->name('toggle-status');
             Route::post('/{store}/toggle-official', [StoreController::class, 'toggleOfficial'])->name('toggle-official');
         });
         
@@ -195,6 +193,17 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::get('/', [SettingController::class, 'index'])->name('index');
         Route::put('/', [SettingController::class, 'update'])->name('update');
         Route::post('/reset', [SettingController::class, 'reset'])->name('reset');
+    });
+
+    // Popups
+    Route::prefix('popups')->name('popups.')->middleware('permission:manage_settings')->group(function () {
+        Route::get('/', [PopupController::class, 'index'])->name('index');
+        Route::get('/create', [PopupController::class, 'create'])->name('create');
+        Route::post('/', [PopupController::class, 'store'])->name('store');
+        Route::get('/{popup}/edit', [PopupController::class, 'edit'])->name('edit');
+        Route::put('/{popup}', [PopupController::class, 'update'])->name('update');
+        Route::delete('/{popup}', [PopupController::class, 'destroy'])->name('destroy');
+        Route::post('/{popup}/toggle', [PopupController::class, 'toggle'])->name('toggle');
     });
 
     // Coupons (Codes promo)

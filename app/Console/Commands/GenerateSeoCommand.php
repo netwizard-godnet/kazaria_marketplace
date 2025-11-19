@@ -100,7 +100,7 @@ class GenerateSeoCommand extends Command
         }
         
         // Boutiques
-        $stores = Store::where('status', 'active')->get();
+        $stores = Store::kycValidated()->get();
         foreach ($stores as $store) {
             $sitemap .= $this->addUrl(
                 route('store.show', $store->slug), 
@@ -207,7 +207,7 @@ class GenerateSeoCommand extends Command
         
         $categories = Category::active()->count();
         $products = Product::active()->count();
-        $stores = Store::where('status', 'active')->count();
+        $stores = Store::kycValidated()->count();
         
         $this->table(
             ['Type', 'Nombre', 'SEO Status'],

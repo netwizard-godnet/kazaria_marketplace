@@ -143,11 +143,11 @@ class StoreController extends Controller
             return redirect()->route('store.create');
         }
 
-        if ($store->status === 'active') {
+        if ($store->isKycValidated()) {
             return redirect()->route('store.dashboard');
         }
 
-        if ($store->status === 'rejected') {
+        if ($store->isKycRejected()) {
             return redirect()->route('store.rejected');
         }
 
@@ -166,7 +166,7 @@ class StoreController extends Controller
             return redirect()->route('store.create');
         }
 
-        if ($store->status !== 'rejected') {
+        if (!$store->isKycRejected()) {
             return redirect()->route('store.pending');
         }
 
@@ -185,7 +185,7 @@ class StoreController extends Controller
             return redirect()->route('store.create');
         }
 
-        if ($store->status !== 'active') {
+        if (!$store->isKycValidated()) {
             return redirect()->route('store.pending');
         }
 
@@ -256,12 +256,14 @@ class StoreController extends Controller
         }
 
         // Statistiques générales
+        $effectiveCommissionRate = $store->effective_commission_rate;
+
         $stats = [
             'total_products' => $store->products()->count(),
             'total_orders' => $orderStats['total_orders'],
             'pending_orders' => $orderStats['pending_orders'],
             'total_sales' => $store->total_sales,
-            'total_revenue' => $store->total_sales * (1 - $store->commission_rate / 100),
+            'total_revenue' => $store->total_sales * (1 - $effectiveCommissionRate / 100),
         ];
 
         // Récupérer les produits de la boutique
@@ -281,8 +283,8 @@ class StoreController extends Controller
      */
     public function show($slug, Request $request)
     {
-        $store = Store::where('slug', $slug)
-            ->where('status', 'active')
+        $store = Store::kycValidated()
+            ->where('slug', $slug)
             ->with(['category', 'subcategory'])
             ->firstOrFail();
         

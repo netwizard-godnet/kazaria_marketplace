@@ -960,6 +960,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<!-- <script>
+    window.WIDGET_API_URL = 'http://127.0.0.1:8001/api';
+    window.WIDGET_DOMAIN = 'http://127.0.0.1:8001';
+</script>
+<script src="http://127.0.0.1:8001/widget.js" async></script> -->
+
 <!-- MAIN JS -->
  <script src="{{ asset('js/main.js') }}"></script>
  <script src="{{ asset('js/carousel.js') }}"></script>
@@ -1251,11 +1257,14 @@ if (typeof window.showNotification !== 'function') {
 }
 </script>
 
+<x-popup-launcher />
+
 <!-- JQUERY -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
+@stack('scripts')
 </body>
 </html>

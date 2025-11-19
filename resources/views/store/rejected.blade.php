@@ -25,22 +25,32 @@
                             <i class="fas fa-info-circle me-2"></i>Détails du rejet
                         </h5>
                         <hr>
-                        <p class="mb-2">
-                            <strong>Date de rejet :</strong> {{ $store->rejected_at->format('d/m/Y à H:i') }}
-                        </p>
-                        @if($store->rejection_reason)
+                        @php
+                            $rejectedAt = $store->crm_validated_at ?? $store->rejected_at;
+                            $rejectionNotes = $store->crm_validation_notes ?? $store->rejection_reason;
+                        @endphp
+                        @if($rejectedAt)
+                            <p class="mb-2">
+                                <strong>Date de rejet :</strong> {{ $rejectedAt->format('d/m/Y à H:i') }}
+                            </p>
+                        @endif
+                        @if($rejectionNotes)
                             <p class="mb-0">
-                                <strong>Raison :</strong> {{ $store->rejection_reason }}
+                                <strong>Motif :</strong> {{ $rejectionNotes }}
+                            </p>
+                        @else
+                            <p class="mb-0">
+                                Aucune raison détaillée n'a été transmise par le support.
                             </p>
                         @endif
                     </div>
                     
                     <!-- Actions possibles -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                        <a href="{{ route('store.create') }}" class="btn btn-primary btn-lg me-md-2">
+                        <a href="{{ route('store.create') }}" class="btn btn-primary btn-sm me-md-2">
                             <i class="fas fa-plus me-2"></i>Créer une nouvelle boutique
                         </a>
-                        <a href="{{ route('contact') }}" class="btn btn-outline-secondary btn-lg">
+                        <a href="{{ route('contact') }}" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-envelope me-2"></i>Nous contacter
                         </a>
                     </div>

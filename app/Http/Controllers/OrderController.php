@@ -200,9 +200,10 @@ class OrderController extends Controller
                 'customer_notes' => $request->customer_notes
             ]);
             
-            // Créer les articles de la commande
+            // Créer les articles de la commande et collecter les données pour la réservation du stock
+            $orderItemsData = [];
             foreach ($cartItems as $cartItem) {
-                OrderItem::create([
+                $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
                     'store_id' => $cartItem->product->store_id,
@@ -212,10 +213,31 @@ class OrderController extends Controller
                     'quantity' => $cartItem->quantity,
                     'total' => $cartItem->price * $cartItem->quantity
                 ]);
+                $orderItemsData[] = [
+                    'product_id' => $cartItem->product_id,
+                    'quantity' => $cartItem->quantity
+                ];
             }
             
-            // Réserver le stock
-            StockService::reserveStock($order);
+            // Réserver le stock directement avec les données collectées
+            // (plus fiable que de recharger depuis la base dans une transaction)
+            foreach ($orderItemsData as $itemData) {
+                $product = Product::find($itemData['product_id']);
+                if ($product) {
+                    $oldStock = $product->stock;
+                    
+                    // Utiliser une mise à jour directe en base pour garantir la persistance
+                    DB::table('products')
+                        ->where('id', $product->id)
+                        ->decrement('stock', $itemData['quantity']);
+                    
+                    $newStock = DB::table('products')->where('id', $product->id)->value('stock');
+                    \Log::info("Stock réservé pour le produit {$product->name} (ID: {$product->id}). Quantité: {$itemData['quantity']}. Ancien stock: {$oldStock}, Nouveau stock: {$newStock}");
+                } else {
+                    \Log::warning("Produit introuvable pour Product ID: {$itemData['product_id']}");
+                    throw new \Exception("Produit introuvable pour Product ID: {$itemData['product_id']}");
+                }
+            }
             
             // Vider le panier
             CartItem::where('user_id', $user->id)->delete();
@@ -333,6 +355,58 @@ class OrderController extends Controller
             'success' => true,
             'orders' => $orders
         ]);
+    }
+
+    /**
+     * Annuler une commande (client)
+     */
+    public function cancelOrder(Request $request, $orderNumber)
+    {
+        // Support à la fois pour session et token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+        
+        $order = Order::where('order_number', $orderNumber)
+            ->where('user_id', $user->id)
+            ->first();
+        
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Commande non trouvée'
+            ], 404);
+        }
+        
+        // Vérifier que la commande peut être annulée (seulement si statut = pending)
+        if ($order->status !== OrderStatusService::STATUS_PENDING) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cette commande ne peut plus être annulée. Elle est déjà en cours de livraison ou a été livrée.'
+            ], 422);
+        }
+        
+        try {
+            $reason = $request->input('reason', 'Annulation par le client');
+            $order->changeStatus(OrderStatusService::STATUS_CANCELLED, $reason);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Commande annulée avec succès. Le stock a été libéré.',
+                'order' => $order->fresh()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'annulation de la commande: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'annulation de la commande: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

@@ -45,7 +45,12 @@ class Store extends Model
         'validation_notes',
         'validated_at',
         'validated_by',
-        'rejection_reason',
+        'crm_scoring',
+        'crm_commission_rate',
+        'crm_kyc_status',
+        'crm_validated_at',
+        'crm_validated_by',
+        'crm_validation_notes',
     ];
 
     protected $casts = [
@@ -59,6 +64,14 @@ class Store extends Model
         'validated_at' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'crm_commission_rate' => 'decimal:2',
+        'crm_validated_at' => 'datetime',
+        'crm_scoring' => 'decimal:2',
+    ];
+
+    protected $appends = [
+        'effective_kyc_status',
+        'effective_commission_rate',
     ];
 
     /**
@@ -152,6 +165,81 @@ class Store extends Model
     public function isSuspended()
     {
         return $this->status === 'suspended';
+    }
+
+    /**
+     * Portée pour ne conserver que les boutiques validées par le CRM (ou actives historiquement).
+     */
+    public function scopeKycValidated($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status', 'active')
+              ->orWhereIn('crm_kyc_status', ['active', 'validated', 'approved', 'approve']);
+        });
+    }
+
+    /**
+     * Statut KYC issu du CRM (avec repli sur le statut local).
+     */
+    public function getEffectiveKycStatusAttribute(): ?string
+    {
+        return $this->crm_kyc_status ?? $this->status;
+    }
+
+    /**
+     * Taux de commission effectif (CRM prioritaire).
+     */
+    public function getEffectiveCommissionRateAttribute(): float
+    {
+        $crmRate = $this->crm_commission_rate;
+
+        if ($crmRate !== null) {
+            return (float) $crmRate;
+        }
+
+        return (float) ($this->getRawOriginal('commission_rate') ?? 0);
+    }
+
+    /**
+     * Détermine si le CRM considère la boutique comme validée.
+     */
+    public function isKycValidated(): bool
+    {
+        $status = strtolower($this->effective_kyc_status ?? '');
+
+        return in_array($status, ['active', 'validated', 'valide', 'approve', 'approved', 'actif']);
+    }
+
+    /**
+     * Détermine si la boutique est en cours de validation côté CRM.
+     */
+    public function isKycPending(): bool
+    {
+        $status = strtolower($this->effective_kyc_status ?? '');
+
+        return in_array($status, ['pending', 'in_review', 'processing', 'submitted', 'en_attente', 'waiting', 'attente']);
+    }
+
+    /**
+     * Détermine si la boutique est rejetée/suspendue côté CRM.
+     */
+    public function isKycRejected(): bool
+    {
+        $status = strtolower($this->effective_kyc_status ?? '');
+
+        return in_array($status, ['rejected', 'rejete', 'refused', 'refuse', 'blocked', 'suspended', 'suspendu', 'denied']);
+    }
+
+    /**
+     * Redéfinit l'attribut is_verified pour refléter le statut CRM.
+     */
+    public function getIsVerifiedAttribute($value): bool
+    {
+        if ($this->crm_kyc_status !== null) {
+            return $this->isKycValidated();
+        }
+
+        return (bool) $value;
     }
 
     /**
@@ -272,5 +360,33 @@ class Store extends Model
         }
         
         return null;
+    }
+
+    /**
+     * Calculer et mettre à jour la note du vendeur basée sur les notes de ses produits
+     */
+    public function calculateRating()
+    {
+        // Calculer la note moyenne des produits du vendeur
+        $averageRating = $this->products()
+            ->where('rating', '>', 0) // Seulement les produits avec des notes
+            ->avg('rating') ?? 0;
+        
+        // Compter le nombre total d'avis sur tous les produits du vendeur
+        $totalReviews = \App\Models\Review::whereHas('product', function($query) {
+                $query->where('store_id', $this->id);
+            })
+            ->approved()
+            ->count();
+        
+        $this->update([
+            'rating' => round($averageRating, 2),
+            'reviews_count' => $totalReviews,
+        ]);
+        
+        return [
+            'rating' => round($averageRating, 2),
+            'reviews_count' => $totalReviews,
+        ];
     }
 }

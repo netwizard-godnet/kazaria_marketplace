@@ -34,17 +34,17 @@
                         <p class="mb-2">
                             <strong>Catégorie:</strong> {{ $store->category->name }}
                         </p>
+                        @php
+                            $pendingLabel = $store->effective_kyc_status ? ucfirst($store->effective_kyc_status) : 'Inconnu';
+                            $pendingClass = $store->isKycValidated() ? 'bg-success' : ($store->isKycPending() ? 'bg-warning text-dark' : ($store->isKycRejected() ? 'bg-danger' : 'bg-secondary'));
+                        @endphp
                         <p class="mb-0">
-                            <strong>Statut:</strong> 
-                            @if($store->status === 'pending')
-                                <span class="badge bg-warning">En attente de validation</span>
-                            @elseif($store->status === 'rejected')
-                                <span class="badge bg-danger">Rejetée</span>
-                            @endif
+                            <strong>Statut:</strong>
+                            <span class="badge {{ $pendingClass }}">{{ $pendingLabel }}</span>
                         </p>
                     </div>
 
-                    @if($store->status === 'pending')
+                    @if($store->isKycPending())
                         <!-- Timeline -->
                         <div class="my-5">
                             <h5 class="fw-bold mb-4">Prochaines étapes</h5>
@@ -84,9 +84,18 @@
                             <i class="bi bi-info-circle me-2"></i>
                             Notre équipe examine actuellement vos documents. Vous recevrez un email dès que votre boutique sera activée.
                         </div>
+                        @if($store->crm_validation_notes)
+                            <div class="alert alert-info">
+                                <i class="bi bi-chat-dots me-2"></i>
+                                <strong>Note du support :</strong> {{ $store->crm_validation_notes }}
+                            </div>
+                        @endif
+                        @if($store->crm_validated_at)
+                            <p class="text-muted small">Dernière mise à jour du support : {{ $store->crm_validated_at->format('d/m/Y à H:i') }}</p>
+                        @endif
                     @endif
 
-                    @if($store->status === 'rejected')
+                    @if($store->isKycRejected())
                         <div class="alert alert-danger">
                             <h5 class="fw-bold mb-3">
                                 <i class="bi bi-exclamation-triangle me-2"></i>Demande rejetée

@@ -9,6 +9,16 @@
   --main-color: #f04e27;
   --black-color : #000000;
   --blue-color: #204fa1;
+  --blue-color-rgb: 32, 79, 161;
+
+  /* Override Bootstrap primary palette with brand blue */
+  --bs-primary: var(--blue-color);
+  --bs-primary-rgb: var(--blue-color-rgb);
+  --bs-link-color: var(--blue-color);
+  --bs-link-hover-color: #1a3f81;
+  --bs-primary-bg-subtle: rgba(var(--blue-color-rgb), 0.12);
+  --bs-primary-border-subtle: rgba(var(--blue-color-rgb), 0.3);
+  --bs-primary-text: #ffffff;
 }
 
 /* LOGO SIZE */
@@ -21,7 +31,44 @@
 
 /* FONTS SIZE */
 .fs-8{
-    font-size: 12px;
+    font-size: 11px;
+}
+
+/* Réduction de la taille des prix */
+.fs-3.orange-color,
+.fs-3.text-danger {
+    font-size: 1.25rem !important; /* Au lieu de 1.75rem */
+}
+
+.fs-6.text-decoration-line-through {
+    font-size: 0.875rem !important; /* Au lieu de 1rem */
+}
+
+.fs-7.text-danger,
+.fs-7.orange-color {
+    font-size: 0.75rem !important; /* Au lieu de 0.875rem */
+}
+
+.fs-8.text-decoration-line-through {
+    font-size: 0.65rem !important; /* Au lieu de 0.75rem/11px */
+}
+
+/* Réduction des prix dans le panier et autres endroits */
+p.fw-bold.orange-color,
+span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
+    font-size: 0.875rem !important;
+}
+
+.fs-4.orange-color {
+    font-size: 1.125rem !important; /* Au lieu de 1.5rem */
+}
+
+.fs-5.orange-color {
+    font-size: 1rem !important; /* Au lieu de 1.25rem */
+}
+
+.text-decoration-line-through.text-muted.small {
+    font-size: 0.75rem !important;
 }
 
 /* WIDTH */
@@ -179,4 +226,160 @@
 
 .activity-item:last-child {
     border-bottom: none !important;
+}
+
+/* POPUP LAUNCHER STYLES */
+.popup-launcher-modal .modal-dialog {
+    height: 500px;
+}
+
+.popup-launcher-modal .modal-content {
+    border-radius: 0;
+    height: 500px;
+    overflow: hidden;
+}
+
+.popup-launcher-modal .modal-body {
+    height: 100%;
+    overflow-y: scroll!important;
+    overflow-x: hidden!important;
+}
+
+.popup-launcher-modal .popup-launcher-image-wrapper {
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Image fixe pour les layouts horizontaux */
+.popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+}
+
+.popup-launcher-modal img[data-popup-image] {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+
+/* Layout superposé (overlay) */
+.popup-launcher-modal [data-popup-row].layout-stacked {
+    position: relative;
+    height: 100%;
+    min-height: 400px;
+}
+
+.popup-launcher-modal [data-popup-row].layout-stacked .popup-launcher-image-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-wrapper] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    background: transparent;
+}
+
+.popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-inner] {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+.popup-launcher-modal .row:not(.flex-column) {
+    height: 100%;
+}
+
+.popup-launcher-modal .row.flex-column {
+    height: 100%;
+}
+
+/* Pour la disposition top-bottom, permettre le scroll vertical sur le modal */
+.popup-launcher-modal .modal-content.layout-top-bottom,
+.popup-launcher-modal .modal-body.layout-top-bottom {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Pour top-bottom, l'image doit pouvoir scroller horizontalement */
+.popup-launcher-modal .layout-top-bottom .popup-launcher-image-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.popup-launcher-modal .layout-top-bottom img[data-popup-image] {
+    width: auto !important;
+    max-width: none !important;
+    height: 100% !important;
+}
+
+.popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-launcher-modal [data-popup-content-inner] {
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-launcher-modal .popup-cta-btn {
+    background-color: var(--main-color) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.popup-launcher-modal .popup-cta-btn:hover {
+    background-color: #d93e1f !important;
+    color: white !important;
+}
+
+@media (max-width: 768px) {
+    .popup-launcher-modal .modal-content {
+        border-radius: 14px;
+    }
+
+    .popup-launcher-modal .popup-launcher-image-wrapper {
+        min-height: 200px;
+        max-height: 250px;
+    }
+
+    .popup-launcher-modal .row {
+        min-height: auto;
+    }
+
+    .popup-launcher-modal .col-md-5 {
+        min-height: auto;
+    }
+
+    .popup-launcher-modal .col-md-5 .p-4 {
+        padding: 1.5rem !important;
+    }
 }
