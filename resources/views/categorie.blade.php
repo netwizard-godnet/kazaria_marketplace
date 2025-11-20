@@ -116,115 +116,38 @@
         </section>
         <!-- SECTION NOUVEAUTES END -->
 
+        @php
+            $hasAttributeFilters = collect(request('attributes', []))->flatten()->filter()->isNotEmpty();
+            $activeFilters = 0;
+            if(request()->filled('subcategory')) $activeFilters++;
+            if(request()->filled('min_price')) $activeFilters++;
+            if(request()->filled('max_price')) $activeFilters++;
+            if(request()->filled('min_rating')) $activeFilters++;
+            if($hasAttributeFilters) $activeFilters++;
+        @endphp
         <!-- SECTION -->
         <section class="py-5">
-            <div class="row g-3">
-                <div class="col-12 col-sm-3 col-md-2" style="position: sticky; top: 0;">
-                    <div class="blue-bg rounded-2 p-3 text-white">
-                        <p class="mb-3 fw-bold d-flex align-items-center justify-content-between">
-                            <span>
-                        @if($category->image && !empty($category->image))
-                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" alt="{{ $category->name }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-2">
-                        @endif
-                                Filtres
-                            </span>
-                            <a href="{{ route('categorie', $category->slug) }}" class="btn btn-sm btn-outline-light">
-                                <i class="fa-solid fa-rotate-right"></i>
-                            </a>
-                        </p>
-                        
-                        <form method="GET" action="{{ route('categorie', $category->slug) }}" id="filterForm">
-                            
-                            <!-- Sous-catégories -->
-                            @if($category->subcategories->count() > 0)
-                            <div class="mb-3">
-                                <p class="fw-bold mb-2 fs-7">Sous-catégories</p>
-                                @foreach($category->subcategories as $subcategory)
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="subcategory" value="{{ $subcategory->id }}" 
-                                        id="subcat{{ $subcategory->id }}" {{ request('subcategory') == $subcategory->id ? 'checked' : '' }}>
-                                    <label class="form-check-label fs-8" for="subcat{{ $subcategory->id }}">
-                            @if($subcategory->image && !empty($subcategory->image))
-                            <img src="{{ str_starts_with($subcategory->image, 'http') ? $subcategory->image : (str_starts_with($subcategory->image, 'images/') ? asset($subcategory->image) : Storage::url($subcategory->image)) }}" alt="{{ $subcategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-1">
-                            @endif
-                                        {{ $subcategory->name }}
-                                    </label>
-                                </div>
-                                @endforeach
-                            </div>
-                            <hr class="text-white">
-                            @endif
-                            
-                            <!-- Prix -->
-                            @if(isset($priceRange))
-                            <div class="mb-3">
-                                <p class="fw-bold mb-2 fs-7">Prix (FCFA)</p>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <input type="number" class="form-control form-control-sm" name="min_price" 
-                                            placeholder="Min" value="{{ request('min_price') }}" 
-                                            min="0" max="{{ $priceRange->max_price }}">
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="number" class="form-control form-control-sm" name="max_price" 
-                                            placeholder="Max" value="{{ request('max_price') }}" 
-                                            min="0" max="{{ $priceRange->max_price }}">
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-outline-light w-100 mt-2">Appliquer</button>
-                            </div>
-                            <hr class="text-white">
-                            @endif
-                            
-                            <!-- Note minimum -->
-                            <div class="mb-3">
-                                <p class="fw-bold mb-2 fs-7">Note minimum</p>
-                                @for($i = 5; $i >= 1; $i--)
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="min_rating" value="{{ $i }}" 
-                                        id="rating{{ $i }}" {{ request('min_rating') == $i ? 'checked' : '' }}>
-                                    <label class="form-check-label fs-8" for="rating{{ $i }}">
-                                        @for($j = 1; $j <= $i; $j++)
-                                            <i class="fa-solid fa-star text-warning"></i>
-                                        @endfor
-                                        & plus
-                                    </label>
-                                </div>
-                                @endfor
-                            </div>
-                            <hr class="text-white">
-                            
-                            <!-- Attributs -->
-                            @if(isset($attributes))
-                                @foreach($attributes as $attribute)
-                                <div class="mb-3">
-                                    <p class="fw-bold mb-2 fs-7">{{ $attribute->name }}</p>
-                                    @foreach($attribute->attributeValues->take(5) as $value)
-                                    <div class="form-check mb-1">
-                                        <input class="form-check-input" type="checkbox" 
-                                            name="attributes[{{ $attribute->id }}][]" 
-                                            value="{{ $value->id }}" 
-                                            id="attr{{ $value->id }}"
-                                            {{ in_array($value->id, request('attributes.'.$attribute->id, [])) ? 'checked' : '' }}>
-                                        <label class="form-check-label fs-8" for="attr{{ $value->id }}">
-                                            {{ $value->value }}
-                                        </label>
-                                    </div>
-                                    @endforeach
-                                    @if($attribute->attributeValues->count() > 5)
-                                    <a href="#" class="text-white fs-8">Voir plus...</a>
-                                    @endif
-                                </div>
-                                @if(!$loop->last)
-                                <hr class="text-white">
-                                @endif
-                                @endforeach
-                            @endif
-                            
-                        </form>
-                    </div>
+            <div class="d-sm-none mb-3">
+                <button class="btn blue-bg text-white w-100 d-flex align-items-center justify-content-between"
+                    type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" aria-controls="mobileFilters">
+                    <span>Filtrer les résultats<i class="bi bi-funnel ms-2"></i></span>
+                    @if($activeFilters > 0)
+                        <span class="badge bg-white text-dark">{{ $activeFilters }} actif(s)</span>
+                    @endif
+                </button>
+            </div>
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-3 col-xl-2 d-none d-lg-block">
+                    @include('components.category-filter-form', [
+                        'category' => $category,
+                        'priceRange' => $priceRange ?? null,
+                        'attributes' => $attributes ?? null,
+                        'formId' => 'desktopFilterForm',
+                        'inputPrefix' => 'desktop-',
+                        'wrapperClass' => 'sticky-top'
+                    ])
                 </div>
-                <div class="col-12 col-sm-9 col-md-10">
+                <div class="col-12 col-lg-9 col-xl-10">
                     <div id="productResults">
                         <div class="row g-2">
                             <div class="col-12">
@@ -284,6 +207,22 @@
                 </div>
             </div>
         </section>
+        <div class="offcanvas offcanvas-start filter-offcanvas" tabindex="-1" id="mobileFilters" aria-labelledby="mobileFiltersLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="mobileFiltersLabel">Filtres</h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                @include('components.category-filter-form', [
+                    'category' => $category,
+                    'priceRange' => $priceRange ?? null,
+                    'attributes' => $attributes ?? null,
+                    'formId' => 'mobileFilterForm',
+                    'inputPrefix' => 'mobile-',
+                    'wrapperClass' => 'mb-0'
+                ])
+            </div>
+        </div>
         <!-- SECTION END -->
 
         <!-- SECTION AFFICHES -->

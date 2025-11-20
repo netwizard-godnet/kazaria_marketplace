@@ -16,80 +16,35 @@
         </section>
         <!-- SECTION BREADCRUMB END -->
 
+        @php
+            $activeFilters = 0;
+            if(request()->filled('category_id')) $activeFilters++;
+            if(request()->filled('min_price')) $activeFilters++;
+            if(request()->filled('max_price')) $activeFilters++;
+            if(request()->filled('min_rating')) $activeFilters++;
+        @endphp
         <!-- SECTION -->
         <section class="py-3">
-            <div class="row g-3">
-                <div class="col-12 col-sm-3 col-md-2" style="position: sticky; top: 0;">
-                    <div class="blue-bg rounded-2 p-3 text-white">
-                        <p class="mb-3 fw-bold d-flex align-items-center justify-content-between">
-                            <span><i class="fa-solid fa-filter me-2"></i>Filtres</span>
-                            <a href="{{ route('search_product') }}" class="btn btn-sm btn-outline-light">
-                                <i class="fa-solid fa-rotate-right"></i>
-                            </a>
-                        </p>
-                        
-                        <form method="GET" action="{{ route('search_product') }}" id="searchFilterForm">
-                            <input type="hidden" name="q" value="{{ $searchQuery ?? '' }}">
-                            
-                            <!-- Catégories -->
-                            <div class="mb-3">
-                                <p class="fw-bold mb-2 fs-7">Catégories</p>
-                                @foreach($categories as $cat)
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="category_id" 
-                                        value="{{ $cat->id }}" id="cat{{ $cat->id }}"
-                                        {{ request('category_id') == $cat->id ? 'checked' : '' }}>
-                                    <label class="form-check-label fs-8" for="cat{{ $cat->id }}">
-                                        @if($cat->icon)
-                                        <i class="{{ $cat->icon }} me-1"></i>
-                                        @endif
-                                        {{ $cat->name }}
-                                    </label>
-                                </div>
-                                @endforeach
-                            </div>
-                            <hr class="text-white">
-                            
-                            <!-- Prix -->
-                            @if(isset($priceRange))
-                            <div class="mb-3">
-                                <p class="fw-bold mb-2 fs-7">Prix (FCFA)</p>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <input type="number" class="form-control form-control-sm" name="min_price" 
-                                            placeholder="Min" value="{{ request('min_price') }}">
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="number" class="form-control form-control-sm" name="max_price" 
-                                            placeholder="Max" value="{{ request('max_price') }}">
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-outline-light w-100 mt-2">Appliquer</button>
-                            </div>
-                            <hr class="text-white">
-                            @endif
-                            
-                            <!-- Note minimum -->
-                            <div class="mb-3">
-                                <p class="fw-bold mb-2 fs-7">Note minimum</p>
-                                @for($i = 5; $i >= 1; $i--)
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="min_rating" value="{{ $i }}" 
-                                        id="searchRating{{ $i }}" {{ request('min_rating') == $i ? 'checked' : '' }}>
-                                    <label class="form-check-label fs-8" for="searchRating{{ $i }}">
-                                        @for($j = 1; $j <= $i; $j++)
-                                            <i class="fa-solid fa-star text-warning"></i>
-                                        @endfor
-                                        & plus
-                                    </label>
-                                </div>
-                                @endfor
-                            </div>
-                            
-                        </form>
-                    </div>
+            <div class="d-sm-none mb-3">
+                <button class="btn blue-bg text-white w-100 d-flex align-items-center justify-content-between"
+                    type="button" data-bs-toggle="offcanvas" data-bs-target="#searchFilters" aria-controls="searchFilters">
+                    <span>Filtrer les résultats<i class="bi bi-funnel ms-2"></i></span>
+                    @if($activeFilters > 0)
+                        <span class="badge bg-white text-dark">{{ $activeFilters }} actif(s)</span>
+                    @endif
+                </button>
+            </div>
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-3 col-xl-2 d-none d-lg-block">
+                    @include('components.search-filter-form', [
+                        'categories' => $categories,
+                        'priceRange' => $priceRange ?? null,
+                        'formId' => 'searchFilterFormDesktop',
+                        'wrapperClass' => 'sticky-top',
+                        'searchQuery' => $searchQuery ?? null
+                    ])
                 </div>
-                <div class="col-12 col-sm-9 col-md-10 bg-light z-index-7x">
+                <div class="col-12 col-lg-9 col-xl-10 bg-light z-index-7x">
                     <div id="searchResults" class="">
                         <div class="row g-2">
                             <div class="col-12">
@@ -151,6 +106,20 @@
                 </div>
             </div>
         </section>
+        <div class="offcanvas offcanvas-start filter-offcanvas" tabindex="-1" id="searchFilters" aria-labelledby="searchFiltersLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="searchFiltersLabel">Filtres</h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                @include('components.search-filter-form', [
+                    'categories' => $categories,
+                    'priceRange' => $priceRange ?? null,
+                    'formId' => 'searchFilterFormMobile',
+                    'searchQuery' => $searchQuery ?? null
+                ])
+            </div>
+        </div>
         <!-- SECTION END -->
     </main>
 
