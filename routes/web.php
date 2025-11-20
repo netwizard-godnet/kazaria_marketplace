@@ -255,10 +255,14 @@ Route::post('/logout', function() {
     return redirect('/');
 })->name('logout');
 
-// Routes boutiques (authentification vendeur requise)
-Route::middleware('seller')->group(function () {
+// Création de boutique (utilisateur connecté requis)
+Route::middleware('auth')->group(function () {
     Route::get('/store/create', [StoreController::class, 'create'])->name('store.create');
     Route::post('/store/create', [StoreController::class, 'store'])->name('store.store');
+});
+
+// Routes boutiques (authentification vendeur requise)
+Route::middleware('seller')->group(function () {
     Route::get('/store/pending', [StoreController::class, 'pending'])->name('store.pending');
     Route::get('/store/rejected', [StoreController::class, 'rejected'])->name('store.rejected');
     Route::get('/store/dashboard', [StoreController::class, 'dashboard'])->name('store.dashboard');
