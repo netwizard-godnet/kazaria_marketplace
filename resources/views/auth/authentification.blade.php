@@ -406,12 +406,13 @@
                         showMessage('loginAlert', data.message, 'success');
                         // Rediriger vers la page d'accueil
                         setTimeout(() => {
-                            window.location.href = '{{ route("accueil") }}';
+                            window.location.replace('{{ route("accueil") }}');
                         }, 2000);
                     } else {
-                        showMessage('loginAlert', data.message, 'danger');
+                        showMessage('loginAlert', data.message || 'Erreur de connexion', 'danger');
                     }
                 } catch (error) {
+                    console.error('Erreur connexion:', error);
                     showMessage('loginAlert', 'Erreur de connexion. Veuillez réessayer.', 'danger');
                 } finally {
                     submitBtn.disabled = false;
@@ -452,14 +453,17 @@
                             
                             // Rediriger vers la page d'accueil avec session
                             setTimeout(() => {
-                                // Rediriger vers la page d'accueil (pas de reload, juste la redirection)
-                                window.location.href = data.redirect || '{{ route("accueil") }}';
+                                // Ajouter un paramètre de cache-busting pour forcer le rechargement
+                                const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
+                                // Utiliser replace pour éviter de garder la page d'auth dans l'historique
+                                window.location.replace(redirectUrl);
                             }, 1000);
                         } else {
-                            showMessage('codeAlert', data.message, 'danger');
+                            showMessage('codeAlert', data.message || 'Code invalide ou expiré', 'danger');
                         }
                     } catch (error) {
-                        showMessage('codeAlert', 'Erreur lors de la vérification du code', 'danger');
+                        console.error('Erreur validation code:', error);
+                        showMessage('codeAlert', 'Erreur lors de la vérification du code. Veuillez réessayer.', 'danger');
                     } finally {
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;

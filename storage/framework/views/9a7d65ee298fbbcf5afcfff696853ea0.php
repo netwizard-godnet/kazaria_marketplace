@@ -572,5 +572,25 @@
         })();
     </script>
 
+    <script>
+        // Forcer le rechargement complet si on vient d'une connexion
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('login') && !sessionStorage.getItem('login_reloaded')) {
+                // Marquer qu'on a déjà rechargé pour éviter les boucles
+                sessionStorage.setItem('login_reloaded', 'true');
+                // Nettoyer l'URL en retirant le paramètre login
+                const cleanUrl = window.location.pathname;
+                // Forcer un rechargement complet pour charger les données de session
+                window.history.replaceState({}, document.title, cleanUrl);
+                // Recharger la page pour s'assurer que les données sont à jour
+                window.location.reload();
+            } else if (!urlParams.has('login')) {
+                // Nettoyer le flag si on n'a plus le paramètre login
+                sessionStorage.removeItem('login_reloaded');
+            }
+        })();
+    </script>
+
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/accueil.blade.php ENDPATH**/ ?>

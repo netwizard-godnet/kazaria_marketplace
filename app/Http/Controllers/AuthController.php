@@ -114,18 +114,26 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Générer et envoyer le code de connexion
-        $authCode = AuthCode::createCode($user->email, 'login', $request);
-        
-        // Envoyer l'email avec le code
-        Mail::to($user->email)->send(new AuthCodeMail($authCode->code, 'login', $user->prenoms));
+        try {
+            // Générer et envoyer le code de connexion
+            $authCode = AuthCode::createCode($user->email, 'login', $request);
+            
+            // Envoyer l'email avec le code
+            Mail::to($user->email)->send(new AuthCodeMail($authCode->code, 'login', $user->prenoms));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Code de connexion envoyé à votre email',
-            'email' => $user->email,
-            'requires_code' => true
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Code de connexion envoyé à votre email',
+                'email' => $user->email,
+                'requires_code' => true
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur envoi code connexion: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'envoi du code. Veuillez réessayer.'
+            ], 500);
+        }
     }
 
     /**
@@ -170,11 +178,14 @@ class AuthController extends Controller
         // Marquer le code comme utilisé
         $authCode->markAsUsed();
 
+        // Régénérer l'ID de session AVANT le login pour éviter les problèmes
+        request()->session()->regenerate();
+        
         // Créer une session web persistante
         Auth::login($user, true);
-
-        // Régénérer l'ID de session pour la sécurité
-        request()->session()->regenerate();
+        
+        // Régénérer le token CSRF
+        request()->session()->regenerateToken();
         
         // Forcer la sauvegarde de la session
         request()->session()->save();
