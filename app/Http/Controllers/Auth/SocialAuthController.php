@@ -102,10 +102,20 @@ class SocialAuthController extends Controller
             $user->update($userData);
         }
 
-        Auth::login($user);
+        // Régénérer l'ID de session AVANT le login pour éviter les problèmes
         request()->session()->regenerate();
+        
+        // Créer une session web persistante
+        Auth::login($user, true);
+        
+        // Régénérer le token CSRF
+        request()->session()->regenerateToken();
+        
+        // Forcer la sauvegarde de la session
+        request()->session()->save();
 
-        return redirect()->intended(route('accueil'))
+        // Rediriger vers l'accueil avec cache-busting pour forcer le rechargement
+        return redirect(route('accueil') . '?login=' . time())
             ->with('success', "Bienvenue {$user->prenoms} !");
     }
 

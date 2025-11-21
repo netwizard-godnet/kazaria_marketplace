@@ -575,21 +575,13 @@
     </script>
 
     <script>
-        // Forcer le rechargement complet si on vient d'une connexion
+        // Nettoyer l'URL si on vient d'une connexion (sans recharger)
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('login') && !sessionStorage.getItem('login_reloaded')) {
-                // Marquer qu'on a déjà rechargé pour éviter les boucles
-                sessionStorage.setItem('login_reloaded', 'true');
-                // Nettoyer l'URL en retirant le paramètre login
+            if (urlParams.has('login')) {
+                // Nettoyer l'URL en retirant le paramètre login sans recharger
                 const cleanUrl = window.location.pathname;
-                // Forcer un rechargement complet pour charger les données de session
                 window.history.replaceState({}, document.title, cleanUrl);
-                // Recharger la page pour s'assurer que les données sont à jour
-                window.location.reload();
-            } else if (!urlParams.has('login')) {
-                // Nettoyer le flag si on n'a plus le paramètre login
-                sessionStorage.removeItem('login_reloaded');
             }
         })();
     </script>
