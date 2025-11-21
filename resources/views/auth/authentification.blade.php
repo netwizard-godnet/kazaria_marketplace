@@ -452,9 +452,8 @@
                             
                             // Rediriger vers la page d'accueil avec session
                             setTimeout(() => {
-                                // Forcer un rechargement complet pour s'assurer que la session est chargée
+                                // Rediriger vers la page d'accueil (pas de reload, juste la redirection)
                                 window.location.href = data.redirect || '{{ route("accueil") }}';
-                                window.location.reload();
                             }, 1000);
                         } else {
                             showMessage('codeAlert', data.message, 'danger');

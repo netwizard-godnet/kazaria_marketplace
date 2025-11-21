@@ -173,11 +173,11 @@ class AuthController extends Controller
         // Créer une session web persistante
         Auth::login($user, true);
 
+        // Régénérer l'ID de session pour la sécurité
+        request()->session()->regenerate();
+        
         // Forcer la sauvegarde de la session
         request()->session()->save();
-        
-        // Régénérer le token CSRF
-        request()->session()->regenerateToken();
 
         return response()->json([
             'success' => true,
