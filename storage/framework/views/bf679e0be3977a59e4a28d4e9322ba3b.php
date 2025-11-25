@@ -1775,8 +1775,9 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <img id="storeLogoSettings" src="<?php echo e($store->logo_url); ?>" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
                                     </div>
                                     <input type="file" class="form-control" id="new_logo" accept="image/*">
-                                    <button class="btn btn-sm orange-bg text-white mt-2" onclick="uploadLogo()">
-                                        <i class="bi bi-upload me-1"></i>Changer le logo
+                                    <button id="changeLogoBtn" class="btn orange-bg text-white w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-upload"></i>
+                    <span>Changer le logo</span>
                                     </button>
                                     <small class="text-muted d-block mt-1">Format recommandé : PNG, JPG (max 5MB)</small>
                                 </div>
@@ -1786,8 +1787,9 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                         <img id="storeBannerSettings" src="<?php echo e($store->banner_url); ?>" alt="Bannière" class="img-thumbnail" style="max-height: 150px; max-width: 100%;">
                                     </div>
                                     <input type="file" class="form-control" id="new_banner" accept="image/*">
-                                    <button class="btn btn-sm orange-bg text-white mt-2" onclick="uploadBanner()">
-                                        <i class="bi bi-upload me-1"></i>Changer la bannière
+                                    <button id="changeBannerBtn" class="btn orange-bg text-white w-100 mt-2 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-upload"></i>
+                    <span>Changer la bannière</span>
                                     </button>
                                     <small class="text-muted d-block mt-1">Format recommandé : PNG, JPG (max 5MB)</small>
                                 </div>
@@ -2065,6 +2067,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // Charger les commandes récentes
 async function loadRecentOrders() {
     const container = document.getElementById('recentOrdersContainer');
+    if (!container) {
+        console.warn('Conteneur recentOrdersContainer introuvable, chargement ignoré.');
+        return;
+    }
     
     try {
         const response = await fetch(`/store/api/recent-orders?limit=5`, {
@@ -2782,12 +2788,6 @@ async function editProductInternal(id) {
                 tagsField.value = Array.isArray(product.tags) ? product.tags.join(', ') : product.tags;
             }
             
-                name: nameField.value,
-                description: descriptionField.value,
-                price: priceField.value,
-                stock: stockField.value
-            });
-            
             // Réinitialiser les images à supprimer
             window.imagesToDelete = [];
             
@@ -3344,6 +3344,7 @@ async function uploadLogo() {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
+            credentials: 'same-origin',
             body: formData
         });
         
@@ -3392,6 +3393,7 @@ async function uploadLogo() {
         showNotification('danger', 'Erreur lors de l\'upload');
     }
 }
+window.uploadLogo = uploadLogo;
 
 // Upload de la bannière
 async function uploadBanner() {
@@ -3425,6 +3427,7 @@ async function uploadBanner() {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
+            credentials: 'same-origin',
             body: formData
         });
         
@@ -3468,6 +3471,7 @@ async function uploadBanner() {
         showNotification('danger', 'Erreur lors de l\'upload');
     }
 }
+window.uploadBanner = uploadBanner;
 
 // Mettre à jour les statistiques
 async function updateStats() {
@@ -3936,49 +3940,6 @@ function setupTabListeners() {
 
 // Initialiser la gestion des onglets au chargement de la page
 // loadSubcategories est défini en haut du fichier
-/* CHARGEMENT DES SOUS-CATÉGORIES - FONCTION DÉFINIE EN HAUT
-function loadSubcategories(categoryId, selectedSubcategoryId = null) {
-    const subcategorySelect = document.getElementById('edit_subcategory_id') || document.getElementById('subcategory_select');
-    
-    if (!subcategorySelect) {
-        console.warn('Champ sous-catégorie non trouvé');
-        return;
-    }
-    
-    // Vider les options existantes
-    subcategorySelect.innerHTML = '<option value="">Sélectionnez une sous-catégorie</option>';
-    
-    if (!categoryId) {
-        return;
-    }
-    
-    // Charger les sous-catégories via AJAX
-    fetch(`/api/categories/${categoryId}/subcategories`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.subcategories) {
-            data.subcategories.forEach(subcategory => {
-                const option = document.createElement('option');
-                option.value = subcategory.id;
-                option.textContent = subcategory.name;
-                if (selectedSubcategoryId && subcategory.id == selectedSubcategoryId) {
-                    option.selected = true;
-                }
-                subcategorySelect.appendChild(option);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Erreur lors du chargement des sous-catégories:', error);
-    });
-}
-
 // SYNCHRONISATION PRIX PROMO / RÉDUCTION
 // ========================================
 function synchronizePriceAndDiscount() {
@@ -4022,6 +3983,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Synchroniser prix promo et réduction
     synchronizePriceAndDiscount();
+    window.uploadLogo = uploadLogo;
+    window.uploadBanner = uploadBanner;
     
     // Écouter les changements de catégorie pour charger les sous-catégories
     const categorySelects = document.querySelectorAll('[name="category_id"]');
@@ -4030,6 +3993,16 @@ document.addEventListener('DOMContentLoaded', function() {
             loadSubcategories(this.value);
         });
     });
+
+    const logoBtn = document.getElementById('changeLogoBtn');
+    if (logoBtn) {
+        logoBtn.addEventListener('click', uploadLogo);
+    }
+
+    const bannerBtn = document.getElementById('changeBannerBtn');
+    if (bannerBtn) {
+        bannerBtn.addEventListener('click', uploadBanner);
+    }
 });
 </script>
 <?php $__env->stopSection(); ?>
