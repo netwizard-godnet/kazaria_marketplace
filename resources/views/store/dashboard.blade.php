@@ -1588,7 +1588,7 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                                                         <small class="fw-bold">{{ $item->product->nom }}</small>
                                                                         <br>
                                                                         <small class="text-muted">Qté: {{ $item->quantity }}</small>
-                                                                        @if($item->attributes && count($item->attributes) > 0)
+                                                                        @if($item->attributes && (is_array($item->attributes) || is_object($item->attributes)) && count((array)$item->attributes) > 0)
                                                                             <div class="mt-1">
                                                                                 @foreach($item->attributes as $attrName => $attrValue)
                                                                                     <small class="text-muted d-block">
