@@ -1843,6 +1843,82 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                         </div>
                     </div>
 
+                    <!-- Documents -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-file-earmark-text me-2"></i>Documents de la boutique
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Document DFE -->
+                                <div class="col-md-6">
+                                    <div class="card border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-file-pdf text-danger me-2"></i>Document DFE
+                                            </h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            @if($store->dfe_document_url)
+                                                <div class="mb-3">
+                                                    <i class="bi bi-file-pdf text-danger" style="font-size: 3rem;"></i>
+                                                </div>
+                                                <p class="text-muted mb-3">Document DFE soumis</p>
+                                                <div class="d-flex gap-2 justify-content-center">
+                                                    <a href="{{ $store->dfe_document_url }}" target="_blank" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </a>
+                                                    <a href="{{ $store->dfe_document_url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-eye me-1"></i>Voir
+                                                    </a>
+                                                </div>
+                                            @else
+                                                <div class="text-muted">
+                                                    <i class="bi bi-file-pdf text-muted" style="font-size: 3rem;"></i>
+                                                    <p class="mt-2">Aucun document DFE fourni</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Registre de Commerce -->
+                                <div class="col-md-6">
+                                    <div class="card border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">
+                                                <i class="bi bi-file-pdf text-danger me-2"></i>Registre de Commerce
+                                            </h6>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            @if($store->commerce_register_url)
+                                                <div class="mb-3">
+                                                    <i class="bi bi-file-pdf text-danger" style="font-size: 3rem;"></i>
+                                                </div>
+                                                <p class="text-muted mb-3">Registre de commerce soumis</p>
+                                                <div class="d-flex gap-2 justify-content-center">
+                                                    <a href="{{ $store->commerce_register_url }}" target="_blank" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-download me-1"></i>Télécharger
+                                                    </a>
+                                                    <a href="{{ $store->commerce_register_url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-eye me-1"></i>Voir
+                                                    </a>
+                                                </div>
+                                            @else
+                                                <div class="text-muted">
+                                                    <i class="bi bi-file-pdf text-muted" style="font-size: 3rem;"></i>
+                                                    <p class="mt-2">Aucun registre de commerce fourni</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Paramètres de sécurité -->
                     <div class="card shadow-sm mb-4">
                         <div class="card-header">
