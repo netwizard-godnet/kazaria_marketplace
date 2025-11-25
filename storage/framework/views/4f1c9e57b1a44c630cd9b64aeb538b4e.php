@@ -1,21 +1,19 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="container-fluid">
         <!-- SECTION BREADCRUMB -->
         <section class="bg-light py-2">
             <div class="container-fluid">
                 <nav style="--bs-breadcrumb-divider: '|';" aria-label="breadcrumb" class="">
                     <ol class="breadcrumb" class="">
-                        <li class="breadcrumb-item mb-0"><a href="{{ route('accueil') }}" class="fs-7">Accueil</a></li>
-                        @if($product->categories && $product->categories->count() > 0)
-                            <li class="breadcrumb-item mb-0"><a href="{{ route('categorie', $product->categories->first()->slug) }}" class="fs-7">{{ $product->categories->first()->name }}</a></li>
-                        @elseif($product->category)
-                            <li class="breadcrumb-item mb-0"><a href="{{ route('categorie', $product->category->slug) }}" class="fs-7">{{ $product->category->name }}</a></li>
-                        @else
+                        <li class="breadcrumb-item mb-0"><a href="<?php echo e(route('accueil')); ?>" class="fs-7">Accueil</a></li>
+                        <?php if($product->categories && $product->categories->count() > 0): ?>
+                            <li class="breadcrumb-item mb-0"><a href="<?php echo e(route('categorie', $product->categories->first()->slug)); ?>" class="fs-7"><?php echo e($product->categories->first()->name); ?></a></li>
+                        <?php elseif($product->category): ?>
+                            <li class="breadcrumb-item mb-0"><a href="<?php echo e(route('categorie', $product->category->slug)); ?>" class="fs-7"><?php echo e($product->category->name); ?></a></li>
+                        <?php else: ?>
                             <li class="breadcrumb-item mb-0"><span class="fs-7">Produits</span></li>
-                        @endif
-                        <li class="breadcrumb-item mb-0 active fs-7" aria-current="page">{{ $product->name }}</li>
+                        <?php endif; ?>
+                        <li class="breadcrumb-item mb-0 active fs-7" aria-current="page"><?php echo e($product->name); ?></li>
                     </ol>
                 </nav>
             </div>
@@ -30,7 +28,7 @@
                         <div class="col-md-5 bg-light-subtle p-4">
                             <div class="row g-3 d-flex align-items-center justify-content-center">
                                 <div class="col-12">
-                                    @php
+                                    <?php
                                         $mainImageUrl = asset('images/produit.jpg');
                                         
                                         // Priorité 1: Champ image principale
@@ -59,15 +57,15 @@
                                                 $mainImageUrl = asset('images/' . $firstImg);
                                             }
                                         }
-                                    @endphp
-                                    <img src="{{ $mainImageUrl }}" 
+                                    ?>
+                                    <img src="<?php echo e($mainImageUrl); ?>" 
                                          id="mainProductImage" 
                                          class="w-100 h-400px object-fit-contain" 
-                                         alt="{{ $product->name }}"
+                                         alt="<?php echo e($product->name); ?>"
                                          style="cursor: zoom-in;"
                                          onclick="openImageModal()">
                                 </div>
-                                @php
+                                <?php
                                     // Construire la liste complète des images (image principale + images additionnelles)
                                     $allImages = [];
                                     
@@ -84,11 +82,11 @@
                                             }
                                         }
                                     }
-                                @endphp
-                                @if(count($allImages) > 0)
-                                    @foreach($allImages as $index => $image)
+                                ?>
+                                <?php if(count($allImages) > 0): ?>
+                                    <?php $__currentLoopData = $allImages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <div class="col-2">
-                                        @php
+                                        <?php
                                             $thumbUrl = asset('images/produit.jpg');
                                             if (filter_var($image, FILTER_VALIDATE_URL)) {
                                                 $thumbUrl = $image;
@@ -99,136 +97,137 @@
                                             } else {
                                                 $thumbUrl = asset('images/' . $image);
                                             }
-                                        @endphp
-                                        <img src="{{ $thumbUrl }}" 
-                                             class="w-100 h-100 object-fit-contain product-thumbnail {{ $index === 0 ? 'active' : '' }}" 
-                                             alt="{{ $product->name }}"
-                                             style="cursor: pointer; border: 2px solid {{ $index === 0 ? 'var(--main-color)' : 'transparent' }};"
-                                             onclick="changeMainImage('{{ $thumbUrl }}', this)">
+                                        ?>
+                                        <img src="<?php echo e($thumbUrl); ?>" 
+                                             class="w-100 h-100 object-fit-contain product-thumbnail <?php echo e($index === 0 ? 'active' : ''); ?>" 
+                                             alt="<?php echo e($product->name); ?>"
+                                             style="cursor: pointer; border: 2px solid <?php echo e($index === 0 ? 'var(--main-color)' : 'transparent'); ?>;"
+                                             onclick="changeMainImage('<?php echo e($thumbUrl); ?>', this)">
                                     </div>
-                                    @endforeach
-                                @else
-                                @for ($i = 0; $i < 6; $i++)
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php else: ?>
+                                <?php for($i = 0; $i < 6; $i++): ?>
                                 <div class="col-2">
-                                        <img src="{{ $mainImageUrl }}" 
-                                             class="w-100 h-100 object-fit-contain product-thumbnail {{ $i === 0 ? 'active' : '' }}" 
-                                             alt="{{ $product->name }}"
-                                             style="cursor: pointer; border: 2px solid {{ $i === 0 ? 'var(--main-color)' : 'transparent' }};"
-                                             onclick="changeMainImage('{{ $mainImageUrl }}', this)">
+                                        <img src="<?php echo e($mainImageUrl); ?>" 
+                                             class="w-100 h-100 object-fit-contain product-thumbnail <?php echo e($i === 0 ? 'active' : ''); ?>" 
+                                             alt="<?php echo e($product->name); ?>"
+                                             style="cursor: pointer; border: 2px solid <?php echo e($i === 0 ? 'var(--main-color)' : 'transparent'); ?>;"
+                                             onclick="changeMainImage('<?php echo e($mainImageUrl); ?>', this)">
                                 </div>
-                                @endfor
-                                @endif
+                                <?php endfor; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="col-md-4 p-4">
                             <div>
-                                @if($product->is_featured)
+                                <?php if($product->is_featured): ?>
                                 <a class="btn btn-sm fs-8 blue-bg text-white px-1 py-0">Boutique Officielle</a>
-                                @endif
-                                @if($product->old_price && $product->old_price > $product->price)
-                                <span class="badge bg-danger ms-2">-{{ round((($product->old_price - $product->price) / $product->old_price) * 100) }}%</span>
-                                @endif
+                                <?php endif; ?>
+                                <?php if($product->old_price && $product->old_price > $product->price): ?>
+                                <span class="badge bg-danger ms-2">-<?php echo e(round((($product->old_price - $product->price) / $product->old_price) * 100)); ?>%</span>
+                                <?php endif; ?>
                                 <!-- NOM PRODUIT -->
-                                <p class="mb-0 mt-3 fs-5">{{ $product->name }}</p>
+                                <p class="mb-0 mt-3 fs-5"><?php echo e($product->name); ?></p>
                                 <p class="mb-0 mt-3 fs-8">
-                                    @if($product->brand)
-                                    Marque : <span class="fw-bold">{{ $product->brand }}</span> | 
-                                    @endif
-                                    @if($product->categories && $product->categories->count() > 0)
-                                        <span>Catégories : {{ $product->categories->pluck('name')->implode(', ') }}</span>
-                                    @elseif($product->category)
-                                        <span>{{ $product->category->name }}</span>
-                                    @else
+                                    <?php if($product->brand): ?>
+                                    Marque : <span class="fw-bold"><?php echo e($product->brand); ?></span> | 
+                                    <?php endif; ?>
+                                    <?php if($product->categories && $product->categories->count() > 0): ?>
+                                        <span>Catégories : <?php echo e($product->categories->pluck('name')->implode(', ')); ?></span>
+                                    <?php elseif($product->category): ?>
+                                        <span><?php echo e($product->category->name); ?></span>
+                                    <?php else: ?>
                                         <span>Non catégorisé</span>
-                                    @endif
-                                    @if($product->subcategories && $product->subcategories->count() > 0)
-                                        <br><small class="text-muted">Sous-catégories : {{ $product->subcategories->pluck('name')->implode(', ') }}</small>
-                                    @elseif($product->subcategory)
-                                        <br><small class="text-muted">{{ $product->subcategory->name }}</small>
-                                    @endif
+                                    <?php endif; ?>
+                                    <?php if($product->subcategories && $product->subcategories->count() > 0): ?>
+                                        <br><small class="text-muted">Sous-catégories : <?php echo e($product->subcategories->pluck('name')->implode(', ')); ?></small>
+                                    <?php elseif($product->subcategory): ?>
+                                        <br><small class="text-muted"><?php echo e($product->subcategory->name); ?></small>
+                                    <?php endif; ?>
                                 </p>
                                 <!-- NOM PRODUIT END -->
                                 <hr>
                                 <div class="d-flex align-items-center justify-content-start">
-                                    @if($product->old_price && $product->old_price > $product->price)
-                                        {{-- Produit en promo: price = prix actuel, old_price = ancien prix --}}
-                                        <span class="fs-3 orange-color fw-bold text-nowrap me-2">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
-                                        <span class="fs-6 text-decoration-line-through text-secondary text-nowrap">{{ number_format($product->old_price, 0, ',', ' ') }} FCFA</span>
-                                    @else
-                                        {{-- Produit sans promo: afficher seulement le prix --}}
-                                        <span class="fs-3 orange-color fw-bold text-nowrap">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
-                                    @endif
+                                    <?php if($product->old_price && $product->old_price > $product->price): ?>
+                                        
+                                        <span class="fs-3 orange-color fw-bold text-nowrap me-2"><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</span>
+                                        <span class="fs-6 text-decoration-line-through text-secondary text-nowrap"><?php echo e(number_format($product->old_price, 0, ',', ' ')); ?> FCFA</span>
+                                    <?php else: ?>
+                                        
+                                        <span class="fs-3 orange-color fw-bold text-nowrap"><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</span>
+                                    <?php endif; ?>
                                 </div>
-                                @if($product->old_price && $product->old_price > $product->price)
+                                <?php if($product->old_price && $product->old_price > $product->price): ?>
                                 <div class="mb-3">
-                                    <span class="fs-8 fw-bold orange-color mb-3">Vous avez épargné {{ number_format($product->old_price - $product->price, 0, ',', ' ') }} FCFA</span>
+                                    <span class="fs-8 fw-bold orange-color mb-3">Vous avez épargné <?php echo e(number_format($product->old_price - $product->price, 0, ',', ' ')); ?> FCFA</span>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                                 <div class="hstack gap-1">
                                     <div id="priceStars">
-                                        @for($i = 1; $i <= 5; $i++)
-                                            <i class="fa-solid fa-star {{ $i <= floor($product->rating) ? 'text-warning' : 'text-secondary' }} fs-7"></i>
-                                        @endfor
+                                        <?php for($i = 1; $i <= 5; $i++): ?>
+                                            <i class="fa-solid fa-star <?php echo e($i <= floor($product->rating) ? 'text-warning' : 'text-secondary'); ?> fs-7"></i>
+                                        <?php endfor; ?>
                                     </div>
                                     <p class="mb-0 fs-8" id="reviewsCountText">
-                                        @if($product->reviews_count > 0)
-                                            (<span id="reviewsCount">{{ $product->reviews_count }}</span> avis)
-                                        @else
+                                        <?php if($product->reviews_count > 0): ?>
+                                            (<span id="reviewsCount"><?php echo e($product->reviews_count); ?></span> avis)
+                                        <?php else: ?>
                                             (Pas d'avis pour le moment)
-                                        @endif
+                                        <?php endif; ?>
                                     </p>
                                 </div>
                                 <hr>
                                 
                                 <!-- Attributs du produit -->
-                                @if($product->attributeValues->count() > 0)
+                                <?php if($product->attributeValues->count() > 0): ?>
                                 <div class="mb-4">
                                     <h6 class="fw-bold mb-3">Options disponibles :</h6>
                                     <form id="attributesForm">
-                                        @php
+                                        <?php
                                             $groupedAttributes = $product->attributeValues->groupBy('attribute.name');
-                                        @endphp
-                                        @foreach($groupedAttributes as $attributeName => $values)
+                                        ?>
+                                        <?php $__currentLoopData = $groupedAttributes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attributeName => $values): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">{{ $attributeName }}:</label>
+                                            <label class="form-label fw-bold"><?php echo e($attributeName); ?>:</label>
                                             <div class="row">
-                                                @foreach($values as $value)
+                                                <?php $__currentLoopData = $values; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <div class="col-auto">
                                                     <div class="form-check">
-                                                        @if($values->first()->attribute->type === 'radio')
+                                                        <?php if($values->first()->attribute->type === 'radio'): ?>
                                                         <input class="form-check-input attribute-radio" 
                                                                type="radio" 
-                                                               name="attribute_{{ $value->attribute->id }}" 
-                                                               value="{{ $value->id }}" 
-                                                               id="attr_{{ $value->id }}"
-                                                               data-attribute="{{ $value->attribute->name }}"
-                                                               data-value="{{ $value->value }}"
+                                                               name="attribute_<?php echo e($value->attribute->id); ?>" 
+                                                               value="<?php echo e($value->id); ?>" 
+                                                               id="attr_<?php echo e($value->id); ?>"
+                                                               data-attribute="<?php echo e($value->attribute->name); ?>"
+                                                               data-value="<?php echo e($value->value); ?>"
                                                                required>
-                                                        @else
+                                                        <?php else: ?>
                                                         <input class="form-check-input attribute-checkbox" 
                                                                type="checkbox" 
-                                                               name="attribute_{{ $value->attribute->id }}[]" 
-                                                               value="{{ $value->id }}" 
-                                                               id="attr_{{ $value->id }}"
-                                                               data-attribute="{{ $value->attribute->name }}"
-                                                               data-value="{{ $value->value }}">
-                                                        @endif
-                                                        <label class="form-check-label" for="attr_{{ $value->id }}">
-                                                            {{ $value->value }}
+                                                               name="attribute_<?php echo e($value->attribute->id); ?>[]" 
+                                                               value="<?php echo e($value->id); ?>" 
+                                                               id="attr_<?php echo e($value->id); ?>"
+                                                               data-attribute="<?php echo e($value->attribute->name); ?>"
+                                                               data-value="<?php echo e($value->value); ?>">
+                                                        <?php endif; ?>
+                                                        <label class="form-check-label" for="attr_<?php echo e($value->id); ?>">
+                                                            <?php echo e($value->value); ?>
+
                                                         </label>
                                                     </div>
                                                 </div>
-                                                @endforeach
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                             </div>
                                         </div>
-                                        @endforeach
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </form>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                                 
-                                @if($product->stock > 0)
+                                <?php if($product->stock > 0): ?>
                                 <div class="mb-3">
-                                    <span class="badge bg-success">En stock ({{ number_format($product->stock, 0, ',', ' ') }} disponibles)</span>
+                                    <span class="badge bg-success">En stock (<?php echo e(number_format($product->stock, 0, ',', ' ')); ?> disponibles)</span>
                                 </div>
                                 
                                 <!-- Sélecteur de quantité -->
@@ -238,7 +237,7 @@
                                         <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(-1)">
                                             <i class="bi bi-dash"></i>
                                         </button>
-                                        <input type="number" class="form-control text-center" id="quantityInput" value="1" min="1" max="{{ $product->stock }}" readonly>
+                                        <input type="number" class="form-control text-center" id="quantityInput" value="1" min="1" max="<?php echo e($product->stock); ?>" readonly>
                                         <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(1)">
                                             <i class="bi bi-plus"></i>
                                         </button>
@@ -253,21 +252,21 @@
                                         <i class="bi bi-heart"></i>
                                     </button>
                                 </div>
-                                @else
+                                <?php else: ?>
                                 <div class="mb-3">
                                     <span class="badge bg-danger">Rupture de stock</span>
                                 </div>
                                 <button class="btn btn-secondary" disabled>
                                     <i class="bi bi-cart-x me-2"></i>Produit indisponible
                                 </button>
-                                @endif
+                                <?php endif; ?>
                                 
                                 <script>
                                     // Changer la quantité
                                     function changeQuantity(change) {
                                         const input = document.getElementById('quantityInput');
                                         const currentValue = parseInt(input.value);
-                                        const maxStock = {{ $product->stock }};
+                                        const maxStock = <?php echo e($product->stock); ?>;
                                         let newValue = currentValue + change;
                                         
                                         if (newValue < 1) newValue = 1;
@@ -295,7 +294,7 @@
                                         
                                         console.log('Attributs sélectionnés avant envoi:', selectedAttributes);
                                         
-                                        addToCart({{ $product->id }}, quantity, selectedAttributes);
+                                        addToCart(<?php echo e($product->id); ?>, quantity, selectedAttributes);
                                     }
                                     
                                     // Récupérer les attributs sélectionnés
@@ -337,7 +336,7 @@
                                     // Toggle favori sur la page produit
                                     function toggleFavoriteProduct() {
                                         const btn = document.getElementById('favoriteBtn');
-                                        toggleFavorite({{ $product->id }}, btn);
+                                        toggleFavorite(<?php echo e($product->id); ?>, btn);
                                     }
                                     
                                     // La fonction showNotification est maintenant globale via cart.js
@@ -347,8 +346,8 @@
                                 <div>
                                     <p class="mb-2 text-uppercase fs-7 fw-bold">Partager ce produit</p>
                                     <div class="hstack gap-2">
-                                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(route('product-page', $product->slug)) }}" target="_blank" class="btn btn-outline-primary"><i class="bi bi-facebook"></i></a>
-                                        <a href="https://wa.me/?text={{ urlencode($product->name . ' - ' . route('product-page', $product->slug)) }}" target="_blank" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>
+                                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo e(urlencode(route('product-page', $product->slug))); ?>" target="_blank" class="btn btn-outline-primary"><i class="bi bi-facebook"></i></a>
+                                        <a href="https://wa.me/?text=<?php echo e(urlencode($product->name . ' - ' . route('product-page', $product->slug))); ?>" target="_blank" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>
                                     </div>
                                 </div>
                             </div>
@@ -390,20 +389,20 @@
                                     <div class="nav nav-tabs" id="nav-tab" role="tablist">
                                         <button class="nav-link blue-color active" id="nav-descripProduit-tab" data-bs-toggle="tab" data-bs-target="#nav-descripProduit" type="button" role="tab" aria-controls="nav-descripProduit" aria-selected="true">Description</button>
                                         <button class="nav-link blue-color" id="nav-ficheTech-tab" data-bs-toggle="tab" data-bs-target="#nav-ficheTech" type="button" role="tab" aria-controls="nav-ficheTech" aria-selected="false">Fiche Technique</button>
-                                        <button class="nav-link blue-color" id="nav-avisProduit-tab" data-bs-toggle="tab" data-bs-target="#nav-avisProduit" type="button" role="tab" aria-controls="nav-avisProduit" aria-selected="false">Avis (<span id="navReviewsCount">{{ $product->reviews_count }}</span>)</button>
+                                        <button class="nav-link blue-color" id="nav-avisProduit-tab" data-bs-toggle="tab" data-bs-target="#nav-avisProduit" type="button" role="tab" aria-controls="nav-avisProduit" aria-selected="false">Avis (<span id="navReviewsCount"><?php echo e($product->reviews_count); ?></span>)</button>
                                     </div>
                                 </nav>
                                 <div class="tab-content p-3" id="nav-tabContent">
                                     <div class="tab-pane fade show active" id="nav-descripProduit" role="tabpanel" aria-labelledby="nav-descripProduit-tab" tabindex="0">
                                         <h5 class="fw-bold mb-3">Description du produit</h5>
-                                        <div style="white-space: pre-line;">{{ $product->description ?? 'Aucune description disponible pour ce produit.' }}</div>
+                                        <div style="white-space: pre-line;"><?php echo e($product->description ?? 'Aucune description disponible pour ce produit.'); ?></div>
                                         
-                                        @if($product->brand)
+                                        <?php if($product->brand): ?>
                                         <div class="mt-4">
                                             <h6 class="fw-bold">Marque</h6>
-                                            <p>{{ $product->brand }}</p>
+                                            <p><?php echo e($product->brand); ?></p>
                                         </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
                                     <div class="tab-pane fade" id="nav-ficheTech" role="tabpanel" aria-labelledby="nav-ficheTech-tab" tabindex="0">
                                         <h5 class="fw-bold mb-3">Fiche Technique</h5>
@@ -411,43 +410,45 @@
                                             <tbody>
                                                 <tr>
                                                     <th>Nom</th>
-                                                    <td>{{ $product->name }}</td>
+                                                    <td><?php echo e($product->name); ?></td>
                                                 </tr>
-                                                @if($product->brand)
+                                                <?php if($product->brand): ?>
                                                 <tr>
                                                     <th>Marque</th>
-                                                    <td>{{ $product->brand }}</td>
+                                                    <td><?php echo e($product->brand); ?></td>
                                                 </tr>
-                                                @endif
-                                                @if($product->category || ($product->categories && $product->categories->count() > 0))
+                                                <?php endif; ?>
+                                                <?php if($product->category || ($product->categories && $product->categories->count() > 0)): ?>
                                                 <tr>
                                                     <th>Catégorie</th>
                                                     <td>
-                                                        @if($product->categories && $product->categories->count() > 0)
-                                                            {{ $product->categories->pluck('name')->implode(', ') }}
-                                                        @elseif($product->category)
-                                                            {{ $product->category->name }}
-                                                        @endif
+                                                        <?php if($product->categories && $product->categories->count() > 0): ?>
+                                                            <?php echo e($product->categories->pluck('name')->implode(', ')); ?>
+
+                                                        <?php elseif($product->category): ?>
+                                                            <?php echo e($product->category->name); ?>
+
+                                                        <?php endif; ?>
                                                     </td>
                                                 </tr>
-                                                @endif
-                                                @if($product->subcategory)
+                                                <?php endif; ?>
+                                                <?php if($product->subcategory): ?>
                                                 <tr>
                                                     <th>Sous-catégorie</th>
-                                                    <td>{{ $product->subcategory->name }}</td>
+                                                    <td><?php echo e($product->subcategory->name); ?></td>
                                                 </tr>
-                                                @endif
+                                                <?php endif; ?>
                                                 <tr>
                                                     <th>Prix</th>
-                                                    <td>{{ number_format($product->price, 0, ',', ' ') }} FCFA</td>
+                                                    <td><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</td>
                                                 </tr>
                                                 <tr>
                                                     <th>Disponibilité</th>
-                                                    <td>{{ $product->stock > 0 ? number_format($product->stock, 0, ',', ' ') . ' en stock' : 'Rupture de stock' }}</td>
+                                                    <td><?php echo e($product->stock > 0 ? number_format($product->stock, 0, ',', ' ') . ' en stock' : 'Rupture de stock'); ?></td>
                                                 </tr>
                                                 <tr>
                                                     <th>Note</th>
-                                                    <td>{{ $product->rating }}/5 ({{ $product->reviews_count }} avis)</td>
+                                                    <td><?php echo e($product->rating); ?>/5 (<?php echo e($product->reviews_count); ?> avis)</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -457,28 +458,28 @@
                                         <div class="row mb-4">
                                             <div class="col-md-4">
                                                 <div class="text-center p-4 bg-light rounded">
-                                                    <div class="display-4 fw-bold orange-color" id="averageRating">{{ $product->rating }}</div>
+                                                    <div class="display-4 fw-bold orange-color" id="averageRating"><?php echo e($product->rating); ?></div>
                                                     <div class="mb-2" id="averageStars">
-                                                        @for($i = 1; $i <= 5; $i++)
-                                                            <i class="fa-solid fa-star {{ $i <= floor($product->rating) ? 'text-warning' : 'text-secondary' }}"></i>
-                                                        @endfor
+                                                        <?php for($i = 1; $i <= 5; $i++): ?>
+                                                            <i class="fa-solid fa-star <?php echo e($i <= floor($product->rating) ? 'text-warning' : 'text-secondary'); ?>"></i>
+                                                        <?php endfor; ?>
                                                     </div>
-                                                    <p class="text-muted mb-0"><span id="totalReviews">{{ $product->reviews_count }}</span> avis</p>
+                                                    <p class="text-muted mb-0"><span id="totalReviews"><?php echo e($product->reviews_count); ?></span> avis</p>
                                                 </div>
                                             </div>
                                             <div class="col-md-8">
                                                 <h6 class="mb-3">Distribution des notes</h6>
                                                 <div id="ratingDistribution">
                                                     <!-- Sera rempli dynamiquement -->
-                                                    @for($i = 5; $i >= 1; $i--)
+                                                    <?php for($i = 5; $i >= 1; $i--): ?>
                                                         <div class="d-flex align-items-center mb-2">
-                                                            <span class="me-2">{{ $i }} <i class="fa-solid fa-star text-warning fs-8"></i></span>
+                                                            <span class="me-2"><?php echo e($i); ?> <i class="fa-solid fa-star text-warning fs-8"></i></span>
                                                             <div class="progress flex-grow-1 me-2" style="height: 10px;">
-                                                                <div class="progress-bar orange-bg" role="progressbar" style="width: 0%" id="rating-{{ $i }}"></div>
+                                                                <div class="progress-bar orange-bg" role="progressbar" style="width: 0%" id="rating-<?php echo e($i); ?>"></div>
                                                             </div>
-                                                            <span class="text-muted" id="count-{{ $i }}">0</span>
+                                                            <span class="text-muted" id="count-<?php echo e($i); ?>">0</span>
                                                         </div>
-                                                    @endfor
+                                                    <?php endfor; ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -498,14 +499,14 @@
                                                 </div>
                                                 <div class="card-body">
                                                     <form id="reviewForm">
-                                                        <input type="hidden" id="reviewProductId" value="{{ $product->id }}">
+                                                        <input type="hidden" id="reviewProductId" value="<?php echo e($product->id); ?>">
                                                         
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold">Votre note <span class="text-danger">*</span></label>
                                                             <div class="rating-input">
-                                                                @for($i = 1; $i <= 5; $i++)
-                                                                    <i class="fa-star rating-star" data-rating="{{ $i }}" onclick="setRating({{ $i }})"></i>
-                                                                @endfor
+                                                                <?php for($i = 1; $i <= 5; $i++): ?>
+                                                                    <i class="fa-star rating-star" data-rating="<?php echo e($i); ?>" onclick="setRating(<?php echo e($i); ?>)"></i>
+                                                                <?php endfor; ?>
                                                             </div>
                                                             <input type="hidden" id="reviewRating" value="5">
                                                         </div>
@@ -573,21 +574,21 @@
                 <h5 class="mb-0 me-4">Produits similaires</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @forelse ($similarProducts as $similarProduct)
+                <?php $__empty_1 = true; $__currentLoopData = $similarProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $similarProduct): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $similarProduct])
+                    <?php echo $__env->make('components.product-card', ['product' => $similarProduct], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                         </div>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="col-12">
                     <p class="text-muted text-center">Aucun produit similaire disponible pour le moment.</p>
                 </div>
-                @endforelse
+                <?php endif; ?>
             </div>
-            @if($similarProducts->count() > 0)
+            <?php if($similarProducts->count() > 0): ?>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="multi-carousel-dots text-center mt-2"></div>
-            @endif
+            <?php endif; ?>
         </section>
         <!-- SECTION PRODUITS SIMILAIRES END -->
 
@@ -597,11 +598,11 @@
                 <h5 class="mb-0 me-4">Vues récentes</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($recentProducts as $recentProduct)
+                <?php $__currentLoopData = $recentProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $recentProduct): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $recentProduct])
+                    <?php echo $__env->make('components.product-card', ['product' => $recentProduct], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -618,7 +619,7 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center p-4">
-                    <img id="modalImage" src="" class="img-fluid" style="max-height: 80vh; object-fit: contain;" alt="{{ $product->name }}">
+                    <img id="modalImage" src="" class="img-fluid" style="max-height: 80vh; object-fit: contain;" alt="<?php echo e($product->name); ?>">
                 </div>
                 <div class="modal-footer border-0 justify-content-center pt-0">
                     <small class="text-white-50"><i class="bi bi-info-circle me-2"></i>Cliquez en dehors de l'image pour fermer</small>
@@ -697,8 +698,8 @@
 
     <!-- Script pour les avis -->
     <script>
-        const productId = {{ $product->id }};
-        const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+        const productId = <?php echo e($product->id); ?>;
+        const isAuthenticated = <?php echo e(auth()->check() ? 'true' : 'false'); ?>;
         let currentPage = 1;
 
         // Charger les avis au chargement de la page
@@ -1293,4 +1294,5 @@
         }
     </style>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/product.blade.php ENDPATH**/ ?>

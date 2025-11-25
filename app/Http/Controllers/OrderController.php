@@ -203,6 +203,25 @@ class OrderController extends Controller
             // Créer les articles de la commande et collecter les données pour la réservation du stock
             $orderItemsData = [];
             foreach ($cartItems as $cartItem) {
+                // S'assurer que les attributs sont bien un objet pour être stockés comme JSON objet
+                $attributes = $cartItem->attributes ?? (object)[];
+                
+                // Si c'est un tableau, le convertir en objet
+                if (is_array($attributes)) {
+                    $attributes = empty($attributes) ? (object)[] : (object)$attributes;
+                }
+                
+                // Si c'est une chaîne JSON, la décoder en objet
+                if (is_string($attributes)) {
+                    $decoded = json_decode($attributes, false); // false pour obtenir un objet
+                    $attributes = $decoded ?? (object)[];
+                }
+                
+                // S'assurer que c'est un objet
+                if (!is_object($attributes)) {
+                    $attributes = (object)[];
+                }
+                
                 $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
@@ -211,7 +230,8 @@ class OrderController extends Controller
                     'product_image' => $cartItem->product->image,
                     'price' => $cartItem->price,
                     'quantity' => $cartItem->quantity,
-                    'total' => $cartItem->price * $cartItem->quantity
+                    'total' => $cartItem->price * $cartItem->quantity,
+                    'attributes' => $attributes
                 ]);
                 $orderItemsData[] = [
                     'product_id' => $cartItem->product_id,

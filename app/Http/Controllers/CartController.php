@@ -121,7 +121,8 @@ class CartController extends Controller
         $identifier = $this->getUserOrSessionApi($request);
 
         // Normaliser les attributs pour la comparaison
-        $attributes = $request->attributes ?? [];
+        // IMPORTANT: Utiliser input() pour récupérer les données du body JSON, pas attributes qui est pour les paramètres de route
+        $attributes = $request->input('attributes', []);
         if (empty($attributes) || (is_array($attributes) && count(array_filter($attributes)) === 0)) {
             $attributes = [];
         }
@@ -157,12 +158,16 @@ class CartController extends Controller
         if ($existingItem) {
             $existingItem->increment('quantity', $quantity);
         } else {
+            // S'assurer que les attributs sont toujours stockés comme un objet, même s'ils sont vides
+            // Convertir en objet si c'est un tableau
+            $attributesToStore = empty($attributes) ? (object)[] : (is_array($attributes) ? (object)$attributes : $attributes);
+            
             CartItem::create([
                 'product_id' => $product->id,
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'quantity' => $quantity,
-                'attributes' => $attributes,
+                'attributes' => $attributesToStore,
             ]);
         }
 
@@ -214,7 +219,22 @@ class CartController extends Controller
         $identifier = $this->getUserOrSession($request);
 
         // Normaliser les attributs pour la comparaison
-        $attributes = $request->attributes ?? [];
+        // IMPORTANT: Utiliser input() pour récupérer les données du body JSON, pas attributes qui est pour les paramètres de route
+        $attributes = $request->input('attributes', []);
+        
+        // Debug: Log des attributs reçus
+        \Log::info('=== AJOUT AU PANIER ===', [
+            'product_id' => $request->input('product_id'),
+            'quantity' => $request->input('quantity'),
+            'attributes_received' => $attributes,
+            'attributes_type' => gettype($attributes),
+            'attributes_is_array' => is_array($attributes),
+            'attributes_count' => is_array($attributes) ? count($attributes) : 'N/A',
+            'attributes_keys' => is_array($attributes) ? array_keys($attributes) : 'N/A',
+            'request_all' => $request->all(),
+            'request_json' => $request->json()->all(),
+            'content_type' => $request->header('Content-Type'),
+        ]);
         if (empty($attributes) || (is_array($attributes) && count(array_filter($attributes)) === 0)) {
             $attributes = [];
         }
@@ -272,13 +292,25 @@ class CartController extends Controller
                 : $product->price;
             
             // Créer un nouvel article
+            // S'assurer que les attributs sont toujours un objet, jamais null
+            // Convertir en objet si c'est un tableau
+            $attributesToStore = empty($attributes) ? (object)[] : (is_array($attributes) ? (object)$attributes : $attributes);
+            
+            // Debug: Log des attributs avant stockage
+            \Log::info('=== AVANT STOCKAGE ===', [
+                'attributes_original' => $attributes,
+                'attributes_to_store' => $attributesToStore,
+                'attributes_to_store_type' => gettype($attributesToStore),
+                'attributes_to_store_json' => json_encode($attributesToStore),
+            ]);
+            
             CartItem::create([
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'product_id' => $product->id,
                 'quantity' => max($quantity, (int)$minQty),
                 'price' => $priceToUse,
-                'attributes' => $attributes
+                'attributes' => $attributesToStore
             ]);
         }
 

@@ -1,7 +1,5 @@
-@extends('layouts.app')
-
-@section('content')
-<link rel="stylesheet" href="{{ asset('css/store.css') }}">
+<?php $__env->startSection('content'); ?>
+<link rel="stylesheet" href="<?php echo e(asset('css/store.css')); ?>">
 
 <div class="container-fluid my-4">
     <div class="row">
@@ -15,7 +13,7 @@
                     <p class="text-muted mb-0" id="orderNumber">Chargement...</p>
                 </div>
                 <div>
-                    <a href="{{ route('store.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                    <a href="<?php echo e(route('store.dashboard')); ?>" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left me-2"></i>Retour au dashboard
                     </a>
                 </div>
@@ -132,7 +130,7 @@
 let currentOrder = null;
 
 // Récupérer le numéro de commande depuis le paramètre Blade
-const orderNumber = '{{ $orderNumber }}';
+const orderNumber = '<?php echo e($orderNumber); ?>';
 
 if (!orderNumber || orderNumber === 'order-details' || orderNumber === 'orders') {
     document.getElementById('orderDetailsContainer').innerHTML = `
@@ -535,7 +533,9 @@ function showNotification(type, message) {
     }
 }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
 
 
 
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/seller/order-details.blade.php ENDPATH**/ ?>

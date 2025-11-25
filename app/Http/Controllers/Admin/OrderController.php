@@ -92,6 +92,21 @@ class OrderController extends Controller
     public function show(Order $order)
     {
         $order->load(['user', 'orderItems.product.store']);
+        
+        // Debug: Vérifier les attributs des items
+        foreach ($order->orderItems as $item) {
+            \Log::info('OrderItem Debug', [
+                'item_id' => $item->id,
+                'product_name' => $item->product_name,
+                'attributes_raw' => $item->getAttributes()['attributes'] ?? null,
+                'attributes_accessor' => $item->attributes,
+                'attributes_type' => gettype($item->attributes),
+                'attributes_is_array' => is_array($item->attributes),
+                'attributes_is_object' => is_object($item->attributes),
+                'attributes_count' => is_array($item->attributes) || is_object($item->attributes) ? count((array)$item->attributes) : 0,
+            ]);
+        }
+        
         return view('admin.orders.show', compact('order'));
     }
 

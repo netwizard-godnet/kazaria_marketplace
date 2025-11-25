@@ -138,6 +138,18 @@
                                 <div class="col-5">
                                     <h6 class="mb-1">{{ $item->product_name }}</h6>
                                     <p class="text-muted small mb-0">Quantité: {{ $item->quantity }}</p>
+                                    @if($item->attributes && count($item->attributes) > 0)
+                                        <div class="mt-2">
+                                            @foreach($item->attributes as $attrName => $attrValue)
+                                                <div class="mb-1">
+                                                    <small class="text-muted fw-bold">{{ ucfirst($attrName) }}:</small>
+                                                    <small class="text-primary">
+                                                        {{ is_array($attrValue) ? implode(', ', $attrValue) : $attrValue }}
+                                                    </small>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="col-2 text-center">
                                     <p class="mb-0">{{ number_format($item->price, 0, ',', ' ') }} FCFA</p>

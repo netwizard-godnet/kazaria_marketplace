@@ -112,6 +112,7 @@ class OrderController extends Controller
                             'product_name' => $item->product_name,
                             'product_image' => $item->product_image,
                             'price' => $item->price,
+                            'attributes' => $item->attributes ?? [],
                             'quantity' => $item->quantity,
                             'total' => $item->total,
                             'product' => $item->product ? [
@@ -286,6 +287,7 @@ class OrderController extends Controller
                         'price' => $item->price,
                         'quantity' => $item->quantity,
                         'total' => $item->total,
+                        'attributes' => $item->attributes ?? [],
                         'product' => $item->product ? [
                             'id' => $item->product->id,
                             'name' => $item->product->name,

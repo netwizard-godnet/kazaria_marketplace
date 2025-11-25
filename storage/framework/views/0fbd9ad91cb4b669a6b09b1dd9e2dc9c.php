@@ -1,14 +1,12 @@
-@extends('admin.layouts.app')
+<?php $__env->startSection('title', 'Détails de la commande'); ?>
 
-@section('title', 'Détails de la commande')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="page-inner">
     <div class="page-header">
-        <h4 class="page-title">Détails de la commande #{{ $order->order_number ?? 'N/A' }}</h4>
+        <h4 class="page-title">Détails de la commande #<?php echo e($order->order_number ?? 'N/A'); ?></h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
-                <a href="{{ route('admin.dashboard') }}">
+                <a href="<?php echo e(route('admin.dashboard')); ?>">
                     <i class="flaticon-home"></i>
                 </a>
             </li>
@@ -16,13 +14,13 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.orders.index') }}">Commandes</a>
+                <a href="<?php echo e(route('admin.orders.index')); ?>">Commandes</a>
             </li>
             <li class="separator">
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <span>{{ $order->order_number }}</span>
+                <span><?php echo e($order->order_number); ?></span>
             </li>
         </ul>
     </div>
@@ -38,28 +36,29 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h6>Informations client</h6>
-                            <p><strong>Nom:</strong> {{ $order->user->prenoms ?? 'N/A' }} {{ $order->user->nom ?? '' }}</p>
-                            <p><strong>Email:</strong> {{ $order->user->email ?? 'N/A' }}</p>
-                            <p><strong>Téléphone:</strong> {{ $order->user->telephone ?? $order->shipping_phone ?? 'N/A' }}</p>
+                            <p><strong>Nom:</strong> <?php echo e($order->user->prenoms ?? 'N/A'); ?> <?php echo e($order->user->nom ?? ''); ?></p>
+                            <p><strong>Email:</strong> <?php echo e($order->user->email ?? 'N/A'); ?></p>
+                            <p><strong>Téléphone:</strong> <?php echo e($order->user->telephone ?? $order->shipping_phone ?? 'N/A'); ?></p>
                         </div>
                         <div class="col-md-6">
                             <h6>Statuts</h6>
                             <p><strong>Statut commande:</strong> 
-                                <span class="badge bg-{{ $order->status_class }}">{{ $order->status_label }}</span>
+                                <span class="badge bg-<?php echo e($order->status_class); ?>"><?php echo e($order->status_label); ?></span>
                             </p>
                             <p><strong>Statut paiement:</strong> 
-                                <span class="badge bg-{{ $order->payment_status_class }}">{{ $order->payment_status_label }}</span>
+                                <span class="badge bg-<?php echo e($order->payment_status_class); ?>"><?php echo e($order->payment_status_label); ?></span>
                             </p>
                             <p><strong>Méthode de paiement:</strong> 
-                                @if($order->payment_method == 'card')
+                                <?php if($order->payment_method == 'card'): ?>
                                     Carte bancaire
-                                @elseif($order->payment_method == 'mobile_money')
+                                <?php elseif($order->payment_method == 'mobile_money'): ?>
                                     Mobile Money
-                                @elseif($order->payment_method == 'cash_on_delivery')
+                                <?php elseif($order->payment_method == 'cash_on_delivery'): ?>
                                     Paiement à la livraison
-                                @else
-                                    {{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}
-                                @endif
+                                <?php else: ?>
+                                    <?php echo e(ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A'))); ?>
+
+                                <?php endif; ?>
                             </p>
                         </div>
                     </div>
@@ -84,20 +83,20 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($order->orderItems as $item)
+                                <?php $__currentLoopData = $order->orderItems; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            @if($item->product_image)
-                                                <img src="{{ str_starts_with($item->product_image, 'http') ? $item->product_image : (str_starts_with($item->product_image, 'storage/') ? asset($item->product_image) : asset('storage/' . $item->product_image)) }}" 
-                                                     alt="{{ $item->product_name }}" 
+                                            <?php if($item->product_image): ?>
+                                                <img src="<?php echo e(str_starts_with($item->product_image, 'http') ? $item->product_image : (str_starts_with($item->product_image, 'storage/') ? asset($item->product_image) : asset('storage/' . $item->product_image))); ?>" 
+                                                     alt="<?php echo e($item->product_name); ?>" 
                                                      class="me-3" 
                                                      style="width: 50px; height: 50px; object-fit: cover;"
-                                                     onerror="this.src='{{ asset('images/produit.jpg') }}'">
-                                            @endif
+                                                     onerror="this.src='<?php echo e(asset('images/produit.jpg')); ?>'">
+                                            <?php endif; ?>
                                             <div>
-                                                <strong>{{ $item->product_name }}</strong>
-                                                @php
+                                                <strong><?php echo e($item->product_name); ?></strong>
+                                                <?php
                                                     // Récupérer les attributs bruts depuis la base de données
                                                     $rawAttributes = $item->getAttributes()['attributes'] ?? null;
                                                     $attrs = $item->attributes; // Via l'accesseur
@@ -119,34 +118,35 @@
                                                     }
                                                     
                                                     $hasAttributes = !empty($attrsArray) && count($attrsArray) > 0;
-                                                @endphp
-                                                @if($hasAttributes)
+                                                ?>
+                                                <?php if($hasAttributes): ?>
                                                     <div class="mt-1">
-                                                        @foreach($attrsArray as $attrName => $attrValue)
+                                                        <?php $__currentLoopData = $attrsArray; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attrName => $attrValue): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                             <small class="text-muted d-block">
-                                                                <strong>{{ ucfirst($attrName) }}:</strong>
+                                                                <strong><?php echo e(ucfirst($attrName)); ?>:</strong>
                                                                 <span class="text-primary">
-                                                                    {{ is_array($attrValue) ? implode(', ', $attrValue) : $attrValue }}
+                                                                    <?php echo e(is_array($attrValue) ? implode(', ', $attrValue) : $attrValue); ?>
+
                                                                 </span>
                                                             </small>
-                                                        @endforeach
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                     </div>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        @if($item->product && $item->product->store)
-                                            <span class="badge bg-info">{{ $item->product->store->name }}</span>
-                                        @else
+                                        <?php if($item->product && $item->product->store): ?>
+                                            <span class="badge bg-info"><?php echo e($item->product->store->name); ?></span>
+                                        <?php else: ?>
                                             <span class="text-muted">N/A</span>
-                                        @endif
+                                        <?php endif; ?>
                                     </td>
-                                    <td>{{ number_format($item->price, 0, ',', ' ') }} FCFA</td>
-                                    <td>{{ $item->quantity }}</td>
-                                    <td><strong>{{ number_format($item->total, 0, ',', ' ') }} FCFA</strong></td>
+                                    <td><?php echo e(number_format($item->price, 0, ',', ' ')); ?> FCFA</td>
+                                    <td><?php echo e($item->quantity); ?></td>
+                                    <td><strong><?php echo e(number_format($item->total, 0, ',', ' ')); ?> FCFA</strong></td>
                                 </tr>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
                         </table>
                     </div>
@@ -159,28 +159,28 @@
                     <h4 class="card-title">Adresse de livraison</h4>
                 </div>
                 <div class="card-body">
-                    <p><strong>Nom:</strong> {{ $order->shipping_name }}</p>
-                    <p><strong>Email:</strong> {{ $order->shipping_email }}</p>
-                    <p><strong>Téléphone:</strong> {{ $order->shipping_phone }}</p>
-                    <p><strong>Adresse:</strong> {{ $order->shipping_address }}</p>
-                    <p><strong>Ville:</strong> {{ $order->shipping_city }}</p>
-                    @if($order->shipping_postal_code)
-                        <p><strong>Code postal:</strong> {{ $order->shipping_postal_code }}</p>
-                    @endif
-                    <p><strong>Pays:</strong> {{ $order->shipping_country }}</p>
+                    <p><strong>Nom:</strong> <?php echo e($order->shipping_name); ?></p>
+                    <p><strong>Email:</strong> <?php echo e($order->shipping_email); ?></p>
+                    <p><strong>Téléphone:</strong> <?php echo e($order->shipping_phone); ?></p>
+                    <p><strong>Adresse:</strong> <?php echo e($order->shipping_address); ?></p>
+                    <p><strong>Ville:</strong> <?php echo e($order->shipping_city); ?></p>
+                    <?php if($order->shipping_postal_code): ?>
+                        <p><strong>Code postal:</strong> <?php echo e($order->shipping_postal_code); ?></p>
+                    <?php endif; ?>
+                    <p><strong>Pays:</strong> <?php echo e($order->shipping_country); ?></p>
                 </div>
             </div>
 
-            @if($order->customer_notes)
+            <?php if($order->customer_notes): ?>
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title">Notes du client</h4>
                 </div>
                 <div class="card-body">
-                    <p>{{ $order->customer_notes }}</p>
+                    <p><?php echo e($order->customer_notes); ?></p>
                 </div>
             </div>
-            @endif
+            <?php endif; ?>
         </div>
 
         <div class="col-md-4">
@@ -192,28 +192,28 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Sous-total:</span>
-                        <span>{{ number_format($order->subtotal, 0, ',', ' ') }} FCFA</span>
+                        <span><?php echo e(number_format($order->subtotal, 0, ',', ' ')); ?> FCFA</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Frais de livraison:</span>
-                        <span>{{ number_format($order->shipping_cost, 0, ',', ' ') }} FCFA</span>
+                        <span><?php echo e(number_format($order->shipping_cost, 0, ',', ' ')); ?> FCFA</span>
                     </div>
-                    @if($order->tax > 0)
+                    <?php if($order->tax > 0): ?>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Taxes:</span>
-                        <span>{{ number_format($order->tax, 0, ',', ' ') }} FCFA</span>
+                        <span><?php echo e(number_format($order->tax, 0, ',', ' ')); ?> FCFA</span>
                     </div>
-                    @endif
-                    @if($order->discount > 0)
+                    <?php endif; ?>
+                    <?php if($order->discount > 0): ?>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Remise:</span>
-                        <span class="text-success">-{{ number_format($order->discount, 0, ',', ' ') }} FCFA</span>
+                        <span class="text-success">-<?php echo e(number_format($order->discount, 0, ',', ' ')); ?> FCFA</span>
                     </div>
-                    @endif
+                    <?php endif; ?>
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-                        <strong class="text-primary">{{ number_format($order->total, 0, ',', ' ') }} FCFA</strong>
+                        <strong class="text-primary"><?php echo e(number_format($order->total, 0, ',', ' ')); ?> FCFA</strong>
                     </div>
                 </div>
             </div>
@@ -226,57 +226,57 @@
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <!-- Actions de statut -->
-                        @if($order->status === 'pending')
+                        <?php if($order->status === 'pending'): ?>
                             <button class="btn btn-warning" onclick="updateOrderStatus('processing')">
                                 <i class="fas fa-play me-2"></i>Marquer en cours de livraison
                             </button>
                             <button class="btn btn-danger" onclick="updateOrderStatus('cancelled')">
                                 <i class="fas fa-times me-2"></i>Annuler la commande
                             </button>
-                        @elseif($order->status === 'processing')
+                        <?php elseif($order->status === 'processing'): ?>
                             <button class="btn btn-success" onclick="updateOrderStatus('delivered')">
                                 <i class="fas fa-check me-2"></i>Marquer comme livrée
                             </button>
                             <button class="btn btn-danger" onclick="updateOrderStatus('cancelled')">
                                 <i class="fas fa-times me-2"></i>Annuler la commande
                             </button>
-                        @elseif($order->status === 'delivered')
+                        <?php elseif($order->status === 'delivered'): ?>
                             <button class="btn btn-info" onclick="updateOrderStatus('processing')">
                                 <i class="fas fa-undo me-2"></i>Retour en cours de livraison
                             </button>
                             <button class="btn btn-danger" onclick="updateOrderStatus('cancelled')">
                                 <i class="fas fa-times me-2"></i>Annuler la commande
                             </button>
-                        @elseif($order->status === 'cancelled')
+                        <?php elseif($order->status === 'cancelled'): ?>
                             <button class="btn btn-primary" onclick="updateOrderStatus('pending')">
                                 <i class="fas fa-redo me-2"></i>Réactiver la commande
                             </button>
                             <button class="btn btn-warning" onclick="updateOrderStatus('processing')">
                                 <i class="fas fa-play me-2"></i>Marquer en cours de livraison
                             </button>
-                        @endif
+                        <?php endif; ?>
 
                         <!-- Actions de paiement -->
-                        @if($order->payment_status === 'pending')
+                        <?php if($order->payment_status === 'pending'): ?>
                             <button class="btn btn-success" onclick="updatePaymentStatus('paid')">
                                 <i class="fas fa-check-circle me-2"></i>Marquer comme payé
                             </button>
-                        @else
+                        <?php else: ?>
                             <button class="btn btn-warning" onclick="updatePaymentStatus('pending')">
                                 <i class="fas fa-clock me-2"></i>Paiement en attente
                             </button>
-                        @endif
+                        <?php endif; ?>
 
                         <!-- Actions spéciales -->
                         <button class="btn btn-info" onclick="printOrder()">
                             <i class="fas fa-print me-2"></i>Imprimer la commande
                         </button>
                         
-                        @if($order->status === 'cancelled')
+                        <?php if($order->status === 'cancelled'): ?>
                             <button class="btn btn-danger" onclick="deleteOrder()">
                                 <i class="fas fa-trash me-2"></i>Supprimer la commande
                             </button>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -287,32 +287,32 @@
                     <h4 class="card-title">Informations système</h4>
                 </div>
                 <div class="card-body">
-                    <p><strong>Date de création:</strong> {{ $order->created_at->format('d/m/Y H:i') }}</p>
-                    <p><strong>Dernière modification:</strong> {{ $order->updated_at->format('d/m/Y H:i') }}</p>
-                    @if($order->paid_at)
-                        <p><strong>Date de paiement:</strong> {{ $order->paid_at->format('d/m/Y H:i') }}</p>
-                    @endif
-                    @if($order->shipped_at)
-                        <p><strong>Date d'expédition:</strong> {{ $order->shipped_at->format('d/m/Y H:i') }}</p>
-                    @endif
-                    @if($order->delivered_at)
-                        <p><strong>Date de livraison:</strong> {{ $order->delivered_at->format('d/m/Y H:i') }}</p>
-                    @endif
+                    <p><strong>Date de création:</strong> <?php echo e($order->created_at->format('d/m/Y H:i')); ?></p>
+                    <p><strong>Dernière modification:</strong> <?php echo e($order->updated_at->format('d/m/Y H:i')); ?></p>
+                    <?php if($order->paid_at): ?>
+                        <p><strong>Date de paiement:</strong> <?php echo e($order->paid_at->format('d/m/Y H:i')); ?></p>
+                    <?php endif; ?>
+                    <?php if($order->shipped_at): ?>
+                        <p><strong>Date d'expédition:</strong> <?php echo e($order->shipped_at->format('d/m/Y H:i')); ?></p>
+                    <?php endif; ?>
+                    <?php if($order->delivered_at): ?>
+                        <p><strong>Date de livraison:</strong> <?php echo e($order->delivered_at->format('d/m/Y H:i')); ?></p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 function updateOrderStatus(status) {
     if (!confirm('Êtes-vous sûr de vouloir changer le statut de cette commande ?')) {
         return;
     }
     
-    fetch(`/admin/orders/{{ $order->id }}/status`, {
+    fetch(`/admin/orders/<?php echo e($order->id); ?>/status`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -343,7 +343,7 @@ function updatePaymentStatus(paymentStatus) {
         return;
     }
     
-    fetch(`/admin/orders/{{ $order->id }}/payment-status`, {
+    fetch(`/admin/orders/<?php echo e($order->id); ?>/payment-status`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -378,7 +378,7 @@ function deleteOrder() {
         return;
     }
     
-    fetch(`/admin/orders/{{ $order->id }}`, {
+    fetch(`/admin/orders/<?php echo e($order->id); ?>`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -422,4 +422,5 @@ function showNotification(type, message) {
     }, 5000);
 }
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/admin/orders/show.blade.php ENDPATH**/ ?>

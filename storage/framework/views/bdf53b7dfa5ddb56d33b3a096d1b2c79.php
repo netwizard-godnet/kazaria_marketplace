@@ -1,13 +1,13 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
     <main class="container-fluid">
         <!-- BREADCRUMB -->
         <div class="container py-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('accueil') }}">Accueil</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('product-cart') }}">Panier</a></li>
+                    <li class="breadcrumb-item"><a href="<?php echo e(route('accueil')); ?>">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="<?php echo e(route('product-cart')); ?>">Panier</a></li>
                     <li class="breadcrumb-item active">Validation</li>
                 </ol>
             </nav>
@@ -22,36 +22,37 @@
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-header bg-light">
-                            <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Articles ({{ $cartItems->count() }})</h5>
+                            <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Articles (<?php echo e($cartItems->count()); ?>)</h5>
                         </div>
                         <div class="card-body">
-                            @foreach($cartItems as $item)
+                            <?php $__currentLoopData = $cartItems; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <div class="row align-items-center mb-3 pb-3 border-bottom">
                                 <div class="col-2">
-                                    <img src="{{ str_starts_with($item->product->image, 'http') ? $item->product->image : asset($item->product->image) }}" 
-                                         class="img-fluid rounded" alt="{{ $item->product->name }}">
+                                    <img src="<?php echo e(str_starts_with($item->product->image, 'http') ? $item->product->image : asset($item->product->image)); ?>" 
+                                         class="img-fluid rounded" alt="<?php echo e($item->product->name); ?>">
                                 </div>
                                 <div class="col-6">
-                                    <h6 class="mb-1">{{ $item->product->name }}</h6>
-                                    <p class="text-muted small mb-0">Quantité: {{ $item->quantity }}</p>
-                                    @if($item->attributes && (is_array($item->attributes) || is_object($item->attributes)) && count((array)$item->attributes) > 0)
+                                    <h6 class="mb-1"><?php echo e($item->product->name); ?></h6>
+                                    <p class="text-muted small mb-0">Quantité: <?php echo e($item->quantity); ?></p>
+                                    <?php if($item->attributes && (is_array($item->attributes) || is_object($item->attributes)) && count((array)$item->attributes) > 0): ?>
                                         <div class="mt-2">
-                                            @foreach($item->attributes as $attrName => $attrValue)
+                                            <?php $__currentLoopData = $item->attributes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attrName => $attrValue): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <div class="mb-1">
-                                                    <small class="text-muted fw-bold">{{ ucfirst($attrName) }}:</small>
+                                                    <small class="text-muted fw-bold"><?php echo e(ucfirst($attrName)); ?>:</small>
                                                     <small class="text-primary">
-                                                        {{ is_array($attrValue) ? implode(', ', $attrValue) : $attrValue }}
+                                                        <?php echo e(is_array($attrValue) ? implode(', ', $attrValue) : $attrValue); ?>
+
                                                     </small>
                                                 </div>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </div>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                                 <div class="col-4 text-end">
-                                    <p class="mb-0 fw-bold">{{ number_format($item->price * $item->quantity, 0, ',', ' ') }} FCFA</p>
+                                    <p class="mb-0 fw-bold"><?php echo e(number_format($item->price * $item->quantity, 0, ',', ' ')); ?> FCFA</p>
                                 </div>
                             </div>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </div>
 
@@ -60,12 +61,12 @@
                             <h5 class="mb-0"><i class="bi bi-person me-2"></i>Informations de livraison</h5>
                         </div>
                         <div class="card-body">
-                            <p><strong>Nom:</strong> {{ $user->prenoms }} {{ $user->nom }}</p>
-                            <p><strong>Email:</strong> {{ $user->email }}</p>
-                            <p><strong>Téléphone:</strong> {{ $user->telephone }}</p>
-                            <p><strong>Adresse:</strong> {{ $user->adresse ?? 'Non renseignée' }}</p>
+                            <p><strong>Nom:</strong> <?php echo e($user->prenoms); ?> <?php echo e($user->nom); ?></p>
+                            <p><strong>Email:</strong> <?php echo e($user->email); ?></p>
+                            <p><strong>Téléphone:</strong> <?php echo e($user->telephone); ?></p>
+                            <p><strong>Adresse:</strong> <?php echo e($user->adresse ?? 'Non renseignée'); ?></p>
                             
-                            <a href="{{ route('shipping') }}?token={{ request('token') }}" class="btn btn-outline-danger btn-sm mt-2">
+                            <a href="<?php echo e(route('shipping')); ?>?token=<?php echo e(request('token')); ?>" class="btn btn-outline-danger btn-sm mt-2">
                                 <i class="bi bi-pencil me-1"></i>Modifier les informations de livraison
                             </a>
                         </div>
@@ -81,14 +82,14 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Sous-total:</span>
-                                <span class="fw-bold">{{ number_format($subtotal ?? $total, 0, ',', ' ') }} FCFA</span>
+                                <span class="fw-bold"><?php echo e(number_format($subtotal ?? $total, 0, ',', ' ')); ?> FCFA</span>
                             </div>
-                            @if(($discount ?? 0) > 0)
+                            <?php if(($discount ?? 0) > 0): ?>
                             <div class="d-flex justify-content-between mb-2">
-                                <span>Réduction @if(($promo['code'] ?? null))<small class="text-muted">({{ $promo['code'] }})</small>@endif:</span>
-                                <span class="text-success">- {{ number_format($discount, 0, ',', ' ') }} FCFA</span>
+                                <span>Réduction <?php if(($promo['code'] ?? null)): ?><small class="text-muted">(<?php echo e($promo['code']); ?>)</small><?php endif; ?>:</span>
+                                <span class="text-success">- <?php echo e(number_format($discount, 0, ',', ' ')); ?> FCFA</span>
                             </div>
-                            @endif
+                            <?php endif; ?>
                             
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>
@@ -99,14 +100,14 @@
                             
                             <div class="d-flex justify-content-between mb-3">
                                 <span class="fw-bold fs-5">Total:</span>
-                                <span class="fw-bold fs-4 orange-color">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                                <span class="fw-bold fs-4 orange-color"><?php echo e(number_format($total, 0, ',', ' ')); ?> FCFA</span>
                             </div>
 
                             <button class="btn orange-bg text-white w-100 mb-2" onclick="proceedToShipping()">
                                 <i class="bi bi-arrow-right me-2"></i>Continuer vers la livraison
                             </button>
                             
-                            <a href="{{ route('product-cart') }}" class="btn btn-outline-secondary btn-sm w-100">
+                            <a href="<?php echo e(route('product-cart')); ?>" class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-arrow-left me-2"></i>Retour au panier
                             </a>
                         </div>
@@ -120,11 +121,13 @@
         function proceedToShipping() {
             const token = new URLSearchParams(window.location.search).get('token');
             if (token) {
-                window.location.href = '{{ route("shipping") }}?token=' + token;
+                window.location.href = '<?php echo e(route("shipping")); ?>?token=' + token;
             } else {
-                window.location.href = '{{ route("shipping") }}';
+                window.location.href = '<?php echo e(route("shipping")); ?>';
             }
         }
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
 
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/checkout.blade.php ENDPATH**/ ?>

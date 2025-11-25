@@ -33,6 +33,16 @@ window.getHeaders = function() {
 // Fonction pour ajouter un produit au panier (globale)
 window.addToCart = async function(productId, quantity = 1, attributes = {}) {
     try {
+        // Debug: Log des attributs avant envoi
+        console.log('=== AJOUT AU PANIER (CLIENT) ===');
+        console.log('Product ID:', productId);
+        console.log('Quantity:', quantity);
+        console.log('Attributes:', attributes);
+        console.log('Attributes type:', typeof attributes);
+        console.log('Attributes is array:', Array.isArray(attributes));
+        console.log('Attributes keys:', Object.keys(attributes));
+        console.log('Attributes entries:', Object.entries(attributes));
+        
         const headers = window.getHeaders();
         
         const response = await fetch('/cart/add', {
