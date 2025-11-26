@@ -195,6 +195,15 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
                 Route::put('/{slide}', [\App\Http\Controllers\Admin\CarouselController::class, 'update'])->name('update');
                 Route::delete('/{slide}', [\App\Http\Controllers\Admin\CarouselController::class, 'destroy'])->name('destroy');
             });
+
+            // Brands
+            Route::prefix('brands')->name('brands.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Admin\BrandController::class, 'index'])->name('index');
+                Route::post('/', [\App\Http\Controllers\Admin\BrandController::class, 'store'])->name('store');
+                Route::put('/{brand}', [\App\Http\Controllers\Admin\BrandController::class, 'update'])->name('update');
+                Route::delete('/{brand}', [\App\Http\Controllers\Admin\BrandController::class, 'destroy'])->name('destroy');
+                Route::post('/{brand}/toggle-status', [\App\Http\Controllers\Admin\BrandController::class, 'toggleStatus'])->name('toggle-status');
+            });
     
     // Settings
     Route::prefix('settings')->name('settings.')->middleware('permission:manage_settings')->group(function () {

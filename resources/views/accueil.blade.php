@@ -153,6 +153,97 @@
         </section>
         <!-- SECTION END -->
 
+        <!-- SECTION MARQUES -->
+        <section class="py-2 orange-bg">
+            <div class="container-fluid">
+                <div class="text-center mb-4">
+                    <p class="fw-bold mb-0 px-4 py-2 bg-white">Marques officielles</p>
+                </div>
+                @if(isset($topBrands) && $topBrands->count() > 0)
+                    <div class="row g-3">
+                        @foreach($topBrands->chunk(6) as $brandRow)
+                            <div class="row g-3 mb-2">
+                                @foreach($brandRow as $brand)
+                                    <div class="col-4 col-md-3 col-lg-2 col-xl-2">
+                                        @if($brand->link_url)
+                                            <a href="{{ $brand->link_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                        @else
+                                            <a href="{{ route('search_product') }}?q={{ urlencode($brand->name) }}" class="text-decoration-none">
+                                        @endif
+                                            <div class="brand-card bg-white rounded shadow-sm p-3 h-100 d-flex align-items-center justify-content-center text-center" style="min-height: 100px; border: 1px solid #e9ecef; transition: all 0.3s ease; cursor: pointer;">
+                                                <div class="w-100">
+                                                    @if($brand->image_url)
+                                                        <img src="{{ $brand->image_url }}" alt="{{ $brand->name }}" class="img-fluid mb-2" style="max-height: 60px; object-fit: contain;">
+                                                    @endif
+                                                    <h6 class="mb-0 fw-bold text-dark brand-name" style="font-size: 0.9rem; word-break: break-word;">{{ $brand->name }}</h6>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-5">
+                        <i class="fas fa-tags fa-3x text-white mb-3"></i>
+                        <p class="text-white">Aucune marque disponible pour le moment</p>
+                    </div>
+                @endif
+            </div>
+        </section>
+        <!-- SECTION MARQUES END -->
+        
+        <style>
+            .brand-card {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .brand-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255, 140, 0, 0.1), transparent);
+                transition: left 0.5s ease;
+            }
+            
+            .brand-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+                border-color: #ff8c00 !important;
+            }
+            
+            .brand-card:hover::before {
+                left: 100%;
+            }
+            
+            .brand-card:hover .brand-name {
+                color: #ff8c00 !important;
+            }
+            
+            .brand-card img {
+                transition: transform 0.3s ease;
+            }
+            
+            .brand-card:hover img {
+                transform: scale(1.1);
+            }
+            
+            @media (max-width: 768px) {
+                .brand-card {
+                    min-height: 80px !important;
+                }
+                
+                .brand-name {
+                    font-size: 0.8rem !important;
+                }
+            }
+        </style>
+
         <!-- SECTION DEALS JOUR -->
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">

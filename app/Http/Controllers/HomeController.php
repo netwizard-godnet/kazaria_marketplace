@@ -216,6 +216,12 @@ class HomeController extends Controller
             ->take(12)
             ->get();
         
+        // Récupérer les 12 marques actives depuis la table brands
+        $topBrands = \App\Models\Brand::active()
+            ->ordered()
+            ->take(12)
+            ->get();
+        
         return view('accueil', compact(
             'categories',
             'dealsProducts',
@@ -224,7 +230,8 @@ class HomeController extends Controller
             'electroProducts',
             'computerProducts',
             'trendingProducts',
-            'countdownEndTime'
+            'countdownEndTime',
+            'topBrands'
         ));
     }
 }

@@ -83,6 +83,9 @@ Route::get('/suivre-commande', function () {
     return view('suivre-commande');
 })->name('suivre-commande');
 
+// Route pour rechercher une commande (suivi public)
+Route::post('/api/track-order', [App\Http\Controllers\OrderController::class, 'trackOrder'])->name('api.track-order');
+
 Route::get('/expedition-livraison', function () {
     $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
         'expedition-livraison',

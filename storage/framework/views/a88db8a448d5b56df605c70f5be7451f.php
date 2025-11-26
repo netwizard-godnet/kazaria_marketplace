@@ -127,47 +127,105 @@ document.getElementById('trackOrderForm').addEventListener('submit', async funct
     submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Recherche...';
     
     try {
-        // Simuler une recherche (à remplacer par une vraie API)
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Appeler l'API de recherche
+        const response = await fetch('<?php echo e(route("api.track-order")); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({
+                order_number: formData.get('order_number'),
+                email: formData.get('email')
+            })
+        });
         
-        const orderNumber = formData.get('order_number');
-        const email = formData.get('email');
+        const data = await response.json();
         
-        // Simuler un résultat (à remplacer par une vraie API)
-        const mockOrder = {
-            number: orderNumber,
-            email: email,
-            status: 'En cours de livraison',
-            date: '2025-01-15',
-            total: '125000',
-            items: [
-                { name: 'iPhone 15 Pro', quantity: 1, price: '125000' }
-            ],
-            tracking: [
-                { date: '2025-01-15', status: 'Commande confirmée', location: 'Abidjan' },
-                { date: '2025-01-16', status: 'Préparation en cours', location: 'Entrepôt KAZARIA' },
-                { date: '2025-01-17', status: 'En cours de livraison', location: 'En route' }
-            ]
+        if (!data.success) {
+            throw new Error(data.message || 'Commande non trouvée');
+        }
+        
+        const order = data.order;
+        
+        // Obtenir la classe de badge selon le statut
+        const getStatusBadgeClass = (statusCode) => {
+            const statusClasses = {
+                'pending': 'bg-secondary',
+                'processing': 'bg-info',
+                'shipped': 'bg-warning',
+                'delivered': 'bg-success',
+                'cancelled': 'bg-danger',
+                'refunded': 'bg-dark'
+            };
+            return statusClasses[statusCode] || 'bg-secondary';
         };
         
         // Afficher le résultat
         orderContent.innerHTML = `
-            <div class="row">
+            <div class="row mb-4">
                 <div class="col-md-6">
-                    <h6 class="fw-bold">Informations de commande</h6>
-                    <p><strong>Numéro :</strong> ${mockOrder.number}</p>
-                    <p><strong>Date :</strong> ${mockOrder.date}</p>
-                    <p><strong>Total :</strong> <span class="orange-color fw-bold">${new Intl.NumberFormat('fr-FR').format(mockOrder.total)} FCFA</span></p>
-                    <p><strong>Statut :</strong> <span class="badge bg-warning">${mockOrder.status}</span></p>
+                    <h6 class="fw-bold mb-3">Informations de commande</h6>
+                    <p class="mb-2"><strong>Numéro :</strong> ${order.number}</p>
+                    <p class="mb-2"><strong>Date :</strong> ${order.date}</p>
+                    <p class="mb-2"><strong>Sous-total :</strong> <span class="fw-bold">${order.subtotal} FCFA</span></p>
+                    ${order.shipping_cost > 0 ? `<p class="mb-2"><strong>Livraison :</strong> ${order.shipping_cost} FCFA</p>` : ''}
+                    ${order.discount > 0 ? `<p class="mb-2"><strong>Remise :</strong> <span class="text-success">-${order.discount} FCFA</span></p>` : ''}
+                    <p class="mb-2"><strong>Total :</strong> <span class="orange-color fw-bold fs-5">${order.total} FCFA</span></p>
+                    <p class="mb-2"><strong>Statut :</strong> <span class="badge ${getStatusBadgeClass(order.status_code)}">${order.status}</span></p>
+                    <p class="mb-2"><strong>Paiement :</strong> <span class="badge ${order.payment_status === 'paid' ? 'bg-success' : 'bg-warning'}">${order.payment_status === 'paid' ? 'Payé' : 'En attente'}</span></p>
                 </div>
                 <div class="col-md-6">
-                    <h6 class="fw-bold">Articles commandés</h6>
-                    ${mockOrder.items.map(item => `
-                        <div class="d-flex justify-content-between">
-                            <span>${item.name} x${item.quantity}</span>
-                            <span class="fw-bold">${new Intl.NumberFormat('fr-FR').format(item.price)} FCFA</span>
-                        </div>
-                    `).join('')}
+                    <h6 class="fw-bold mb-3">Adresse de livraison</h6>
+                    <p class="mb-1"><strong>${order.shipping_name}</strong></p>
+                    <p class="mb-1">${order.shipping_address}</p>
+                    <p class="mb-1">${order.shipping_city}</p>
+                    <p class="mb-1"><i class="bi bi-telephone me-1"></i>${order.shipping_phone}</p>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6 class="fw-bold mb-3">Articles commandés</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Quantité</th>
+                                    <th class="text-end">Prix unitaire</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(item => `
+                                    <tr>
+                                        <td>
+                                            ${item.image ? `<img src="${item.image}" alt="${item.name}" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">` : ''}
+                                            <div>
+                                                <div class="fw-bold">${item.name}</div>
+                                                ${item.attributes && Object.keys(item.attributes).length > 0 ? `
+                                                    <div class="mt-1">
+                                                        ${Object.entries(item.attributes).map(([attrName, attrValue]) => `
+                                                            <small class="text-muted d-block">
+                                                                <strong>${attrName.charAt(0).toUpperCase() + attrName.slice(1)}:</strong>
+                                                                <span class="text-primary">
+                                                                    ${Array.isArray(attrValue) ? attrValue.join(', ') : attrValue}
+                                                                </span>
+                                                            </small>
+                                                        `).join('')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                        <td>${item.quantity}</td>
+                                        <td class="text-end">${item.price} FCFA</td>
+                                        <td class="text-end fw-bold">${item.total} FCFA</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             
@@ -175,16 +233,17 @@ document.getElementById('trackOrderForm').addEventListener('submit', async funct
             
             <h6 class="fw-bold mb-3">Historique de suivi</h6>
             <div class="timeline">
-                ${mockOrder.tracking.map((step, index) => `
-                    <div class="d-flex align-items-center mb-3">
+                ${order.tracking.map((step, index) => `
+                    <div class="d-flex align-items-start mb-3">
                         <div class="me-3">
-                            <div class="bg-${index === mockOrder.tracking.length - 1 ? 'warning' : 'success'} text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
-                                <i class="bi bi-check"></i>
+                            <div class="bg-${step.active ? 'warning' : 'success'} text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; flex-shrink: 0;">
+                                <i class="bi bi-${step.active ? 'clock' : 'check'}-circle"></i>
                             </div>
+                            ${index < order.tracking.length - 1 ? '<div class="bg-light mx-auto" style="width: 2px; height: 40px; margin-top: 5px;"></div>' : ''}
                         </div>
-                        <div>
-                            <strong>${step.status}</strong><br>
-                            <small class="text-muted">${step.date} - ${step.location}</small>
+                        <div class="flex-grow-1">
+                            <strong class="d-block">${step.status}</strong>
+                            <small class="text-muted">${step.date} à ${step.time} - ${step.location}</small>
                         </div>
                     </div>
                 `).join('')}
@@ -210,10 +269,11 @@ document.getElementById('trackOrderForm').addEventListener('submit', async funct
         statusDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle me-2"></i>
-                <strong>Commande non trouvée</strong><br>
+                <strong>${error.message || 'Erreur lors de la recherche'}</strong><br>
                 Vérifiez votre numéro de commande et email, ou contactez notre support.
             </div>
         `;
+        orderDetails.style.display = 'none';
     } finally {
         // Réactiver le bouton
         submitBtn.disabled = false;

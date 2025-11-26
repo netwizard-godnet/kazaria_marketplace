@@ -216,6 +216,13 @@
             </a>
         </li>
 
+        <li class="nav-item <?php echo e(request()->routeIs('admin.brands.*') ? 'active' : ''); ?>">
+            <a href="<?php echo e(route('admin.brands.index')); ?>">
+                <i class="fas fa-tags"></i>
+                <p>Marques</p>
+            </a>
+        </li>
+
         <!-- Rapports et statistiques -->
         <li class="nav-section">
             <span class="sidebar-mini-icon">

@@ -104,7 +104,31 @@ class SettingController extends Controller
         // Traiter les paramètres
         foreach ($request->settings as $key => $value) {
             if ($value !== null) {
-                Setting::set($key, $value);
+                // Déterminer si le paramètre doit être public
+                $isPublic = in_array($key, [
+                    'contact_email', 'contact_phone', 'contact_address',
+                    'site_name', 'site_description', 'site_keywords',
+                    'site_logo', 'site_favicon',
+                    'social_facebook', 'social_twitter', 'social_instagram', 'social_linkedin',
+                    'currency', 'currency_symbol'
+                ]);
+                
+                // Récupérer le groupe et la description existants si le setting existe déjà
+                $existing = Setting::where('key', $key)->first();
+                $group = $existing ? $existing->group : ($key === 'contact_email' || $key === 'contact_phone' || $key === 'contact_address' ? 'contact' : 'general');
+                $description = $existing ? $existing->description : null;
+                
+                Setting::set($key, $value, 'string', $group, $description, $isPublic);
+                
+                // Synchroniser contact_phone avec site_phone
+                if ($key === 'contact_phone') {
+                    Setting::set('site_phone', $value, 'string', 'general', 'Téléphone du site', true);
+                }
+                
+                // Synchroniser contact_email avec site_email
+                if ($key === 'contact_email') {
+                    Setting::set('site_email', $value, 'string', 'general', 'Email du site', true);
+                }
             }
         }
 

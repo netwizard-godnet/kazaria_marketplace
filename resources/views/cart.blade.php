@@ -217,14 +217,14 @@
                                         if (entries.length === 0) return '';
                                         
                                         return `
-                                            <div class="mt-2">
+                                        <div class="mt-2">
                                                 ${entries.map(([attrName, values]) => `
-                                                    <div class="mb-1">
-                                                        <small class="text-muted fw-bold">${attrName}:</small>
-                                                        <small class="text-primary"> ${Array.isArray(values) ? values.join(', ') : values}</small>
-                                                    </div>
-                                                `).join('')}
-                                            </div>
+                                                <div class="mb-1">
+                                                    <small class="text-muted fw-bold">${attrName}:</small>
+                                                    <small class="text-primary"> ${Array.isArray(values) ? values.join(', ') : values}</small>
+                                                </div>
+                                            `).join('')}
+                                        </div>
                                         `;
                                     })()}
                                 </div>

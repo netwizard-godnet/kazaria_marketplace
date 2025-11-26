@@ -97,7 +97,7 @@ use App\Models\Banner;
                     <img src="{{ $headerGifBanner->image_url }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
                 @endif
             @else
-                <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+            <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
             @endif
         </div>
         <header class="z-index-9x shadow d-none d-sm-block">
@@ -215,7 +215,7 @@ use App\Models\Banner;
                         @if(isset($allCategories))
                             @foreach($allCategories->take(4) as $menuCategory)
                         <div class="header-menu d-flex align-items-center justify-content-start">
-                                <a class="btn btn-sm text-white fs-8 text-nowrap" type="button">
+                                <a class="btn btn-sm text-white fs-8 text-nowrap" href="{{ route('categorie', $menuCategory->slug) }}">
                                     @if($menuCategory->image && !empty($menuCategory->image))
                                     <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-1">
                                     @endif
@@ -234,7 +234,7 @@ use App\Models\Banner;
                                                     {{ $menuCategory->name }}
                                                 </a>
                                                 @foreach($chunk as $subcat)
-                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action fs-8">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}?subcategory={{ $subcat->slug }}" class="list-group-item list-group-item-action fs-8">
                                                     @if($subcat->image && !empty($subcat->image))
                                                     <img src="{{ str_starts_with($subcat->image, 'http') ? $subcat->image : (str_starts_with($subcat->image, 'images/') ? asset($subcat->image) : Storage::url($subcat->image)) }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     @endif

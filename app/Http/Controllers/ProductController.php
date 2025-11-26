@@ -123,10 +123,24 @@ class ProductController extends Controller
             ->inStock();
         
         // Filtre par sous-catégorie
+        $subcategory = null;
         if ($request->filled('subcategory')) {
-            $query->whereHas('subcategories', function($query) use ($request) {
-                $query->where('subcategories.id', $request->subcategory);
-            });
+            $subcategoryValue = $request->subcategory;
+            // Vérifier si c'est un ID numérique ou un slug
+            if (is_numeric($subcategoryValue)) {
+                $subcategory = \App\Models\Subcategory::where('id', $subcategoryValue)->first();
+                $query->whereHas('subcategories', function($query) use ($subcategoryValue) {
+                    $query->where('subcategories.id', $subcategoryValue);
+                });
+            } else {
+                // C'est un slug
+                $subcategory = \App\Models\Subcategory::where('slug', $subcategoryValue)->first();
+                if ($subcategory) {
+                    $query->whereHas('subcategories', function($query) use ($subcategoryValue) {
+                        $query->where('subcategories.slug', $subcategoryValue);
+                    });
+                }
+            }
         }
         
         // Filtre par prix
@@ -188,7 +202,7 @@ class ProductController extends Controller
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
             ->first();
         
-        return view('categorie', compact('category', 'bestOffers', 'newProducts', 'products', 'attributes', 'priceRange'));
+        return view('categorie', compact('category', 'subcategory', 'bestOffers', 'newProducts', 'products', 'attributes', 'priceRange'));
     }
     
     public function search(Request $request)

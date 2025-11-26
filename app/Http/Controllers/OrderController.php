@@ -502,4 +502,135 @@ class OrderController extends Controller
             }
         }
     }
+
+    /**
+     * Rechercher une commande par numéro et email (pour le suivi public)
+     */
+    public function trackOrder(Request $request)
+    {
+        $request->validate([
+            'order_number' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        try {
+            $order = Order::where('order_number', $request->order_number)
+                ->where('shipping_email', $request->email)
+                ->with(['orderItems.product', 'user'])
+                ->first();
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Commande non trouvée. Vérifiez votre numéro de commande et votre email.'
+                ], 404);
+            }
+
+            // Préparer les données de suivi
+            $trackingHistory = [];
+            
+            // Ajouter les statuts de la commande
+            if ($order->created_at) {
+                $trackingHistory[] = [
+                    'date' => $order->created_at->format('Y-m-d'),
+                    'time' => $order->created_at->format('H:i'),
+                    'status' => 'Commande confirmée',
+                    'location' => 'Abidjan',
+                    'active' => true
+                ];
+            }
+
+            if ($order->status === 'processing' || $order->status === 'shipped' || $order->status === 'delivered') {
+                $trackingHistory[] = [
+                    'date' => $order->created_at->addDay()->format('Y-m-d'),
+                    'time' => '09:00',
+                    'status' => 'Préparation en cours',
+                    'location' => 'Entrepôt KAZARIA',
+                    'active' => in_array($order->status, ['shipped', 'delivered'])
+                ];
+            }
+
+            if ($order->status === 'shipped' || $order->status === 'delivered') {
+                $trackingHistory[] = [
+                    'date' => $order->shipped_at ? $order->shipped_at->format('Y-m-d') : $order->created_at->addDays(2)->format('Y-m-d'),
+                    'time' => $order->shipped_at ? $order->shipped_at->format('H:i') : '10:00',
+                    'status' => 'En cours de livraison',
+                    'location' => 'En route',
+                    'active' => $order->status === 'shipped'
+                ];
+            }
+
+            if ($order->status === 'delivered') {
+                $trackingHistory[] = [
+                    'date' => $order->delivered_at ? $order->delivered_at->format('Y-m-d') : $order->created_at->addDays(3)->format('Y-m-d'),
+                    'time' => $order->delivered_at ? $order->delivered_at->format('H:i') : '14:00',
+                    'status' => 'Livrée',
+                    'location' => $order->shipping_city ?? 'Abidjan',
+                    'active' => true
+                ];
+            }
+
+            if ($order->status === 'cancelled') {
+                $trackingHistory[] = [
+                    'date' => $order->updated_at->format('Y-m-d'),
+                    'time' => $order->updated_at->format('H:i'),
+                    'status' => 'Commande annulée',
+                    'location' => 'Abidjan',
+                    'active' => true
+                ];
+            }
+
+            // Obtenir le label du statut
+            $statusLabels = [
+                'pending' => 'En attente',
+                'processing' => 'En cours de traitement',
+                'shipped' => 'Expédiée',
+                'delivered' => 'Livrée',
+                'cancelled' => 'Annulée',
+                'refunded' => 'Remboursée'
+            ];
+
+            return response()->json([
+                'success' => true,
+                'order' => [
+                    'number' => $order->order_number,
+                    'date' => $order->created_at->format('d/m/Y'),
+                    'status' => $statusLabels[$order->status] ?? $order->status,
+                    'status_code' => $order->status,
+                    'total' => number_format($order->total, 0, ',', ' '),
+                    'subtotal' => number_format($order->subtotal, 0, ',', ' '),
+                    'shipping_cost' => number_format($order->shipping_cost, 0, ',', ' '),
+                    'discount' => number_format($order->discount, 0, ',', ' '),
+                    'payment_method' => $order->payment_method,
+                    'payment_status' => $order->payment_status,
+                    'shipping_name' => $order->shipping_name,
+                    'shipping_address' => $order->shipping_address,
+                    'shipping_city' => $order->shipping_city,
+                    'shipping_phone' => $order->shipping_phone,
+                    'items' => $order->orderItems->map(function($item) {
+                        // Récupérer les attributs
+                        $attributes = $item->attributes ?? (object)[];
+                        $attrsArray = is_object($attributes) ? (array)$attributes : (is_array($attributes) ? $attributes : []);
+                        $hasAttributes = !empty($attrsArray) && count($attrsArray) > 0;
+                        
+                        return [
+                            'name' => $item->product_name,
+                            'quantity' => $item->quantity,
+                            'price' => number_format($item->price, 0, ',', ' '),
+                            'total' => number_format($item->total, 0, ',', ' '),
+                            'image' => $item->product_image ? asset($item->product_image) : null,
+                            'attributes' => $hasAttributes ? $attrsArray : null,
+                        ];
+                    }),
+                    'tracking' => $trackingHistory
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors du suivi de commande: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de la recherche de votre commande.'
+            ], 500);
+        }
+    }
 }

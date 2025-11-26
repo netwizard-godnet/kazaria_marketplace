@@ -1,6 +1,6 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
     <main class="container-fluid">
         <!-- Hero Section -->
         <section class="bg-light py-5">
@@ -9,7 +9,7 @@
                     <div class="col-12 text-center">
                         <i class="bi bi-shield-check orange-color" style="font-size: 50px;"></i>
                         <h3 class="fw-bold mt-3">Politique de Confidentialité</h3>
-                        <p class="fs-8 lead text-muted">Dernière mise à jour : {{ date('d/m/Y') }}</p>
+                        <p class="fs-8 lead text-muted">Dernière mise à jour : <?php echo e(date('d/m/Y')); ?></p>
                     </div>
                 </div>
             </div>
@@ -48,7 +48,7 @@
                             <i class="bi bi-info-circle orange-color me-2"></i>Introduction
                         </h4>
                         <p>
-                            Bienvenue sur <strong class="orange-color">{{ $settings['site_name'] ?? 'KAZARIA' }}</strong>. Nous respectons votre vie privée et nous nous engageons 
+                            Bienvenue sur <strong class="orange-color"><?php echo e($settings['site_name'] ?? 'KAZARIA'); ?></strong>. Nous respectons votre vie privée et nous nous engageons 
                             à protéger vos données personnelles. Cette politique de confidentialité vous informe sur la manière dont 
                             nous traitons vos données personnelles lorsque vous visitez notre site web et vous informe de vos droits 
                             en matière de confidentialité et de la manière dont la loi vous protège.
@@ -303,7 +303,7 @@
                         </div>
                         <div class="alert alert-success mt-4">
                             <i class="bi bi-info-circle me-2"></i>
-                            Pour exercer vos droits, contactez-nous à : <strong>{{ $settings['contact_email'] ?? 'contact@kazaria.com' }}</strong>
+                            Pour exercer vos droits, contactez-nous à : <strong><?php echo e($settings['contact_email'] ?? 'contact@kazaria.com'); ?></strong>
                         </div>
                     </section>
 
@@ -333,20 +333,20 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-geo-alt me-2"></i>Adresse</h6>
-                                        <p class="mb-0">{{ $settings['site_name'] ?? 'KAZARIA' }}<br>{{ $settings['contact_address'] ?? "Abidjan, Côte d'Ivoire" }}</p>
+                                        <p class="mb-0"><?php echo e($settings['site_name'] ?? 'KAZARIA'); ?><br><?php echo e($settings['contact_address'] ?? "Abidjan, Côte d'Ivoire"); ?></p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-envelope me-2"></i>Email</h6>
                                         <p class="mb-0">
-                                            @php
+                                            <?php
                                                 $contactEmail = $settings['contact_email'] ?? 'contact@kazaria.com';
-                                            @endphp
-                                            <a href="mailto:{{ $contactEmail }}">{{ $contactEmail }}</a>
+                                            ?>
+                                            <a href="mailto:<?php echo e($contactEmail); ?>"><?php echo e($contactEmail); ?></a>
                                         </p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-telephone me-2"></i>Téléphone</h6>
-                                        <p class="mb-0">{{ $settings['contact_phone'] ?? '+225 07 00 00 00 00' }}</p>
+                                        <p class="mb-0"><?php echo e($settings['contact_phone'] ?? '+225 07 00 00 00 00'); ?></p>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <h6 class="orange-color"><i class="bi bi-clock me-2"></i>Horaires</h6>
@@ -361,13 +361,13 @@
                     <section class="text-center py-5 bg-light rounded">
                         <h3 class="mb-3">Des questions ?</h3>
                         <p class="mb-4">Notre équipe est là pour vous aider</p>
-                        <a href="{{ route('accueil') }}" class="btn btn-sm orange-bg text-white me-2">
+                        <a href="<?php echo e(route('accueil')); ?>" class="btn btn-sm orange-bg text-white me-2">
                             <i class="bi bi-house me-2"></i>Retour à l'accueil
                         </a>
-                        @php
+                        <?php
                             $contactEmail = $settings['contact_email'] ?? 'contact@kazaria.com';
-                        @endphp
-                        <a href="mailto:{{ $contactEmail }}" class="btn btn-sm btn-outline-secondary">
+                        ?>
+                        <a href="mailto:<?php echo e($contactEmail); ?>" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-envelope me-2"></i>Nous contacter
                         </a>
                     </section>
@@ -375,5 +375,7 @@
             </div>
         </section>
     </main>
-@endsection
+<?php $__env->stopSection(); ?>
 
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/privacy-policy.blade.php ENDPATH**/ ?>

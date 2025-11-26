@@ -3,18 +3,34 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <main class="container-fluid">
-        <!-- SECTION BREADCRUMB -->
-        <section class="bg-light py-2">
+        <!-- SECTION BREADCRUMB ET TITRE -->
+        <section class="bg-white py-3 border-bottom">
             <div class="container-fluid">
-                <nav style="--bs-breadcrumb-divider: '|';" aria-label="breadcrumb" class="">
-                    <ol class="breadcrumb" class="">
-                        <li class="breadcrumb-item mb-0"><a href="{{ route('accueil') }}" class="fs-7">Accueil</a></li>
-                        <li class="breadcrumb-item mb-0 active fs-7" aria-current="page">{{ $category->name }}</li>
+                <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2" style="--bs-breadcrumb-item-color: #f04e27;">
+                        <li class="breadcrumb-item">
+                            <a href="{{ route('accueil') }}" class="text-decoration-none" style="color: #f04e27;">Accueil</a>
+                        </li>
+                        @if(isset($subcategory) && $subcategory)
+                            <li class="breadcrumb-item">
+                                <a href="{{ route('categorie', $category->slug) }}" class="text-decoration-none" style="color: #f04e27;">{{ $category->name }}</a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page" style="color: #f04e27;">{{ $subcategory->name }}</li>
+                        @else
+                            <li class="breadcrumb-item active" aria-current="page" style="color: #f04e27;">{{ $category->name }}</li>
+                        @endif
                     </ol>
                 </nav>
+                <h1 class="fw-bold mb-0" style="font-size: 2rem; color: #333;">
+                    @if(isset($subcategory) && $subcategory)
+                        {{ $subcategory->name }}
+                    @else
+                        {{ $category->name }}
+                    @endif
+                </h1>
             </div>
         </section>
-        <!-- SECTION BREADCRUMB END -->
+        <!-- SECTION BREADCRUMB ET TITRE END -->
 
         <!-- SECTION MEILLEURES OFFRES -->
         <section class="multi-carousel pb-5 border-top" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
@@ -54,7 +70,7 @@
                             @if($categoriePub1->link_url)
                                 <a href="{{ $categoriePub1->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $categoriePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 1">
+                        <img src="{{ $categoriePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 1">
                             @if($categoriePub1->link_url)</a>@endif
                         </div>
                     @else
@@ -75,7 +91,7 @@
                             @if($categoriePub2->link_url)
                                 <a href="{{ $categoriePub2->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $categoriePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 2">
+                        <img src="{{ $categoriePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 2">
                             @if($categoriePub2->link_url)</a>@endif
                         </div>
                     @else
@@ -96,7 +112,7 @@
                             @if($categoriePub3->link_url)
                                 <a href="{{ $categoriePub3->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $categoriePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 3">
+                        <img src="{{ $categoriePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 3">
                             @if($categoriePub3->link_url)</a>@endif
                         </div>
                     @else
@@ -257,7 +273,7 @@
                             @if($categoriePub4->link_url)
                                 <a href="{{ $categoriePub4->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $categoriePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 4">
+                        <img src="{{ $categoriePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 4">
                             @if($categoriePub4->link_url)</a>@endif
                         </div>
                     @else
@@ -278,7 +294,7 @@
                             @if($categoriePub5->link_url)
                                 <a href="{{ $categoriePub5->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $categoriePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 5">
+                        <img src="{{ $categoriePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 5">
                             @if($categoriePub5->link_url)</a>@endif
                         </div>
                     @else

@@ -67,7 +67,7 @@
 
                         <h2 class="h5 mt-4">Nous contacter</h2>
                         <ul class="list-unstyled mb-0">
-                            <li class="mb-1"><i class="bi bi-envelope me-2"></i>{{ $settings['contact_email'] ?? 'contact@kazaria.ci' }}</li>
+                            <li class="mb-1"><i class="bi bi-envelope me-2"></i>{{ $settings['contact_email'] ?? 'contact@kazaria.com' }}</li>
                             <li class="mb-1"><i class="bi bi-telephone me-2"></i>{{ $settings['contact_phone'] ?? '+225 07 00 00 00 00' }}</li>
                             <li class="mb-1"><i class="bi bi-geo-alt me-2"></i>{{ $settings['contact_address'] ?? "Abidjan, Côte d'Ivoire" }}</li>
                         </ul>

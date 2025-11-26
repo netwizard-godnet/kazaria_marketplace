@@ -106,7 +106,7 @@ use App\Models\Banner;
                     <img src="<?php echo e($headerGifBanner->image_url); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
                 <?php endif; ?>
             <?php else: ?>
-                <img src="<?php echo e(asset('images/banner.gif')); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+            <img src="<?php echo e(asset('images/banner.gif')); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
             <?php endif; ?>
         </div>
         <header class="z-index-9x shadow d-none d-sm-block">
@@ -225,7 +225,7 @@ use App\Models\Banner;
                         <?php if(isset($allCategories)): ?>
                             <?php $__currentLoopData = $allCategories->take(4); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $menuCategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <div class="header-menu d-flex align-items-center justify-content-start">
-                                <a class="btn btn-sm text-white fs-8 text-nowrap" type="button">
+                                <a class="btn btn-sm text-white fs-8 text-nowrap" href="<?php echo e(route('categorie', $menuCategory->slug)); ?>">
                                     <?php if($menuCategory->image && !empty($menuCategory->image)): ?>
                                     <img src="<?php echo e(str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image))); ?>" style="width: 20px; height: 20px; object-fit: contain;" class="me-1">
                                     <?php endif; ?>
@@ -245,7 +245,7 @@ use App\Models\Banner;
 
                                                 </a>
                                                 <?php $__currentLoopData = $chunk; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <a href="<?php echo e(route('categorie', $menuCategory->slug)); ?>" class="list-group-item list-group-item-action fs-8">
+                                                <a href="<?php echo e(route('categorie', $menuCategory->slug)); ?>?subcategory=<?php echo e($subcat->slug); ?>" class="list-group-item list-group-item-action fs-8">
                                                     <?php if($subcat->image && !empty($subcat->image)): ?>
                                                     <img src="<?php echo e(str_starts_with($subcat->image, 'http') ? $subcat->image : (str_starts_with($subcat->image, 'images/') ? asset($subcat->image) : Storage::url($subcat->image))); ?>" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
                                                     <?php endif; ?>

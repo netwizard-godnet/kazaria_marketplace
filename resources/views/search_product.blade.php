@@ -3,18 +3,33 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/pagination.css') }}">
     <main class="container-fluid">
-        <!-- SECTION BREADCRUMB -->
-        <section class="bg-light py-2">
+        <!-- SECTION BREADCRUMB ET TITRE -->
+        <section class="bg-white py-3 border-bottom">
             <div class="container-fluid">
-                <nav style="--bs-breadcrumb-divider: '|';" aria-label="breadcrumb" class="">
-                    <ol class="breadcrumb" class="">
-                        <li class="breadcrumb-item mb-0"><a href="{{ route('accueil') }}" class="fs-7">Accueil</a></li>
-                        <li class="breadcrumb-item mb-0 active fs-7" aria-current="page">Recherche</li>
+                <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2" style="--bs-breadcrumb-item-color: #f04e27;">
+                        <li class="breadcrumb-item">
+                            <a href="{{ route('accueil') }}" class="text-decoration-none" style="color: #f04e27;">Accueil</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page" style="color: #f04e27;">
+                            @if($searchQuery)
+                                Recherche
+                            @else
+                                Tous les produits
+                            @endif
+                        </li>
                     </ol>
                 </nav>
+                <h1 class="fw-bold mb-0" style="font-size: 2rem; color: #333;">
+                    @if($searchQuery)
+                        Résultats pour "{{ $searchQuery }}"
+                    @else
+                        Tous les produits
+                    @endif
+                </h1>
             </div>
         </section>
-        <!-- SECTION BREADCRUMB END -->
+        <!-- SECTION BREADCRUMB ET TITRE END -->
 
         @php
             $activeFilters = 0;

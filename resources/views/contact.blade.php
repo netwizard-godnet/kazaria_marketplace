@@ -37,8 +37,12 @@
                         <div class="mb-4">
                             <h6 class="fw-bold orange-color">Téléphone</h6>
                             <p class="mb-0">
-                                <a href="tel:+2250701234567" class="text-decoration-none">
-                                    <i class="bi bi-phone me-2"></i>+225 07 01 23 45 67
+                                @php
+                                    $phoneNumber = $settings['contact_phone'] ?? '+225 07 00 00 00 00';
+                                    $phoneLink = str_replace(['+', ' ', '-'], '', $phoneNumber);
+                                @endphp
+                                <a href="tel:{{ $phoneLink }}" class="text-decoration-none">
+                                    <i class="bi bi-phone me-2"></i>{{ $phoneNumber }}
                                 </a>
                             </p>
                         </div>
@@ -46,8 +50,11 @@
                         <div class="mb-4">
                             <h6 class="fw-bold orange-color">Email</h6>
                             <p class="mb-0">
-                                <a href="mailto:contact@kazaria.ci" class="text-decoration-none">
-                                    <i class="bi bi-envelope me-2"></i>contact@kazaria.ci
+                                @php
+                                    $contactEmail = $settings['contact_email'] ?? 'contact@kazaria.com';
+                                @endphp
+                                <a href="mailto:{{ $contactEmail }}" class="text-decoration-none">
+                                    <i class="bi bi-envelope me-2"></i>{{ $contactEmail }}
                                 </a>
                             </p>
                         </div>
@@ -56,8 +63,7 @@
                             <h6 class="fw-bold orange-color">Adresse</h6>
                             <p class="mb-0">
                                 <i class="bi bi-geo-alt me-2"></i>
-                                Cocody, Angré 8ème Tranche<br>
-                                Abidjan, Côte d'Ivoire
+                                {{ $settings['contact_address'] ?? "Abidjan, Côte d'Ivoire" }}
                             </p>
                         </div>
 
@@ -75,7 +81,10 @@
                         <div class="mt-4">
                             <h6 class="fw-bold orange-color mb-3">Contact rapide</h6>
                             <div class="d-grid gap-2">
-                                <a href="https://wa.me/2250701234567" class="btn btn-success btn-sm" target="_blank">
+                                @php
+                                    $whatsappPhone = str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '2250700000000');
+                                @endphp
+                                <a href="https://wa.me/{{ $whatsappPhone }}" class="btn btn-success btn-sm" target="_blank">
                                     <i class="bi bi-whatsapp me-2"></i>WhatsApp
                                 </a>
                                 <a href="{{ route('help-faq') }}" class="btn blue-bg text-white btn-sm">

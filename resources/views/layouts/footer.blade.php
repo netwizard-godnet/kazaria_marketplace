@@ -4,7 +4,10 @@
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">BESOIN D'AIDE ?</p>
                 <div class="vstack gap-1 text-start ms-2">
-                    <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '2250701234567') }}" class="btn btn-sm text-secondary text-start fs-8" target="_blank">Discuter avec nous</a>
+                    @php
+                        $whatsappPhone = str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '+225 07 00 00 00 00');
+                    @endphp
+                    <a href="https://wa.me/{{ $whatsappPhone }}" class="btn btn-sm text-secondary text-start fs-8" target="_blank">Discuter avec nous</a>
                     <a href="{{ route('help-faq') }}" class="btn btn-sm text-secondary text-start fs-8">Aide & FAQ</a>
                     <a href="{{ route('contact') }}" class="btn btn-sm text-secondary text-start fs-8">Contactez-nous</a>
                 </div>

@@ -281,7 +281,7 @@ class Banner extends Model
     public static function getHeaderGif()
     {
         return self::where('banner_type', 'header_gif')
-            ->where('is_active', true)
-            ->first();
+                  ->where('is_active', true)
+                  ->first();
     }
 }
