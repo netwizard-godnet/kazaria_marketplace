@@ -6,9 +6,11 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\NewsletterController;
 
 // Routes principales (SESSION)
 Route::get('/', [HomeController::class, 'index'])->name('accueil');
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 
 Route::get('/categorie/{slug}', [ProductController::class, 'category'])->name('categorie');
 

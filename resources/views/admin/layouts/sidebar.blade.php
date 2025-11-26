@@ -195,6 +195,13 @@
             </a>
         </li>
 
+        <li class="nav-item {{ request()->routeIs('admin.newsletter.*') ? 'active' : '' }}">
+            <a href="{{ route('admin.newsletter.index') }}">
+                <i class="fas fa-envelope-open"></i>
+                <p>Newsletter</p>
+            </a>
+        </li>
+
         <li class="nav-item {{ request()->routeIs('admin.popups.*') ? 'active' : '' }}">
             <a href="{{ route('admin.popups.index') }}">
                 <i class="fas fa-window-maximize"></i>

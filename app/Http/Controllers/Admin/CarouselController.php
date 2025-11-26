@@ -33,7 +33,7 @@ class CarouselController extends Controller
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'image' => 'required|image|max:4096',
+            'image' => 'required|file',
             'link_url' => 'nullable|url|max:2048',
             'button_text' => 'nullable|string|max:100',
             'sort_order' => 'nullable|integer|min:0',
@@ -64,7 +64,7 @@ class CarouselController extends Controller
         $validated = $request->validate([
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'image' => 'nullable|image|max:4096',
+            'image' => 'nullable|file',
             'link_url' => 'nullable|url|max:2048',
             'button_text' => 'nullable|string|max:100',
             'sort_order' => 'nullable|integer|min:0',

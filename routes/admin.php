@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\HeaderController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PopupController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -145,11 +146,18 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::get('/export/{type}', [ReportController::class, 'export'])->name('export');
     });
 
+    // Newsletter
+    Route::prefix('newsletter')->name('newsletter.')->middleware('permission:manage_settings')->group(function () {
+        Route::get('/', [AdminNewsletterController::class, 'index'])->name('index');
+        Route::post('/send', [AdminNewsletterController::class, 'send'])->name('send');
+    });
+
 
             // Banners
             Route::prefix('banners')->name('banners.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Admin\BannerController::class, 'index'])->name('index');
                 Route::post('/', [\App\Http\Controllers\Admin\BannerController::class, 'store'])->name('store');
+                Route::post('/header-gif', [\App\Http\Controllers\Admin\BannerController::class, 'updateHeaderGif'])->name('update-header-gif');
                 Route::post('/homepage-banner-1', [\App\Http\Controllers\Admin\BannerController::class, 'updateHomepageBanner1'])->name('update-homepage-banner-1');
                 Route::post('/homepage-banner-2', [\App\Http\Controllers\Admin\BannerController::class, 'updateHomepageBanner2'])->name('update-homepage-banner-2');
                 Route::post('/publicite-1', [\App\Http\Controllers\Admin\BannerController::class, 'updatePublicite1'])->name('update-publicite-1');

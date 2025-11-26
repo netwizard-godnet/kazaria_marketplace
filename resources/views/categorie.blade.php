@@ -49,8 +49,14 @@
                         $categoriePub1 = App\Models\Banner::getCategoriePub1();
                         $categoriePub1Image = $categoriePub1 ? $categoriePub1->image_url : null;
                     @endphp
-                    @if($categoriePub1Image)
-                        <img src="{{ $categoriePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 1">
+                    @if($categoriePub1 && $categoriePub1Image)
+                        <div class="{{ $categoriePub1->visibility_classes ?? '' }}">
+                            @if($categoriePub1->link_url)
+                                <a href="{{ $categoriePub1->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $categoriePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 1">
+                            @if($categoriePub1->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -64,8 +70,14 @@
                         $categoriePub2 = App\Models\Banner::getCategoriePub2();
                         $categoriePub2Image = $categoriePub2 ? $categoriePub2->image_url : null;
                     @endphp
-                    @if($categoriePub2Image)
-                        <img src="{{ $categoriePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 2">
+                    @if($categoriePub2 && $categoriePub2Image)
+                        <div class="{{ $categoriePub2->visibility_classes ?? '' }}">
+                            @if($categoriePub2->link_url)
+                                <a href="{{ $categoriePub2->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $categoriePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 2">
+                            @if($categoriePub2->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -79,8 +91,14 @@
                         $categoriePub3 = App\Models\Banner::getCategoriePub3();
                         $categoriePub3Image = $categoriePub3 ? $categoriePub3->image_url : null;
                     @endphp
-                    @if($categoriePub3Image)
-                        <img src="{{ $categoriePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 3">
+                    @if($categoriePub3 && $categoriePub3Image)
+                        <div class="{{ $categoriePub3->visibility_classes ?? '' }}">
+                            @if($categoriePub3->link_url)
+                                <a href="{{ $categoriePub3->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $categoriePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 3">
+                            @if($categoriePub3->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -234,8 +252,14 @@
                         $categoriePub4 = App\Models\Banner::getCategoriePub4();
                         $categoriePub4Image = $categoriePub4 ? $categoriePub4->image_url : null;
                     @endphp
-                    @if($categoriePub4Image)
-                        <img src="{{ $categoriePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 4">
+                    @if($categoriePub4 && $categoriePub4Image)
+                        <div class="{{ $categoriePub4->visibility_classes ?? '' }}">
+                            @if($categoriePub4->link_url)
+                                <a href="{{ $categoriePub4->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $categoriePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 4">
+                            @if($categoriePub4->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -249,8 +273,14 @@
                         $categoriePub5 = App\Models\Banner::getCategoriePub5();
                         $categoriePub5Image = $categoriePub5 ? $categoriePub5->image_url : null;
                     @endphp
-                    @if($categoriePub5Image)
-                        <img src="{{ $categoriePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 5">
+                    @if($categoriePub5 && $categoriePub5Image)
+                        <div class="{{ $categoriePub5->visibility_classes ?? '' }}">
+                            @if($categoriePub5->link_url)
+                                <a href="{{ $categoriePub5->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $categoriePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 5">
+                            @if($categoriePub5->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>

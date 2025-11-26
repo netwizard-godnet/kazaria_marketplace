@@ -275,9 +275,20 @@
                     
                     <!-- Pagination -->
                     <?php if($orders->hasPages()): ?>
-                    <div class="d-flex justify-content-center mt-3">
-                        <?php echo e($orders->links()); ?>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2">
+                        <div class="text-muted small">
+                            Affichage
+                            <strong><?php echo e($orders->firstItem()); ?></strong>
+                            -
+                            <strong><?php echo e($orders->lastItem()); ?></strong>
+                            sur
+                            <strong><?php echo e($orders->total()); ?></strong>
+                            résultats
+                        </div>
+                        <nav aria-label="Pagination commandes">
+                            <?php echo e($orders->onEachSide(1)->links('pagination::bootstrap-5')); ?>
 
+                        </nav>
                     </div>
                     <?php endif; ?>
                 </div>

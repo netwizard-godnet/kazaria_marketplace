@@ -10,14 +10,44 @@ class Banner extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'subtitle', 'image_path', 'link_url', 'placement', 'banner_type', 'sort_order', 'is_active', 'starts_at', 'ends_at'
+        'title',
+        'subtitle',
+        'image_path',
+        'link_url',
+        'placement',
+        'banner_type',
+        'sort_order',
+        'is_active',
+        'show_on_desktop',
+        'show_on_mobile',
+        'starts_at',
+        'ends_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'show_on_desktop' => 'boolean',
+        'show_on_mobile' => 'boolean',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
     ];
+
+    public function getVisibilityClassesAttribute(): string
+    {
+        if (!$this->show_on_desktop && !$this->show_on_mobile) {
+            return 'd-none';
+        }
+
+        if ($this->show_on_desktop && !$this->show_on_mobile) {
+            return 'd-none d-md-block';
+        }
+
+        if (!$this->show_on_desktop && $this->show_on_mobile) {
+            return 'd-block d-md-none';
+        }
+
+        return '';
+    }
 
     public function getImageUrlAttribute(): ?string
     {
@@ -243,5 +273,15 @@ class Banner extends Model
         return self::where('banner_type', 'categorie_pub_5')
                   ->where('is_active', true)
                   ->first();
+    }
+
+    /**
+     * Bannière GIF du header
+     */
+    public static function getHeaderGif()
+    {
+        return self::where('banner_type', 'header_gif')
+            ->where('is_active', true)
+            ->first();
     }
 }

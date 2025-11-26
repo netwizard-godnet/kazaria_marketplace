@@ -71,22 +71,38 @@
             <div class="col-md-4">
                 <div class="row gy-2">
                     <div class="col-md-12">
-                        <!-- Première bannière accueil -->
                         @php
                             $banner1 = App\Models\Banner::getHomepageBanner1();
                             $banner1Image = $banner1 ? $banner1->image_url : null;
                         @endphp
-                        <div style="background: url('{{ $banner1Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
-                        <!-- Première bannière accueil end -->
+                        @if($banner1 && $banner1Image)
+                            <div class="{{ $banner1->visibility_classes ?? '' }}">
+                                @if($banner1->link_url)
+                                    <a href="{{ $banner1->link_url }}" target="_blank" rel="noopener" class="d-block">
+                                @endif
+                                <div style="background: url('{{ $banner1Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
+                                @if($banner1->link_url)
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                     <div class="col-md-12">
-                        <!-- Deuxième bannière accueil -->
                         @php
                             $banner2 = App\Models\Banner::getHomepageBanner2();
                             $banner2Image = $banner2 ? $banner2->image_url : null;
                         @endphp
-                        <div style="background: url('{{ $banner2Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
-                        <!-- Deuxième bannière accueil end -->
+                        @if($banner2 && $banner2Image)
+                            <div class="{{ $banner2->visibility_classes ?? '' }}">
+                                @if($banner2->link_url)
+                                    <a href="{{ $banner2->link_url }}" target="_blank" rel="noopener" class="d-block">
+                                @endif
+                                <div style="background: url('{{ $banner2Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
+                                @if($banner2->link_url)
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -165,8 +181,14 @@
                         $publicite1 = App\Models\Banner::getPublicite1();
                         $publicite1Image = $publicite1 ? $publicite1->image_url : null;
                     @endphp
-                    @if($publicite1Image)
-                        <img src="{{ $publicite1Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 1">
+                    @if($publicite1 && $publicite1Image)
+                        <div class="{{ $publicite1->visibility_classes ?? '' }}">
+                            @if($publicite1->link_url)
+                                <a href="{{ $publicite1->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $publicite1Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 1">
+                            @if($publicite1->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -180,8 +202,14 @@
                         $publicite2 = App\Models\Banner::getPublicite2();
                         $publicite2Image = $publicite2 ? $publicite2->image_url : null;
                     @endphp
-                    @if($publicite2Image)
-                        <img src="{{ $publicite2Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 2">
+                    @if($publicite2 && $publicite2Image)
+                        <div class="{{ $publicite2->visibility_classes ?? '' }}">
+                            @if($publicite2->link_url)
+                                <a href="{{ $publicite2->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $publicite2Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 2">
+                            @if($publicite2->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -195,8 +223,14 @@
                         $publicite3 = App\Models\Banner::getPublicite3();
                         $publicite3Image = $publicite3 ? $publicite3->image_url : null;
                     @endphp
-                    @if($publicite3Image)
-                        <img src="{{ $publicite3Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 3">
+                    @if($publicite3 && $publicite3Image)
+                        <div class="{{ $publicite3->visibility_classes ?? '' }}">
+                            @if($publicite3->link_url)
+                                <a href="{{ $publicite3->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $publicite3Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 3">
+                            @if($publicite3->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -314,8 +348,14 @@
                         $publicite4 = App\Models\Banner::getPublicite4();
                         $publicite4Image = $publicite4 ? $publicite4->image_url : null;
                     @endphp
-                    @if($publicite4Image)
-                        <img src="{{ $publicite4Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
+                    @if($publicite4 && $publicite4Image)
+                        <div class="{{ $publicite4->visibility_classes ?? '' }}">
+                            @if($publicite4->link_url)
+                                <a href="{{ $publicite4->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $publicite4Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
+                            @if($publicite4->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -329,8 +369,14 @@
                         $publicite5 = App\Models\Banner::getPublicite5();
                         $publicite5Image = $publicite5 ? $publicite5->image_url : null;
                     @endphp
-                    @if($publicite5Image)
-                        <img src="{{ $publicite5Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
+                    @if($publicite5 && $publicite5Image)
+                        <div class="{{ $publicite5->visibility_classes ?? '' }}">
+                            @if($publicite5->link_url)
+                                <a href="{{ $publicite5->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $publicite5Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
+                            @if($publicite5->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -521,6 +567,43 @@
                             <a href="mailto:privacy@kazaria.ci" class="btn btn-outline-secondary btn-sm ms-2">
                                 <i class="bi bi-envelope me-2"></i>Nous contacter
                             </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Newsletter CTA -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="p-4 bg-white rounded shadow-sm">
+                            <div class="row align-items-center">
+                                <div class="col-lg-6">
+                                    <h5 class="mb-2">Recevez nos offres et actus en avant-première</h5>
+                                    <p class="text-muted mb-0">Une seule newsletter par semaine avec les promotions exclusives, nouveaux arrivages et conseils shopping.</p>
+                                </div>
+                                <div class="col-lg-6">
+                                    @if(session('newsletter_success'))
+                                        <div class="alert alert-success py-2 px-3 mb-3">
+                                            {{ session('newsletter_success') }}
+                                        </div>
+                                    @endif
+                                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="row g-2 justify-content-end">
+                                        @csrf
+                                        <input type="hidden" name="source" value="homepage">
+                                        <div class="col-md-8 col-lg-7">
+                                            <input type="email" name="newsletter_email" class="form-control @error('newsletter_email') is-invalid @enderror" placeholder="Votre email" value="{{ old('newsletter_email') }}" required>
+                                            @error('newsletter_email')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-4 col-lg-3 text-md-end">
+                                            <button class="btn orange-bg text-white">
+                                                <i class="bi bi-send me-2"></i>Je m'abonne
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <small class="text-muted d-block mt-2">En vous inscrivant, vous acceptez de recevoir nos emails marketing. Vous pouvez vous désabonner à tout moment.</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

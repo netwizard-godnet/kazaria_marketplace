@@ -27,9 +27,13 @@
                     <div id="carouselExampleAutoplaying" class="carousel slide h-400px" data-bs-ride="carousel">
                         <div class="carousel-inner h-400px">
                             @forelse($boutiqueCarouselImages as $index => $image)
-                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}" data-bs-interval="2000">
+                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }} {{ $image->visibility_classes ?? '' }}" data-bs-interval="2000">
                                 @if($image->image_url)
+                                    @if($image->link_url)
+                                        <a href="{{ $image->link_url }}" target="_blank" rel="noopener" class="d-block h-100">
+                                    @endif
                                     <img src="{{ $image->image_url }}" class="d-block w-100 h-400px" alt="Carousel {{ $index + 1 }}">
+                                    @if($image->link_url)</a>@endif
                                 @else
                                     <div class="d-block w-100 h-400px bg-light d-flex align-items-center justify-content-center">
                                         <i class="fas fa-image text-muted fa-5x"></i>
@@ -95,8 +99,14 @@
                         $boutiquePub1 = App\Models\Banner::getBoutiquePub1();
                         $boutiquePub1Image = $boutiquePub1 ? $boutiquePub1->image_url : null;
                     @endphp
-                    @if($boutiquePub1Image)
-                        <img src="{{ $boutiquePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 1">
+                    @if($boutiquePub1 && $boutiquePub1Image)
+                        <div class="{{ $boutiquePub1->visibility_classes ?? '' }}">
+                            @if($boutiquePub1->link_url)
+                                <a href="{{ $boutiquePub1->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $boutiquePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 1">
+                            @if($boutiquePub1->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -110,8 +120,14 @@
                         $boutiquePub2 = App\Models\Banner::getBoutiquePub2();
                         $boutiquePub2Image = $boutiquePub2 ? $boutiquePub2->image_url : null;
                     @endphp
-                    @if($boutiquePub2Image)
-                        <img src="{{ $boutiquePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 2">
+                    @if($boutiquePub2 && $boutiquePub2Image)
+                        <div class="{{ $boutiquePub2->visibility_classes ?? '' }}">
+                            @if($boutiquePub2->link_url)
+                                <a href="{{ $boutiquePub2->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $boutiquePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 2">
+                            @if($boutiquePub2->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -125,8 +141,14 @@
                         $boutiquePub3 = App\Models\Banner::getBoutiquePub3();
                         $boutiquePub3Image = $boutiquePub3 ? $boutiquePub3->image_url : null;
                     @endphp
-                    @if($boutiquePub3Image)
-                        <img src="{{ $boutiquePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 3">
+                    @if($boutiquePub3 && $boutiquePub3Image)
+                        <div class="{{ $boutiquePub3->visibility_classes ?? '' }}">
+                            @if($boutiquePub3->link_url)
+                                <a href="{{ $boutiquePub3->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $boutiquePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 3">
+                            @if($boutiquePub3->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -262,8 +284,14 @@
                         $boutiquePub4 = App\Models\Banner::getBoutiquePub4();
                         $boutiquePub4Image = $boutiquePub4 ? $boutiquePub4->image_url : null;
                     @endphp
-                    @if($boutiquePub4Image)
-                        <img src="{{ $boutiquePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 4">
+                    @if($boutiquePub4 && $boutiquePub4Image)
+                        <div class="{{ $boutiquePub4->visibility_classes ?? '' }}">
+                            @if($boutiquePub4->link_url)
+                                <a href="{{ $boutiquePub4->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $boutiquePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 4">
+                            @if($boutiquePub4->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
@@ -277,8 +305,14 @@
                         $boutiquePub5 = App\Models\Banner::getBoutiquePub5();
                         $boutiquePub5Image = $boutiquePub5 ? $boutiquePub5->image_url : null;
                     @endphp
-                    @if($boutiquePub5Image)
-                        <img src="{{ $boutiquePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 5">
+                    @if($boutiquePub5 && $boutiquePub5Image)
+                        <div class="{{ $boutiquePub5->visibility_classes ?? '' }}">
+                            @if($boutiquePub5->link_url)
+                                <a href="{{ $boutiquePub5->link_url }}" target="_blank" rel="noopener" class="d-block">
+                            @endif
+                            <img src="{{ $boutiquePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 5">
+                            @if($boutiquePub5->link_url)</a>@endif
+                        </div>
                     @else
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>

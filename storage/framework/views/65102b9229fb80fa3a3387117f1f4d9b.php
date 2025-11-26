@@ -1,45 +1,47 @@
-@extends('admin.layouts.app')
 
-@section('title', 'Gestion du Carousel')
 
-@section('content')
+<?php $__env->startSection('title', 'Gestion du Carousel'); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="page-inner">
     <div class="page-header">
         <h4 class="page-title">Gestion du Carousel</h4>
         <p class="text-muted">Gérez les slides du carousel principal de votre page d'accueil</p>
     </div>
 
-    @if(session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
+            <?php echo e(session('success')); ?>
+
             <button type="button" class="close" data-dismiss="alert" aria-label="Fermer">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
-    @endif
+    <?php endif; ?>
 
-    @if(session('error'))
+    <?php if(session('error')): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
+            <?php echo e(session('error')); ?>
+
             <button type="button" class="close" data-dismiss="alert" aria-label="Fermer">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
-    @endif
+    <?php endif; ?>
 
-    @if($errors->any())
+    <?php if($errors->any()): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <h6 class="mb-2"><i class="fas fa-exclamation-triangle mr-1"></i>Une ou plusieurs erreurs sont survenues :</h6>
             <ul class="mb-0 pl-3">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
+                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <li><?php echo e($error); ?></li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </ul>
             <button type="button" class="close" data-dismiss="alert" aria-label="Fermer">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
-    @endif
+    <?php endif; ?>
 
     <div class="row">
         <div class="col-md-4">
@@ -48,8 +50,8 @@
                     <h4 class="card-title">Créer un slide</h4>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.carousel.store') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
+                    <form action="<?php echo e(route('admin.carousel.store')); ?>" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_field(); ?>
                         <div class="form-group">
                             <label>Titre du slide</label>
                             <input type="text" name="title" class="form-control" placeholder="Ex: Black Friday Sale">
@@ -110,7 +112,7 @@
                     <h4 class="card-title">Slides du carousel</h4>
                 </div>
                 <div class="card-body">
-                    @if($slides->count() > 0)
+                    <?php if($slides->count() > 0): ?>
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
@@ -124,40 +126,41 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($slides as $slide)
+                                <?php $__currentLoopData = $slides; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $slide): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <tr>
                                     <td>
-                                        @if($slide->image_url)
-                                            <img src="{{ $slide->image_url }}" width="80" height="40" alt="{{ $slide->title }}" class="rounded" style="object-fit: cover;">
-                                        @else
+                                        <?php if($slide->image_url): ?>
+                                            <img src="<?php echo e($slide->image_url); ?>" width="80" height="40" alt="<?php echo e($slide->title); ?>" class="rounded" style="object-fit: cover;">
+                                        <?php else: ?>
                                             <div class="bg-light d-flex align-items-center justify-content-center" style="width: 80px; height: 40px;">
                                                 <i class="fas fa-image text-muted"></i>
                                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </td>
                                     <td>
-                                        <strong>{{ $slide->title ?: 'Sans titre' }}</strong>
-                                        @if($slide->button_text)
-                                        <br><small class="text-muted">Bouton: {{ $slide->button_text }}</small>
-                                        @endif
+                                        <strong><?php echo e($slide->title ?: 'Sans titre'); ?></strong>
+                                        <?php if($slide->button_text): ?>
+                                        <br><small class="text-muted">Bouton: <?php echo e($slide->button_text); ?></small>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
-                                        <small class="text-muted">{{ Str::limit($slide->description, 50) ?: 'Aucune description' }}</small>
+                                        <small class="text-muted"><?php echo e(Str::limit($slide->description, 50) ?: 'Aucune description'); ?></small>
                                     </td>
-                                    <td>{{ $slide->sort_order }}</td>
+                                    <td><?php echo e($slide->sort_order); ?></td>
                                     <td>
-                                        <span class="badge badge-{{ $slide->is_active ? 'success' : 'secondary' }}">
-                                            {{ $slide->is_active ? 'Actif' : 'Inactif' }}
+                                        <span class="badge badge-<?php echo e($slide->is_active ? 'success' : 'secondary'); ?>">
+                                            <?php echo e($slide->is_active ? 'Actif' : 'Inactif'); ?>
+
                                         </span>
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <button class="btn btn-warning btn-sm" onclick="editSlide({{ $slide->id }})" title="Modifier">
+                                            <button class="btn btn-warning btn-sm" onclick="editSlide(<?php echo e($slide->id); ?>)" title="Modifier">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form action="{{ route('admin.carousel.destroy', $slide) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce slide ?')">
-                                                @csrf
-                                                @method('DELETE')
+                                            <form action="<?php echo e(route('admin.carousel.destroy', $slide)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce slide ?')">
+                                                <?php echo csrf_field(); ?>
+                                                <?php echo method_field('DELETE'); ?>
                                                 <button class="btn btn-danger btn-sm" type="submit" title="Supprimer">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
@@ -165,25 +168,25 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-3">{{ $slides->links() }}</div>
-                    @else
+                    <div class="mt-3"><?php echo e($slides->links()); ?></div>
+                    <?php else: ?>
                     <div class="text-center py-4">
                         <i class="fas fa-images fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Aucun slide créé</h5>
                         <p class="text-muted">Créez votre premier slide pour le carousel</p>
                     </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Aperçu du carousel -->
-    @if($slides->where('is_active', true)->count() > 0)
+    <?php if($slides->where('is_active', true)->count() > 0): ?>
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -193,23 +196,23 @@
                 <div class="card-body">
                     <div class="carousel slide" id="previewCarousel" data-bs-ride="carousel" style="max-width: 600px;">
                         <div class="carousel-inner" style="height: 200px;">
-                            @foreach($slides->where('is_active', true)->take(3) as $index => $slide)
-                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
-                                <img src="{{ $slide->image_url }}" class="d-block w-100 h-100" alt="{{ $slide->title }}" style="object-fit: cover;">
-                                @if($slide->title || $slide->description)
+                            <?php $__currentLoopData = $slides->where('is_active', true)->take(3); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $slide): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="carousel-item <?php echo e($index === 0 ? 'active' : ''); ?>">
+                                <img src="<?php echo e($slide->image_url); ?>" class="d-block w-100 h-100" alt="<?php echo e($slide->title); ?>" style="object-fit: cover;">
+                                <?php if($slide->title || $slide->description): ?>
                                 <div class="carousel-caption d-none d-md-block">
-                                    @if($slide->title)
-                                    <h5 class="text-white">{{ $slide->title }}</h5>
-                                    @endif
-                                    @if($slide->description)
-                                    <p class="text-white">{{ Str::limit($slide->description, 100) }}</p>
-                                    @endif
+                                    <?php if($slide->title): ?>
+                                    <h5 class="text-white"><?php echo e($slide->title); ?></h5>
+                                    <?php endif; ?>
+                                    <?php if($slide->description): ?>
+                                    <p class="text-white"><?php echo e(Str::limit($slide->description, 100)); ?></p>
+                                    <?php endif; ?>
                                 </div>
-                                @endif
+                                <?php endif; ?>
                             </div>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
-                        @if($slides->where('is_active', true)->count() > 1)
+                        <?php if($slides->where('is_active', true)->count() > 1): ?>
                         <button class="carousel-control-prev" type="button" data-bs-target="#previewCarousel" data-bs-slide="prev">
                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                             <span class="visually-hidden">Précédent</span>
@@ -218,13 +221,13 @@
                             <span class="carousel-control-next-icon" aria-hidden="true"></span>
                             <span class="visually-hidden">Suivant</span>
                         </button>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Modal d'édition -->
     <div class="modal fade" id="editSlideModal" tabindex="-1">
@@ -237,8 +240,8 @@
                     </button>
                 </div>
                 <form id="editSlideForm" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('PUT'); ?>
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Titre du slide</label>
@@ -334,4 +337,6 @@ function editSlide(slideId) {
     });
 }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/admin/carousel/index.blade.php ENDPATH**/ ?>

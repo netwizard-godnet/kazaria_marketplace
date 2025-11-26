@@ -275,8 +275,19 @@
                     
                     <!-- Pagination -->
                     @if($orders->hasPages())
-                    <div class="d-flex justify-content-center mt-3">
-                        {{ $orders->links() }}
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3 gap-2">
+                        <div class="text-muted small">
+                            Affichage
+                            <strong>{{ $orders->firstItem() }}</strong>
+                            -
+                            <strong>{{ $orders->lastItem() }}</strong>
+                            sur
+                            <strong>{{ $orders->total() }}</strong>
+                            résultats
+                        </div>
+                        <nav aria-label="Pagination commandes">
+                            {{ $orders->onEachSide(1)->links('pagination::bootstrap-5') }}
+                        </nav>
                     </div>
                     @endif
                 </div>

@@ -11,6 +11,9 @@ class BannerController extends Controller
 {
     public function index()
     {
+        // Bandeau supérieur (gif header)
+        $headerBanner = Banner::where('banner_type', 'header_gif')->first();
+        
         // Récupérer les bannières d'accueil
         $homepageBanner1 = Banner::where('banner_type', 'homepage_banner_1')->first();
         $homepageBanner2 = Banner::where('banner_type', 'homepage_banner_2')->first();
@@ -61,22 +64,42 @@ class BannerController extends Controller
                         ->orderBy('sort_order')
                         ->paginate(15);
         
-        return view('admin.banners.index', compact('banners', 'homepageBanner1', 'homepageBanner2', 'publicite1', 'publicite2', 'publicite3', 'publicite4', 'publicite5', 'boutiqueCarouselImages', 'boutiquePub1', 'boutiquePub2', 'boutiquePub3', 'boutiquePub4', 'boutiquePub5', 'categoriePub1', 'categoriePub2', 'categoriePub3', 'categoriePub4', 'categoriePub5'));
+        return view('admin.banners.index', compact(
+            'banners',
+            'headerBanner',
+            'homepageBanner1',
+            'homepageBanner2',
+            'publicite1',
+            'publicite2',
+            'publicite3',
+            'publicite4',
+            'publicite5',
+            'boutiqueCarouselImages',
+            'boutiquePub1',
+            'boutiquePub2',
+            'boutiquePub3',
+            'boutiquePub4',
+            'boutiquePub5',
+            'categoriePub1',
+            'categoriePub2',
+            'categoriePub3',
+            'categoriePub4',
+            'categoriePub5'
+        ));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => 'nullable|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'required|image|max:4096',
-            'link_url' => 'nullable|url|max:2048',
+            'image' => 'required|file',
             'placement' => 'required|string|max:100',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'starts_at' => 'nullable|date',
             'ends_at' => 'nullable|date|after_or_equal:starts_at',
-        ]);
+        ], $this->bannerMetaRules()));
 
         $path = $request->file('image')->store('banners', 'public');
 
@@ -84,10 +107,12 @@ class BannerController extends Controller
             'title' => $request->title,
             'subtitle' => $request->subtitle,
             'image_path' => $path,
-            'link_url' => $request->link_url,
+            'link_url' => $request->input('link_url'),
             'placement' => $request->placement,
             'sort_order' => $request->sort_order ?? 0,
             'is_active' => (bool) $request->is_active,
+            'show_on_desktop' => $request->boolean('show_on_desktop', true),
+            'show_on_mobile' => $request->boolean('show_on_mobile', true),
             'starts_at' => $request->starts_at,
             'ends_at' => $request->ends_at,
         ]);
@@ -97,17 +122,16 @@ class BannerController extends Controller
 
     public function update(Request $request, Banner $banner)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => 'nullable|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'nullable|image|max:4096',
-            'link_url' => 'nullable|url|max:2048',
+            'image' => 'nullable|file',
             'placement' => 'required|string|max:100',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
             'starts_at' => 'nullable|date',
             'ends_at' => 'nullable|date|after_or_equal:starts_at',
-        ]);
+        ], $this->bannerMetaRules()));
 
         if ($request->hasFile('image')) {
             if ($banner->image_path) {
@@ -119,10 +143,12 @@ class BannerController extends Controller
         $banner->fill([
             'title' => $request->title,
             'subtitle' => $request->subtitle,
-            'link_url' => $request->link_url,
+            'link_url' => $request->input('link_url'),
             'placement' => $request->placement,
             'sort_order' => $request->sort_order ?? 0,
             'is_active' => (bool) $request->is_active,
+            'show_on_desktop' => $request->boolean('show_on_desktop', true),
+            'show_on_mobile' => $request->boolean('show_on_mobile', true),
             'starts_at' => $request->starts_at,
             'ends_at' => $request->ends_at,
         ])->save();
@@ -169,13 +195,50 @@ class BannerController extends Controller
     }
 
     /**
+     * Mettre à jour la bannière gif du header
+     */
+    public function updateHeaderGif(Request $request)
+    {
+        $request->validate(array_merge([
+            'image' => 'required|file',
+            'is_active' => 'nullable|boolean',
+        ], $this->bannerMetaRules()));
+
+        $banner = Banner::where('banner_type', 'header_gif')->first();
+
+        if (!$banner) {
+            $banner = new Banner();
+            $banner->banner_type = 'header_gif';
+            $banner->placement = 'header';
+            $banner->title = 'Bannière Header';
+            $banner->sort_order = 0;
+            $banner->is_active = true;
+        }
+
+        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
+            @unlink(public_path($banner->image_path));
+        }
+
+        $image = $request->file('image');
+        $imageName = 'header_gif_' . time() . '.' . $image->getClientOriginalExtension();
+        $image->move(public_path('images'), $imageName);
+
+        $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
+        $banner->is_active = $request->has('is_active') ? (bool) $request->is_active : true;
+        $banner->save();
+
+        return redirect()->back()->with('success', 'Bannière du header mise à jour avec succès.');
+    }
+
+    /**
      * Gérer la première bannière d'accueil
      */
     public function updateHomepageBanner1(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la bannière homepage_banner_1
         $banner = Banner::where('banner_type', 'homepage_banner_1')->first();
@@ -200,6 +263,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Bannière d\'accueil mise à jour avec succès.');
@@ -210,9 +274,9 @@ class BannerController extends Controller
      */
     public function updateHomepageBanner2(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la bannière homepage_banner_2
         $banner = Banner::where('banner_type', 'homepage_banner_2')->first();
@@ -237,6 +301,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Deuxième bannière d\'accueil mise à jour avec succès.');
@@ -247,9 +312,9 @@ class BannerController extends Controller
      */
     public function updatePublicite1(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité publicite_1
         $banner = Banner::where('banner_type', 'publicite_1')->first();
@@ -274,6 +339,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Publicité 1 mise à jour avec succès.');
@@ -284,9 +350,9 @@ class BannerController extends Controller
      */
     public function updatePublicite2(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité publicite_2
         $banner = Banner::where('banner_type', 'publicite_2')->first();
@@ -311,6 +377,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Publicité 2 mise à jour avec succès.');
@@ -321,9 +388,9 @@ class BannerController extends Controller
      */
     public function updatePublicite3(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité publicite_3
         $banner = Banner::where('banner_type', 'publicite_3')->first();
@@ -348,6 +415,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Publicité 3 mise à jour avec succès.');
@@ -358,9 +426,9 @@ class BannerController extends Controller
      */
     public function updatePublicite4(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité publicite_4
         $banner = Banner::where('banner_type', 'publicite_4')->first();
@@ -385,6 +453,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Publicité 4 mise à jour avec succès.');
@@ -395,9 +464,9 @@ class BannerController extends Controller
      */
     public function updatePublicite5(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité publicite_5
         $banner = Banner::where('banner_type', 'publicite_5')->first();
@@ -422,6 +491,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Publicité 5 mise à jour avec succès.');
@@ -432,9 +502,9 @@ class BannerController extends Controller
      */
     public function updateBoutiqueCarousel1(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer l'image carousel boutique 1
         $banner = Banner::where('banner_type', 'boutique_carousel_1')->first();
@@ -459,6 +529,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Carousel Boutique 1 mis à jour avec succès.');
@@ -469,9 +540,9 @@ class BannerController extends Controller
      */
     public function updateBoutiqueCarousel2(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer l'image carousel boutique 2
         $banner = Banner::where('banner_type', 'boutique_carousel_2')->first();
@@ -496,6 +567,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Carousel Boutique 2 mis à jour avec succès.');
@@ -506,9 +578,9 @@ class BannerController extends Controller
      */
     public function updateBoutiqueCarousel3(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer l'image carousel boutique 3
         $banner = Banner::where('banner_type', 'boutique_carousel_3')->first();
@@ -533,6 +605,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Carousel Boutique 3 mis à jour avec succès.');
@@ -543,9 +616,9 @@ class BannerController extends Controller
      */
     public function addBoutiqueCarouselImage(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver le prochain numéro d'ordre
         $nextOrder = Banner::where('banner_type', 'like', 'boutique_carousel_%')->max('sort_order') + 1;
@@ -565,6 +638,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Image ajoutée au carousel avec succès.');
@@ -601,9 +675,9 @@ class BannerController extends Controller
             return redirect()->back()->with('error', 'Cette image ne fait pas partie du carousel boutique.');
         }
 
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Supprimer l'ancienne image si elle existe
         if ($banner->image_path && file_exists(public_path($banner->image_path))) {
@@ -616,6 +690,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Image du carousel mise à jour avec succès.');
@@ -626,9 +701,9 @@ class BannerController extends Controller
      */
     public function updateBoutiquePub1(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité boutique_pub_1
         $banner = Banner::where('banner_type', 'boutique_pub_1')->first();
@@ -653,6 +728,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Boutique Pub 1 mise à jour avec succès.');
@@ -663,9 +739,9 @@ class BannerController extends Controller
      */
     public function updateBoutiquePub2(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité boutique_pub_2
         $banner = Banner::where('banner_type', 'boutique_pub_2')->first();
@@ -690,6 +766,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Boutique Pub 2 mise à jour avec succès.');
@@ -700,9 +777,9 @@ class BannerController extends Controller
      */
     public function updateBoutiquePub3(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité boutique_pub_3
         $banner = Banner::where('banner_type', 'boutique_pub_3')->first();
@@ -727,6 +804,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Boutique Pub 3 mise à jour avec succès.');
@@ -737,9 +815,9 @@ class BannerController extends Controller
      */
     public function updateBoutiquePub4(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité boutique_pub_4
         $banner = Banner::where('banner_type', 'boutique_pub_4')->first();
@@ -764,6 +842,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Boutique Pub 4 mise à jour avec succès.');
@@ -774,9 +853,9 @@ class BannerController extends Controller
      */
     public function updateBoutiquePub5(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité boutique_pub_5
         $banner = Banner::where('banner_type', 'boutique_pub_5')->first();
@@ -801,6 +880,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Boutique Pub 5 mise à jour avec succès.');
@@ -811,9 +891,9 @@ class BannerController extends Controller
      */
     public function updateCategoriePub1(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité categorie_pub_1
         $banner = Banner::where('banner_type', 'categorie_pub_1')->first();
@@ -838,6 +918,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 1 mise à jour avec succès.');
@@ -848,9 +929,9 @@ class BannerController extends Controller
      */
     public function updateCategoriePub2(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité categorie_pub_2
         $banner = Banner::where('banner_type', 'categorie_pub_2')->first();
@@ -875,6 +956,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 2 mise à jour avec succès.');
@@ -885,9 +967,9 @@ class BannerController extends Controller
      */
     public function updateCategoriePub3(Request $request)
     {
-        $validated = $request->validate([
-            'image' => 'required|image|max:4096',
-        ]);
+        $request->validate(array_merge([
+            'image' => 'required|file',
+        ], $this->bannerMetaRules()));
 
         // Trouver ou créer la publicité categorie_pub_3
         $banner = Banner::where('banner_type', 'categorie_pub_3')->first();
@@ -912,6 +994,7 @@ class BannerController extends Controller
         $image->move(public_path('images'), $imageName);
         
         $banner->image_path = 'images/' . $imageName;
+        $this->applyBannerMeta($banner, $request);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 3 mise à jour avec succès.');
@@ -923,7 +1006,7 @@ class BannerController extends Controller
     public function updateCategoriePub4(Request $request)
     {
         $validated = $request->validate([
-            'image' => 'required|image|max:4096',
+            'image' => 'required|file',
         ]);
 
         // Trouver ou créer la publicité categorie_pub_4
@@ -960,7 +1043,7 @@ class BannerController extends Controller
     public function updateCategoriePub5(Request $request)
     {
         $validated = $request->validate([
-            'image' => 'required|image|max:4096',
+            'image' => 'required|file',
         ]);
 
         // Trouver ou créer la publicité categorie_pub_5
@@ -989,5 +1072,21 @@ class BannerController extends Controller
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 5 mise à jour avec succès.');
+    }
+
+    private function bannerMetaRules(): array
+    {
+        return [
+            'link_url' => 'nullable|url|max:2048',
+            'show_on_desktop' => 'nullable|boolean',
+            'show_on_mobile' => 'nullable|boolean',
+        ];
+    }
+
+    private function applyBannerMeta(Banner $banner, Request $request): void
+    {
+        $banner->link_url = $request->input('link_url');
+        $banner->show_on_desktop = $request->boolean('show_on_desktop', true);
+        $banner->show_on_mobile = $request->boolean('show_on_mobile', true);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Storage;
+use App\Models\Banner;
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
@@ -90,10 +91,23 @@ use Illuminate\Support\Facades\Storage;
 
     <body>
         <?php echo $__env->renderWhen(config('kazar_ai.enabled'), 'components.kazar-ai', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1])); ?>
+        <?php
+            $headerGifBanner = Banner::getHeaderGif();
+        ?>
         <div class="z-index-9x" style="position: sticky; top: 0;">
         <!-- Header Banner -->
-        <div class="container-fluid p-0">
-            <img src="<?php echo e(asset('images/banner.gif')); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+        <div class="container-fluid p-0 <?php echo e($headerGifBanner->visibility_classes ?? ''); ?>">
+            <?php if($headerGifBanner && $headerGifBanner->image_url): ?>
+                <?php if($headerGifBanner->link_url): ?>
+                    <a href="<?php echo e($headerGifBanner->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                        <img src="<?php echo e($headerGifBanner->image_url); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+                    </a>
+                <?php else: ?>
+                    <img src="<?php echo e($headerGifBanner->image_url); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+                <?php endif; ?>
+            <?php else: ?>
+                <img src="<?php echo e(asset('images/banner.gif')); ?>" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+            <?php endif; ?>
         </div>
         <header class="z-index-9x shadow d-none d-sm-block">
             <div class="container-fluid blue-bg py-0 position-relative">

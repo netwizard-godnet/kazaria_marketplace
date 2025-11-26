@@ -1,5 +1,6 @@
 @php
 use Illuminate\Support\Facades\Storage;
+use App\Models\Banner;
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -81,10 +82,23 @@ use Illuminate\Support\Facades\Storage;
 
     <body>
         @includeWhen(config('kazar_ai.enabled'), 'components.kazar-ai')
+        @php
+            $headerGifBanner = Banner::getHeaderGif();
+        @endphp
         <div class="z-index-9x" style="position: sticky; top: 0;">
         <!-- Header Banner -->
-        <div class="container-fluid p-0">
-            <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+        <div class="container-fluid p-0 {{ $headerGifBanner->visibility_classes ?? '' }}">
+            @if($headerGifBanner && $headerGifBanner->image_url)
+                @if($headerGifBanner->link_url)
+                    <a href="{{ $headerGifBanner->link_url }}" target="_blank" rel="noopener" class="d-block">
+                        <img src="{{ $headerGifBanner->image_url }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+                    </a>
+                @else
+                    <img src="{{ $headerGifBanner->image_url }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+                @endif
+            @else
+                <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+            @endif
         </div>
         <header class="z-index-9x shadow d-none d-sm-block">
             <div class="container-fluid blue-bg py-0 position-relative">
