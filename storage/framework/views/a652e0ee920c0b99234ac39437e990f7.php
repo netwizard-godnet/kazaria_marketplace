@@ -970,7 +970,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="http://127.0.0.1:8001/widget.js" async></script> -->
 
 <!-- MAIN JS -->
- <script src="<?php echo e(asset('js/main.js')); ?>"></script>
+
  <script src="<?php echo e(asset('js/carousel.js')); ?>"></script>
 <script src="<?php echo e(asset('js/cart.js')); ?>"></script>
 <script src="<?php echo e(asset('js/filters.js')); ?>"></script>

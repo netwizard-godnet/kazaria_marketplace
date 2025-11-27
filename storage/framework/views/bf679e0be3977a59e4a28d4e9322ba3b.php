@@ -139,86 +139,32 @@ window.updatePaymentStatus = async function(orderNumber, newPaymentStatus) {
 // FONCTIONS DE GESTION DES PRODUITS
 // ========================================
 
-// Afficher le modal d'ajout de produit
-function setupPricingSync(rootElement, selectors) {
-    if (!rootElement || !selectors) {
-        return;
-    }
-
-    const priceInput = rootElement.querySelector(selectors.price);
-    const promoInput = rootElement.querySelector(selectors.promo);
-    const discountInput = rootElement.querySelector(selectors.discount);
-
-    if (!priceInput || !promoInput || !discountInput) {
-        return;
-    }
-
-    let isSyncing = false;
-
-    const parseValue = (input) => {
-        if (!input || input.value === '') {
-            return null;
-        }
-        const value = parseFloat(input.value.replace(',', '.'));
-        return Number.isFinite(value) ? value : null;
-    };
-
-    const setValue = (input, value) => {
-        if (!input) return;
-        if (value === null || Number.isNaN(value)) {
-            input.value = '';
-            return;
-        }
-        input.value = (Math.round(value * 100) / 100).toString();
-    };
-
-    const updateFromPromo = () => {
-        if (isSyncing) return;
-        const price = parseValue(priceInput);
-        const promo = parseValue(promoInput);
-
-        if (!price || !promo || price <= 0 || promo <= 0 || promo >= price) {
-            setValue(discountInput, null);
-            return;
-        }
-
-        isSyncing = true;
-        const discount = ((price - promo) / price) * 100;
-        setValue(discountInput, discount);
-        isSyncing = false;
-    };
-
-    const updateFromDiscount = () => {
-        if (isSyncing) return;
-        const price = parseValue(priceInput);
-        const discount = parseValue(discountInput);
-
-        if (!price || !discount || price <= 0 || discount <= 0 || discount >= 100) {
-            setValue(promoInput, null);
-            return;
-        }
-
-        isSyncing = true;
-        const promo = price * (1 - discount / 100);
-        setValue(promoInput, promo);
-        isSyncing = false;
-    };
-
-    const handlePriceChange = () => {
-        if (promoInput.value) {
-            updateFromPromo();
-        } else if (discountInput.value) {
-            updateFromDiscount();
-        }
-    };
-
-    priceInput.addEventListener('input', handlePriceChange);
-    promoInput.addEventListener('input', updateFromPromo);
-    discountInput.addEventListener('input', updateFromDiscount);
-}
-
+// Afficher le modal d'ajout de produit - Définie en premier pour être disponible immédiatement
 window.showAddProductModal = function() {
-    // Créer le modal
+    // Vérifier si le modal existe déjà
+    const existingModal = document.getElementById('addProductModal');
+    if (existingModal) {
+        const modal = bootstrap.Modal.getInstance(existingModal) || new bootstrap.Modal(existingModal);
+        modal.show();
+        return;
+    }
+    
+    // Générer les options de catégories avec Blade
+    <?php
+        $categoriesForModal = \App\Models\Category::active()->get()->map(function($cat) {
+            return ['id' => $cat->id, 'name' => $cat->name];
+        });
+    ?>
+    
+    const categories = <?php echo json_encode($categoriesForModal, 15, 512) ?>;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    // Créer le modal avec le HTML généré de manière sûre
+    const categoryOptions = categories.map(cat => {
+        const escapedName = String(cat.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        return `<option value="${cat.id}">${escapedName}</option>`;
+    }).join('');
+    
     const modalHtml = `
         <div class="modal fade z-index-9x" id="addProductModal" tabindex="-1">
             <div class="modal-dialog modal-xl">
@@ -231,27 +177,25 @@ window.showAddProductModal = function() {
                     </div>
                     <div class="modal-body">
                         <form id="addProductForm" enctype="multipart/form-data">
-                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="_token" value="${csrfToken}">
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label for="name" class="form-label">Nom du produit <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="name" name="name" required>
-                            </div>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
                                 <div class="col-md-6">
                                     <label for="add_category_id" class="form-label">Catégorie <span class="text-danger">*</span></label>
                                     <select class="form-select" id="add_category_id" name="category_id" required>
-                                    <option value="">Sélectionner une catégorie</option>
-                                    <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($category->id); ?>"><?php echo e($category->name); ?></option>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </select>
-                            </div>
+                                        <option value="">Sélectionner une catégorie</option>
+                                        ${categoryOptions}
+                                    </select>
+                                </div>
                                 <div class="col-md-6">
                                     <label for="add_subcategory_id" class="form-label">Sous-catégorie</label>
                                     <select class="form-select" id="add_subcategory_id" name="subcategory_id">
-                                    <option value="">Sélectionner une sous-catégorie</option>
-                                </select>
-                            </div>
+                                        <option value="">Sélectionner une sous-catégorie</option>
+                                    </select>
+                                </div>
                                 <div class="col-12">
                                     <label for="description" class="form-label">Description détaillée <span class="text-danger">*</span></label>
                                     <textarea class="form-control" id="description" name="description" rows="4" minlength="50" required placeholder="Décrivez les caractéristiques clés, les matériaux, l'utilisation..."></textarea>
@@ -329,7 +273,6 @@ window.showAddProductModal = function() {
     const modal = new bootstrap.Modal(modalElement);
     
     // Charger les sous-catégories quand une catégorie est sélectionnée
-    // Utiliser un délai pour s'assurer que le DOM est complètement rendu
     setTimeout(() => {
         const categorySelect = document.getElementById('add_category_id');
         if (categorySelect) {
@@ -352,10 +295,87 @@ window.showAddProductModal = function() {
         modalElement.addEventListener('hidden.bs.modal', function() {
             this.remove();
         });
-    }, 200); // Augmenté à 200ms pour plus de sécurité
+    }, 200);
     
     modal.show();
 };
+
+function setupPricingSync(rootElement, selectors) {
+    if (!rootElement || !selectors) {
+        return;
+    }
+
+    const priceInput = rootElement.querySelector(selectors.price);
+    const promoInput = rootElement.querySelector(selectors.promo);
+    const discountInput = rootElement.querySelector(selectors.discount);
+
+    if (!priceInput || !promoInput || !discountInput) {
+        return;
+    }
+
+    let isSyncing = false;
+
+    const parseValue = (input) => {
+        if (!input || input.value === '') {
+            return null;
+        }
+        const value = parseFloat(input.value.replace(',', '.'));
+        return Number.isFinite(value) ? value : null;
+    };
+
+    const setValue = (input, value) => {
+        if (!input) return;
+        if (value === null || Number.isNaN(value)) {
+            input.value = '';
+            return;
+        }
+        input.value = (Math.round(value * 100) / 100).toString();
+    };
+
+    const updateFromPromo = () => {
+        if (isSyncing) return;
+        const price = parseValue(priceInput);
+        const promo = parseValue(promoInput);
+
+        if (!price || !promo || price <= 0 || promo <= 0 || promo >= price) {
+            setValue(discountInput, null);
+            return;
+        }
+
+        isSyncing = true;
+        const discount = ((price - promo) / price) * 100;
+        setValue(discountInput, discount);
+        isSyncing = false;
+    };
+
+    const updateFromDiscount = () => {
+        if (isSyncing) return;
+        const price = parseValue(priceInput);
+        const discount = parseValue(discountInput);
+
+        if (!price || !discount || price <= 0 || discount <= 0 || discount >= 100) {
+            setValue(promoInput, null);
+            return;
+        }
+
+        isSyncing = true;
+        const promo = price * (1 - discount / 100);
+        setValue(promoInput, promo);
+        isSyncing = false;
+    };
+
+    const handlePriceChange = () => {
+        if (promoInput.value) {
+            updateFromPromo();
+        } else if (discountInput.value) {
+            updateFromDiscount();
+        }
+    };
+
+    priceInput.addEventListener('input', handlePriceChange);
+    promoInput.addEventListener('input', updateFromPromo);
+    discountInput.addEventListener('input', updateFromDiscount);
+}
 
 // Éditer un produit
 window.editProduct = function(id) {
@@ -404,9 +424,10 @@ window.editProduct = function(id) {
             if (product.image) {
                 const previewEl = document.getElementById('current_image_preview');
                 if (previewEl) {
+                    const safeImage = String(product.image).replace(/"/g, '&quot;').replace(/'/g, '&#039;');
                     previewEl.innerHTML = `
                         <div class="d-flex align-items-center mb-2">
-                            <img src="/storage/${product.image}" alt="Image actuelle" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                            <img src="/storage/${safeImage}" alt="Image actuelle" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
                             <div class="ms-3">
                                 <small class="text-muted">Image actuelle</small>
                             </div>
@@ -560,7 +581,7 @@ async function submitProduct() {
     
     const mainImageInput = document.getElementById('add_main_image');
     if (!mainImageInput || mainImageInput.files.length === 0) {
-        showNotification('danger', 'Ajoutez l'image principale du produit');
+        showNotification('danger', 'Ajoutez l\'image principale du produit');
         return;
     }
     
@@ -2420,16 +2441,20 @@ async function loadProducts() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.products.map(product => `
+                            ${data.products.map(product => {
+                                const escapeHtml = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+                                const safeName = escapeHtml(product.name);
+                                const safeImage = String(product.image || '').replace(/"/g, '&quot;');
+                                return `
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <img src="${product.image}" alt="${product.name}" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
-                                            <span>${product.name}</span>
+                                            <img src="${safeImage}" alt="${safeName}" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <span>${safeName}</span>
                                         </div>
                                     </td>
-                                    <td>${new Intl.NumberFormat('fr-FR').format(product.price)} FCFA</td>
-                                    <td>${product.stock}</td>
+                                    <td>${new Intl.NumberFormat('fr-FR').format(product.price || 0)} FCFA</td>
+                                    <td>${product.stock || 0}</td>
                                     <td><span class="badge bg-${product.stock > 0 ? 'success' : 'danger'}">${product.stock > 0 ? 'En stock' : 'Rupture'}</span></td>
                                     <td>
                                         <button class="btn btn-sm btn-outline-primary" onclick="window.editProduct(${product.id})">
@@ -2440,7 +2465,8 @@ async function loadProducts() {
                                         </button>
                                     </td>
                                 </tr>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
