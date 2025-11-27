@@ -100,9 +100,6 @@
                             </label>
                         </div>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    <?php if($attribute->attributeValues->count() > 5): ?>
-                        <span class="text-white-50 small fst-italic">Afficher plus dans une prochaine mise à jour</span>
-                    <?php endif; ?>
                 </div>
                 <?php if(!$loop->last): ?>
                     <hr>

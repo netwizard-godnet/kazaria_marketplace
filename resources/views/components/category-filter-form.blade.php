@@ -98,9 +98,6 @@
                             </label>
                         </div>
                     @endforeach
-                    @if($attribute->attributeValues->count() > 5)
-                        <span class="text-white-50 small fst-italic">Afficher plus dans une prochaine mise à jour</span>
-                    @endif
                 </div>
                 @if(!$loop->last)
                     <hr>
