@@ -104,7 +104,7 @@
                             @if($boutiquePub1->link_url)
                                 <a href="{{ $boutiquePub1->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $boutiquePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 1">
+                        <img src="{{ $boutiquePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 1">
                             @if($boutiquePub1->link_url)</a>@endif
                         </div>
                     @else
@@ -125,7 +125,7 @@
                             @if($boutiquePub2->link_url)
                                 <a href="{{ $boutiquePub2->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $boutiquePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 2">
+                        <img src="{{ $boutiquePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 2">
                             @if($boutiquePub2->link_url)</a>@endif
                         </div>
                     @else
@@ -146,7 +146,7 @@
                             @if($boutiquePub3->link_url)
                                 <a href="{{ $boutiquePub3->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $boutiquePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 3">
+                        <img src="{{ $boutiquePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Boutique Pub 3">
                             @if($boutiquePub3->link_url)</a>@endif
                         </div>
                     @else
@@ -289,7 +289,7 @@
                             @if($boutiquePub4->link_url)
                                 <a href="{{ $boutiquePub4->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $boutiquePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 4">
+                        <img src="{{ $boutiquePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 4">
                             @if($boutiquePub4->link_url)</a>@endif
                         </div>
                     @else
@@ -310,7 +310,7 @@
                             @if($boutiquePub5->link_url)
                                 <a href="{{ $boutiquePub5->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $boutiquePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 5">
+                        <img src="{{ $boutiquePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Boutique Pub 5">
                             @if($boutiquePub5->link_url)</a>@endif
                         </div>
                     @else

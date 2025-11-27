@@ -51,8 +51,8 @@
                     <form action="{{ route('admin.brands.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="form-group">
-                            <label>Nom de la marque <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" placeholder="Ex: Samsung" value="{{ old('name') }}" required>
+                            <label>Nom de la marque</label>
+                            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" placeholder="Ex: Samsung" value="{{ old('name') }}">
                             @error('name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -125,7 +125,11 @@
                                                     <span class="text-muted">Aucune image</span>
                                                 @endif
                                             </td>
-                                            <td><strong>{{ $brand->name }}</strong></td>
+                                            <td>
+                                                @if(filled($brand->name))
+                                                    <strong>{{ $brand->name }}</strong>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if($brand->link_url)
                                                     <a href="{{ $brand->link_url }}" target="_blank" class="text-primary">
@@ -144,7 +148,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#editBrandModal{{ $brand->id }}">
+                                                <button type="button" class="btn btn-sm btn-info btn-edit-brand" data-toggle="modal" data-target="#editBrandModal{{ $brand->id }}">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                                 <form action="{{ route('admin.brands.destroy', $brand) }}" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette marque ?');">
@@ -157,60 +161,6 @@
                                             </td>
                                         </tr>
 
-                                        <!-- Modal d'édition -->
-                                        <div class="modal fade" id="editBrandModal{{ $brand->id }}" tabindex="-1" role="dialog">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Modifier la marque</h5>
-                                                        <button type="button" class="close" data-dismiss="modal">
-                                                            <span>&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <form action="{{ route('admin.brands.update', $brand) }}" method="POST" enctype="multipart/form-data">
-                                                        @csrf
-                                                        @method('PUT')
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label>Nom de la marque <span class="text-danger">*</span></label>
-                                                                <input type="text" name="name" class="form-control" value="{{ $brand->name }}" required>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label>Image actuelle</label>
-                                                                @if($brand->image_url)
-                                                                    <div class="mb-2">
-                                                                        <img src="{{ $brand->image_url }}" alt="{{ $brand->name }}" style="max-width: 200px; max-height: 100px; object-fit: contain;">
-                                                                    </div>
-                                                                @endif
-                                                                <input type="file" name="image" class="form-control" accept="image/*">
-                                                                <small class="text-muted">Laisser vide pour conserver l'image actuelle.</small>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label>Lien (optionnel)</label>
-                                                                <input type="url" name="link_url" class="form-control" value="{{ $brand->link_url }}" placeholder="https://...">
-                                                            </div>
-                                                            <div class="form-row">
-                                                                <div class="col">
-                                                                    <label>Ordre d'affichage</label>
-                                                                    <input type="number" name="sort_order" class="form-control" value="{{ $brand->sort_order }}" min="0">
-                                                                </div>
-                                                                <div class="col">
-                                                                    <label>Statut</label>
-                                                                    <select name="is_active" class="form-control">
-                                                                        <option value="1" {{ $brand->is_active ? 'selected' : '' }}>Actif</option>
-                                                                        <option value="0" {{ !$brand->is_active ? 'selected' : '' }}>Inactif</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                                                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
                                     @endforeach
                                 </tbody>
                             </table>
@@ -226,5 +176,91 @@
         </div>
     </div>
 </div>
-@endsection
 
+</div>
+
+@foreach($brands as $brand)
+    <div class="modal fade" id="editBrandModal{{ $brand->id }}" tabindex="-1" aria-labelledby="editBrandLabel{{ $brand->id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBrandLabel{{ $brand->id }}">Modifier la marque</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ route('admin.brands.update', $brand) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nom de la marque</label>
+                            <input type="text" name="name" class="form-control" value="{{ $brand->name }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Image actuelle</label>
+                            @if($brand->image_url)
+                                <div class="mb-2">
+                                    <img src="{{ $brand->image_url }}" alt="{{ $brand->name }}" style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                                </div>
+                            @endif
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                            <small class="text-muted">Laisser vide pour conserver l'image actuelle.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Lien (optionnel)</label>
+                            <input type="url" name="link_url" class="form-control" value="{{ $brand->link_url }}" placeholder="https://...">
+                        </div>
+                        <div class="form-row">
+                            <div class="col">
+                                <label>Ordre d'affichage</label>
+                                <input type="number" name="sort_order" class="form-control" value="{{ $brand->sort_order }}" min="0">
+                            </div>
+                            <div class="col">
+                                <label>Statut</label>
+                                <select name="is_active" class="form-control">
+                                    <option value="1" {{ $brand->is_active ? 'selected' : '' }}>Actif</option>
+                                    <option value="0" {{ !$brand->is_active ? 'selected' : '' }}>Inactif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endforeach
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.btn-edit-brand').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                const targetSelector = this.getAttribute('data-target');
+
+                if (!targetSelector) {
+                    return;
+                }
+
+                const modal = document.querySelector(targetSelector);
+
+                if (!modal) {
+                    return;
+                }
+
+                if (typeof window.$ === 'function' && typeof window.$.fn.modal === 'function') {
+                    window.$(modal).modal('show');
+                } else if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal === 'function') {
+                    const bsModal = bootstrap.Modal.getOrCreateInstance(modal);
+                    bsModal.show();
+                }
+            });
+        });
+    });
+</script>
+@endpush
+@endsection

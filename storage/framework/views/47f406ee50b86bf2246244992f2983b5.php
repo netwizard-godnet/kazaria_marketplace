@@ -1,5 +1,3 @@
-
-
 <?php $__env->startSection('title', 'Gestion des Marques'); ?>
 
 <?php $__env->startSection('content'); ?>
@@ -53,7 +51,7 @@
                     <form action="<?php echo e(route('admin.brands.store')); ?>" method="POST" enctype="multipart/form-data">
                         <?php echo csrf_field(); ?>
                         <div class="form-group">
-                            <label>Nom de la marque <span class="text-danger">*</span></label>
+                            <label>Nom de la marque</label>
                             <input type="text" name="name" class="form-control <?php $__errorArgs = ['name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -61,7 +59,7 @@ if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
-unset($__errorArgs, $__bag); ?>" placeholder="Ex: Samsung" value="<?php echo e(old('name')); ?>" required>
+unset($__errorArgs, $__bag); ?>" placeholder="Ex: Samsung" value="<?php echo e(old('name')); ?>">
                             <?php $__errorArgs = ['name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
@@ -169,7 +167,11 @@ unset($__errorArgs, $__bag); ?>
                                                     <span class="text-muted">Aucune image</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><strong><?php echo e($brand->name); ?></strong></td>
+                                            <td>
+                                                <?php if(filled($brand->name)): ?>
+                                                    <strong><?php echo e($brand->name); ?></strong>
+                                                <?php endif; ?>
+                                            </td>
                                             <td>
                                                 <?php if($brand->link_url): ?>
                                                     <a href="<?php echo e($brand->link_url); ?>" target="_blank" class="text-primary">
@@ -188,7 +190,7 @@ unset($__errorArgs, $__bag); ?>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#editBrandModal<?php echo e($brand->id); ?>">
+                                                <button type="button" class="btn btn-sm btn-info btn-edit-brand" data-toggle="modal" data-target="#editBrandModal<?php echo e($brand->id); ?>">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                                 <form action="<?php echo e(route('admin.brands.destroy', $brand)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette marque ?');">
@@ -201,60 +203,6 @@ unset($__errorArgs, $__bag); ?>
                                             </td>
                                         </tr>
 
-                                        <!-- Modal d'édition -->
-                                        <div class="modal fade" id="editBrandModal<?php echo e($brand->id); ?>" tabindex="-1" role="dialog">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Modifier la marque</h5>
-                                                        <button type="button" class="close" data-dismiss="modal">
-                                                            <span>&times;</span>
-                                                        </button>
-                                                    </div>
-                                                    <form action="<?php echo e(route('admin.brands.update', $brand)); ?>" method="POST" enctype="multipart/form-data">
-                                                        <?php echo csrf_field(); ?>
-                                                        <?php echo method_field('PUT'); ?>
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label>Nom de la marque <span class="text-danger">*</span></label>
-                                                                <input type="text" name="name" class="form-control" value="<?php echo e($brand->name); ?>" required>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label>Image actuelle</label>
-                                                                <?php if($brand->image_url): ?>
-                                                                    <div class="mb-2">
-                                                                        <img src="<?php echo e($brand->image_url); ?>" alt="<?php echo e($brand->name); ?>" style="max-width: 200px; max-height: 100px; object-fit: contain;">
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                                <input type="file" name="image" class="form-control" accept="image/*">
-                                                                <small class="text-muted">Laisser vide pour conserver l'image actuelle.</small>
-                                                            </div>
-                                                            <div class="form-group">
-                                                                <label>Lien (optionnel)</label>
-                                                                <input type="url" name="link_url" class="form-control" value="<?php echo e($brand->link_url); ?>" placeholder="https://...">
-                                                            </div>
-                                                            <div class="form-row">
-                                                                <div class="col">
-                                                                    <label>Ordre d'affichage</label>
-                                                                    <input type="number" name="sort_order" class="form-control" value="<?php echo e($brand->sort_order); ?>" min="0">
-                                                                </div>
-                                                                <div class="col">
-                                                                    <label>Statut</label>
-                                                                    <select name="is_active" class="form-control">
-                                                                        <option value="1" <?php echo e($brand->is_active ? 'selected' : ''); ?>>Actif</option>
-                                                                        <option value="0" <?php echo e(!$brand->is_active ? 'selected' : ''); ?>>Inactif</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                                                            <button type="submit" class="btn btn-primary">Enregistrer</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </tbody>
                             </table>
@@ -270,7 +218,93 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 </div>
-<?php $__env->stopSection(); ?>
 
+</div>
+
+<?php $__currentLoopData = $brands; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $brand): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    <div class="modal fade" id="editBrandModal<?php echo e($brand->id); ?>" tabindex="-1" aria-labelledby="editBrandLabel<?php echo e($brand->id); ?>" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBrandLabel<?php echo e($brand->id); ?>">Modifier la marque</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="<?php echo e(route('admin.brands.update', $brand)); ?>" method="POST" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
+                    <?php echo method_field('PUT'); ?>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nom de la marque</label>
+                            <input type="text" name="name" class="form-control" value="<?php echo e($brand->name); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Image actuelle</label>
+                            <?php if($brand->image_url): ?>
+                                <div class="mb-2">
+                                    <img src="<?php echo e($brand->image_url); ?>" alt="<?php echo e($brand->name); ?>" style="max-width: 200px; max-height: 100px; object-fit: contain;">
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" name="image" class="form-control" accept="image/*">
+                            <small class="text-muted">Laisser vide pour conserver l'image actuelle.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Lien (optionnel)</label>
+                            <input type="url" name="link_url" class="form-control" value="<?php echo e($brand->link_url); ?>" placeholder="https://...">
+                        </div>
+                        <div class="form-row">
+                            <div class="col">
+                                <label>Ordre d'affichage</label>
+                                <input type="number" name="sort_order" class="form-control" value="<?php echo e($brand->sort_order); ?>" min="0">
+                            </div>
+                            <div class="col">
+                                <label>Statut</label>
+                                <select name="is_active" class="form-control">
+                                    <option value="1" <?php echo e($brand->is_active ? 'selected' : ''); ?>>Actif</option>
+                                    <option value="0" <?php echo e(!$brand->is_active ? 'selected' : ''); ?>>Inactif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php $__env->startPush('scripts'); ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.btn-edit-brand').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                const targetSelector = this.getAttribute('data-target');
+
+                if (!targetSelector) {
+                    return;
+                }
+
+                const modal = document.querySelector(targetSelector);
+
+                if (!modal) {
+                    return;
+                }
+
+                if (typeof window.$ === 'function' && typeof window.$.fn.modal === 'function') {
+                    window.$(modal).modal('show');
+                } else if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal === 'function') {
+                    const bsModal = bootstrap.Modal.getOrCreateInstance(modal);
+                    bsModal.show();
+                }
+            });
+        });
+    });
+</script>
+<?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/admin/brands/index.blade.php ENDPATH**/ ?>

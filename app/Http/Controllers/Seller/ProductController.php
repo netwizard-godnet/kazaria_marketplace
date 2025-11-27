@@ -37,9 +37,12 @@ class ProductController extends Controller
             'brand' => 'nullable|string|max:100',
             'model' => 'nullable|string|max:100',
             'warranty' => 'nullable|string|max:100',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'attributes' => 'nullable|array',
             'tags' => 'nullable|string',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -51,13 +54,23 @@ class ProductController extends Controller
                 $slug = $originalSlug . '-' . $count++;
             }
 
-            // Upload des images
+            // Upload de l'image principale
+            $mainImagePath = null;
+            if ($request->hasFile('image')) {
+                $mainImagePath = $request->file('image')->store('products', 'public');
+            }
+
+            // Upload des images supplémentaires
             $images = [];
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
                     $path = $image->store('products', 'public');
                     $images[] = $path;
                 }
+            }
+            
+            if ($mainImagePath) {
+                array_unshift($images, $mainImagePath);
             }
 
             // Calculer price, old_price et discount
@@ -79,12 +92,17 @@ class ProductController extends Controller
                 $finalPrice = $request->price * (1 - $discount / 100);
             }
 
+            $tags = $this->formatTags($request->tags);
+            $metaKeywords = $this->normalizeKeywordString($request->meta_keywords);
+
             // Créer le produit
             $product = Product::create([
                 'store_id' => $store->id,
                 'name' => $request->name,
                 'slug' => $slug,
                 'description' => $request->description,
+                'meta_description' => $request->meta_description,
+                'meta_keywords' => $metaKeywords,
                 'price' => $finalPrice,
                 'old_price' => $oldPrice,
                 'discount_percentage' => $discount,
@@ -92,9 +110,10 @@ class ProductController extends Controller
                 'brand' => $request->brand,
                 'model' => $request->model,
                 'warranty' => $request->warranty,
+                'image' => $mainImagePath,
                 'images' => $images,
                 'attributes' => $request->attributes ?? [],
-                'tags' => $request->tags ? explode(',', $request->tags) : [],
+                'tags' => $tags,
                 'rating' => 0,
                 'reviews_count' => 0,
                 'views' => 0,
@@ -269,6 +288,8 @@ class ProductController extends Controller
             'tags' => 'nullable|string',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'nullable|exists:subcategories,id',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
         ], [
             'name.required' => 'Le nom du produit est obligatoire',
             'description.required' => 'La description est obligatoire',
@@ -313,6 +334,8 @@ class ProductController extends Controller
             $updateData = [
                 'name' => $request->name,
                 'description' => $request->description,
+                'meta_description' => $request->meta_description,
+                'meta_keywords' => $this->normalizeKeywordString($request->meta_keywords),
                 'price' => $finalPrice,
                 'old_price' => $oldPrice,
                 'discount_percentage' => $discount,
@@ -321,7 +344,7 @@ class ProductController extends Controller
                 'model' => $request->model,
                 'warranty' => $request->warranty,
                 'is_active' => $request->boolean('is_active'),
-                'tags' => $request->tags ? explode(',', str_replace(' ', '', $request->tags)) : [],
+                'tags' => $this->formatTags($request->tags),
                 'category_id' => $request->category_id,
                 'subcategory_id' => $request->subcategory_id ?: null,
             ];
@@ -695,5 +718,37 @@ class ProductController extends Controller
     public function deleteProduct(Request $request, $id)
     {
         return $this->destroy($id, $request);
+    }
+
+    /**
+     * Nettoyer une liste de tags séparés par des virgules
+     */
+    private function formatTags(?string $tags): array
+    {
+        if (!$tags) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(function ($tag) {
+            return trim($tag);
+        }, explode(',', $tags)), function ($tag) {
+            return $tag !== '';
+        }));
+    }
+
+    /**
+     * Nettoyer une liste de mots-clés SEO
+     */
+    private function normalizeKeywordString(?string $keywords): ?string
+    {
+        if (!$keywords) {
+            return null;
+        }
+
+        $items = array_values(array_filter(array_map('trim', explode(',', $keywords)), function ($keyword) {
+            return $keyword !== '';
+        }));
+
+        return empty($items) ? null : implode(', ', $items);
     }
 }

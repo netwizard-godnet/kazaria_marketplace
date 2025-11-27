@@ -140,11 +140,88 @@ window.updatePaymentStatus = async function(orderNumber, newPaymentStatus) {
 // ========================================
 
 // Afficher le modal d'ajout de produit
+function setupPricingSync(rootElement, selectors) {
+    if (!rootElement || !selectors) {
+        return;
+    }
+
+    const priceInput = rootElement.querySelector(selectors.price);
+    const promoInput = rootElement.querySelector(selectors.promo);
+    const discountInput = rootElement.querySelector(selectors.discount);
+
+    if (!priceInput || !promoInput || !discountInput) {
+        return;
+    }
+
+    let isSyncing = false;
+
+    const parseValue = (input) => {
+        if (!input || input.value === '') {
+            return null;
+        }
+        const value = parseFloat(input.value.replace(',', '.'));
+        return Number.isFinite(value) ? value : null;
+    };
+
+    const setValue = (input, value) => {
+        if (!input) return;
+        if (value === null || Number.isNaN(value)) {
+            input.value = '';
+            return;
+        }
+        input.value = (Math.round(value * 100) / 100).toString();
+    };
+
+    const updateFromPromo = () => {
+        if (isSyncing) return;
+        const price = parseValue(priceInput);
+        const promo = parseValue(promoInput);
+
+        if (!price || !promo || price <= 0 || promo <= 0 || promo >= price) {
+            setValue(discountInput, null);
+            return;
+        }
+
+        isSyncing = true;
+        const discount = ((price - promo) / price) * 100;
+        setValue(discountInput, discount);
+        isSyncing = false;
+    };
+
+    const updateFromDiscount = () => {
+        if (isSyncing) return;
+        const price = parseValue(priceInput);
+        const discount = parseValue(discountInput);
+
+        if (!price || !discount || price <= 0 || discount <= 0 || discount >= 100) {
+            setValue(promoInput, null);
+            return;
+        }
+
+        isSyncing = true;
+        const promo = price * (1 - discount / 100);
+        setValue(promoInput, promo);
+        isSyncing = false;
+    };
+
+    const handlePriceChange = () => {
+        if (promoInput.value) {
+            updateFromPromo();
+        } else if (discountInput.value) {
+            updateFromDiscount();
+        }
+    };
+
+    priceInput.addEventListener('input', handlePriceChange);
+    promoInput.addEventListener('input', updateFromPromo);
+    discountInput.addEventListener('input', updateFromDiscount);
+}
+
 window.showAddProductModal = function() {
     // Créer le modal
     const modalHtml = `
         <div class="modal fade z-index-9x" id="addProductModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -155,42 +232,83 @@ window.showAddProductModal = function() {
                     <div class="modal-body">
                         <form id="addProductForm" enctype="multipart/form-data">
                             <?php echo csrf_field(); ?>
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Nom du produit *</label>
-                                <input type="text" class="form-control" id="name" name="name" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="description" class="form-label">Description *</label>
-                                <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="price" class="form-label">Prix (FCFA) *</label>
-                                    <input type="number" class="form-control" id="price" name="price" step="0.01" required>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="name" class="form-label">Nom du produit <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="stock" class="form-label">Stock *</label>
-                                    <input type="number" class="form-control" id="stock" name="stock" required>
+                                <div class="col-md-6">
+                                    <label for="add_category_id" class="form-label">Catégorie <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="add_category_id" name="category_id" required>
+                                        <option value="">Sélectionner une catégorie</option>
+                                        <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($category->id); ?>"><?php echo e($category->name); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </select>
                                 </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="category_id" class="form-label">Catégorie *</label>
-                                <select class="form-select" id="category_id" name="category_id" required>
-                                    <option value="">Sélectionner une catégorie</option>
-                                    <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($category->id); ?>"><?php echo e($category->name); ?></option>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="subcategory_id" class="form-label">Sous-catégorie</label>
-                                <select class="form-select" id="subcategory_id" name="subcategory_id">
-                                    <option value="">Sélectionner une sous-catégorie</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="image" class="form-label">Image principale *</label>
-                                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                                <div class="col-md-6">
+                                    <label for="add_subcategory_id" class="form-label">Sous-catégorie</label>
+                                    <select class="form-select" id="add_subcategory_id" name="subcategory_id">
+                                        <option value="">Sélectionner une sous-catégorie</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label for="description" class="form-label">Description détaillée <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="description" name="description" rows="4" minlength="50" required placeholder="Décrivez les caractéristiques clés, les matériaux, l'utilisation..."></textarea>
+                                    <small class="text-muted">Minimum 50 caractères pour aider les clients et le SEO.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="price" class="form-label">Prix public (FCFA) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="stock" class="form-label">Stock disponible <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="stock" name="stock" min="0" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="promo_price" class="form-label">Prix promo (FCFA)</label>
+                                    <input type="number" class="form-control" id="promo_price" name="promo_price" step="0.01" min="0" placeholder="Saisir seulement si vous appliquez une promotion">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="discount" class="form-label">Réduction (%)</label>
+                                    <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" placeholder="Ou définissez un pourcentage">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="brand" class="form-label">Marque</label>
+                                    <input type="text" class="form-control" id="brand" name="brand" placeholder="Ex: Samsung">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="model" class="form-label">Modèle / Référence</label>
+                                    <input type="text" class="form-control" id="model" name="model" placeholder="Ex: Galaxy S24">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="warranty" class="form-label">Garantie</label>
+                                    <input type="text" class="form-control" id="warranty" name="warranty" placeholder="Ex: 12 mois">
+                                </div>
+                                <div class="col-12">
+                                    <label for="meta_description" class="form-label">Meta description</label>
+                                    <textarea class="form-control" id="meta_description" name="meta_description" rows="2" maxlength="320" placeholder="Texte court affiché sur Google (max 320 caractères)"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label for="meta_keywords" class="form-label">Mots-clés SEO</label>
+                                    <input type="text" class="form-control" id="meta_keywords" name="meta_keywords" placeholder="smartphone, 128go, 5g">
+                                    <small class="text-muted">Séparez les mots-clés par des virgules.</small>
+                                </div>
+                                <div class="col-12">
+                                    <label for="tags" class="form-label">Tags (internes)</label>
+                                    <input type="text" class="form-control" id="tags" name="tags" placeholder="nouveau, best-seller, promo">
+                                    <small class="text-muted">Ils facilitent la recherche sur la boutique.</small>
+                                </div>
+                                <div class="col-12">
+                                    <label for="add_main_image" class="form-label">Image principale <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="add_main_image" name="image" accept="image/*" required>
+                                    <small class="text-muted d-block">Formats acceptés: JPG, PNG, GIF. Taille max: 5 Mo.</small>
+                                </div>
+                                <div class="col-12">
+                                    <label for="add_extra_images" class="form-label">Images supplémentaires</label>
+                                    <input type="file" class="form-control" id="add_extra_images" name="images[]" accept="image/*" multiple>
+                                    <small class="text-muted d-block">Jusqu'à 5 images additionnelles (JPG/PNG, 5 Mo max chacune).</small>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -213,99 +331,22 @@ window.showAddProductModal = function() {
     // Charger les sous-catégories quand une catégorie est sélectionnée
     // Utiliser un délai pour s'assurer que le DOM est complètement rendu
     setTimeout(() => {
-        const categorySelect = document.getElementById('category_id');
+        const categorySelect = document.getElementById('add_category_id');
         if (categorySelect) {
             categorySelect.addEventListener('change', function() {
-                const categoryId = this.value;
-                console.log('🔍 Catégorie sélectionnée dans modal ajout:', categoryId);
-                
-                // Cibler directement le select dans le modal d'ajout
-                const addModal = document.getElementById('addProductModal');
-                const subcategorySelect = addModal ? addModal.querySelector('#subcategory_id') : null;
-                
-                if (!subcategorySelect) {
-                    console.error('❌ Select de sous-catégorie non trouvé dans le modal d\'ajout');
-                    return;
-                }
-                
-                console.log('✅ Select de sous-catégorie trouvé dans modal:', subcategorySelect);
-                
-                // Vider le select
-                subcategorySelect.innerHTML = '<option value="">Sélectionner une sous-catégorie</option>';
-                
-                if (!categoryId || categoryId === '') {
-                    console.log('ℹ️ Aucune catégorie sélectionnée');
-                    return;
-                }
-                
-                // Charger les sous-catégories directement
-                fetch(`/api/categories/${categoryId}/subcategories`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('📋 Réponse API sous-catégories:', data);
-                    if (data.success && data.subcategories && data.subcategories.length > 0) {
-                        // Utiliser directement la référence au select trouvée au début
-                        // Vérifier qu'il est toujours dans le DOM
-                        if (!subcategorySelect || !subcategorySelect.parentNode) {
-                            console.error('❌ Select de sous-catégorie n\'est plus dans le DOM');
-                            // Essayer de le retrouver
-                            const addModalCheck = document.getElementById('addProductModal');
-                            const selectCheck = addModalCheck ? addModalCheck.querySelector('#subcategory_id') : null;
-                            if (!selectCheck) {
-                                console.error('❌ Impossible de retrouver le select de sous-catégorie');
-                                return;
-                            }
-                            // Utiliser le nouveau select trouvé
-                            data.subcategories.forEach(subcategory => {
-                                const option = document.createElement('option');
-                                option.value = subcategory.id;
-                                option.textContent = subcategory.name;
-                                selectCheck.appendChild(option);
-                            });
-                            console.log(`✅ ${data.subcategories.length} sous-catégorie(s) ajoutée(s) au select (via nouvelle recherche)`);
-                        } else {
-                            // Utiliser la référence originale
-                            const optionsBefore = subcategorySelect.options.length;
-                            data.subcategories.forEach(subcategory => {
-                                const option = document.createElement('option');
-                                option.value = subcategory.id;
-                                option.textContent = subcategory.name;
-                                subcategorySelect.appendChild(option);
-                            });
-                            const optionsAfter = subcategorySelect.options.length;
-                            console.log(`✅ ${data.subcategories.length} sous-catégorie(s) ajoutée(s) au select`);
-                            console.log(`📊 Options avant: ${optionsBefore}, après: ${optionsAfter}`);
-                            console.log('📋 Contenu du select:', Array.from(subcategorySelect.options).map(opt => `${opt.value}: ${opt.textContent}`));
-                            
-                            // Forcer la mise à jour visuelle et le rendu
-                            subcategorySelect.dispatchEvent(new Event('change', { bubbles: true }));
-                            subcategorySelect.style.display = 'none';
-                            subcategorySelect.offsetHeight; // Force reflow
-                            subcategorySelect.style.display = '';
-                        }
-                    } else {
-                        console.log('ℹ️ Aucune sous-catégorie disponible pour cette catégorie');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Erreur lors du chargement des sous-catégories:', error);
-                });
+                console.log('🔍 Catégorie sélectionnée dans modal ajout:', this.value);
+                loadSubcategories(this.value, null, { targetSelector: '#add_subcategory_id' });
             });
             console.log('✅ Event listener attaché au select de catégorie');
         } else {
             console.error('❌ Select de catégorie non trouvé dans le modal');
         }
+
+        setupPricingSync(modalElement, {
+            price: '#price',
+            promo: '#promo_price',
+            discount: '#discount'
+        });
         
         // Supprimer le modal du DOM quand il est fermé
         modalElement.addEventListener('hidden.bs.modal', function() {
@@ -440,6 +481,24 @@ async function submitProduct() {
     const form = document.getElementById('addProductForm');
     const formData = new FormData(form);
     
+    const tagsField = form.querySelector('#tags');
+    if (tagsField) {
+        const cleanedTags = tagsField.value
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+        formData.set('tags', cleanedTags.join(','));
+    }
+    
+    const metaKeywordsField = form.querySelector('#meta_keywords');
+    if (metaKeywordsField) {
+        const cleanedKeywords = metaKeywordsField.value
+            .split(',')
+            .map(keyword => keyword.trim())
+            .filter(keyword => keyword.length > 0);
+        formData.set('meta_keywords', cleanedKeywords.join(', '));
+    }
+    
     // Ajouter le token CSRF
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (csrfToken) {
@@ -453,6 +512,38 @@ async function submitProduct() {
     const description = formData.get('description');
     if (description.length < 50) {
         showNotification('danger', 'La description doit contenir au moins 50 caractères');
+        return;
+    }
+    
+    // Validation des prix
+    const price = parseFloat(formData.get('price'));
+    const promoPrice = parseFloat(formData.get('promo_price'));
+    const discount = parseFloat(formData.get('discount'));
+    
+    if (Number.isNaN(price) || price <= 0) {
+        showNotification('danger', 'Le prix doit être supérieur à 0');
+        return;
+    }
+    
+    if (!Number.isNaN(promoPrice) && promoPrice > 0 && promoPrice >= price) {
+        showNotification('danger', 'Le prix promo doit être inférieur au prix public');
+        return;
+    }
+    
+    if (!Number.isNaN(discount) && (discount < 0 || discount > 100)) {
+        showNotification('danger', 'La réduction doit être comprise entre 0 et 100%');
+        return;
+    }
+    
+    const mainImageInput = document.getElementById('add_main_image');
+    if (!mainImageInput || mainImageInput.files.length === 0) {
+        showNotification('danger', 'Ajoutez l’image principale du produit');
+        return;
+    }
+    
+    const extraImagesInput = document.getElementById('add_extra_images');
+    if (extraImagesInput && extraImagesInput.files.length > 5) {
+        showNotification('danger', 'Veuillez limiter les images supplémentaires à 5 fichiers maximum');
         return;
     }
     
@@ -544,6 +635,20 @@ async function editProductInternal(id) {
             const tagsField = document.getElementById('edit_tags');
             if (tagsField && product.tags) {
                 tagsField.value = Array.isArray(product.tags) ? product.tags.join(', ') : product.tags;
+            }
+            
+            const metaDescriptionField = document.getElementById('edit_meta_description');
+            if (metaDescriptionField) {
+                metaDescriptionField.value = product.meta_description || '';
+            }
+            
+            const metaKeywordsField = document.getElementById('edit_meta_keywords');
+            if (metaKeywordsField) {
+                if (Array.isArray(product.meta_keywords)) {
+                    metaKeywordsField.value = product.meta_keywords.join(', ');
+                } else {
+                    metaKeywordsField.value = product.meta_keywords || '';
+                }
             }
             
             // Réinitialiser les images à supprimer
@@ -672,6 +777,24 @@ window.submitEditForm = function() {
     // Créer FormData
     const formData = new FormData(form);
     
+    const editTags = form.querySelector('#edit_tags');
+    if (editTags) {
+        const cleanTags = editTags.value
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+        formData.set('tags', cleanTags.join(','));
+    }
+    
+    const editMetaKeywords = form.querySelector('#edit_meta_keywords');
+    if (editMetaKeywords) {
+        const cleanKeywords = editMetaKeywords.value
+            .split(',')
+            .map(keyword => keyword.trim())
+            .filter(keyword => keyword.length > 0);
+        formData.set('meta_keywords', cleanKeywords.join(', '));
+    }
+    
     // Convertir le statut en is_active
     const status = formData.get('status');
     formData.append('is_active', status === 'active' ? '1' : '0');
@@ -748,33 +871,45 @@ async function deleteProductInternal(id) {
 }
 
 // Charger les sous-catégories
-function loadSubcategories(categoryId, selectedSubcategoryId = null) {
-    // Chercher le select dans l'ordre de priorité
-    // 1. Dans le modal d'édition (edit_subcategory_id)
-    // 2. Dans le modal d'ajout ou autres formulaires (subcategory_id) 
-    // 3. Ancien format (subcategory_select)
-    let subcategorySelect = document.getElementById('edit_subcategory_id');
+function loadSubcategories(categoryId, selectedSubcategoryId = null, options = {}) {
+    let subcategorySelect = null;
     
-    if (!subcategorySelect) {
-        // Si on est dans le modal d'ajout, chercher subcategory_id dans le modal
+    if (options.target instanceof HTMLElement) {
+        subcategorySelect = options.target;
+    } else if (options.targetSelector) {
+        subcategorySelect = document.querySelector(options.targetSelector);
+    } else if (options.root && typeof options.root.querySelector === 'function') {
+        subcategorySelect = options.root.querySelector('#add_subcategory_id') || options.root.querySelector('#subcategory_id');
+    }
+    
+    if (!subcategorySelect && options.prefer === 'add') {
         const addModal = document.getElementById('addProductModal');
         if (addModal) {
-            subcategorySelect = addModal.querySelector('#subcategory_id');
-        }
-        
-        // Sinon chercher globalement
-        if (!subcategorySelect) {
-            subcategorySelect = document.getElementById('subcategory_id');
-        }
-        
-        // Dernier recours
-        if (!subcategorySelect) {
-            subcategorySelect = document.getElementById('subcategory_select');
+            subcategorySelect = addModal.querySelector('#add_subcategory_id');
         }
     }
     
     if (!subcategorySelect) {
-        console.warn('⚠️ Champ sous-catégorie non trouvé. IDs recherchés: edit_subcategory_id, subcategory_id, subcategory_select');
+        subcategorySelect = document.getElementById('edit_subcategory_id');
+    }
+    
+    if (!subcategorySelect) {
+        const addModal = document.getElementById('addProductModal');
+        if (addModal) {
+            subcategorySelect = addModal.querySelector('#add_subcategory_id');
+        }
+    }
+    
+    if (!subcategorySelect) {
+        subcategorySelect = document.getElementById('subcategory_id');
+    }
+    
+    if (!subcategorySelect) {
+        subcategorySelect = document.getElementById('subcategory_select');
+    }
+    
+    if (!subcategorySelect) {
+        console.warn('⚠️ Champ sous-catégorie non trouvé. IDs recherchés: edit_subcategory_id, add_subcategory_id, subcategory_id, subcategory_select');
         return;
     }
     
@@ -830,11 +965,20 @@ function loadSubcategories(categoryId, selectedSubcategoryId = null) {
 window.loadSubcategories = loadSubcategories;
 
 console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.includes('update') || k.includes('cancel') || k.includes('Status') || k.includes('Product') || k.includes('Subcategor')));
+
+// Synchronisation automatique prix/promo/réduction pour le formulaire d'édition statique
+document.addEventListener('DOMContentLoaded', function() {
+    setupPricingSync(document, {
+        price: '#edit_price',
+        promo: '#edit_promo_price',
+        discount: '#edit_discount'
+    });
+});
 </script>
 
 <!-- Container pour les notifications toast du dashboard -->
 <div class="toast-container position-fixed top-0 end-0 p-3 z-index-9x">
-    <div id="dashboardNotificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="dashboardNotificationToast" class="toast z-index-9x" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
             <i id="dashboardToastIcon" class="bi me-2"></i>
             <strong id="dashboardToastTitle" class="me-auto"></strong>
@@ -1384,6 +1528,17 @@ console.log('Fonctions globales chargées:', Object.keys(window).filter(k => k.i
                                             <label class="form-label">Tags (séparés par virgule)</label>
                                             <input type="text" class="form-control" name="tags" id="edit_tags" placeholder="Ex: nouveau, promo, tendance">
                                             <small class="text-muted">Séparez les tags par des virgules</small>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label">Meta description</label>
+                                            <textarea class="form-control" name="meta_description" id="edit_meta_description" rows="2" maxlength="320" placeholder="Texte SEO court affiché dans les résultats de recherche"></textarea>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label class="form-label">Mots-clés SEO</label>
+                                            <input type="text" class="form-control" name="meta_keywords" id="edit_meta_keywords" placeholder="smartphone, gaming, 256go">
+                                            <small class="text-muted">Séparez les mots-clés par des virgules.</small>
                                         </div>
                                     </div>
                                     

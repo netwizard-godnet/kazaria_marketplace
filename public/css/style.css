@@ -591,6 +591,13 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
     font-size: 0.9rem; /* 0.9rem */
 }
 
+/* Titres de section */
+.section-title {
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
+    color: #333333 !important;
+}
+
 .filter-offcanvas {
     z-index: 999999999 !important;
 }

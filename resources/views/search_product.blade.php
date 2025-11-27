@@ -123,7 +123,7 @@
         </section>
         <div class="offcanvas offcanvas-start filter-offcanvas" tabindex="-1" id="searchFilters" aria-labelledby="searchFiltersLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="searchFiltersLabel">Filtres</h5>
+                <h5 class="offcanvas-title section-title" id="searchFiltersLabel">Filtres</h5>
                 <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">

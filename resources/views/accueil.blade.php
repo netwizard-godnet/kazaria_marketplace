@@ -154,31 +154,41 @@
         <!-- SECTION END -->
 
         <!-- SECTION MARQUES -->
-        <section class="py-2 orange-bg">
+        <section class="py-2">
             <div class="container-fluid">
-                <div class="text-center mb-4">
-                    <p class="fw-bold mb-0 px-4 py-2 bg-white">Marques officielles</p>
+                <div class="text-center mb-2">
+                    <p class="fw-bold mb-0 px-4 py-2 orange-bg">Marques officielles</p>
                 </div>
                 @if(isset($topBrands) && $topBrands->count() > 0)
-                    <div class="row g-3">
+                    <div class="row g-2">
                         @foreach($topBrands->chunk(6) as $brandRow)
                             <div class="row g-3 mb-2">
                                 @foreach($brandRow as $brand)
                                     <div class="col-4 col-md-3 col-lg-2 col-xl-2">
-                                        @if($brand->link_url)
-                                            <a href="{{ $brand->link_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                        @php
+                                            $brandHasName = filled($brand->name);
+                                            $brandLink = $brand->link_url ?: ($brandHasName ? route('search_product', ['q' => $brand->name]) : null);
+                                        @endphp
+                                        @if($brandLink)
+                                            <a href="{{ $brandLink }}" target="{{ $brand->link_url ? '_blank' : '_self' }}" @if($brand->link_url) rel="noopener noreferrer" @endif class="text-decoration-none">
                                         @else
-                                            <a href="{{ route('search_product') }}?q={{ urlencode($brand->name) }}" class="text-decoration-none">
+                                            <div class="text-decoration-none">
                                         @endif
-                                            <div class="brand-card bg-white rounded shadow-sm p-3 h-100 d-flex align-items-center justify-content-center text-center" style="min-height: 100px; border: 1px solid #e9ecef; transition: all 0.3s ease; cursor: pointer;">
+                                            <div class="brand-card bg-white rounded shadow-sm p-3 h-100 d-flex align-items-center justify-content-center text-center" style="min-height: 140px; border: 1px solid #e9ecef; transition: all 0.3s ease; cursor: pointer;">
                                                 <div class="w-100">
                                                     @if($brand->image_url)
-                                                        <img src="{{ $brand->image_url }}" alt="{{ $brand->name }}" class="img-fluid mb-2" style="max-height: 60px; object-fit: contain;">
+                                                        <img src="{{ $brand->image_url }}" alt="{{ $brandHasName ? $brand->name : 'Logo de marque' }}" class="img-fluid mb-3 brand-logo" style="max-height: 90px; object-fit: cover;">
                                                     @endif
-                                                    <h6 class="mb-0 fw-bold text-dark brand-name" style="font-size: 0.9rem; word-break: break-word;">{{ $brand->name }}</h6>
+                                                    @if($brandHasName)
+                                                        <h6 class="mb-0 fw-bold text-dark brand-name" style="font-size: 0.9rem; word-break: break-word;">{{ $brand->name }}</h6>
+                                                    @endif
                                                 </div>
                                             </div>
-                                        </a>
+                                        @if($brandLink)
+                                            </a>
+                                        @else
+                                            </div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -225,11 +235,12 @@
                 color: #ff8c00 !important;
             }
             
-            .brand-card img {
+            .brand-card img.brand-logo {
                 transition: transform 0.3s ease;
+                max-height: 90px;
             }
             
-            .brand-card:hover img {
+            .brand-card:hover img.brand-logo {
                 transform: scale(1.1);
             }
             
@@ -240,6 +251,10 @@
                 
                 .brand-name {
                     font-size: 0.8rem !important;
+                }
+                
+                .brand-card img.brand-logo {
+                    max-height: 70px;
                 }
             }
         </style>

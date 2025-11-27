@@ -1181,7 +1181,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Container pour les notifications toast -->
 <div class="toast-container position-fixed top-0 end-0 p-3 z-index-9x" style="z-index: 9999;">
-    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="notificationToast" class="toast z-index-9x" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
             <i id="toastIcon" class="bi me-2"></i>
             <strong id="toastTitle" class="me-auto"></strong>

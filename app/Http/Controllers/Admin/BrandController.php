@@ -18,7 +18,7 @@ class BrandController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'image' => 'required|file',
             'link_url' => 'nullable|url|max:2048',
             'sort_order' => 'nullable|integer|min:0',
@@ -34,7 +34,7 @@ class BrandController extends Controller
         }
 
         Brand::create([
-            'name' => $request->name,
+            'name' => $request->input('name'),
             'image_path' => $imagePath,
             'link_url' => $request->link_url,
             'sort_order' => $request->sort_order ?? 0,
@@ -47,7 +47,7 @@ class BrandController extends Controller
     public function update(Request $request, Brand $brand)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'image' => 'nullable|file',
             'link_url' => 'nullable|url|max:2048',
             'sort_order' => 'nullable|integer|min:0',
@@ -66,7 +66,7 @@ class BrandController extends Controller
             $brand->image_path = 'images/' . $imageName;
         }
 
-        $brand->name = $request->name;
+        $brand->name = $request->input('name');
         $brand->link_url = $request->link_url;
         $brand->sort_order = $request->sort_order ?? 0;
         $brand->is_active = (bool) $request->is_active ?? true;

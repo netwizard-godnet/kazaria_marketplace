@@ -35,7 +35,7 @@
         <!-- SECTION MEILLEURES OFFRES -->
         <section class="multi-carousel pb-5 border-top" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Meilleures offres</h5>
+                <h4 class="section-title mb-0 me-4">Meilleures offres</h4>
             </div>
             <div class="multi-carousel-track d-flex">
                 @forelse ($bestOffers as $product)
@@ -128,8 +128,8 @@
 
         <!-- SECTION NOUVEAUTES -->
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Nouveautés</h5>
+                <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
+                    <h4 class="section-title mb-0 me-4">Nouveautés</h4>
             </div>
             <div class="multi-carousel-track d-flex">
                 @forelse ($newProducts as $product)
@@ -243,7 +243,7 @@
         </section>
         <div class="offcanvas offcanvas-start filter-offcanvas" tabindex="-1" id="mobileFilters" aria-labelledby="mobileFiltersLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="mobileFiltersLabel">Filtres</h5>
+                            <h5 class="offcanvas-title section-title" id="mobileFiltersLabel">Filtres</h5>
                 <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">

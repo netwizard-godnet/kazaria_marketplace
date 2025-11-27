@@ -82,7 +82,7 @@
                                                          style="width: 50px; height: 50px; object-fit: contain;" 
                                                          class="me-2">
                                                     <div>
-                                                        <span>{{ $item->product_name }}</span>
+                                                    <span>{{ $item->product_name }}</span>
                                                         @if($item->attributes && (is_array($item->attributes) || is_object($item->attributes)) && count((array)$item->attributes) > 0)
                                                             <div class="mt-1">
                                                                 @foreach($item->attributes as $attrName => $attrValue)
