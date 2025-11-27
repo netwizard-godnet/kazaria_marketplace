@@ -235,23 +235,23 @@ window.showAddProductModal = function() {
                             <div class="row g-3">
                                 <div class="col-12">
                                     <label for="name" class="form-label">Nom du produit <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="name" name="name" required>
-                                </div>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
                                 <div class="col-md-6">
                                     <label for="add_category_id" class="form-label">Catégorie <span class="text-danger">*</span></label>
                                     <select class="form-select" id="add_category_id" name="category_id" required>
-                                        <option value="">Sélectionner une catégorie</option>
-                                        @foreach(\App\Models\Category::active()->get() as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                    <option value="">Sélectionner une catégorie</option>
+                                    @foreach(\App\Models\Category::active()->get() as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                                 <div class="col-md-6">
                                     <label for="add_subcategory_id" class="form-label">Sous-catégorie</label>
                                     <select class="form-select" id="add_subcategory_id" name="subcategory_id">
-                                        <option value="">Sélectionner une sous-catégorie</option>
-                                    </select>
-                                </div>
+                                    <option value="">Sélectionner une sous-catégorie</option>
+                                </select>
+                            </div>
                                 <div class="col-12">
                                     <label for="description" class="form-label">Description détaillée <span class="text-danger">*</span></label>
                                     <textarea class="form-control" id="description" name="description" rows="4" minlength="50" required placeholder="Décrivez les caractéristiques clés, les matériaux, l'utilisation..."></textarea>
@@ -476,10 +476,33 @@ window.deleteProduct = async function(id) {
 // Variable globale pour stocker les images à supprimer
 window.imagesToDelete = [];
 
+// Fonction utilitaire pour gérer les loaders sur les boutons
+function setButtonLoading(button, isLoading, originalText = null) {
+    if (!button) return;
+    
+    if (isLoading) {
+        button.dataset.originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Traitement en cours...';
+        button.style.cursor = 'not-allowed';
+    } else {
+        button.disabled = false;
+        button.innerHTML = originalText || button.dataset.originalText || 'Valider';
+        button.style.cursor = 'pointer';
+    }
+}
+
+// Rendre la fonction accessible globalement
+window.setButtonLoading = setButtonLoading;
+
 // Soumettre le formulaire d'ajout de produit
 async function submitProduct() {
     const form = document.getElementById('addProductForm');
     const formData = new FormData(form);
+    
+    // Trouver le bouton de soumission
+    const submitButton = form.closest('.modal-content')?.querySelector('button[onclick="submitProduct()"]') 
+        || document.querySelector('button[onclick="submitProduct()"]');
     
     const tagsField = form.querySelector('#tags');
     if (tagsField) {
@@ -537,7 +560,7 @@ async function submitProduct() {
     
     const mainImageInput = document.getElementById('add_main_image');
     if (!mainImageInput || mainImageInput.files.length === 0) {
-        showNotification('danger', 'Ajoutez l’image principale du produit');
+        showNotification('danger', 'Ajoutez l'image principale du produit');
         return;
     }
     
@@ -546,6 +569,10 @@ async function submitProduct() {
         showNotification('danger', 'Veuillez limiter les images supplémentaires à 5 fichiers maximum');
         return;
     }
+    
+    // Activer le loader
+    const originalButtonText = submitButton ? submitButton.innerHTML : null;
+    setButtonLoading(submitButton, true, originalButtonText);
     
     try {
         const response = await fetch('/store/api/products', {
@@ -568,10 +595,12 @@ async function submitProduct() {
                 window.location.reload();
             }, 1500);
         } else {
+            setButtonLoading(submitButton, false, originalButtonText);
             showNotification('danger', data.message);
         }
     } catch (error) {
         console.error('Erreur:', error);
+        setButtonLoading(submitButton, false, originalButtonText);
         showNotification('danger', 'Erreur lors de l\'ajout du produit');
     }
 }
@@ -898,14 +927,14 @@ function loadSubcategories(categoryId, selectedSubcategoryId = null, options = {
         if (addModal) {
             subcategorySelect = addModal.querySelector('#add_subcategory_id');
         }
-    }
-    
-    if (!subcategorySelect) {
-        subcategorySelect = document.getElementById('subcategory_id');
-    }
-    
-    if (!subcategorySelect) {
-        subcategorySelect = document.getElementById('subcategory_select');
+        }
+        
+        if (!subcategorySelect) {
+            subcategorySelect = document.getElementById('subcategory_id');
+        }
+        
+        if (!subcategorySelect) {
+            subcategorySelect = document.getElementById('subcategory_select');
     }
     
     if (!subcategorySelect) {
@@ -988,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- Styles pour les notifications toast -->
+<!-- Styles pour les notifications toast et loaders -->
 <style>
 .toast {
     min-width: 300px;
@@ -1004,6 +1033,18 @@ document.addEventListener('DOMContentLoaded', function() {
 .toast-body {
     font-size: 0.9rem;
     line-height: 1.4;
+}
+
+/* Styles pour les loaders de boutons */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed !important;
 }
 
 .bg-success-subtle {
@@ -2915,10 +2956,14 @@ window.getPaymentStatusLabel = function(paymentStatus) {
     modal.show();
 }
 
-// Soumettre le formulaire d'ajout de produit
+// Soumettre le formulaire d'ajout de produit (version simplifiée - utilisée dans certains contextes)
 async function submitProduct() {
     const form = document.getElementById('addProductForm');
     const formData = new FormData(form);
+    
+    // Trouver le bouton de soumission
+    const submitButton = form.closest('.modal-content')?.querySelector('button[onclick="submitProduct()"]') 
+        || document.querySelector('button[onclick="submitProduct()"]');
     
     // Ajouter le token CSRF
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -2935,6 +2980,10 @@ async function submitProduct() {
         showNotification('danger', 'La description doit contenir au moins 50 caractères');
         return;
     }
+    
+    // Activer le loader
+    const originalButtonText = submitButton ? submitButton.innerHTML : null;
+    setButtonLoading(submitButton, true, originalButtonText);
     
     try {
         const response = await fetch('/store/api/products', {
@@ -2957,10 +3006,12 @@ async function submitProduct() {
                 window.location.reload();
             }, 1500);
         } else {
+            setButtonLoading(submitButton, false, originalButtonText);
             showNotification('danger', data.message);
         }
     } catch (error) {
         console.error('Erreur:', error);
+        setButtonLoading(submitButton, false, originalButtonText);
         showNotification('danger', 'Erreur lors de l\'ajout du produit');
     }
 }
@@ -3208,6 +3259,10 @@ function submitEditForm() {
     
     console.log('🔧 Soumission du formulaire pour le produit:', productId);
     
+    // Trouver le bouton de soumission
+    const submitButton = form.closest('.modal-content')?.querySelector('button[onclick="submitEditForm()"]')
+        || document.querySelector('button[onclick="submitEditForm()"]');
+    
     // Vérifier le token CSRF
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     
@@ -3238,6 +3293,10 @@ function submitEditForm() {
         console.log(`${key}:`, value);
     }
     
+    // Activer le loader
+    const originalButtonText = submitButton ? submitButton.innerHTML : null;
+    setButtonLoading(submitButton, true, originalButtonText);
+    
     // Envoyer la requête en POST avec _method=PUT pour que Laravel puisse parser le FormData
     formData.append('_method', 'PUT');
     
@@ -3260,11 +3319,13 @@ function submitEditForm() {
                 window.location.reload();
             }, 1500);
         } else {
+            setButtonLoading(submitButton, false, originalButtonText);
             showNotification('error', data.message);
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
+        setButtonLoading(submitButton, false, originalButtonText);
         showNotification('error', 'Erreur lors de la mise à jour');
     });
 }

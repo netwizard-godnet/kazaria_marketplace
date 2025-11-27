@@ -51,12 +51,14 @@
                             <span>
                                 <i class="bi bi-box-seam me-1"></i>{{ $store->total_products }} produits
                             </span>
+                            @if($store->rating && $store->rating > 0 && $store->reviews_count > 0)
                             <span>
                                 @for($i = 1; $i <= 5; $i++)
                                     <i class="fa-solid fa-star {{ $i <= floor($store->rating) ? 'text-warning' : 'text-white-50' }}"></i>
                                 @endfor
                                 <span class="ms-1">({{ $store->reviews_count }})</span>
                             </span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -64,9 +66,10 @@
             
             <!-- Boutons d'action -->
             <div class="col-md-4 text-end pb-2">
-                <button class="btn btn-light me-2" onclick="followStore()">
+                {{-- Bouton Suivre masqué temporairement --}}
+                {{-- <button class="btn btn-light me-2" onclick="followStore()">
                     <i class="bi bi-heart me-2"></i>Suivre
-                </button>
+                </button> --}}
                 <button class="btn btn-outline-light" onclick="shareStore()">
                     <i class="bi bi-share me-2"></i>Partager
                 </button>

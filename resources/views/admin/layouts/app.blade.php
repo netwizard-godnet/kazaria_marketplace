@@ -143,6 +143,65 @@
     <!-- Demo JS -->
     <script src="{{ asset('kazaria-admin/assets/js/demo.js') }}"></script>
     
+    <!-- Fonction utilitaire pour gérer les loaders sur les boutons -->
+    <script>
+    // Fonction utilitaire pour gérer les loaders sur les boutons
+    function setButtonLoading(button, isLoading, originalText = null) {
+        if (!button) return;
+        
+        if (isLoading) {
+            button.dataset.originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Traitement en cours...';
+            button.style.cursor = 'not-allowed';
+        } else {
+            button.disabled = false;
+            button.innerHTML = originalText || button.dataset.originalText || 'Valider';
+            button.style.cursor = 'pointer';
+        }
+    }
+    
+    // Rendre la fonction accessible globalement
+    window.setButtonLoading = setButtonLoading;
+    
+    // Intercepter automatiquement les soumissions de formulaires pour ajouter des loaders
+    document.addEventListener('DOMContentLoaded', function() {
+        // Intercepter les soumissions de formulaires
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.tagName === 'FORM') {
+                const submitButton = form.querySelector('button[type="submit"]');
+                if (submitButton && !submitButton.disabled) {
+                    setButtonLoading(submitButton, true);
+                }
+            }
+        });
+        
+        // Intercepter les clics sur les boutons avec onclick qui font des fetch
+        document.addEventListener('click', function(e) {
+            const button = e.target.closest('button[onclick]');
+            if (button && button.onclick && button.onclick.toString().includes('fetch')) {
+                // Ne pas intercepter si c'est déjà géré dans la fonction onclick
+                // On laisse les fonctions individuelles gérer leurs loaders
+            }
+        });
+    });
+    </script>
+    
+    <style>
+    /* Styles pour les loaders de boutons */
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        border-width: 0.15em;
+    }
+    
+    button:disabled {
+        opacity: 0.65;
+        cursor: not-allowed !important;
+    }
+    </style>
+    
     @stack('scripts')
 </body>
 </html>

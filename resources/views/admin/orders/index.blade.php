@@ -388,7 +388,9 @@ function generateOrderStatusButtons() {
         const button = document.createElement('button');
         button.className = `btn btn-${status.class} btn-sm`;
         button.innerHTML = `<i class="${status.icon} me-2"></i>${status.label}`;
-        button.onclick = () => updateOrderStatus(status.value);
+        button.onclick = function(e) {
+            updateOrderStatus(status.value, e);
+        };
         container.appendChild(button);
     });
 }
@@ -404,7 +406,9 @@ function generatePaymentStatusButtons() {
         const button = document.createElement('button');
         button.className = `btn btn-${status.class} btn-sm`;
         button.innerHTML = `<i class="${status.icon} me-2"></i>${status.label}`;
-        button.onclick = () => updatePaymentStatus(status.value);
+        button.onclick = function(e) {
+            updatePaymentStatus(status.value, e);
+        };
         container.appendChild(button);
     });
 }
@@ -443,19 +447,35 @@ function getAvailablePaymentStatuses(currentPaymentStatus) {
     return statuses[currentPaymentStatus] || [];
 }
 
-function updateOrderStatus(status) {
-    updateOrderStatusRequest(currentOrderId, status);
+function updateOrderStatus(status, event = null) {
+    // Trouver le bouton qui a déclenché l'action
+    const button = (event && event.target) || document.querySelector(`button[onclick*="updateOrderStatus('${status}')"]`);
+    const originalText = button ? button.innerHTML : null;
+    
+    if (button && window.setButtonLoading) {
+        window.setButtonLoading(button, true, originalText);
+    }
+    
+    updateOrderStatusRequest(currentOrderId, status, button, originalText);
     const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
     modal.hide();
 }
 
-function updatePaymentStatus(paymentStatus) {
-    updatePaymentStatusRequest(currentOrderId, paymentStatus);
+function updatePaymentStatus(paymentStatus, event = null) {
+    // Trouver le bouton qui a déclenché l'action
+    const button = (event && event.target) || document.querySelector(`button[onclick*="updatePaymentStatus('${paymentStatus}')"]`);
+    const originalText = button ? button.innerHTML : null;
+    
+    if (button && window.setButtonLoading) {
+        window.setButtonLoading(button, true, originalText);
+    }
+    
+    updatePaymentStatusRequest(currentOrderId, paymentStatus, button, originalText);
     const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
     modal.hide();
 }
 
-function updateOrderStatusRequest(orderId, status) {
+function updateOrderStatusRequest(orderId, status, button = null, originalText = null) {
     fetch(`/admin/orders/${orderId}/status`, {
         method: 'POST',
         headers: {
@@ -470,16 +490,22 @@ function updateOrderStatusRequest(orderId, status) {
             showNotification('success', data.message);
             setTimeout(() => location.reload(), 1000);
         } else {
+            if (button && window.setButtonLoading) {
+                window.setButtonLoading(button, false, originalText);
+            }
             showNotification('danger', data.message);
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
+        if (button && window.setButtonLoading) {
+            window.setButtonLoading(button, false, originalText);
+        }
         showNotification('danger', 'Erreur lors de la mise à jour');
     });
 }
 
-function updatePaymentStatusRequest(orderId, paymentStatus) {
+function updatePaymentStatusRequest(orderId, paymentStatus, button = null, originalText = null) {
     fetch(`/admin/orders/${orderId}/payment-status`, {
         method: 'POST',
         headers: {
@@ -494,11 +520,17 @@ function updatePaymentStatusRequest(orderId, paymentStatus) {
             showNotification('success', data.message);
             setTimeout(() => location.reload(), 1000);
         } else {
+            if (button && window.setButtonLoading) {
+                window.setButtonLoading(button, false, originalText);
+            }
             showNotification('danger', data.message);
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
+        if (button && window.setButtonLoading) {
+            window.setButtonLoading(button, false, originalText);
+        }
         showNotification('danger', 'Erreur lors de la mise à jour');
     });
 }
@@ -511,6 +543,16 @@ function deleteOrder(orderId = null) {
     const orderToDelete = orderId || currentOrderId;
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette commande ? Cette action est irréversible.')) {
         return;
+    }
+    
+    // Trouver le bouton de suppression
+    const deleteButton = document.getElementById('deleteOrderBtn') || 
+                        document.querySelector(`button[onclick*="deleteOrder(${orderToDelete})"]`) ||
+                        event?.target;
+    const originalText = deleteButton ? deleteButton.innerHTML : null;
+    
+    if (deleteButton && window.setButtonLoading) {
+        window.setButtonLoading(deleteButton, true, originalText);
     }
     
     fetch(`/admin/orders/${orderToDelete}`, {
@@ -526,11 +568,17 @@ function deleteOrder(orderId = null) {
             showNotification('success', data.message);
             setTimeout(() => location.reload(), 1000);
         } else {
+            if (deleteButton && window.setButtonLoading) {
+                window.setButtonLoading(deleteButton, false, originalText);
+            }
             showNotification('danger', data.message);
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
+        if (deleteButton && window.setButtonLoading) {
+            window.setButtonLoading(deleteButton, false, originalText);
+        }
         showNotification('danger', 'Erreur lors de la suppression');
     });
 }

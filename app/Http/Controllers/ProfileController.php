@@ -33,8 +33,26 @@ class ProfileController extends Controller
         $stats = [
             'total_orders' => Order::where('user_id', $user->id)->count(),
             'total_favorites' => Favorite::where('user_id', $user->id)->count(),
-            'total_reviews' => 0, // À implémenter avec une table reviews
+            'total_reviews' => \App\Models\Review::where('user_id', $user->id)->count(),
         ];
+
+        // Calculer la note de l'utilisateur
+        // Si l'utilisateur est vendeur, utiliser la note de sa boutique
+        // Sinon, utiliser la moyenne des notes des avis qu'il a donnés
+        $userRating = null;
+        if ($user->is_seller && $user->store) {
+            // Note basée sur la boutique (moyenne des notes des produits)
+            $userRating = $user->store->rating ?? 0;
+        } else {
+            // Note basée sur les avis donnés par l'utilisateur (si applicable)
+            // Pour l'instant, on utilise la note de la boutique si vendeur, sinon null
+            $userRating = null;
+        }
+        
+        // Si pas de note, utiliser une valeur par défaut ou ne pas afficher
+        if ($userRating === null || $userRating == 0) {
+            $userRating = null; // Pas de note disponible
+        }
 
         // Produits récemment vus
         $recentProducts = \App\Models\ProductView::getRecentViews(6, null);
@@ -46,7 +64,7 @@ class ProfileController extends Controller
             ->orderByDesc('updated_at')
             ->get();
 
-        return view('profil', compact('user', 'stats', 'recentProducts', 'tickets'));
+        return view('profil', compact('user', 'stats', 'recentProducts', 'tickets', 'userRating'));
     }
 
     /**

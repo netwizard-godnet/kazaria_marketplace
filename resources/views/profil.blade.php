@@ -87,13 +87,17 @@ use Illuminate\Support\Str;
                     <div class="col-12 col-md-6">
                         <h3 class="mb-1">{{ $user->prenoms }} {{ $user->nom }}</h3>
                         <div class="d-flex gap-3">
-                            <span class="badge orange-bg text-white"><i class="bi bi-star-fill me-1"></i>4.8/5</span>
+                            @if(isset($userRating) && $userRating > 0)
+                                <span class="badge orange-bg text-white"><i class="bi bi-star-fill me-1"></i>{{ number_format($userRating, 1) }}/5</span>
+                            @endif
                             @if($user->is_verified)
                             <span class="badge orange-bg text-white"><i class="bi bi-shield-check me-1"></i>Vérifié</span>
                             @else
                             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Non vérifié</span>
                             @endif
-                            <span class="badge orange-bg text-white"><i class="bi bi-geo-alt me-1"></i>Abidjan, Côte d'Ivoire</span>
+                            @if($user->ville)
+                            <span class="badge orange-bg text-white"><i class="bi bi-geo-alt me-1"></i>{{ $user->ville }}{{ $user->pays ? ', ' . $user->pays : '' }}</span>
+                            @endif
                         </div>
                     </div>
                     <div class="col-12 col-md-4 text-md-end">
