@@ -185,6 +185,9 @@ class StoreController extends Controller
             return redirect()->route('store.create');
         }
 
+        // Charger les relations nécessaires pour la boutique
+        $store->load(['category', 'subcategory']);
+
         if (!$store->isKycValidated()) {
             return redirect()->route('store.pending');
         }

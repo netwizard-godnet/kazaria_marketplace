@@ -154,15 +154,32 @@
                 const clearBtn = document.getElementById('clearCartBtn');
                 const checkoutBtn = document.getElementById('checkoutBtn');
                 
+                // Vérifier que les éléments essentiels existent
+                if (!container) {
+                    console.error('cartItemsContainer non trouvé');
+                    return;
+                }
+                
                 if (data.success && data.items.length > 0) {
-                    loading.remove();
+                    // Retirer l'élément de chargement s'il existe
+                    if (loading) {
+                        loading.remove();
+                    }
                     container.innerHTML = '';
                     
                     // Mettre à jour le compteur
-                    countSpan.textContent = data.count;
-                    pluriel.textContent = data.count > 1 ? 's' : '';
-                    clearBtn.style.display = 'inline-block';
-                    checkoutBtn.style.display = 'block';
+                    if (countSpan) {
+                        countSpan.textContent = data.count;
+                    }
+                    if (pluriel) {
+                        pluriel.textContent = data.count > 1 ? 's' : '';
+                    }
+                    if (clearBtn) {
+                        clearBtn.style.display = 'inline-block';
+                    }
+                    if (checkoutBtn) {
+                        checkoutBtn.style.display = 'block';
+                    }
                     
                     // Afficher chaque article
                     data.items.forEach(item => {
@@ -268,6 +285,11 @@
                     updateTotals(data.total);
                 } else {
                     // Panier vide
+                    // Retirer l'élément de chargement s'il existe
+                    if (loading) {
+                        loading.remove();
+                    }
+                    
                     container.innerHTML = `
                         <div class="text-center py-5">
                             <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
@@ -281,11 +303,9 @@
                     
                     // Réinitialiser le résumé à 0
                     updateTotals(0);
-                    const cartItemsCount = document.getElementById('cartItemsCount');
-                    const pluriel = document.getElementById('pluriel');
                     
-                    if (cartItemsCount) {
-                        cartItemsCount.textContent = '0';
+                    if (countSpan) {
+                        countSpan.textContent = '0';
                     }
                     
                     if (pluriel) {
@@ -293,17 +313,35 @@
                     }
                     
                     // Cacher les boutons "Vider le panier" et "Passer la commande"
-                    clearBtn.style.display = 'none';
-                    checkoutBtn.style.display = 'none';
+                    if (clearBtn) {
+                        clearBtn.style.display = 'none';
+                    }
+                    if (checkoutBtn) {
+                        checkoutBtn.style.display = 'none';
+                    }
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                document.getElementById('loadingCart').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Erreur lors du chargement du panier
-                    </div>
-                `;
+                const loadingElement = document.getElementById('loadingCart');
+                const containerElement = document.getElementById('cartItemsContainer');
+                
+                if (loadingElement) {
+                    loadingElement.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Erreur lors du chargement du panier
+                        </div>
+                    `;
+                } else if (containerElement) {
+                    containerElement.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Erreur lors du chargement du panier
+                        </div>
+                    `;
+                } else {
+                    showNotification('error', 'Erreur lors du chargement du panier');
+                }
             }
         }
 
@@ -363,30 +401,48 @@
             currentSubtotal = subtotal;
             const shipping = calculateShipping(subtotal);
             let discountAmount = 0;
+            
+            const promoRow = document.getElementById('promoRow');
+            const promoDiscount = document.getElementById('promoDiscount');
+            const subtotalElement = document.getElementById('subtotal');
+            const shippingElement = document.getElementById('shippingCost');
+            const totalElement = document.getElementById('total');
+            
             if (appliedPromo && appliedPromo.percent > 0) {
                 discountAmount = Math.round(subtotal * appliedPromo.percent / 100);
-                document.getElementById('promoRow').style.display = 'flex';
-                document.getElementById('promoDiscount').textContent = '- ' + new Intl.NumberFormat('fr-FR').format(discountAmount) + ' ' + settings.currencySymbol;
+                if (promoRow) {
+                    promoRow.style.display = 'flex';
+                }
+                if (promoDiscount) {
+                    promoDiscount.textContent = '- ' + new Intl.NumberFormat('fr-FR').format(discountAmount) + ' ' + settings.currencySymbol;
+                }
             } else {
-                document.getElementById('promoRow').style.display = 'none';
+                if (promoRow) {
+                    promoRow.style.display = 'none';
+                }
             }
             const total = Math.max(0, subtotal - discountAmount) + shipping.cost;
             
             // Mettre à jour le sous-total
-            document.getElementById('subtotal').textContent = new Intl.NumberFormat('fr-FR').format(subtotal) + ' ' + settings.currencySymbol;
+            if (subtotalElement) {
+                subtotalElement.textContent = new Intl.NumberFormat('fr-FR').format(subtotal) + ' ' + settings.currencySymbol;
+            }
             
             // Mettre à jour la livraison
-            const shippingElement = document.getElementById('shippingCost');
-            if (shipping.isFree) {
-                shippingElement.textContent = 'Gratuite';
-                shippingElement.className = 'text-success';
-            } else {
-                shippingElement.textContent = new Intl.NumberFormat('fr-FR').format(shipping.cost) + ' ' + settings.currencySymbol;
-                shippingElement.className = 'text-muted';
+            if (shippingElement) {
+                if (shipping.isFree) {
+                    shippingElement.textContent = 'Gratuite';
+                    shippingElement.className = 'text-success';
+                } else {
+                    shippingElement.textContent = new Intl.NumberFormat('fr-FR').format(shipping.cost) + ' ' + settings.currencySymbol;
+                    shippingElement.className = 'text-muted';
+                }
             }
             
             // Mettre à jour le total
-            document.getElementById('total').textContent = new Intl.NumberFormat('fr-FR').format(total) + ' ' + settings.currencySymbol;
+            if (totalElement) {
+                totalElement.textContent = new Intl.NumberFormat('fr-FR').format(total) + ' ' + settings.currencySymbol;
+            }
         }
 
         // Fonction pour mettre à jour la quantité
@@ -516,22 +572,37 @@
             }
             
             try {
+                const headers = getHeaders();
+                console.log('Headers pour clearCart:', headers);
+                
                 const response = await fetch('/cart/clear', {
                     method: 'DELETE',
-                    headers: getHeaders()
+                    headers: headers
                 });
 
+                console.log('Response status:', response.status);
+                
+                // Vérifier si la réponse est OK
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Erreur serveur:', response.status, errorText);
+                    showNotification('error', `Erreur ${response.status}: ${errorText || 'Erreur lors de la suppression du panier'}`);
+                    return;
+                }
+
                 const data = await response.json();
+                console.log('Data reçue:', data);
                 
                 if (data.success) {
                     showNotification('success', data.message);
                     await loadCartPage();
                     updateCartCount(0);
                 } else {
-                    showNotification('error', data.message);
+                    showNotification('error', data.message || 'Erreur lors de la suppression du panier');
                 }
             } catch (error) {
-                showNotification('error', 'Erreur de connexion');
+                console.error('Erreur complète:', error);
+                showNotification('error', 'Erreur de connexion: ' + error.message);
             }
         }
         

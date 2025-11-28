@@ -18,16 +18,25 @@ class CartController extends Controller
         // Pour les pages web, utiliser l'authentification par session
         if (auth()->check()) {
             // Utilisateur connecté - utiliser l'ID utilisateur
-            // Utiliser la session Laravel si disponible, sinon header
-            $sessionId = $request->hasSession() ? $request->session()->getId() : $request->header('X-Session-ID');
+            // Prioriser le header X-Session-ID pour la cohérence avec le frontend
+            $sessionId = $request->header('X-Session-ID');
+            if (!$sessionId && $request->hasSession()) {
+                $sessionId = $request->session()->getId();
+            }
             return ['user_id' => auth()->user()->id, 'session_id' => $sessionId];
         }
         
-        // Pour les invités, utiliser un ID de session depuis la session Laravel ou header
-        $sessionId = $request->hasSession() ? $request->session()->getId() : $request->header('X-Session-ID');
+        // Pour les invités, prioriser le header X-Session-ID (celui utilisé par le frontend)
+        // car c'est celui qui est stocké dans localStorage et utilisé lors de l'ajout au panier
+        $sessionId = $request->header('X-Session-ID');
         
+        // Si pas de header, essayer la session Laravel
+        if (!$sessionId && $request->hasSession()) {
+            $sessionId = $request->session()->getId();
+        }
+        
+        // Si toujours pas de session_id, générer un nouvel ID (ne devrait pas arriver normalement)
         if (!$sessionId) {
-            // Générer un nouvel ID si non fourni
             $sessionId = uniqid('guest_', true);
         }
         
@@ -425,28 +434,49 @@ class CartController extends Controller
      */
     public function clear(Request $request)
     {
-        $identifier = $this->getUserOrSession($request);
-        
-        CartItem::where(function($query) use ($identifier) {
-            if ($identifier['user_id'] && $identifier['session_id']) {
-                // Utilisateur connecté avec session_id - chercher par les deux
-                $query->where('user_id', $identifier['user_id'])
-                      ->where('session_id', $identifier['session_id']);
-            } elseif ($identifier['user_id']) {
-                // Utilisateur connecté sans session_id - chercher par user_id seulement
-                $query->where('user_id', $identifier['user_id']);
-            } else {
-                // Utilisateur non connecté - chercher par session_id seulement
-                $query->where('session_id', $identifier['session_id']);
+        try {
+            $identifier = $this->getUserOrSession($request);
+            
+            // Vérifier que nous avons au moins un identifiant
+            if (!$identifier['user_id'] && !$identifier['session_id']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible d\'identifier le panier'
+                ], 400);
             }
-        })->delete();
+            
+            // Logique plus flexible : si utilisateur connecté, chercher par user_id (priorité)
+            // Accepte même si session_id ne correspond pas exactement
+            $deleted = CartItem::where(function($query) use ($identifier) {
+                if ($identifier['user_id']) {
+                    // Utilisateur connecté - chercher par user_id (priorité absolue)
+                    // Supprimer tous les items de cet utilisateur, peu importe le session_id
+                    $query->where('user_id', $identifier['user_id']);
+                } else {
+                    // Utilisateur non connecté - chercher par session_id seulement
+                    $query->where('session_id', $identifier['session_id']);
+                }
+            })->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Panier vidé',
-            'cart_count' => 0,
-            'cart_total' => 0
-        ]);
+            \Log::info('Panier vidé', [
+                'user_id' => $identifier['user_id'],
+                'session_id' => $identifier['session_id'],
+                'deleted_count' => $deleted
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Panier vidé',
+                'cart_count' => 0,
+                'cart_total' => 0
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la suppression du panier: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression du panier: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
