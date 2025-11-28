@@ -1,6 +1,17 @@
 @php
 use Illuminate\Support\Facades\Storage;
 use App\Models\Banner;
+use Illuminate\Support\Facades\Auth;
+
+// Charger l'utilisateur avec ses relations si authentifié
+// Cela garantit que les données sont disponibles même si le View Composer n'a pas fonctionné
+$headerUser = null;
+if (auth()->check()) {
+    $headerUser = $currentUser ?? Auth::user();
+    if ($headerUser) {
+        $headerUser->loadMissing('store');
+    }
+}
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -162,19 +173,19 @@ use App\Models\Banner;
                                     </a>
                                 </li>
                                 <li id="auth-section" class="nav-item d-flex align-items-center justify-content-center">
-                                    @auth
+                                    @if($headerUser)
                                         <div class="dropdown">
                                             <button class="nav-link d-flex align-items-center btn btn-link text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
                                                 <i class="fa-solid fa-user text-white fa-2x"></i>
                                                 <div class="vstack text-white ms-1">
-                                                    <span class="fs-8 fw-bold fw-lighter">{{ Auth::user()->prenoms ?? 'Utilisateur' }}</span>
+                                                    <span class="fs-8 fw-bold fw-lighter">{{ trim(($headerUser->prenoms ?? '') . ' ' . ($headerUser->nom ?? '')) ?: 'Utilisateur' }}</span>
                                                     <span class="fs-8 fw-lighter">Connecté(e)<i class="fa-solid fa-chevron-down text-white"></i></span>
                                                 </div>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li><a class="dropdown-item fs-8" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
-                                                @if(Auth::user()->is_seller)
-                                                    @if(Auth::user()->store)
+                                                @if($headerUser->is_seller)
+                                                    @if($headerUser->store)
                                                         <li><a class="dropdown-item fs-8" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
                                                     @else
                                                         <li><a class="dropdown-item fs-8" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
@@ -197,7 +208,7 @@ use App\Models\Banner;
                                                 <span class="fs-8 fw-lighter">Inscription</span>
                                             </div>
                                         </a>
-                                    @endauth
+                                    @endif
                                 </li>
                             </ul>
                         </div>
@@ -268,28 +279,26 @@ use App\Models\Banner;
                     </div>
                     <div class="col-md-3">
                         <div class="d-flex align-items-center justify-content-start">
-                            @auth
-                                @if(Auth::user()->is_seller)
-                                    @if(Auth::user()->store)
-                                        <a href="{{ route('store.dashboard') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
-                                            <i class="fa-solid fa-store me-1"></i>Ma boutique
-                                        </a>
-                                    @else
-                                        <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
-                                            <i class="fa-solid fa-plus me-1"></i>Créer ma boutique
-                                        </a>
-                                    @endif
+                            @if($headerUser && $headerUser->is_seller)
+                                @if($headerUser->store)
+                                    <a href="{{ route('store.dashboard') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <i class="fa-solid fa-store me-1"></i>Ma boutique
+                                    </a>
                                 @else
                                     <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
-                                        <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
+                                        <i class="fa-solid fa-plus me-1"></i>Créer ma boutique
                                     </a>
                                 @endif
+                            @elseif($headerUser)
+                                <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                    <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
+                                </a>
                             @else
                                 <a href="{{ route('login') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
                                     <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
                                 </a>
-                            @endauth
-                            @auth
+                            @endif
+                            @if($headerUser)
                                 <a href="{{ route('profil') }}#orders" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
                                     <i class="fa-solid fa-box me-1"></i>Suivre ma commande
                                 </a>
@@ -297,7 +306,7 @@ use App\Models\Banner;
                                 <a href="{{ route('login') }}" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
                                     <i class="fa-solid fa-box me-1"></i>Suivre ma commande
                                 </a>
-                            @endauth
+                            @endif
                         </div>
                     </div>
                     <!--  -->
@@ -321,15 +330,15 @@ use App\Models\Banner;
                                         <span class="position-absolute bottom-0 end-0 bg-danger px-2 rounded-2 fw-lighter fs-8 text-white cart-count">0</span>
                                     </a>
                                 </li>
-                                @auth
+                                @if($headerUser)
                                     <div class="dropdown">
                                         <button class="nav-link d-flex align-items-center btn btn-link text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
                                             <i class="fa-solid fa-user-check text-white fa-2x"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li><a class="dropdown-item" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
-                                            @if(Auth::user()->is_seller)
-                                                @if(Auth::user()->store)
+                                            @if($headerUser->is_seller)
+                                                @if($headerUser->store)
                                                     <li><a class="dropdown-item" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
                                                 @else
                                                     <li><a class="dropdown-item" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
@@ -350,7 +359,7 @@ use App\Models\Banner;
                                         <i class="fa-solid fa-user text-white fa-2x"></i>
                                     </a>
                                 </li>
-                                @endauth
+                                @endif
                             </ul>
                         </div>
                         <div class="">
