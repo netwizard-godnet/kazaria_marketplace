@@ -270,7 +270,7 @@ class Product extends Model
             }
             // Vérifier si c'est un chemin public (commence par "images/")
             elseif (strpos($firstImage, 'images/') === 0) {
-                return asset('storage/' . $firstImage);
+                return asset($firstImage);
             }
             // URL complète ou autre format
             else {
@@ -286,7 +286,7 @@ class Product extends Model
             }
             // Vérifier si c'est un chemin public (commence par "images/")
             elseif (strpos($this->image, 'images/') === 0) {
-                return asset('storage/' . $this->image);
+                return asset($this->image);
             }
             // URL complète ou autre format
             else {
