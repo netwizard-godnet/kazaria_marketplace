@@ -19,7 +19,7 @@ class BrandController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'image' => 'required|file',
+            'image' => 'required|image',
             'link_url' => 'nullable|url|max:2048',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
@@ -34,11 +34,11 @@ class BrandController extends Controller
         }
 
         Brand::create([
-            'name' => $request->input('name'),
+            'name' => $validated['name'] ?? null,
             'image_path' => $imagePath,
-            'link_url' => $request->link_url,
-            'sort_order' => $request->sort_order ?? 0,
-            'is_active' => (bool) $request->is_active ?? true,
+            'link_url' => $validated['link_url'] ?? null,
+            'sort_order' => $validated['sort_order'] ?? 0,
+            'is_active' => array_key_exists('is_active', $validated) ? (bool) $validated['is_active'] : true,
         ]);
 
         return redirect()->back()->with('success', 'Marque créée avec succès.');
@@ -48,7 +48,7 @@ class BrandController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'image' => 'nullable|file',
+            'image' => 'nullable|image',
             'link_url' => 'nullable|url|max:2048',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
@@ -66,10 +66,10 @@ class BrandController extends Controller
             $brand->image_path = 'images/' . $imageName;
         }
 
-        $brand->name = $request->input('name');
-        $brand->link_url = $request->link_url;
-        $brand->sort_order = $request->sort_order ?? 0;
-        $brand->is_active = (bool) $request->is_active ?? true;
+        $brand->name = $validated['name'] ?? null;
+        $brand->link_url = $validated['link_url'] ?? null;
+        $brand->sort_order = $validated['sort_order'] ?? 0;
+        $brand->is_active = array_key_exists('is_active', $validated) ? (bool) $validated['is_active'] : true;
         $brand->save();
 
         return redirect()->back()->with('success', 'Marque mise à jour avec succès.');
