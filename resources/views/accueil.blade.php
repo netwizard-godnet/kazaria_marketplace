@@ -502,7 +502,7 @@
                 </div>
                 <div class="col-md-6 d-flex align-items-center justify-content-center">
                     <div class="">
-                        <h3 class="fw-light mb-3">Télécharger l'application maintenant !</h3>
+                        <h1 class="fw-bolder mb-3 orange-color">Télécharger l'application maintenant !</h1>
                         <p class="mb-3">Lorem ipsum dolor sit amet consectetur adipisicing elit. Neque, doloribus in nemo illo officia laudantium incidunt soluta iusto!</p>
                         <div class="hstack gap-2">
                             <img src="{{ asset('images/google-play.png') }}" alt="">

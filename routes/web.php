@@ -203,6 +203,12 @@ Route::get('/profil', [App\Http\Controllers\ProfileController::class, 'index'])
     ->middleware('auth.redirect')
     ->name('profil');
 
+// Routes pour le profil utilisateur (authentification par session)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.change-password');
+    Route::post('/profile/logout-all-devices', [App\Http\Controllers\ProfileController::class, 'logoutAllDevices'])->name('profile.logout-all-devices');
+});
+
 // Route panier
 Route::get('/panier', [App\Http\Controllers\CartController::class, 'index'])
     ->middleware(['web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])

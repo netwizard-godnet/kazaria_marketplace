@@ -182,6 +182,38 @@ class ProfileController extends Controller
     }
 
     /**
+     * Déconnecter tous les appareils de l'utilisateur (WEB - Sessions)
+     */
+    public function logoutAllDevices(Request $request)
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        try {
+            // Supprimer tous les tokens Sanctum de l'utilisateur
+            $user->tokens()->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tous les appareils ont été déconnectés avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la déconnexion de tous les appareils: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la déconnexion'
+            ], 500);
+        }
+    }
+
+    /**
      * Mettre à jour la photo de profil (WEB - Sessions)
      */
     public function updatePhoto(Request $request)
