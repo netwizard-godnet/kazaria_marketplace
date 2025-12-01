@@ -706,92 +706,135 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 
 // Gestion des images avec sélection de l'image principale
-let selectedFiles = [];
-let mainImageIndex = 0; // Index de l'image principale (0 par défaut)
-
-// Aperçu des images avant upload avec sélection de l'image principale
-document.addEventListener('DOMContentLoaded', function() {
-    const imagesInput = document.getElementById('images');
-    if (!imagesInput) return;
+(function() {
+    let selectedFiles = [];
+    let mainImageIndex = 0; // Index de l'image principale (0 par défaut)
     
-    imagesInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        const previewContainer = document.getElementById('imagePreview');
-        
-        // Vider l'aperçu précédent
-        previewContainer.innerHTML = '';
-        previewContainer.style.display = 'none';
-        
-        if (files.length === 0) {
-            selectedFiles = [];
+    // Fonction pour définir l'image principale (accessible globalement)
+    window.setMainImage = function(index) {
+        if (index < 0 || index >= selectedFiles.length) {
+            console.warn('Index invalide:', index);
             return;
         }
         
-        selectedFiles = files;
-        mainImageIndex = 0; // Réinitialiser à la première image
+        mainImageIndex = index;
         
-        previewContainer.style.display = 'block';
-        previewContainer.innerHTML = '<div class="col-12 mb-2"><h6>Aperçu des images : <small class="text-muted">Cliquez sur une image pour la définir comme principale</small></h6></div>';
+        // Mettre à jour le champ caché
+        const mainImageInput = document.getElementById('main_image_index');
+        if (mainImageInput) {
+            mainImageInput.value = index;
+        }
         
-        files.forEach((file, index) => {
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const col = document.createElement('div');
-                    col.className = 'col-md-3 mb-3';
-                    col.dataset.index = index;
-                    const isMain = index === mainImageIndex;
-                    col.innerHTML = `
-                        <div class="card image-preview-card ${isMain ? 'border-primary border-3' : ''}" style="cursor: pointer; position: relative;" onclick="setMainImage(${index})">
-                            ${isMain ? '<span class="badge bg-primary position-absolute top-0 start-0 m-2">Principale</span>' : '<span class="badge bg-secondary position-absolute top-0 start-0 m-2">Cliquer pour définir</span>'}
-                            <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
-                            <div class="card-body p-2">
-                                <small class="text-muted d-block text-truncate" title="${file.name}">${file.name}</small>
-                            </div>
-                        </div>
-                    `;
-                    previewContainer.appendChild(col);
-                };
-                reader.readAsDataURL(file);
+        // Mettre à jour l'affichage visuel
+        const previewContainer = document.getElementById('imagePreview');
+        if (!previewContainer) return;
+        
+        const cards = previewContainer.querySelectorAll('.image-preview-card');
+        
+        cards.forEach((card) => {
+            const col = card.closest('.col-md-3');
+            if (!col) return;
+            
+            const cardIndex = parseInt(col.dataset.index);
+            if (isNaN(cardIndex)) return;
+            
+            if (cardIndex === index) {
+                // Cette image devient principale
+                card.classList.remove('border-secondary');
+                card.classList.add('border-primary', 'border-3');
+                const badge = card.querySelector('.badge');
+                if (badge) {
+                    badge.className = 'badge bg-primary position-absolute top-0 start-0 m-2';
+                    badge.textContent = 'Principale';
+                }
+            } else {
+                // Cette image n'est plus principale
+                card.classList.remove('border-primary', 'border-3');
+                card.classList.add('border-secondary');
+                const badge = card.querySelector('.badge');
+                if (badge) {
+                    badge.className = 'badge bg-secondary position-absolute top-0 start-0 m-2';
+                    badge.textContent = 'Cliquer pour définir';
+                }
             }
         });
-    });
-});
-
-// Fonction pour définir l'image principale
-window.setMainImage = function(index) {
-    if (index < 0 || index >= selectedFiles.length) return;
-    
-    mainImageIndex = index;
-    
-    // Mettre à jour le champ caché
-    document.getElementById('main_image_index').value = index;
-    
-    // Mettre à jour l'affichage visuel
-    const previewContainer = document.getElementById('imagePreview');
-    const cards = previewContainer.querySelectorAll('.image-preview-card');
-    
-    cards.forEach((card) => {
-        const col = card.closest('.col-md-3');
-        const cardIndex = parseInt(col.dataset.index);
         
-        if (cardIndex === index) {
-            // Cette image devient principale
-            card.classList.remove('border-secondary');
-            card.classList.add('border-primary', 'border-3');
-            const badge = card.querySelector('.badge');
-            badge.className = 'badge bg-primary position-absolute top-0 start-0 m-2';
-            badge.textContent = 'Principale';
-        } else {
-            // Cette image n'est plus principale
-            card.classList.remove('border-primary', 'border-3');
-            card.classList.add('border-secondary');
-            const badge = card.querySelector('.badge');
-            badge.className = 'badge bg-secondary position-absolute top-0 start-0 m-2';
-            badge.textContent = 'Cliquer pour définir';
+        console.log('Image principale définie:', index);
+    };
+    
+    // Aperçu des images avant upload avec sélection de l'image principale
+    document.addEventListener('DOMContentLoaded', function() {
+        const imagesInput = document.getElementById('images');
+        if (!imagesInput) {
+            console.warn('Champ images non trouvé');
+            return;
         }
+        
+        imagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const previewContainer = document.getElementById('imagePreview');
+            
+            if (!previewContainer) {
+                console.error('Container imagePreview non trouvé');
+                return;
+            }
+            
+            // Vider l'aperçu précédent
+            previewContainer.innerHTML = '';
+            previewContainer.style.display = 'none';
+            
+            if (files.length === 0) {
+                selectedFiles = [];
+                mainImageIndex = 0;
+                const mainImageInput = document.getElementById('main_image_index');
+                if (mainImageInput) {
+                    mainImageInput.value = 0;
+                }
+                return;
+            }
+            
+            selectedFiles = files;
+            mainImageIndex = 0; // Réinitialiser à la première image
+            
+            // Mettre à jour le champ caché
+            const mainImageInput = document.getElementById('main_image_index');
+            if (mainImageInput) {
+                mainImageInput.value = 0;
+            }
+            
+            previewContainer.style.display = 'block';
+            previewContainer.innerHTML = '<div class="col-12 mb-2"><h6>Aperçu des images : <small class="text-muted">Cliquez sur une image pour la définir comme principale</small></h6></div>';
+            
+            files.forEach((file, index) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-3 mb-3';
+                        col.dataset.index = index;
+                        const isMain = index === mainImageIndex;
+                        col.innerHTML = `
+                            <div class="card image-preview-card ${isMain ? 'border-primary border-3' : 'border-secondary'}" style="cursor: pointer; position: relative;" onclick="setMainImage(${index})">
+                                ${isMain ? '<span class="badge bg-primary position-absolute top-0 start-0 m-2">Principale</span>' : '<span class="badge bg-secondary position-absolute top-0 start-0 m-2">Cliquer pour définir</span>'}
+                                <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                                <div class="card-body p-2">
+                                    <small class="text-muted d-block text-truncate" title="${file.name}">${file.name}</small>
+                                </div>
+                            </div>
+                        `;
+                        previewContainer.appendChild(col);
+                    };
+                    reader.onerror = function() {
+                        console.error('Erreur lors de la lecture du fichier:', file.name);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            console.log('Images chargées:', files.length);
+        });
     });
-};
+})();
 </script>
 <?php $__env->stopPush(); ?>
 
