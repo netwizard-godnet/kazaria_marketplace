@@ -438,13 +438,15 @@
                 formData.forEach((value, key) => {object[key] = value});
 
                     try {
-                        const response = await fetch('/api/verify-login-code', {
+                        const response = await fetch('/verify-login-code', {
                             method: 'POST',
                     headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
-                                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+                                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+                                'X-Requested-With': 'XMLHttpRequest'
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify(object)
                 });
 

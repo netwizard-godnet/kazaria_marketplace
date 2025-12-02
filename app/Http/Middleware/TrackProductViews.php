@@ -23,10 +23,8 @@ class TrackProductViews
             $product = \App\Models\Product::where('slug', $productId)->first();
             
             if ($product) {
+                // trackView() gère à la fois l'enregistrement de la vue et l'incrémentation du compteur
                 ProductView::trackView($product->id, $request);
-                
-                // Mettre à jour le compteur de vues
-                $product->increment('views_count');
             }
         }
         

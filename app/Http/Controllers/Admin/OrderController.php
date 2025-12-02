@@ -91,7 +91,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load(['user', 'orderItems.product.store']);
+        $order->load(['user', 'orderItems.product.store', 'orderItems.variation.attributeValues.attribute']);
         
         // Debug: Vérifier les attributs des items
         foreach ($order->orderItems as $item) {

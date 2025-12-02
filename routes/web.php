@@ -158,6 +158,9 @@ Route::get('/authentification', function () {
     return view('auth.authentification');
 })->middleware('guest')->name('login');
 
+// Route pour vérifier le code de connexion (utilise la session)
+Route::post('/verify-login-code', [App\Http\Controllers\AuthController::class, 'verifyLoginCode'])->name('verify-login-code');
+
 Route::middleware('guest')->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
         ->name('social.redirect')
@@ -242,6 +245,11 @@ Route::middleware('hybrid.auth')->group(function () {
     Route::get('/order/invoice/{orderNumber}', [App\Http\Controllers\OrderController::class, 'invoice'])->name('order-invoice');
     Route::get('/order/download/{orderNumber}', [App\Http\Controllers\OrderController::class, 'downloadInvoice'])->name('order-download');
     Route::get('/order/details/{orderNumber}', [App\Http\Controllers\OrderController::class, 'orderDetails'])->name('order-details');
+});
+
+// Route web pour créer une commande (utilise la session)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder'])->name('orders.create');
 });
 
 // Route politique de confidentialité

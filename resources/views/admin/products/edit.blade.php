@@ -371,6 +371,42 @@
                             @endif
                         </div>
 
+                        <!-- Section Variations de produits (avec prix différents selon les attributs) -->
+                        @if($attributes && $attributes->count() > 0)
+                        <div class="form-group mt-4" id="variations-section">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-layer-group me-2"></i>
+                                            Variations de produits (Prix différents selon les attributs)
+                                        </h5>
+                                        <small class="text-muted">Gérez les variations avec des prix et stocks différents selon les combinaisons d'attributs</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable_variations" name="enable_variations" value="1" {{ $product->variations && $product->variations->count() > 0 ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="enable_variations">
+                                            Activer les variations
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="card-body" id="variations-container" style="display: {{ $product->variations && $product->variations->count() > 0 ? 'block' : 'none' }};">
+                                    <div id="variations-list">
+                                        <!-- Les variations existantes et nouvelles seront affichées ici -->
+                                        @if($product->variations && $product->variations->count() > 0)
+                                            @foreach($product->variations as $index => $variation)
+                                                @include('admin.products.partials.variation-row', ['variation' => $variation, 'index' => $index + 1, 'attributes' => $attributes])
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary mt-3" id="add-variation-btn">
+                                        <i class="fas fa-plus me-1"></i> Ajouter une variation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="card-action">
                             <button type="submit" class="btn btn-primary">Mettre à jour</button>
                             <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">Annuler</a>
@@ -384,6 +420,22 @@
 @endsection
 
 @push('scripts')
+<script>
+// Données des attributs disponibles pour les variations
+@php
+    $attributesData = $attributes->map(function($attr) {
+        return [
+            'id' => $attr->id,
+            'name' => $attr->name,
+            'type' => $attr->type,
+            'values' => $attr->attributeValues->map(function($val) {
+                return ['id' => $val->id, 'value' => $val->value];
+            })->toArray()
+        ];
+    })->toArray();
+@endphp
+const availableAttributes = @json($attributesData);
+</script>
 <script>
 // Charger les sous-catégories lors de la sélection d'une catégorie
 document.addEventListener('DOMContentLoaded', function() {
@@ -726,6 +778,174 @@ window.setMainNewImage = function(index) {
         // DOM déjà chargé
         initPriceSync();
     }
+})();
+
+// Gestion des variations de produits dans le formulaire d'édition
+(function() {
+    let variationCounter = {{ $product->variations && $product->variations->count() > 0 ? $product->variations->count() : 0 }};
+    let variationsToDelete = [];
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const enableVariationsCheckbox = document.getElementById('enable_variations');
+        const variationsContainer = document.getElementById('variations-container');
+        const addVariationBtn = document.getElementById('add-variation-btn');
+        
+        if (!enableVariationsCheckbox || !variationsContainer || !addVariationBtn) {
+            return;
+        }
+        
+        // Afficher/masquer la section variations
+        enableVariationsCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                variationsContainer.style.display = 'block';
+                if (variationCounter === 0) {
+                    addVariationRow();
+                }
+            } else {
+                variationsContainer.style.display = 'none';
+            }
+        });
+        
+        // Bouton pour ajouter une variation
+        addVariationBtn.addEventListener('click', function() {
+            addVariationRow();
+        });
+    });
+    
+    // Fonction pour ajouter une ligne de variation
+    function addVariationRow() {
+        variationCounter++;
+        const variationsList = document.getElementById('variations-list');
+        if (!variationsList) return;
+        
+        // Récupérer les attributs depuis une variation existante (cloner le premier select de chaque attribut)
+        const existingVariation = document.querySelector('.variation-row');
+        let attributesHtml = '';
+        
+        if (existingVariation) {
+            // Cloner la structure depuis une variation existante
+            existingVariation.querySelectorAll('.variation-attribute').forEach(select => {
+                const match = select.name.match(/variations\[\d+\]\[attributes\]\[(\d+)\]/);
+                if (match) {
+                    const attrId = match[1];
+                    const label = select.closest('.mb-2')?.querySelector('label')?.textContent?.trim() || `Attribut ${attrId}`;
+                    const options = Array.from(select.querySelectorAll('option')).map(opt => ({
+                        value: opt.value,
+                        text: opt.textContent.trim()
+                    })).join('');
+                    
+                    attributesHtml += `
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small">${label}</label>
+                            <select class="form-control form-control-sm variation-attribute" 
+                                    name="variations[${variationCounter}][attributes][${attrId}]">
+                                ${options}
+                            </select>
+                        </div>
+                    `;
+                }
+            });
+        } else {
+            // S'il n'y a pas de variation existante, créer depuis les attributs du produit
+            @if($attributes && $attributes->count() > 0)
+                @foreach($attributes as $attribute)
+                    attributesHtml += `
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small">{{ $attribute->name }}</label>
+                            <select class="form-control form-control-sm variation-attribute" 
+                                    name="variations[${variationCounter}][attributes][{{ $attribute->id }}]">
+                                <option value="">-- Sélectionner --</option>
+                                @foreach($attribute->attributeValues as $value)
+                                    <option value="{{ $value->id }}">{{ $value->value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    `;
+                @endforeach
+            @endif
+        }
+        
+        const row = document.createElement('div');
+        row.className = 'card mb-3 variation-row';
+        row.dataset.index = variationCounter;
+        
+        row.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Variation #${variationCounter}</h6>
+                <button type="button" class="btn btn-sm btn-danger remove-variation" onclick="removeVariationRow(${variationCounter}, null)">
+                    <i class="fas fa-times"></i> Supprimer
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    ${attributesHtml}
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control variation-price" 
+                               name="variations[${variationCounter}][price]" 
+                               step="0.01" min="0" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Prix promo (FCFA)</label>
+                        <input type="number" class="form-control variation-promo-price" 
+                               name="variations[${variationCounter}][promo_price]" 
+                               step="0.01" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Stock <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control variation-stock" 
+                               name="variations[${variationCounter}][stock]" 
+                               min="0" value="0" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">SKU</label>
+                        <input type="text" class="form-control variation-sku" 
+                               name="variations[${variationCounter}][sku]">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Par défaut</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input variation-default" 
+                                   type="checkbox" 
+                                   name="variations[${variationCounter}][is_default]" 
+                                   value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        variationsList.appendChild(row);
+    }
+    
+    // Fonction pour supprimer une variation (accessible globalement)
+    window.removeVariationRow = function(index, variationId) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette variation ?')) {
+            return;
+        }
+        
+        const row = document.querySelector(`.variation-row[data-index="${index}"]`);
+        if (row) {
+            row.remove();
+            
+            // Si c'est une variation existante, l'ajouter à la liste de suppression
+            if (variationId) {
+                variationsToDelete.push(variationId);
+                // Créer ou mettre à jour le champ caché pour les variations à supprimer
+                let deleteInput = document.getElementById('variations_to_delete');
+                if (!deleteInput) {
+                    deleteInput = document.createElement('input');
+                    deleteInput.type = 'hidden';
+                    deleteInput.id = 'variations_to_delete';
+                    deleteInput.name = 'variations_to_delete[]';
+                    document.querySelector('form').appendChild(deleteInput);
+                }
+                deleteInput.value = variationsToDelete.join(',');
+            }
+        }
+    };
 })();
 </script>
 @endpush

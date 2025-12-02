@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CartItem;
 use App\Models\Favorite;
 use App\Models\Product;
+use App\Models\ProductVariation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -132,6 +133,23 @@ class CartController extends Controller
         // Normaliser les attributs pour la comparaison
         // IMPORTANT: Utiliser input() pour récupérer les données du body JSON, pas attributes qui est pour les paramètres de route
         $attributes = $request->input('attributes', []);
+        
+        // Extraire la variation_id si elle existe
+        $variationId = null;
+        if (isset($attributes['variation_id'])) {
+            $variationId = $attributes['variation_id'];
+            unset($attributes['variation_id']); // Retirer de la liste des attributs
+        }
+        
+        // Charger la variation si elle existe
+        $variation = null;
+        if ($variationId) {
+            $variation = ProductVariation::where('id', $variationId)
+                ->where('product_id', $product->id)
+                ->where('is_active', true)
+                ->first();
+        }
+        
         if (empty($attributes) || (is_array($attributes) && count(array_filter($attributes)) === 0)) {
             $attributes = [];
         }
@@ -139,10 +157,11 @@ class CartController extends Controller
         // Normaliser les attributs en JSON de manière cohérente
         $attributesJson = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
+        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs et variation
         $existingItem = CartItem::where('product_id', $product->id)
             ->where('user_id', $identifier['user_id'])
             ->where('session_id', $identifier['session_id'])
+            ->where('variation_id', $variationId)
             ->where(function($query) use ($attributesJson, $attributes) {
                 // Si les attributs sont vides, chercher les entrées sans attributs ou avec attributs vides
                 if (empty($attributes)) {
@@ -167,15 +186,34 @@ class CartController extends Controller
         if ($existingItem) {
             $existingItem->increment('quantity', $quantity);
         } else {
+            // Déterminer le prix à utiliser
+            $priceToUse = $product->price;
+            
+            // Si une variation existe, utiliser son prix
+            if ($variation) {
+                if ($variation->old_price && $variation->old_price > $variation->price) {
+                    $priceToUse = $variation->price; // Prix promo
+                } else {
+                    $priceToUse = $variation->price;
+                }
+            } else {
+                // Utiliser le prix du produit (prix promo si disponible)
+                $priceToUse = ($product->old_price && $product->old_price < $product->price) 
+                    ? $product->old_price 
+                    : $product->price;
+            }
+            
             // S'assurer que les attributs sont toujours stockés comme un objet, même s'ils sont vides
             // Convertir en objet si c'est un tableau
             $attributesToStore = empty($attributes) ? (object)[] : (is_array($attributes) ? (object)$attributes : $attributes);
             
             CartItem::create([
                 'product_id' => $product->id,
+                'variation_id' => $variationId,
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'quantity' => $quantity,
+                'price' => $priceToUse,
                 'attributes' => $attributesToStore,
             ]);
         }
@@ -231,19 +269,31 @@ class CartController extends Controller
         // IMPORTANT: Utiliser input() pour récupérer les données du body JSON, pas attributes qui est pour les paramètres de route
         $attributes = $request->input('attributes', []);
         
+        // Extraire la variation_id si elle existe
+        $variationId = null;
+        if (isset($attributes['variation_id'])) {
+            $variationId = $attributes['variation_id'];
+            unset($attributes['variation_id']); // Retirer de la liste des attributs pour ne pas la stocker en double
+        }
+        
+        // Charger la variation si elle existe
+        $variation = null;
+        if ($variationId) {
+            $variation = ProductVariation::where('id', $variationId)
+                ->where('product_id', $product->id)
+                ->where('is_active', true)
+                ->first();
+        }
+        
         // Debug: Log des attributs reçus
         \Log::info('=== AJOUT AU PANIER ===', [
             'product_id' => $request->input('product_id'),
             'quantity' => $request->input('quantity'),
+            'variation_id' => $variationId,
+            'variation_found' => $variation ? true : false,
             'attributes_received' => $attributes,
-            'attributes_type' => gettype($attributes),
-            'attributes_is_array' => is_array($attributes),
-            'attributes_count' => is_array($attributes) ? count($attributes) : 'N/A',
-            'attributes_keys' => is_array($attributes) ? array_keys($attributes) : 'N/A',
-            'request_all' => $request->all(),
-            'request_json' => $request->json()->all(),
-            'content_type' => $request->header('Content-Type'),
         ]);
+        
         if (empty($attributes) || (is_array($attributes) && count(array_filter($attributes)) === 0)) {
             $attributes = [];
         }
@@ -251,7 +301,7 @@ class CartController extends Controller
         // Normaliser les attributs en JSON de manière cohérente
         $attributesJson = json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs
+        // Vérifier si le produit est déjà dans le panier avec les mêmes attributs et variation
         $cartItem = CartItem::where('product_id', $product->id)
             ->where(function($query) use ($identifier) {
                 if ($identifier['user_id'] && $identifier['session_id']) {
@@ -266,6 +316,7 @@ class CartController extends Controller
                     $query->where('session_id', $identifier['session_id']);
                 }
             })
+            ->where('variation_id', $variationId)
             ->where(function($query) use ($attributesJson, $attributes) {
                 // Si les attributs sont vides, chercher les entrées sans attributs ou avec attributs vides
                 if (empty($attributes)) {
@@ -295,28 +346,34 @@ class CartController extends Controller
             }
             $cartItem->save();
         } else {
-            // Déterminer le prix à utiliser (prix promo si disponible)
-            $priceToUse = ($product->old_price && $product->old_price < $product->price) 
-                ? $product->old_price 
-                : $product->price;
+            // Déterminer le prix à utiliser
+            $priceToUse = $product->price;
+            
+            // Si une variation existe, utiliser son prix
+            if ($variation) {
+                // Utiliser le prix promo de la variation si disponible, sinon le prix normal
+                if ($variation->old_price && $variation->old_price > $variation->price) {
+                    $priceToUse = $variation->price; // Prix promo
+                } else {
+                    $priceToUse = $variation->price;
+                }
+            } else {
+                // Utiliser le prix du produit (prix promo si disponible)
+                $priceToUse = ($product->old_price && $product->old_price < $product->price) 
+                    ? $product->old_price 
+                    : $product->price;
+            }
             
             // Créer un nouvel article
             // S'assurer que les attributs sont toujours un objet, jamais null
             // Convertir en objet si c'est un tableau
             $attributesToStore = empty($attributes) ? (object)[] : (is_array($attributes) ? (object)$attributes : $attributes);
             
-            // Debug: Log des attributs avant stockage
-            \Log::info('=== AVANT STOCKAGE ===', [
-                'attributes_original' => $attributes,
-                'attributes_to_store' => $attributesToStore,
-                'attributes_to_store_type' => gettype($attributesToStore),
-                'attributes_to_store_json' => json_encode($attributesToStore),
-            ]);
-            
             CartItem::create([
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'product_id' => $product->id,
+                'variation_id' => $variationId,
                 'quantity' => max($quantity, (int)$minQty),
                 'price' => $priceToUse,
                 'attributes' => $attributesToStore

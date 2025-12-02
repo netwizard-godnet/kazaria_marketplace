@@ -292,6 +292,43 @@
                         </div>
                         @endif
 
+                        <!-- Section Variations de produits (avec prix différents selon les attributs) -->
+                        @if($attributes && $attributes->count() > 0)
+                        <div class="form-group mt-4" id="variations-section">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-layer-group me-2"></i>
+                                            Variations de produits (Prix différents selon les attributs)
+                                        </h5>
+                                        <small class="text-muted">Créez des variations avec des prix et stocks différents selon les combinaisons d'attributs</small>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable_variations" name="enable_variations" value="1">
+                                        <label class="form-check-label" for="enable_variations">
+                                            Activer les variations
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="card-body" id="variations-container" style="display: none;">
+                                    <div class="alert alert-info mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Les variations seront créées automatiquement après avoir sélectionné les attributs du produit ci-dessus. 
+                                        Vous pourrez définir le prix, le stock et le SKU pour chaque combinaison d'attributs.
+                                    </div>
+                                    <div id="variations-list">
+                                        <!-- Les variations seront générées dynamiquement en JavaScript -->
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-secondary mt-3" id="generate-variations-btn" style="display: none;">
+                                        <i class="fas fa-sync me-1"></i>
+                                        Générer les variations
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Boutons -->
                         <div class="card-action">
                             <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -593,6 +630,152 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Images chargées:', files.length);
         });
     });
+})();
+
+// Gestion des variations de produits
+(function() {
+    let variationCounter = 0;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const enableVariationsCheckbox = document.getElementById('enable_variations');
+        const variationsContainer = document.getElementById('variations-container');
+        const generateVariationsBtn = document.getElementById('generate-variations-btn');
+        
+        if (!enableVariationsCheckbox || !variationsContainer) {
+            return;
+        }
+        
+        // Afficher/masquer la section variations
+        enableVariationsCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                variationsContainer.style.display = 'block';
+                if (variationCounter === 0) {
+                    addVariationRow();
+                }
+            } else {
+                variationsContainer.style.display = 'none';
+            }
+        });
+        
+        // Bouton pour ajouter une variation
+        const addVariationBtn = document.createElement('button');
+        addVariationBtn.type = 'button';
+        addVariationBtn.className = 'btn btn-primary btn-sm mt-3';
+        addVariationBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Ajouter une variation';
+        addVariationBtn.addEventListener('click', function() {
+            addVariationRow();
+        });
+        variationsContainer.appendChild(addVariationBtn);
+    });
+    
+    // Fonction pour ajouter une ligne de variation
+    function addVariationRow() {
+        variationCounter++;
+        const variationsList = document.getElementById('variations-list');
+        if (!variationsList) return;
+        
+        const row = document.createElement('div');
+        row.className = 'card mb-3 variation-row';
+        row.dataset.index = variationCounter;
+        
+        // Récupérer tous les attributs disponibles
+        const attributes = [];
+        document.querySelectorAll('[name^="attributes["]').forEach(input => {
+            const match = input.name.match(/attributes\[(\d+)\]/);
+            if (match) {
+                const attrId = match[1];
+                const attrName = document.querySelector(`label[for="${input.id}"]`)?.textContent?.trim() || `Attribut ${attrId}`;
+                if (!attributes.find(a => a.id === attrId)) {
+                    attributes.push({
+                        id: attrId,
+                        name: attrName,
+                        values: []
+                    });
+                }
+                
+                // Récupérer toutes les valeurs pour cet attribut
+                const valueId = input.value;
+                const valueLabel = document.querySelector(`label[for="${input.id}"]`)?.textContent?.trim() || valueId;
+                attributes.find(a => a.id === attrId).values.push({
+                    id: valueId,
+                    label: valueLabel
+                });
+            }
+        });
+        
+        // Créer l'interface de la variation
+        let attributesHtml = '';
+        attributes.forEach(attr => {
+            attributesHtml += `
+                <div class="col-md-6 mb-2">
+                    <label class="form-label small">${attr.name}</label>
+                    <select class="form-control form-control-sm variation-attribute" 
+                            name="variations[${variationCounter}][attributes][${attr.id}]">
+                        <option value="">-- Sélectionner --</option>
+                        ${attr.values.map(v => `<option value="${v.id}">${v.label}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        });
+        
+        row.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Variation #${variationCounter}</h6>
+                <button type="button" class="btn btn-sm btn-danger remove-variation" onclick="removeVariationRow(${variationCounter})">
+                    <i class="fas fa-times"></i> Supprimer
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    ${attributesHtml}
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control variation-price" 
+                               name="variations[${variationCounter}][price]" 
+                               step="0.01" min="0" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Prix promo (FCFA)</label>
+                        <input type="number" class="form-control variation-promo-price" 
+                               name="variations[${variationCounter}][promo_price]" 
+                               step="0.01" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Stock <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control variation-stock" 
+                               name="variations[${variationCounter}][stock]" 
+                               min="0" value="0" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">SKU</label>
+                        <input type="text" class="form-control variation-sku" 
+                               name="variations[${variationCounter}][sku]">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Par défaut</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input variation-default" 
+                                   type="checkbox" 
+                                   name="variations[${variationCounter}][is_default]" 
+                                   value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        variationsList.appendChild(row);
+    }
+    
+    // Fonction pour supprimer une variation (accessible globalement)
+    window.removeVariationRow = function(index) {
+        const row = document.querySelector(`.variation-row[data-index="${index}"]`);
+        if (row && confirm('Êtes-vous sûr de vouloir supprimer cette variation ?')) {
+            row.remove();
+        }
+    };
 })();
 </script>
 @endpush

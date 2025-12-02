@@ -1,12 +1,10 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="container-fluid">
         <!-- BREADCRUMB -->
         <div class="container py-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('accueil') }}">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="<?php echo e(route('accueil')); ?>">Accueil</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Mon Panier</li>
                 </ol>
             </nav>
@@ -50,7 +48,7 @@
                         
                         <div class="d-flex justify-content-between mb-2">
                             <span>Sous-total:</span>
-                            <span id="subtotal">0 {{ $settings['currency_symbol'] ?? 'FCFA' }}</span>
+                            <span id="subtotal">0 <?php echo e($settings['currency_symbol'] ?? 'FCFA'); ?></span>
                         </div>
                         
                         <div class="d-flex justify-content-between mb-2">
@@ -60,21 +58,21 @@
                         
                         <div class="d-flex justify-content-between mb-2" id="promoRow" style="display:none;">
                             <span>Réduction (code):</span>
-                            <span id="promoDiscount">- 0 {{ $settings['currency_symbol'] ?? 'FCFA' }}</span>
+                            <span id="promoDiscount">- 0 <?php echo e($settings['currency_symbol'] ?? 'FCFA'); ?></span>
                         </div>
                         
                         <hr>
                         
                         <div class="d-flex justify-content-between mb-3">
                             <span class="fw-bold">Total:</span>
-                            <span class="fw-bold fs-5 orange-color" id="total">0 {{ $settings['currency_symbol'] ?? 'FCFA' }}</span>
+                            <span class="fw-bold fs-5 orange-color" id="total">0 <?php echo e($settings['currency_symbol'] ?? 'FCFA'); ?></span>
                         </div>
 
                         <button class="btn orange-bg text-white w-100 mb-2" id="checkoutBtn" style="display: none;" onclick="proceedToCheckout()">
                             <i class="bi bi-credit-card me-2"></i>Passer la commande
                         </button>
                         
-                        <a href="{{ route('accueil') }}" class="btn btn-outline-secondary w-100">
+                        <a href="<?php echo e(route('accueil')); ?>" class="btn btn-outline-secondary w-100">
                             <i class="bi bi-arrow-left me-2"></i>Continuer mes achats
                         </a>
 
@@ -93,8 +91,8 @@
                         <div class="mt-3">
                             <h6 class="small fw-bold mb-2">Paiement sécurisé</h6>
                             <div class="d-flex gap-2 align-items-center">
-                                <img src="{{ asset('images/visa.jpg') }}" alt="Visa" height="30">
-                                <img src="{{ asset('images/mastercard.jpg') }}" alt="Mastercard" height="30">
+                                <img src="<?php echo e(asset('images/visa.jpg')); ?>" alt="Visa" height="30">
+                                <img src="<?php echo e(asset('images/mastercard.jpg')); ?>" alt="Mastercard" height="30">
                                 <i class="bi bi-phone-fill text-success" style="font-size: 1.5rem;" title="Mobile Money"></i>
                             </div>
                         </div>
@@ -321,7 +319,7 @@
                             <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
                             <h5 class="mt-3 text-muted">Votre panier est vide</h5>
                             <p class="text-muted">Parcourez nos produits et ajoutez vos articles préférés !</p>
-                            <a href="{{ route('accueil') }}" class="btn orange-bg text-white">
+                            <a href="<?php echo e(route('accueil')); ?>" class="btn orange-bg text-white">
                                 <i class="bi bi-shop me-2"></i>Continuer mes achats
                             </a>
                         </div>
@@ -371,22 +369,23 @@
             }
         }
 
-        // Configuration des paramètres ({{ now() }})
+        // Configuration des paramètres (<?php echo e(now()); ?>)
         console.log('Debug $shippingSettings:', {
-            isset: {{ isset($shippingSettings) ? 'true' : 'false' }},
-            is_array: {{ isset($shippingSettings) && is_array($shippingSettings) ? 'true' : 'false' }},
-            content: @json($shippingSettings ?? 'UNDEFINED')
+            isset: <?php echo e(isset($shippingSettings) ? 'true' : 'false'); ?>,
+            is_array: <?php echo e(isset($shippingSettings) && is_array($shippingSettings) ? 'true' : 'false'); ?>,
+            content: <?php echo json_encode($shippingSettings ?? 'UNDEFINED', 15, 512) ?>
         });
         
-        @if(isset($shippingSettings) && is_array($shippingSettings))
-            console.log('ShippingSettings reçus:', @json($shippingSettings));
+        <?php if(isset($shippingSettings) && is_array($shippingSettings)): ?>
+            console.log('ShippingSettings reçus:', <?php echo json_encode($shippingSettings, 15, 512) ?>);
             const settings = {
-                minOrderQuantity: {{ $shippingSettings['min_order_quantity'] ?? 1 }},
-                currencySymbol: '{{ $shippingSettings['currency_symbol'] ?? 'FCFA' }}',
-                shippingCost: {{ $shippingSettings['shipping_cost'] ?? 0 }},
-                freeShippingThreshold: {{ $shippingSettings['free_shipping_threshold'] ?? 0 }}
+                minOrderQuantity: <?php echo e($shippingSettings['min_order_quantity'] ?? 1); ?>,
+                currencySymbol: '<?php echo e($shippingSettings['currency_symbol'] ?? 'FCFA'); ?>',
+                shippingCost: <?php echo e($shippingSettings['shipping_cost'] ?? 0); ?>,
+                freeShippingThreshold: <?php echo e($shippingSettings['free_shipping_threshold'] ?? 0); ?>
+
             };
-        @else
+        <?php else: ?>
             console.error('ShippingSettings non définis ou invalides');
             const settings = {
                 minOrderQuantity: 1,
@@ -394,7 +393,7 @@
                 shippingCost: 0,
                 freeShippingThreshold: 0
             };
-        @endif
+        <?php endif; ?>
         
         // Debug: Afficher les paramètres dans la console
         console.log('Paramètres de livraison chargés:', settings);
@@ -699,4 +698,6 @@
             }
         }
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/cart.blade.php ENDPATH**/ ?>

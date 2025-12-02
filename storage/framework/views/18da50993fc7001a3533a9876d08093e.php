@@ -1,13 +1,13 @@
-@extends('layouts.app')
 
-@section('content')
+
+<?php $__env->startSection('content'); ?>
     <main class="container-fluid">
         <!-- BREADCRUMB -->
         <div class="container py-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('accueil') }}">Accueil</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('product-cart') }}">Panier</a></li>
+                    <li class="breadcrumb-item"><a href="<?php echo e(route('accueil')); ?>">Accueil</a></li>
+                    <li class="breadcrumb-item"><a href="<?php echo e(route('product-cart')); ?>">Panier</a></li>
                     <li class="breadcrumb-item active">Livraison</li>
                 </ol>
             </nav>
@@ -29,44 +29,44 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingName" class="form-label">Nom complet <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="shippingName" value="{{ $user->prenoms }} {{ $user->nom }}" required>
+                                        <input type="text" class="form-control" id="shippingName" value="<?php echo e($user->prenoms); ?> <?php echo e($user->nom); ?>" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" id="shippingEmail" value="{{ $user->email }}" required>
+                                        <input type="email" class="form-control" id="shippingEmail" value="<?php echo e($user->email); ?>" required>
                                     </div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingPhone" class="form-label">Téléphone <span class="text-danger">*</span></label>
-                                        <input type="tel" class="form-control" id="shippingPhone" value="{{ $user->telephone }}" required>
+                                        <input type="tel" class="form-control" id="shippingPhone" value="<?php echo e($user->telephone); ?>" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingCity" class="form-label">Ville <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="shippingCity" value="{{ $user->ville ?? 'Abidjan' }}" required>
+                                        <input type="text" class="form-control" id="shippingCity" value="<?php echo e($user->ville ?? 'Abidjan'); ?>" required>
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="shippingAddress" class="form-label">Adresse complète <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="shippingAddress" rows="3" required>{{ $user->adresse ?? '' }}</textarea>
+                                    <textarea class="form-control" id="shippingAddress" rows="3" required><?php echo e($user->adresse ?? ''); ?></textarea>
                                     <div class="form-text">Indiquez un point de repère pour faciliter la livraison</div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingPostalCode" class="form-label">Code postal</label>
-                                        <input type="text" class="form-control" id="shippingPostalCode" value="{{ $user->code_postal ?? '' }}">
+                                        <input type="text" class="form-control" id="shippingPostalCode" value="<?php echo e($user->code_postal ?? ''); ?>">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingCountry" class="form-label">Pays <span class="text-danger">*</span></label>
                                         <select class="form-control" id="shippingCountry" required>
-                                            <option value="CI" {{ ($user->pays ?? 'CI') == 'CI' ? 'selected' : '' }}>Côte d'Ivoire</option>
-                                            <option value="SN" {{ ($user->pays ?? '') == 'SN' ? 'selected' : '' }}>Sénégal</option>
-                                            <option value="ML" {{ ($user->pays ?? '') == 'ML' ? 'selected' : '' }}>Mali</option>
-                                            <option value="BF" {{ ($user->pays ?? '') == 'BF' ? 'selected' : '' }}>Burkina Faso</option>
-                                            <option value="GH" {{ ($user->pays ?? '') == 'GH' ? 'selected' : '' }}>Ghana</option>
+                                            <option value="CI" <?php echo e(($user->pays ?? 'CI') == 'CI' ? 'selected' : ''); ?>>Côte d'Ivoire</option>
+                                            <option value="SN" <?php echo e(($user->pays ?? '') == 'SN' ? 'selected' : ''); ?>>Sénégal</option>
+                                            <option value="ML" <?php echo e(($user->pays ?? '') == 'ML' ? 'selected' : ''); ?>>Mali</option>
+                                            <option value="BF" <?php echo e(($user->pays ?? '') == 'BF' ? 'selected' : ''); ?>>Burkina Faso</option>
+                                            <option value="GH" <?php echo e(($user->pays ?? '') == 'GH' ? 'selected' : ''); ?>>Ghana</option>
                                         </select>
                                     </div>
                                 </div>
@@ -129,31 +129,31 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Sous-total:</span>
-                                <span>{{ number_format($subtotal, 0, ',', ' ') }} FCFA</span>
+                                <span><?php echo e(number_format($subtotal, 0, ',', ' ')); ?> FCFA</span>
                             </div>
-                            @if($discount > 0)
+                            <?php if($discount > 0): ?>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Réduction:</span>
-                                <span class="text-success">-{{ number_format($discount, 0, ',', ' ') }} FCFA</span>
+                                <span class="text-success">-<?php echo e(number_format($discount, 0, ',', ' ')); ?> FCFA</span>
                             </div>
-                            @endif
+                            <?php endif; ?>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>
-                                <span class="text-success">{{ $shippingCost > 0 ? number_format($shippingCost, 0, ',', ' ') . ' FCFA' : 'Gratuite' }}</span>
+                                <span class="text-success"><?php echo e($shippingCost > 0 ? number_format($shippingCost, 0, ',', ' ') . ' FCFA' : 'Gratuite'); ?></span>
                             </div>
                             
                             <hr>
                             
                             <div class="d-flex justify-content-between mb-3">
                                 <span class="fw-bold fs-5">Total à payer:</span>
-                                <span class="fw-bold fs-4 orange-color">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                                <span class="fw-bold fs-4 orange-color"><?php echo e(number_format($total, 0, ',', ' ')); ?> FCFA</span>
                             </div>
 
                             <button class="btn orange-bg text-white w-100 mb-2" id="submitOrderBtn" onclick="submitOrder()">
                                 <i class="bi bi-check-circle me-2"></i>Valider la commande
                             </button>
                             
-                            <a href="{{ route('product-cart') }}" class="btn btn-outline-secondary btn-sm w-100">
+                            <a href="<?php echo e(route('product-cart')); ?>" class="btn btn-outline-secondary btn-sm w-100">
                                 <i class="bi bi-arrow-left me-2"></i>Retour au panier
                             </a>
 
@@ -237,5 +237,7 @@
             }
         }
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
 
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/shipping.blade.php ENDPATH**/ ?>

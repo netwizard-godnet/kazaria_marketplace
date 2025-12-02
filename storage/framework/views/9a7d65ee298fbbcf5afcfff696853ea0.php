@@ -457,7 +457,7 @@
                             <?php if($publicite4->link_url): ?>
                                 <a href="<?php echo e($publicite4->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite4Image); ?>" class="w-100 h-300px object-fit-contain" alt="Publicité 4">
+                            <img src="<?php echo e($publicite4Image); ?>" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
                             <?php if($publicite4->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -478,7 +478,7 @@
                             <?php if($publicite5->link_url): ?>
                                 <a href="<?php echo e($publicite5->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite5Image); ?>" class="w-100 h-300px object-fit-contain" alt="Publicité 5">
+                            <img src="<?php echo e($publicite5Image); ?>" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
                             <?php if($publicite5->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>

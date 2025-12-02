@@ -8,7 +8,7 @@ use App\Http\Controllers\AuthController;
 // Routes d'authentification publiques
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode']);
+// Route verify-login-code déplacée vers web.php car elle utilise la session
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);

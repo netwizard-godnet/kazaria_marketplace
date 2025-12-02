@@ -13,6 +13,7 @@ class CartItem extends Model
         'user_id',
         'session_id',
         'product_id',
+        'variation_id',
         'quantity',
         'price',
         'attributes'
@@ -93,6 +94,14 @@ class CartItem extends Model
     }
 
     /**
+     * Relation avec la variation du produit
+     */
+    public function variation()
+    {
+        return $this->belongsTo(ProductVariation::class);
+    }
+
+    /**
      * Relation avec l'utilisateur
      */
     public function user()
@@ -105,7 +114,7 @@ class CartItem extends Model
      */
     public static function getCartItems($userId = null, $sessionId = null)
     {
-        $query = self::with('product');
+        $query = self::with(['product', 'variation.attributeValues.attribute']);
         
         if ($userId) {
             $query->where('user_id', $userId);

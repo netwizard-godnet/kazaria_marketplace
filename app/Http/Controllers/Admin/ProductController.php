@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Attribute;
+use App\Models\ProductVariation;
 
 class ProductController extends Controller
 {
@@ -42,7 +43,22 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load(['store', 'category', 'subcategory']);
+        $product->load([
+            'store', 
+            'category', 
+            'subcategory',
+            'attributeValues.attribute',
+            'variations.attributeValues.attribute',
+            'reviews' => function($query) {
+                $query->latest()->limit(5);
+            }
+        ]);
+        
+        // Calculer le nombre total d'avis et la note moyenne si nécessaire
+        if (!$product->reviews_count && $product->reviews) {
+            $product->reviews_count = $product->reviews->count();
+        }
+        
         return view('admin.products.show', compact('product'));
     }
 
@@ -68,6 +84,17 @@ class ProductController extends Controller
             'meta_keywords' => 'nullable|string|max:255',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'attributes' => 'nullable|array',
+            'enable_variations' => 'nullable|boolean',
+            'variations' => 'nullable|array',
+            'variations.*.id' => 'nullable|exists:product_variations,id',
+            'variations.*.attributes' => 'nullable|array',
+            'variations.*.price' => 'required_with:variations|numeric|min:0',
+            'variations.*.promo_price' => 'nullable|numeric|min:0',
+            'variations.*.stock' => 'required_with:variations|integer|min:0',
+            'variations.*.sku' => 'nullable|string|max:255',
+            'variations.*.is_default' => 'nullable|boolean',
+            'variations_to_delete' => 'nullable|array',
+            'variations_to_delete.*' => 'exists:product_variations,id',
         ]);
 
         $data = $request->only([
@@ -198,6 +225,129 @@ class ProductController extends Controller
             $product->attributeValues()->detach();
         }
 
+        // Gestion des variations de produits
+        // Supprimer les variations marquées pour suppression
+        if ($request->has('variations_to_delete')) {
+            ProductVariation::whereIn('id', $request->variations_to_delete)
+                ->where('product_id', $product->id)
+                ->delete();
+        }
+
+        // Mettre à jour ou créer les variations
+        if ($request->has('enable_variations') && $request->enable_variations && $request->has('variations')) {
+            $variations = $request->input('variations', []);
+            $hasDefault = false;
+            $variationIds = [];
+            
+            foreach ($variations as $index => $variationData) {
+                // Vérifier que la variation a au moins un attribut
+                if (empty($variationData['attributes']) || !is_array($variationData['attributes'])) {
+                    continue;
+                }
+                
+                // Calculer les prix
+                $variationPrice = $variationData['price'] ?? 0;
+                $variationPromoPrice = $variationData['promo_price'] ?? null;
+                $variationOldPrice = null;
+                $variationDiscount = null;
+                
+                if ($variationPromoPrice && $variationPromoPrice > 0 && $variationPromoPrice < $variationPrice) {
+                    $variationOldPrice = $variationPrice;
+                    $variationPrice = $variationPromoPrice;
+                    $variationDiscount = round((($variationOldPrice - $variationPrice) / $variationOldPrice) * 100, 2);
+                }
+                
+                // Générer le SKU si non fourni
+                $sku = $variationData['sku'] ?? null;
+                if (!$sku && isset($variationData['id'])) {
+                    $existingVariation = ProductVariation::find($variationData['id']);
+                    $sku = $existingVariation ? $existingVariation->sku : ProductVariation::generateSku(
+                        $product->id, 
+                        array_values($variationData['attributes'])
+                    );
+                } elseif (!$sku) {
+                    $sku = ProductVariation::generateSku(
+                        $product->id, 
+                        array_values($variationData['attributes'])
+                    );
+                }
+                
+                // Vérifier si c'est une mise à jour ou création
+                if (isset($variationData['id']) && $variationData['id']) {
+                    // Mettre à jour la variation existante
+                    $variation = ProductVariation::where('id', $variationData['id'])
+                        ->where('product_id', $product->id)
+                        ->first();
+                    
+                    if ($variation) {
+                        $variation->update([
+                            'sku' => $sku,
+                            'price' => $variationPrice,
+                            'old_price' => $variationOldPrice,
+                            'discount_percentage' => $variationDiscount,
+                            'stock' => $variationData['stock'] ?? 0,
+                            'is_default' => !$hasDefault && ($variationData['is_default'] ?? false),
+                            'is_active' => true,
+                            'order' => $index
+                        ]);
+                        
+                        // Mettre à jour les attributs
+                        $attributeValueIds = array_values(array_filter($variationData['attributes']));
+                        if (!empty($attributeValueIds)) {
+                            $variation->attributeValues()->sync($attributeValueIds);
+                        }
+                        
+                        $variationIds[] = $variation->id;
+                        if ($variation->is_default) {
+                            $hasDefault = true;
+                        }
+                    }
+                } else {
+                    // Créer une nouvelle variation
+                    $variation = ProductVariation::create([
+                        'product_id' => $product->id,
+                        'sku' => $sku,
+                        'price' => $variationPrice,
+                        'old_price' => $variationOldPrice,
+                        'discount_percentage' => $variationDiscount,
+                        'stock' => $variationData['stock'] ?? 0,
+                        'is_default' => !$hasDefault && ($variationData['is_default'] ?? false),
+                        'is_active' => true,
+                        'order' => $index
+                    ]);
+                    
+                    // Lier les valeurs d'attributs
+                    $attributeValueIds = array_values(array_filter($variationData['attributes']));
+                    if (!empty($attributeValueIds)) {
+                        $variation->attributeValues()->attach($attributeValueIds);
+                    }
+                    
+                    $variationIds[] = $variation->id;
+                    if ($variation->is_default) {
+                        $hasDefault = true;
+                    }
+                }
+            }
+            
+            // S'il n'y a pas de variation par défaut, définir la première comme défaut
+            if (!$hasDefault && !empty($variations)) {
+                $firstVariation = $product->variations()->orderBy('order')->first();
+                if ($firstVariation) {
+                    $firstVariation->update(['is_default' => true]);
+                }
+            }
+            
+            // Supprimer les variations qui ne sont plus dans la liste (si enable_variations est activé)
+            if (!empty($variationIds)) {
+                ProductVariation::where('product_id', $product->id)
+                    ->whereNotIn('id', $variationIds)
+                    ->delete();
+            }
+        } elseif ($request->has('enable_variations') && !$request->enable_variations) {
+            // Si les variations sont désactivées, supprimer toutes les variations
+            ProductVariation::where('product_id', $product->id)->delete();
+        }
+
         return redirect()->route('admin.products.index')->with('success', 'Produit mis à jour avec succès.');
     }
 
@@ -228,7 +378,13 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load(['store', 'category', 'subcategory', 'attributeValues.attribute']);
+        $product->load([
+            'store', 
+            'category', 
+            'subcategory', 
+            'attributeValues.attribute',
+            'variations.attributeValues.attribute'
+        ]);
         $categories = Category::all();
         $attributes = Attribute::with('attributeValues')->ordered()->get();
         $stores = \App\Models\Store::with('user')->orderBy('name')->get();
@@ -289,6 +445,14 @@ class ProductController extends Controller
             'meta_keywords' => 'nullable|string|max:255',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'attributes' => 'nullable|array',
+            'enable_variations' => 'nullable|boolean',
+            'variations' => 'nullable|array',
+            'variations.*.attributes' => 'nullable|array',
+            'variations.*.price' => 'required_with:variations|numeric|min:0',
+            'variations.*.promo_price' => 'nullable|numeric|min:0',
+            'variations.*.stock' => 'required_with:variations|integer|min:0',
+            'variations.*.sku' => 'nullable|string|max:255',
+            'variations.*.is_default' => 'nullable|boolean',
         ]);
 
         $data = $request->only([
@@ -387,6 +551,68 @@ class ProductController extends Controller
             }
             if (!empty($attributeValueIds)) {
                 $product->attributeValues()->attach($attributeValueIds);
+            }
+        }
+
+        // Gestion des variations de produits
+        if ($request->has('enable_variations') && $request->enable_variations && $request->has('variations')) {
+            $variations = $request->input('variations', []);
+            $hasDefault = false;
+            
+            foreach ($variations as $index => $variationData) {
+                // Vérifier que la variation a au moins un attribut
+                if (empty($variationData['attributes']) || !is_array($variationData['attributes'])) {
+                    continue;
+                }
+                
+                // Calculer les prix
+                $variationPrice = $variationData['price'] ?? 0;
+                $variationPromoPrice = $variationData['promo_price'] ?? null;
+                $variationOldPrice = null;
+                $variationDiscount = null;
+                
+                if ($variationPromoPrice && $variationPromoPrice > 0 && $variationPromoPrice < $variationPrice) {
+                    $variationOldPrice = $variationPrice;
+                    $variationPrice = $variationPromoPrice;
+                    $variationDiscount = round((($variationOldPrice - $variationPrice) / $variationOldPrice) * 100, 2);
+                }
+                
+                // Générer le SKU si non fourni
+                $sku = $variationData['sku'] ?? ProductVariation::generateSku(
+                    $product->id, 
+                    array_values($variationData['attributes'])
+                );
+                
+                // Créer la variation
+                $variation = ProductVariation::create([
+                    'product_id' => $product->id,
+                    'sku' => $sku,
+                    'price' => $variationPrice,
+                    'old_price' => $variationOldPrice,
+                    'discount_percentage' => $variationDiscount,
+                    'stock' => $variationData['stock'] ?? 0,
+                    'is_default' => !$hasDefault && ($variationData['is_default'] ?? false),
+                    'is_active' => true,
+                    'order' => $index
+                ]);
+                
+                if ($variation->is_default) {
+                    $hasDefault = true;
+                }
+                
+                // Lier les valeurs d'attributs à la variation
+                $attributeValueIds = array_values(array_filter($variationData['attributes']));
+                if (!empty($attributeValueIds)) {
+                    $variation->attributeValues()->attach($attributeValueIds);
+                }
+            }
+            
+            // S'il n'y a pas de variation par défaut, définir la première comme défaut
+            if (!$hasDefault && !empty($variations)) {
+                $firstVariation = $product->variations()->first();
+                if ($firstVariation) {
+                    $firstVariation->update(['is_default' => true]);
+                }
             }
         }
 

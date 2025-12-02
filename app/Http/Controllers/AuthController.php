@@ -141,6 +141,23 @@ class AuthController extends Controller
      */
     public function verifyLoginCode(Request $request)
     {
+        // Vérifier que la session est disponible
+        try {
+            if (!$request->hasSession()) {
+                \Log::error('Session store not set on request for verifyLoginCode');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur session verifyLoginCode: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
+            ], 500);
+        }
+
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'code' => 'required|string|size:8',
@@ -179,16 +196,16 @@ class AuthController extends Controller
         $authCode->markAsUsed();
 
         // Régénérer l'ID de session AVANT le login pour éviter les problèmes
-        request()->session()->regenerate();
+        $request->session()->regenerate();
         
         // Créer une session web persistante
         Auth::login($user, true);
         
         // Régénérer le token CSRF
-        request()->session()->regenerateToken();
+        $request->session()->regenerateToken();
         
         // Forcer la sauvegarde de la session
-        request()->session()->save();
+        $request->session()->save();
 
         return response()->json([
             'success' => true,
