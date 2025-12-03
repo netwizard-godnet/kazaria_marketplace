@@ -129,7 +129,7 @@
                         </div>
                     </div>
                     <div class="col-3 col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-center justify-content-md-start flex-column flex-sm-row">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
                             <i class="fa-solid fa-credit-card fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Paiement sécurisé</p>
@@ -290,7 +290,7 @@
                             <?php if($publicite1->link_url): ?>
                                 <a href="<?php echo e($publicite1->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite1Image); ?>" class="w-100 h-200px object-fit-cover" alt="Publicité 1">
+                            <img src="<?php echo e($publicite1Image); ?>" class="w-100 object-fit-cover" alt="Publicité 1">
                             <?php if($publicite1->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -311,7 +311,7 @@
                             <?php if($publicite2->link_url): ?>
                                 <a href="<?php echo e($publicite2->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite2Image); ?>" class="w-100 h-200px object-fit-cover" alt="Publicité 2">
+                            <img src="<?php echo e($publicite2Image); ?>" class="w-100 object-fit-cover" alt="Publicité 2">
                             <?php if($publicite2->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -332,7 +332,7 @@
                             <?php if($publicite3->link_url): ?>
                                 <a href="<?php echo e($publicite3->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite3Image); ?>" class="w-100 h-200px object-fit-cover" alt="Publicité 3">
+                            <img src="<?php echo e($publicite3Image); ?>" class="w-100 object-fit-cover" alt="Publicité 3">
                             <?php if($publicite3->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -457,7 +457,7 @@
                             <?php if($publicite4->link_url): ?>
                                 <a href="<?php echo e($publicite4->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite4Image); ?>" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
+                            <img src="<?php echo e($publicite4Image); ?>" class="w-100 object-fit-cover" alt="Publicité 4">
                             <?php if($publicite4->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>
@@ -478,7 +478,7 @@
                             <?php if($publicite5->link_url): ?>
                                 <a href="<?php echo e($publicite5->link_url); ?>" target="_blank" rel="noopener" class="d-block">
                             <?php endif; ?>
-                            <img src="<?php echo e($publicite5Image); ?>" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
+                            <img src="<?php echo e($publicite5Image); ?>" class="w-100 object-fit-cover" alt="Publicité 5">
                             <?php if($publicite5->link_url): ?></a><?php endif; ?>
                         </div>
                     <?php else: ?>

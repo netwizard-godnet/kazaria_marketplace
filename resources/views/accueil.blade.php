@@ -292,7 +292,7 @@
                             @if($publicite1->link_url)
                                 <a href="{{ $publicite1->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite1Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 1">
+                            <img src="{{ $publicite1Image }}" class="w-100 object-fit-cover" alt="Publicité 1">
                             @if($publicite1->link_url)</a>@endif
                         </div>
                     @else
@@ -313,7 +313,7 @@
                             @if($publicite2->link_url)
                                 <a href="{{ $publicite2->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite2Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 2">
+                            <img src="{{ $publicite2Image }}" class="w-100 object-fit-cover" alt="Publicité 2">
                             @if($publicite2->link_url)</a>@endif
                         </div>
                     @else
@@ -334,7 +334,7 @@
                             @if($publicite3->link_url)
                                 <a href="{{ $publicite3->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite3Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 3">
+                            <img src="{{ $publicite3Image }}" class="w-100 object-fit-cover" alt="Publicité 3">
                             @if($publicite3->link_url)</a>@endif
                         </div>
                     @else
@@ -459,7 +459,7 @@
                             @if($publicite4->link_url)
                                 <a href="{{ $publicite4->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite4Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
+                            <img src="{{ $publicite4Image }}" class="w-100 object-fit-cover" alt="Publicité 4">
                             @if($publicite4->link_url)</a>@endif
                         </div>
                     @else
@@ -480,7 +480,7 @@
                             @if($publicite5->link_url)
                                 <a href="{{ $publicite5->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite5Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
+                            <img src="{{ $publicite5Image }}" class="w-100 object-fit-cover" alt="Publicité 5">
                             @if($publicite5->link_url)</a>@endif
                         </div>
                     @else
