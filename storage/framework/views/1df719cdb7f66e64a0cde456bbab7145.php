@@ -49,19 +49,26 @@
         </div>
         <div class="py-1">
             <div class="d-flex align-items-center justify-content-start fs-7">
-                <?php if($product->old_price && $product->old_price > $product->price): ?>
+                <?php
+                    $price = $product->price ?? 0;
+                    $oldPrice = $product->old_price ?? null;
+                ?>
+                <?php if($oldPrice && $oldPrice > $price): ?>
                     
-                    <span class="fs-7 text-danger fw-bold text-nowrap me-2"><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</span>
-                    <span class="fs-8 text-decoration-line-through text-secondary text-nowrap"><?php echo e(number_format($product->old_price, 0, ',', ' ')); ?> FCFA</span>
+                    <span class="fs-7 text-danger fw-bold text-nowrap me-2"><?php echo e(number_format($price, 0, ',', ' ')); ?> FCFA</span>
+                    <span class="fs-8 text-decoration-line-through text-secondary text-nowrap"><?php echo e(number_format($oldPrice, 0, ',', ' ')); ?> FCFA</span>
                 <?php else: ?>
                     
-                    <span class="fs-7 text-danger fw-bold text-nowrap"><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</span>
+                    <span class="fs-7 text-danger fw-bold text-nowrap"><?php echo e(number_format($price, 0, ',', ' ')); ?> FCFA</span>
                 <?php endif; ?>
             </div>
             <p class="fs-7 my-2 orange-color product-name-truncate" title="<?php echo e($product->name); ?>"><?php echo e($product->name); ?></p>
             <div class="hstack gap-1 mb-2">
+                <?php
+                    $rating = $product->rating ?? 0;
+                ?>
                 <?php for($i = 1; $i <= 5; $i++): ?>
-                    <i class="fa-solid fa-star <?php echo e($i <= floor($product->rating) ? 'text-warning' : 'text-secondary'); ?> fs-8"></i>
+                    <i class="fa-solid fa-star <?php echo e($i <= floor($rating) ? 'text-warning' : 'text-secondary'); ?> fs-8"></i>
                 <?php endfor; ?>
             </div>
         </div>

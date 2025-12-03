@@ -15,6 +15,12 @@
         this.nextBtn = container.querySelector(".multi-carousel-next");
         this.dotsContainer = container.querySelector(".multi-carousel-dots");
 
+        // Vérifier que les éléments essentiels existent
+        if (!this.track || !this.items || this.items.length === 0) {
+            console.warn('MultiCarousel: Pas assez d\'éléments pour initialiser le carousel');
+            return;
+        }
+
         this.options = Object.assign({
             slidesToShow: 4,
             slidesToScroll: 1,
@@ -50,24 +56,41 @@
         setup() {
         this.slidesToShow = this.getSlidesToShow();
 
+        // Vérifier qu'il y a des éléments
+        if (!this.items || this.items.length === 0) {
+            return;
+        }
+
         // Clear track and clone for infinite
         this.track.innerHTML = "";
-        const clonesBefore = this.items.slice(-this.slidesToShow).map(i => i.cloneNode(true));
-        const clonesAfter = this.items.slice(0, this.slidesToShow).map(i => i.cloneNode(true));
+        
+        // Ne cloner que s'il y a assez d'éléments
+        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
+        const clonesBefore = this.items.length >= actualSlidesToShow 
+            ? this.items.slice(-actualSlidesToShow).map(i => i.cloneNode(true))
+            : [];
+        const clonesAfter = this.items.length >= actualSlidesToShow
+            ? this.items.slice(0, actualSlidesToShow).map(i => i.cloneNode(true))
+            : [];
 
         [...clonesBefore, ...this.items, ...clonesAfter].forEach(i => this.track.appendChild(i));
         this.allItems = Array.from(this.track.children);
 
+        // Vérifier qu'il y a des éléments dans le track
+        if (this.allItems.length === 0) {
+            return;
+        }
+
         // Set widths
         const containerWidth = this.container.offsetWidth;
-        const itemWidth = (containerWidth / this.slidesToShow) - this.options.gap;
+        const itemWidth = (containerWidth / actualSlidesToShow) - this.options.gap;
         this.allItems.forEach(i => {
             i.style.minWidth = `${itemWidth}px`;
             i.style.marginRight = `${this.options.gap}px`;
         });
 
         // Reset position
-        this.currentIndex = this.slidesToShow;
+        this.currentIndex = clonesBefore.length;
         this.updatePosition(false);
 
         // Dots
@@ -85,20 +108,25 @@
         }
 
         updatePosition(animate = true) {
+        if (!this.allItems || this.allItems.length === 0) {
+            return;
+        }
         this.track.style.transition = animate ? "transform 0.5s" : "none";
-        const offset = -(this.currentIndex * (this.allItems[0].offsetWidth + this.options.gap));
+        const itemWidth = this.allItems[0] ? this.allItems[0].offsetWidth : 0;
+        const offset = -(this.currentIndex * (itemWidth + this.options.gap));
         this.track.style.transform = `translateX(${offset}px)`;
         }
 
         next() {
-        if (this.isTransitioning) return;
+        if (this.isTransitioning || !this.items || this.items.length === 0) return;
         this.isTransitioning = true;
+        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
         this.currentIndex += this.options.slidesToScroll;
         this.updatePosition(true);
 
         this.track.addEventListener("transitionend", () => {
-            if (this.currentIndex >= this.items.length + this.slidesToShow) {
-            this.currentIndex = this.slidesToShow;
+            if (this.currentIndex >= this.items.length + actualSlidesToShow) {
+            this.currentIndex = actualSlidesToShow;
             this.updatePosition(false);
             }
             this.isTransitioning = false;
@@ -107,13 +135,14 @@
         }
 
         prev() {
-        if (this.isTransitioning) return;
+        if (this.isTransitioning || !this.items || this.items.length === 0) return;
         this.isTransitioning = true;
+        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
         this.currentIndex -= this.options.slidesToScroll;
         this.updatePosition(true);
 
         this.track.addEventListener("transitionend", () => {
-            if (this.currentIndex < this.slidesToShow) {
+            if (this.currentIndex < actualSlidesToShow) {
             this.currentIndex = this.items.length;
             this.updatePosition(false);
             }
@@ -123,15 +152,16 @@
         }
 
         updateDots() {
-        if (!this.dotsContainer) return;
+        if (!this.dotsContainer || !this.items || this.items.length === 0) return;
         this.dotsContainer.innerHTML = "";
+        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
         const totalDots = Math.ceil(this.items.length / this.options.slidesToScroll);
         for (let i = 0; i < totalDots; i++) {
             const dot = document.createElement("button");
             dot.classList.add("carousel-dot");
             if (i === 0) dot.classList.add("active");
             dot.addEventListener("click", () => {
-            this.currentIndex = this.slidesToShow + i * this.options.slidesToScroll;
+            this.currentIndex = actualSlidesToShow + i * this.options.slidesToScroll;
             this.updatePosition(true);
             this.updateActiveDot();
             });
@@ -140,10 +170,11 @@
         }
 
         updateActiveDot() {
-        if (!this.dotsContainer) return;
+        if (!this.dotsContainer || !this.items || this.items.length === 0) return;
         const dots = this.dotsContainer.querySelectorAll(".carousel-dot");
         dots.forEach(dot => dot.classList.remove("active"));
-        const activeIndex = Math.floor((this.currentIndex - this.slidesToShow) / this.options.slidesToScroll);
+        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
+        const activeIndex = Math.floor((this.currentIndex - actualSlidesToShow) / this.options.slidesToScroll);
         if (dots[activeIndex]) dots[activeIndex].classList.add("active");
         }
 
