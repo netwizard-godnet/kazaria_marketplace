@@ -218,31 +218,57 @@
                                         ${product.brand ? 'Marque: ' + product.brand : ''}
                                     </p>
                                     ${(() => {
-                                        // Debug pour voir ce qui est dans item.attributes
-                                        console.log('Item attributes:', item.attributes);
-                                        console.log('Item attributes type:', typeof item.attributes);
-                                        console.log('Item attributes is array:', Array.isArray(item.attributes));
+                                        let html = '';
                                         
-                                        if (!item.attributes) return '';
-                                        if (Array.isArray(item.attributes) && item.attributes.length === 0) return '';
-                                        if (typeof item.attributes === 'object' && Object.keys(item.attributes).length === 0) return '';
+                                        // Afficher les informations de la variation si elle existe
+                                        if (item.variation && item.variation.attribute_values && item.variation.attribute_values.length > 0) {
+                                            // Grouper les valeurs d'attributs par nom d'attribut
+                                            const groupedAttrs = {};
+                                            item.variation.attribute_values.forEach(attrValue => {
+                                                const attrName = attrValue.attribute?.name || 'Attribut';
+                                                if (!groupedAttrs[attrName]) {
+                                                    groupedAttrs[attrName] = [];
+                                                }
+                                                groupedAttrs[attrName].push(attrValue.value);
+                                            });
+                                            
+                                            html += '<div class="mt-2">';
+                                            Object.entries(groupedAttrs).forEach(([attrName, values]) => {
+                                                html += `
+                                                    <div class="mb-1">
+                                                        <small class="text-muted fw-bold">${attrName}:</small>
+                                                        <small class="text-primary"> ${values.join(', ')}</small>
+                                                    </div>
+                                                `;
+                                            });
+                                            html += '</div>';
+                                        } else if (item.attributes) {
+                                            // Fallback : afficher les attributs stockés dans le champ attributes
+                                            if (Array.isArray(item.attributes) && item.attributes.length === 0) {
+                                                return '';
+                                            }
+                                            if (typeof item.attributes === 'object' && Object.keys(item.attributes).length === 0) {
+                                                return '';
+                                            }
+                                            
+                                            const attrs = Array.isArray(item.attributes) ? {} : item.attributes;
+                                            const entries = Array.isArray(item.attributes) ? [] : Object.entries(attrs);
+                                            
+                                            if (entries.length > 0) {
+                                                html += '<div class="mt-2">';
+                                                entries.forEach(([attrName, values]) => {
+                                                    html += `
+                                                        <div class="mb-1">
+                                                            <small class="text-muted fw-bold">${attrName}:</small>
+                                                            <small class="text-primary"> ${Array.isArray(values) ? values.join(', ') : values}</small>
+                                                        </div>
+                                                    `;
+                                                });
+                                                html += '</div>';
+                                            }
+                                        }
                                         
-                                        // Gérer les deux cas : objet ou tableau
-                                        const attrs = Array.isArray(item.attributes) ? {} : item.attributes;
-                                        const entries = Array.isArray(item.attributes) ? [] : Object.entries(attrs);
-                                        
-                                        if (entries.length === 0) return '';
-                                        
-                                        return `
-                                        <div class="mt-2">
-                                                ${entries.map(([attrName, values]) => `
-                                                <div class="mb-1">
-                                                    <small class="text-muted fw-bold">${attrName}:</small>
-                                                    <small class="text-primary"> ${Array.isArray(values) ? values.join(', ') : values}</small>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                        `;
+                                        return html;
                                     })()}
                                 </div>
                                 <div class="col-md-2 text-center">

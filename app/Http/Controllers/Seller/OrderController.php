@@ -239,8 +239,8 @@ class OrderController extends Controller
             
             // Rechercher par ID si c'est un numéro masqué, sinon par order_number
             $order = $orderId !== $orderNumber 
-                ? Order::where('id', $orderId)->with(['orderItems.product', 'user'])->first()
-                : Order::where('order_number', $orderNumber)->with(['orderItems.product', 'user'])->first();
+                ? Order::where('id', $orderId)->with(['orderItems.product', 'orderItems.variation.attributeValues.attribute', 'user'])->first()
+                : Order::where('order_number', $orderNumber)->with(['orderItems.product', 'orderItems.variation.attributeValues.attribute', 'user'])->first();
 
             if (!$order) {
                 return response()->json([

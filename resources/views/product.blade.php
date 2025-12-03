@@ -149,21 +149,28 @@
                                 </p>
                                 <!-- NOM PRODUIT END -->
                                 <hr>
-                                <div class="d-flex align-items-center justify-content-start">
-                                    @if($product->old_price && $product->old_price > $product->price)
+                                <div class="d-flex align-items-center justify-content-start" id="product-price-container">
+                                    @php
+                                        // Toujours utiliser le prix du produit par défaut (pas de variation pré-sélectionnée)
+                                        $initialPrice = $product->price;
+                                        $initialOldPrice = ($product->old_price && $product->old_price > $product->price) ? $product->old_price : null;
+                                        if ($initialOldPrice) {
+                                            $initialPrice = $product->price; // Prix promo
+                                        }
+                                    @endphp
+                                    @if($initialOldPrice && $initialOldPrice > $initialPrice)
                                         {{-- Produit en promo: price = prix actuel, old_price = ancien prix --}}
-                                        <span class="fs-3 orange-color fw-bold text-nowrap me-2">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
-                                        <span class="fs-6 text-decoration-line-through text-secondary text-nowrap">{{ number_format($product->old_price, 0, ',', ' ') }} FCFA</span>
+                                        <span class="fs-3 orange-color fw-bold text-nowrap me-2" id="current-price">{{ number_format($initialPrice, 0, ',', ' ') }} FCFA</span>
+                                        <span class="fs-6 text-decoration-line-through text-secondary text-nowrap" id="old-price">{{ number_format($initialOldPrice, 0, ',', ' ') }} FCFA</span>
                                     @else
                                         {{-- Produit sans promo: afficher seulement le prix --}}
-                                        <span class="fs-3 orange-color fw-bold text-nowrap">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
+                                        <span class="fs-3 orange-color fw-bold text-nowrap" id="current-price">{{ number_format($initialPrice, 0, ',', ' ') }} FCFA</span>
+                                        <span class="fs-6 text-decoration-line-through text-secondary text-nowrap" id="old-price" style="display: none;"></span>
                                     @endif
                                 </div>
-                                @if($product->old_price && $product->old_price > $product->price)
-                                <div class="mb-3">
-                                    <span class="fs-8 fw-bold orange-color mb-3">Vous avez épargné {{ number_format($product->old_price - $product->price, 0, ',', ' ') }} FCFA</span>
+                                <div class="mb-3" id="savings-container" style="{{ ($initialOldPrice && $initialOldPrice > $initialPrice) ? '' : 'display: none;' }}">
+                                    <span class="fs-8 fw-bold orange-color mb-3" id="savings-amount">Vous avez épargné {{ number_format(($initialOldPrice ?? 0) - ($initialPrice ?? 0), 0, ',', ' ') }} FCFA</span>
                                 </div>
-                                @endif
                                 <div class="hstack gap-1">
                                     <div id="priceStars">
                                         @for($i = 1; $i <= 5; $i++)
@@ -187,6 +194,12 @@
                                     <form id="attributesForm">
                                         @php
                                             $groupedAttributes = $product->attributeValues->groupBy('attribute.name');
+                                            
+                                            // Vérifier si le produit a des variations
+                                            $hasVariations = $product->variations && $product->variations->count() > 0;
+                                            
+                                            // Si le produit a des variations, tous les attributs doivent être des radios (un seul choix)
+                                            // Sinon, respecter le type défini dans la base de données
                                         @endphp
                                         @foreach($groupedAttributes as $attributeName => $values)
                                         <div class="mb-3">
@@ -195,15 +208,20 @@
                                                 @foreach($values as $value)
                                                 <div class="col-auto">
                                                     <div class="form-check">
-                                                        @if($values->first()->attribute->type === 'radio')
+                                                        @php
+                                                            // Si le produit a des variations, forcer tous les attributs à être des radios
+                                                            // Sinon, utiliser le type défini dans la base de données
+                                                            $attributeType = $values->first()->attribute->type;
+                                                            $useRadio = ($hasVariations || $attributeType === 'radio') ? true : false;
+                                                        @endphp
+                                                        @if($useRadio)
                                                         <input class="form-check-input attribute-radio" 
                                                                type="radio" 
                                                                name="attribute_{{ $value->attribute->id }}" 
                                                                value="{{ $value->id }}" 
                                                                id="attr_{{ $value->id }}"
                                                                data-attribute="{{ $value->attribute->name }}"
-                                                               data-value="{{ $value->value }}"
-                                                               required>
+                                                               data-value="{{ $value->value }}">
                                                         @else
                                                         <input class="form-check-input attribute-checkbox" 
                                                                type="checkbox" 
@@ -226,19 +244,27 @@
                                 </div>
                                 @endif
                                 
-                                @if($product->stock > 0)
-                                <div class="mb-3">
-                                    <span class="badge bg-success">En stock ({{ number_format($product->stock, 0, ',', ' ') }} disponibles)</span>
+                                <div class="mb-3" id="stock-container">
+                                    @php
+                                        // Toujours utiliser le stock du produit par défaut (pas de variation pré-sélectionnée)
+                                        $initialStock = $product->stock;
+                                    @endphp
+                                    @if($initialStock > 0)
+                                        <span class="badge bg-success" id="stock-badge">En stock (<span id="stock-count">{{ number_format($initialStock, 0, ',', ' ') }}</span> disponibles)</span>
+                                    @else
+                                        <span class="badge bg-danger" id="stock-badge">Rupture de stock</span>
+                                    @endif
                                 </div>
                                 
+                                @if($initialStock > 0)
                                 <!-- Sélecteur de quantité -->
-                                <div class="mb-3">
+                                <div class="mb-3" id="quantity-container">
                                     <label for="quantityInput" class="form-label fw-bold">Quantité:</label>
                                     <div class="input-group" style="max-width: 150px;">
                                         <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(-1)">
                                             <i class="bi bi-dash"></i>
                                         </button>
-                                        <input type="number" class="form-control text-center" id="quantityInput" value="1" min="1" max="{{ $product->stock }}" readonly>
+                                        <input type="number" class="form-control text-center" id="quantityInput" value="1" min="1" max="{{ $initialStock }}" readonly>
                                         <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity(1)">
                                             <i class="bi bi-plus"></i>
                                         </button>
@@ -266,34 +292,53 @@
                                     // Changer la quantité
                                     function changeQuantity(change) {
                                         const input = document.getElementById('quantityInput');
+                                        if (!input) return;
+                                        
                                         const currentValue = parseInt(input.value);
-                                        const maxStock = {{ $product->stock }};
+                                        // Obtenir le stock max depuis la variation actuelle ou le produit
+                                        let maxStock = {{ $product->stock }};
+                                        @if($product->variations && $product->variations->count() > 0)
+                                        if (typeof getCurrentVariation === 'function') {
+                                            const variation = getCurrentVariation();
+                                            if (variation) {
+                                                maxStock = variation.stock;
+                                            }
+                                        }
+                                        @endif
+                                        
                                         let newValue = currentValue + change;
                                         
                                         if (newValue < 1) newValue = 1;
                                         if (newValue > maxStock) {
-                                            showToast('error', 'Stock maximum atteint');
+                                            if (typeof showToast === 'function') {
+                                                showToast('error', 'Stock maximum atteint');
+                                            } else if (typeof showNotification === 'function') {
+                                                showNotification('warning', 'Stock maximum atteint');
+                                            }
                                             newValue = maxStock;
                                         }
                                         
                                         input.value = newValue;
+                                        input.max = maxStock; // Mettre à jour le max
                                     }
                                     
                                     // Ajouter au panier depuis la page produit
                                     function addToCartFromProduct() {
                                         const quantity = parseInt(document.getElementById('quantityInput')?.value || 1);
                                         
-                                        // Debug: Vérifier si des attributs existent sur la page
-                                        const allRadios = document.querySelectorAll('.attribute-radio');
-                                        const allCheckboxes = document.querySelectorAll('.attribute-checkbox');
-                                        console.log('=== DEBUG ATTRIBUTS PAGE PRODUIT ===');
-                                        console.log('Total radios trouvés:', allRadios.length);
-                                        console.log('Total checkboxes trouvés:', allCheckboxes.length);
-                                        
                                         // Récupérer les attributs sélectionnés
                                         const selectedAttributes = getSelectedAttributes();
                                         
-                                        console.log('Attributs sélectionnés avant envoi:', selectedAttributes);
+                                        @if($product->variations && $product->variations->count() > 0)
+                                        // Si des variations existent, ajouter l'ID de la variation
+                                        const variation = getCurrentVariation();
+                                        if (variation && variation.id) {
+                                            selectedAttributes.variation_id = variation.id;
+                                            console.log('Variation sélectionnée:', variation);
+                                        }
+                                        @endif
+                                        
+                                        console.log('Ajout au panier avec attributs:', selectedAttributes);
                                         
                                         addToCart({{ $product->id }}, quantity, selectedAttributes);
                                     }
@@ -343,6 +388,213 @@
                                     // La fonction showNotification est maintenant globale via cart.js
                                     // Pas besoin de la redéfinir ici
                                 </script>
+                                
+                                <!-- Script pour gérer les variations dynamiques -->
+                                @if($product->variations && $product->variations->count() > 0)
+                                @php
+                                    $variationsData = $product->variations->map(function($variation) {
+                                        return [
+                                            'id' => $variation->id,
+                                            'price' => (float) $variation->price,
+                                            'old_price' => $variation->old_price ? (float) $variation->old_price : null,
+                                            'stock' => (int) $variation->stock,
+                                            'sku' => $variation->sku,
+                                            'is_default' => $variation->is_default,
+                                            'attribute_values' => $variation->attributeValues->pluck('id')->toArray()
+                                        ];
+                                    })->toArray();
+                                @endphp
+                                <script>
+                                    // Données des variations disponibles
+                                    const productVariations = @json($variationsData);
+                                    
+                                    // Variable globale pour stocker la variation actuelle
+                                    let currentVariation = null;
+                                    
+                                    // Données du produit de base (pour affichage par défaut)
+                                    const productBaseData = {
+                                        price: {{ (float)$product->price }},
+                                        old_price: {{ $product->old_price && $product->old_price > $product->price ? (float)$product->old_price : 'null' }},
+                                        stock: {{ (int)$product->stock }}
+                                    };
+                                    
+                                    // Trouver la variation correspondant aux attributs sélectionnés
+                                    function findMatchingVariation() {
+                                        const selectedAttrValueIds = getSelectedAttributesForVariation();
+                                        
+                                        // Si aucun attribut n'est sélectionné, retourner null (utiliser les données du produit)
+                                        if (selectedAttrValueIds.length === 0) {
+                                            return null;
+                                        }
+                                        
+                                        // Trier les IDs pour faciliter la comparaison
+                                        selectedAttrValueIds.sort((a, b) => a - b);
+                                        
+                                        // Trouver la variation qui correspond exactement aux attributs sélectionnés
+                                        for (let variation of productVariations) {
+                                            const varAttrIds = [...variation.attribute_values].sort((a, b) => a - b);
+                                            
+                                            // Vérifier si les deux tableaux sont identiques (même longueur et mêmes éléments)
+                                            if (varAttrIds.length === selectedAttrValueIds.length &&
+                                                varAttrIds.every((id, index) => id === selectedAttrValueIds[index])) {
+                                                return variation;
+                                            }
+                                        }
+                                        
+                                        // Si aucune variation exacte n'est trouvée, retourner null (utiliser les données du produit)
+                                        return null;
+                                    }
+                                    
+                                    // Récupérer les attributs sélectionnés (pour les variations) - retourne un tableau d'IDs
+                                    function getSelectedAttributesForVariation() {
+                                        const attrValueIds = [];
+                                        const radios = document.querySelectorAll('.attribute-radio:checked');
+                                        const checkboxes = document.querySelectorAll('.attribute-checkbox:checked');
+                                        
+                                        radios.forEach(radio => {
+                                            const attrValueId = parseInt(radio.value);
+                                            if (attrValueId && !attrValueIds.includes(attrValueId)) {
+                                                attrValueIds.push(attrValueId);
+                                            }
+                                        });
+                                        
+                                        checkboxes.forEach(checkbox => {
+                                            const attrValueId = parseInt(checkbox.value);
+                                            if (attrValueId && !attrValueIds.includes(attrValueId)) {
+                                                attrValueIds.push(attrValueId);
+                                            }
+                                        });
+                                        
+                                        return attrValueIds;
+                                    }
+                                    
+                                    // Mettre à jour le prix et le stock selon la variation ou le produit de base
+                                    function updatePriceAndStock() {
+                                        const variation = findMatchingVariation();
+                                        currentVariation = variation;
+                                        
+                                        // Utiliser la variation si elle existe, sinon utiliser les données du produit de base
+                                        let displayPrice, oldPrice, stock;
+                                        
+                                        if (variation) {
+                                            // Calculer le prix (promo ou normal) depuis la variation
+                                            displayPrice = variation.price;
+                                            oldPrice = variation.old_price;
+                                            
+                                            if (oldPrice && oldPrice > variation.price) {
+                                                displayPrice = variation.price; // Prix promo
+                                            } else {
+                                                oldPrice = null;
+                                            }
+                                            
+                                            stock = variation.stock;
+                                        } else {
+                                            // Utiliser les données du produit de base
+                                            displayPrice = productBaseData.price;
+                                            oldPrice = productBaseData.old_price;
+                                            
+                                            if (oldPrice && oldPrice > productBaseData.price) {
+                                                displayPrice = productBaseData.price; // Prix promo
+                                            } else {
+                                                oldPrice = null;
+                                            }
+                                            
+                                            stock = productBaseData.stock;
+                                        }
+                                        
+                                        // Mettre à jour l'affichage du prix
+                                        const currentPriceEl = document.getElementById('current-price');
+                                        const oldPriceEl = document.getElementById('old-price');
+                                        const savingsContainer = document.getElementById('savings-container');
+                                        const savingsAmount = document.getElementById('savings-amount');
+                                        
+                                        if (currentPriceEl) {
+                                            currentPriceEl.textContent = formatPrice(displayPrice) + ' FCFA';
+                                        }
+                                        
+                                        if (oldPriceEl) {
+                                            if (oldPrice) {
+                                                oldPriceEl.textContent = formatPrice(oldPrice) + ' FCFA';
+                                                oldPriceEl.style.display = 'inline-block';
+                                            } else {
+                                                oldPriceEl.style.display = 'none';
+                                            }
+                                        }
+                                        
+                                        if (savingsContainer && savingsAmount) {
+                                            if (oldPrice && oldPrice > displayPrice) {
+                                                const savings = oldPrice - displayPrice;
+                                                savingsAmount.textContent = `Vous avez épargné ${formatPrice(savings)} FCFA`;
+                                                savingsContainer.style.display = 'block';
+                                            } else {
+                                                savingsContainer.style.display = 'none';
+                                            }
+                                        }
+                                        
+                                        // Mettre à jour le stock
+                                        const stockBadge = document.getElementById('stock-badge');
+                                        const stockCount = document.getElementById('stock-count');
+                                        const quantityContainer = document.getElementById('quantity-container');
+                                        const quantityInput = document.getElementById('quantityInput');
+                                        
+                                        if (stockBadge && stockCount) {
+                                            if (stock > 0) {
+                                                stockBadge.className = 'badge bg-success';
+                                                stockBadge.innerHTML = `En stock (<span id="stock-count">${formatPrice(stock)}</span> disponibles)`;
+                                                
+                                                if (quantityContainer) {
+                                                    quantityContainer.style.display = 'block';
+                                                }
+                                                
+                                                if (quantityInput) {
+                                                    const currentQty = parseInt(quantityInput.value) || 1;
+                                                    quantityInput.max = stock;
+                                                    if (currentQty > stock) {
+                                                        quantityInput.value = stock;
+                                                    }
+                                                }
+                                            } else {
+                                                stockBadge.className = 'badge bg-danger';
+                                                stockBadge.textContent = 'Rupture de stock';
+                                                
+                                                if (quantityContainer) {
+                                                    quantityContainer.style.display = 'none';
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (variation) {
+                                            console.log('✅ Prix et stock mis à jour pour la variation:', variation);
+                                        } else {
+                                            console.log('✅ Prix et stock mis à jour avec les données du produit de base');
+                                        }
+                                    }
+                                    
+                                    // Formater le prix avec séparateurs de milliers
+                                    function formatPrice(price) {
+                                        return Math.round(price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                                    }
+                                    
+                                    // Initialiser lors du chargement de la page
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        // Écouter les changements dans la sélection des attributs
+                                        document.querySelectorAll('.attribute-radio, .attribute-checkbox').forEach(input => {
+                                            input.addEventListener('change', function() {
+                                                updatePriceAndStock();
+                                            });
+                                        });
+                                        
+                                        // Aucune initialisation avec une variation par défaut
+                                        // Le prix et le stock du produit sont déjà affichés par défaut
+                                    });
+                                    
+                                    // Fonction pour obtenir la variation actuelle (utilisée dans addToCartFromProduct)
+                                    function getCurrentVariation() {
+                                        return currentVariation || findMatchingVariation();
+                                    }
+                                </script>
+                                @endif
+                                
                                 <hr>
                                 <div>
                                     <p class="mb-2 text-uppercase fs-7 fw-bold">Partager ce produit</p>

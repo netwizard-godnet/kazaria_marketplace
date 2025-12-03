@@ -129,14 +129,20 @@
                     @if($product->images && is_array($product->images) && count($product->images) > 0)
                     <div class="row mt-4">
                         <div class="col-12">
-                            <h6>Images</h6>
+                            <h6>Images ({{ count($product->images) }})</h6>
                             <div class="row">
+                                @php
+                                    $imagesUrls = $product->images_urls ?? [];
+                                @endphp
                                 @foreach($product->images as $index => $image)
                                 <div class="col-md-3 mb-3">
                                     <div class="card">
-                                        <img src="{{ $product->images_urls[$index] ?? asset('storage/' . $image) }}" class="card-img-top" alt="Image {{ $index + 1 }}" style="height: 150px; object-fit: cover;">
+                                        <img src="{{ $imagesUrls[$index] ?? asset('storage/' . $image) }}" class="card-img-top" alt="Image {{ $index + 1 }}" style="height: 150px; object-fit: cover; cursor: pointer;" onclick="window.open(this.src, '_blank')">
                                         <div class="card-body p-2">
                                             <small class="text-muted">Image {{ $index + 1 }}</small>
+                                            @if($index === 0)
+                                                <span class="badge badge-primary ml-1">Principale</span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -183,6 +189,198 @@
                             </table>
                         </div>
                     </div>
+
+                    @if(isset($product->status))
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Statut d'approbation</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        @if($product->status == 'approved')
+                                            <span class="badge badge-success">Approuvé</span>
+                                        @elseif($product->status == 'rejected')
+                                            <span class="badge badge-danger">Rejeté</span>
+                                        @else
+                                            <span class="badge badge-warning">En attente</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($product->is_featured || $product->is_trending || $product->is_new || $product->is_best_offer)
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Badges et labels</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                @if($product->is_featured)
+                                    <span class="badge badge-primary"><i class="fas fa-star"></i> Produit vedette</span>
+                                @endif
+                                @if($product->is_trending)
+                                    <span class="badge badge-info"><i class="fas fa-fire"></i> Tendance</span>
+                                @endif
+                                @if($product->is_new)
+                                    <span class="badge badge-success"><i class="fas fa-tag"></i> Nouveau</span>
+                                @endif
+                                @if($product->is_best_offer)
+                                    <span class="badge badge-warning"><i class="fas fa-percent"></i> Meilleure offre</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($product->tags && count($product->tags) > 0)
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Tags</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach($product->tags as $tag)
+                                    <span class="badge badge-secondary">{{ $tag }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($product->attributeValues && $product->attributeValues->count() > 0)
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Attributs</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Attribut</th>
+                                            <th>Valeur(s)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php
+                                            $attributesGrouped = $product->attributeValues->groupBy(function($item) {
+                                                return $item->attribute->name ?? 'Autres';
+                                            });
+                                        @endphp
+                                        @foreach($attributesGrouped as $attributeName => $values)
+                                            <tr>
+                                                <td><strong>{{ $attributeName }}</strong></td>
+                                                <td>
+                                                    @foreach($values as $value)
+                                                        <span class="badge badge-info mr-1">{{ $value->value }}</span>
+                                                    @endforeach
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($product->variations && $product->variations->count() > 0)
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Variations du produit</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>SKU</th>
+                                            <th>Attributs</th>
+                                            <th>Prix</th>
+                                            <th>Ancien prix</th>
+                                            <th>Stock</th>
+                                            <th>Statut</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($product->variations as $variation)
+                                            <tr class="{{ $variation->is_default ? 'table-warning' : '' }}">
+                                                <td>
+                                                    {{ $variation->sku ?? 'N/A' }}
+                                                    @if($variation->is_default)
+                                                        <span class="badge badge-warning ml-1">Par défaut</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($variation->attributeValues && $variation->attributeValues->count() > 0)
+                                                        @php
+                                                            $variationAttributesGrouped = $variation->attributeValues->groupBy(function($item) {
+                                                                return $item->attribute->name ?? 'Autres';
+                                                            });
+                                                        @endphp
+                                                        @foreach($variationAttributesGrouped as $attrName => $values)
+                                                            <strong>{{ $attrName }}:</strong>
+                                                            @foreach($values as $value)
+                                                                <span class="badge badge-secondary">{{ $value->value }}</span>
+                                                            @endforeach
+                                                            @if(!$loop->last) <br> @endif
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted">Aucun attribut</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <strong>{{ number_format($variation->price, 0, ',', ' ') }} FCFA</strong>
+                                                    @if($variation->old_price && $variation->old_price > $variation->price)
+                                                        <br><small class="text-danger">Promo: {{ number_format($variation->price, 0, ',', ' ') }} FCFA</small>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($variation->old_price && $variation->old_price > $variation->price)
+                                                        <span class="text-muted"><s>{{ number_format($variation->old_price, 0, ',', ' ') }} FCFA</s></span>
+                                                        @if($variation->discount_percentage)
+                                                            <br><small class="text-success">-{{ $variation->discount_percentage }}%</small>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-{{ $variation->stock > 0 ? 'success' : 'danger' }}">
+                                                        {{ $variation->stock }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-{{ $variation->is_active ? 'success' : 'danger' }}">
+                                                        {{ $variation->is_active ? 'Actif' : 'Inactif' }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($product->meta_description || $product->meta_keywords)
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Métadonnées SEO</h6>
+                            <table class="table table-borderless">
+                                @if($product->meta_description)
+                                <tr>
+                                    <td><strong>Meta description:</strong></td>
+                                    <td>{{ $product->meta_description }}</td>
+                                </tr>
+                                @endif
+                                @if($product->meta_keywords)
+                                <tr>
+                                    <td><strong>Meta keywords:</strong></td>
+                                    <td>{{ $product->meta_keywords }}</td>
+                                </tr>
+                                @endif
+                            </table>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -197,6 +395,24 @@
                         <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Modifier le produit
                         </a>
+                        
+                        @if(isset($product->status))
+                            @if($product->status == 'pending')
+                                <form action="{{ route('admin.products.approve', $product) }}" method="POST" class="d-grid">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success" onclick="return confirm('Approuver ce produit ?')">
+                                        <i class="fas fa-check-circle"></i> Approuver
+                                    </button>
+                                </form>
+                                
+                                <form action="{{ route('admin.products.reject', $product) }}" method="POST" class="d-grid">
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Rejeter ce produit ?')">
+                                        <i class="fas fa-times-circle"></i> Rejeter
+                                    </button>
+                                </form>
+                            @endif
+                        @endif
                         
                         <form action="{{ route('admin.products.toggle-status', $product) }}" method="POST" class="d-grid">
                             @csrf
@@ -231,8 +447,21 @@
                     <p><strong>Nom:</strong> {{ $product->store->name }}</p>
                     <p><strong>Description:</strong> {{ Str::limit($product->store->description ?? 'N/A', 100) }}</p>
                     <p><strong>Statut:</strong> 
-                        <span class="badge badge-{{ $product->store->is_active ? 'success' : 'danger' }}">
-                            {{ $product->store->is_active ? 'Actif' : 'Inactif' }}
+                        @php
+                            $storeStatus = $product->store->effective_kyc_status ?? $product->store->status ?? 'pending';
+                            $statusLabels = [
+                                'active' => ['label' => 'Actif', 'class' => 'success'],
+                                'pending' => ['label' => 'En attente', 'class' => 'warning'],
+                                'suspended' => ['label' => 'Suspendu', 'class' => 'danger'],
+                                'rejected' => ['label' => 'Rejeté', 'class' => 'danger'],
+                                'validated' => ['label' => 'Validé', 'class' => 'success'],
+                                'approved' => ['label' => 'Approuvé', 'class' => 'success'],
+                                'approve' => ['label' => 'Approuvé', 'class' => 'success'],
+                            ];
+                            $statusInfo = $statusLabels[strtolower($storeStatus)] ?? ['label' => ucfirst($storeStatus), 'class' => 'secondary'];
+                        @endphp
+                        <span class="badge badge-{{ $statusInfo['class'] }}">
+                            {{ $statusInfo['label'] }}
                         </span>
                     </p>
                 </div>

@@ -107,11 +107,12 @@ class OrderController extends Controller
     }
 
     /**
-     * Créer la commande (API - Tokens)
+     * Créer la commande (API - Tokens OU WEB - Sessions)
      */
     public function createOrder(Request $request)
     {
-        $user = $request->user();
+        // Support à la fois pour les tokens (API) et les sessions (WEB)
+        $user = $request->user() ?? auth()->user();
         
         if (!$user) {
             return response()->json([
@@ -222,19 +223,33 @@ class OrderController extends Controller
                     $attributes = (object)[];
                 }
                 
+                // Obtenir le SKU de la variation si elle existe
+                $productSku = null;
+                if ($cartItem->variation_id) {
+                    $variation = \App\Models\ProductVariation::find($cartItem->variation_id);
+                    if ($variation) {
+                        $productSku = $variation->sku;
+                    }
+                }
+                
                 $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $cartItem->product_id,
-                    'store_id' => $cartItem->product->store_id,
+                    'variation_id' => $cartItem->variation_id,
+                    'store_id' => $cartItem->product->store_id ?? null,
                     'product_name' => $cartItem->product->name,
                     'product_image' => $cartItem->product->image,
+                    'product_sku' => $productSku ?? $cartItem->product->sku ?? null,
                     'price' => $cartItem->price,
                     'quantity' => $cartItem->quantity,
                     'total' => $cartItem->price * $cartItem->quantity,
                     'attributes' => $attributes
                 ]);
+                
+                // Pour la réservation du stock, utiliser la variation si elle existe
                 $orderItemsData[] = [
                     'product_id' => $cartItem->product_id,
+                    'variation_id' => $cartItem->variation_id,
                     'quantity' => $cartItem->quantity
                 ];
             }
@@ -242,20 +257,45 @@ class OrderController extends Controller
             // Réserver le stock directement avec les données collectées
             // (plus fiable que de recharger depuis la base dans une transaction)
             foreach ($orderItemsData as $itemData) {
-                $product = Product::find($itemData['product_id']);
-                if ($product) {
-                    $oldStock = $product->stock;
-                    
-                    // Utiliser une mise à jour directe en base pour garantir la persistance
-                    DB::table('products')
-                        ->where('id', $product->id)
-                        ->decrement('stock', $itemData['quantity']);
-                    
-                    $newStock = DB::table('products')->where('id', $product->id)->value('stock');
-                    \Log::info("Stock réservé pour le produit {$product->name} (ID: {$product->id}). Quantité: {$itemData['quantity']}. Ancien stock: {$oldStock}, Nouveau stock: {$newStock}");
+                // Si une variation existe, décrémenter le stock de la variation
+                if (isset($itemData['variation_id']) && $itemData['variation_id']) {
+                    $variation = \App\Models\ProductVariation::find($itemData['variation_id']);
+                    if ($variation) {
+                        $oldStock = $variation->stock;
+                        
+                        // Décrémenter le stock de la variation
+                        DB::table('product_variations')
+                            ->where('id', $variation->id)
+                            ->decrement('stock', $itemData['quantity']);
+                        
+                        $newStock = DB::table('product_variations')->where('id', $variation->id)->value('stock');
+                        \Log::info("Stock réservé pour la variation (ID: {$variation->id}) du produit {$variation->product->name}. Quantité: {$itemData['quantity']}. Ancien stock: {$oldStock}, Nouveau stock: {$newStock}");
+                        
+                        // Décrémenter aussi le stock du produit principal
+                        $product = Product::find($itemData['product_id']);
+                        if ($product) {
+                            DB::table('products')
+                                ->where('id', $product->id)
+                                ->decrement('stock', $itemData['quantity']);
+                        }
+                    }
                 } else {
-                    \Log::warning("Produit introuvable pour Product ID: {$itemData['product_id']}");
-                    throw new \Exception("Produit introuvable pour Product ID: {$itemData['product_id']}");
+                    // Pas de variation, décrémenter le stock du produit
+                    $product = Product::find($itemData['product_id']);
+                    if ($product) {
+                        $oldStock = $product->stock;
+                        
+                        // Utiliser une mise à jour directe en base pour garantir la persistance
+                        DB::table('products')
+                            ->where('id', $product->id)
+                            ->decrement('stock', $itemData['quantity']);
+                        
+                        $newStock = DB::table('products')->where('id', $product->id)->value('stock');
+                        \Log::info("Stock réservé pour le produit {$product->name} (ID: {$product->id}). Quantité: {$itemData['quantity']}. Ancien stock: {$oldStock}, Nouveau stock: {$newStock}");
+                    } else {
+                        \Log::warning("Produit introuvable pour Product ID: {$itemData['product_id']}");
+                        throw new \Exception("Produit introuvable pour Product ID: {$itemData['product_id']}");
+                    }
                 }
             }
             
@@ -305,12 +345,19 @@ class OrderController extends Controller
             
             DB::commit();
             
+            // Construire l'URL de redirection (avec token seulement si c'est une requête API)
+            $redirectUrl = route('order-invoice', $order->order_number);
+            $bearerToken = $request->bearerToken();
+            if ($bearerToken) {
+                $redirectUrl .= '?token=' . $bearerToken;
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Commande créée avec succès',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'redirect' => route('order-invoice', $order->order_number) . '?token=' . $request->bearerToken()
+                'redirect' => $redirectUrl
             ]);
             
         } catch (\Exception $e) {
@@ -330,7 +377,7 @@ class OrderController extends Controller
     public function invoice($orderNumber)
     {
         $order = Order::where('order_number', $orderNumber)
-            ->with('items.product', 'user')
+            ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
             ->firstOrFail();
         
         return view('invoice', compact('order'));
@@ -342,7 +389,7 @@ class OrderController extends Controller
     public function downloadInvoice($orderNumber)
     {
         $order = Order::where('order_number', $orderNumber)
-            ->with('items.product', 'user')
+            ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
             ->firstOrFail();
         
         // Générer et télécharger le PDF
@@ -476,7 +523,7 @@ class OrderController extends Controller
         $user = $request->user();
         
         $order = Order::where('order_number', $orderNumber)
-            ->with('orderItems.product')
+            ->with(['orderItems.product', 'orderItems.variation.attributeValues.attribute'])
             ->first();
         
         if (!$order) {
@@ -508,7 +555,7 @@ class OrderController extends Controller
         $user = $request->user();
         
         $order = Order::where('order_number', $orderNumber)
-            ->with('orderItems.product')
+            ->with(['orderItems.product', 'orderItems.variation.attributeValues.attribute'])
             ->firstOrFail();
         
         // Vérifier que la commande appartient à l'utilisateur

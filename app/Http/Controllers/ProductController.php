@@ -13,7 +13,14 @@ class ProductController extends Controller
     {
         // Charger le produit avec ses relations
         $product = Product::where('slug', $slug)
-            ->with(['categories', 'subcategories', 'category', 'subcategory'])
+            ->with([
+                'categories', 
+                'subcategories', 
+                'category', 
+                'subcategory',
+                'attributeValues.attribute',
+                'variations.attributeValues.attribute'
+            ])
             ->firstOrFail();
         
         // Recharger le stock directement depuis la base de données AVANT de charger les relations
@@ -29,11 +36,22 @@ class ProductController extends Controller
         
         // Recharger complètement le produit depuis la base pour garantir la cohérence
         // Cela force Laravel à récupérer toutes les données fraîches, y compris le stock
+        // IMPORTANT: Préserver les variations et les attributs pour la page produit
         $freshProduct = Product::where('id', $product->id)
-            ->with(['categories', 'subcategories', 'category', 'subcategory'])
+            ->with([
+                'categories', 
+                'subcategories', 
+                'category', 
+                'subcategory',
+                'attributeValues.attribute',
+                'variations.attributeValues.attribute'
+            ])
             ->first();
         
         if ($freshProduct) {
+            // Préserver les relations chargées du produit original
+            $freshProduct->setRelation('variations', $product->variations);
+            $freshProduct->setRelation('attributeValues', $product->attributeValues);
             $product = $freshProduct;
         }
         

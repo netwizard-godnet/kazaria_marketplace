@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
@@ -161,7 +162,7 @@ Route::get('/authentification', function () {
 // Route web pour vérifier le code de connexion (avec session)
 Route::post('/verify-login-code', [App\Http\Controllers\AuthController::class, 'verifyLoginCode'])
     ->middleware('web')
-    ->name('web.verify-login-code');
+    ->name('verify-login-code');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
@@ -208,6 +209,12 @@ Route::get('/profil', [App\Http\Controllers\ProfileController::class, 'index'])
     ->middleware('auth.redirect')
     ->name('profil');
 
+// Routes pour le profil utilisateur (authentification par session)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.change-password');
+    Route::post('/profile/logout-all-devices', [App\Http\Controllers\ProfileController::class, 'logoutAllDevices'])->name('profile.logout-all-devices');
+});
+
 // Route panier
 Route::get('/panier', [App\Http\Controllers\CartController::class, 'index'])
     ->middleware(['web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
@@ -226,7 +233,7 @@ Route::middleware(['web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
 
 // Route favoris - Redirige vers l'onglet favoris du profil
 Route::get('/favoris', function() {
-    return redirect()->route('profil') . '#favorites';
+    return redirect()->to(route('profil') . '#favorites');
 })->name('favorites');
 
 // Routes avis (WEB - Sessions + API - Tokens)
@@ -242,6 +249,11 @@ Route::middleware('hybrid.auth')->group(function () {
     Route::get('/order/download/{orderNumber}', [App\Http\Controllers\OrderController::class, 'downloadInvoice'])->name('order-download');
     Route::get('/order/details/{orderNumber}', [App\Http\Controllers\OrderController::class, 'orderDetails'])->name('order-details');
     Route::get('/api/web/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders'])->name('web.orders.my-orders');
+});
+
+// Route web pour créer une commande (utilise la session)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder'])->name('orders.create');
 });
 
 // Route politique de confidentialité

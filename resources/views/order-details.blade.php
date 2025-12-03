@@ -138,7 +138,23 @@
                                 <div class="col-5">
                                     <h6 class="mb-1">{{ $item->product_name }}</h6>
                                     <p class="text-muted small mb-0">Quantité: {{ $item->quantity }}</p>
-                                    @if($item->attributes && count($item->attributes) > 0)
+                                    @if($item->variation && $item->variation->attributeValues && $item->variation->attributeValues->count() > 0)
+                                        {{-- Afficher les attributs de la variation --}}
+                                        @php
+                                            $groupedAttributes = $item->variation->attributeValues->groupBy('attribute.name');
+                                        @endphp
+                                        <div class="mt-2">
+                                            @foreach($groupedAttributes as $attrName => $values)
+                                                <div class="mb-1">
+                                                    <small class="text-muted fw-bold">{{ $attrName }}:</small>
+                                                    <small class="text-primary">
+                                                        {{ $values->pluck('value')->implode(', ') }}
+                                                    </small>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @elseif($item->attributes && count($item->attributes) > 0)
+                                        {{-- Fallback: afficher les attributs stockés dans le champ attributes --}}
                                         <div class="mt-2">
                                             @foreach($item->attributes as $attrName => $attrValue)
                                                 <div class="mb-1">

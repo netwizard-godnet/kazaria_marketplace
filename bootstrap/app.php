@@ -13,8 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'web' => \Illuminate\Session\Middleware\StartSession::class,
-            // 'api' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // Retiré - les apps mobiles utilisent uniquement des tokens
+            'api' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'csrf' => \App\Http\Middleware\ValidateCsrfToken::class,
             'client.auth' => \App\Http\Middleware\ClientAuthMiddleware::class,
             'seo' => \App\Http\Middleware\SeoMiddleware::class,

@@ -65,6 +65,7 @@ class ProductView extends Model
             ->first();
 
         if (!$recentView) {
+            // Créer l'enregistrement de vue
             static::create([
                 'product_id' => $productId,
                 'session_id' => $userId ? null : $sessionId,
@@ -72,6 +73,9 @@ class ProductView extends Model
                 'ip_address' => $ipAddress,
                 'user_agent' => $userAgent
             ]);
+            
+            // Incrémenter le compteur de vues du produit
+            Product::where('id', $productId)->increment('views_count');
         }
     }
 

@@ -120,7 +120,23 @@
                                                     
                                                     $hasAttributes = !empty($attrsArray) && count($attrsArray) > 0;
                                                 @endphp
-                                                @if($hasAttributes)
+                                                @if($item->variation && $item->variation->attributeValues && $item->variation->attributeValues->count() > 0)
+                                                    {{-- Afficher les attributs de la variation --}}
+                                                    @php
+                                                        $groupedAttributes = $item->variation->attributeValues->groupBy('attribute.name');
+                                                    @endphp
+                                                    <div class="mt-1">
+                                                        @foreach($groupedAttributes as $attrName => $values)
+                                                            <small class="text-muted d-block">
+                                                                <strong>{{ $attrName }}:</strong>
+                                                                <span class="text-primary">
+                                                                    {{ $values->pluck('value')->implode(', ') }}
+                                                                </span>
+                                                            </small>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif($hasAttributes)
+                                                    {{-- Fallback: afficher les attributs stockés dans le champ attributes --}}
                                                     <div class="mt-1">
                                                         @foreach($attrsArray as $attrName => $attrValue)
                                                             <small class="text-muted d-block">

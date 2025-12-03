@@ -118,6 +118,21 @@ class Product extends Model
                     ->withTimestamps();
     }
 
+    public function variations()
+    {
+        return $this->hasMany(ProductVariation::class)->orderBy('order')->orderBy('id');
+    }
+
+    public function activeVariations()
+    {
+        return $this->hasMany(ProductVariation::class)->where('is_active', true)->orderBy('order')->orderBy('id');
+    }
+
+    public function defaultVariation()
+    {
+        return $this->hasOne(ProductVariation::class)->where('is_default', true);
+    }
+
     public function views()
     {
         return $this->hasMany(ProductView::class);

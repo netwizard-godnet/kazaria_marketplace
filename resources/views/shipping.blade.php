@@ -129,12 +129,17 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Sous-total:</span>
-                                <span>{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                                <span>{{ number_format($subtotal, 0, ',', ' ') }} FCFA</span>
                             </div>
-                            
+                            @if($discount > 0)
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Réduction:</span>
+                                <span class="text-success">-{{ number_format($discount, 0, ',', ' ') }} FCFA</span>
+                            </div>
+                            @endif
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>
-                                <span class="text-success">Gratuite</span>
+                                <span class="text-success">{{ $shippingCost > 0 ? number_format($shippingCost, 0, ',', ' ') . ' FCFA' : 'Gratuite' }}</span>
                             </div>
                             
                             <hr>
@@ -185,16 +190,18 @@
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création de la commande...';
             
             try {
-                const token = localStorage.getItem('auth_token');
                 const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
                 
-                const response = await fetch('/api/orders/create', {
+                const response = await fetch('/orders/create', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         shipping_name: document.getElementById('shippingName').value,
                         shipping_email: document.getElementById('shippingEmail').value,

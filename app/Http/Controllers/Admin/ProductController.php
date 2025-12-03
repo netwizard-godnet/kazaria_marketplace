@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Attribute;
+use App\Models\ProductVariation;
 
 class ProductController extends Controller
 {
@@ -42,7 +43,22 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load(['store', 'category', 'subcategory']);
+        $product->load([
+            'store', 
+            'category', 
+            'subcategory',
+            'attributeValues.attribute',
+            'variations.attributeValues.attribute',
+            'reviews' => function($query) {
+                $query->latest()->limit(5);
+            }
+        ]);
+        
+        // Calculer le nombre total d'avis et la note moyenne si nécessaire
+        if (!$product->reviews_count && $product->reviews) {
+            $product->reviews_count = $product->reviews->count();
+        }
+        
         return view('admin.products.show', compact('product'));
     }
 
@@ -52,16 +68,63 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
+            'promo_price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
+            'subcategory_id' => 'nullable|exists:subcategories,id',
+            'store_id' => 'nullable|exists:stores,id',
             'status' => 'required|in:pending,approved,rejected',
             'is_active' => 'boolean',
+            'brand' => 'nullable|string|max:100',
+            'model' => 'nullable|string|max:100',
+            'warranty' => 'nullable|string|max:100',
+            'tags' => 'nullable|string',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
-            'attributes' => 'nullable',
+            'attributes' => 'nullable|array',
+            'enable_variations' => 'nullable|boolean',
+            'variations' => 'nullable|array',
+            'variations.*.id' => 'nullable|exists:product_variations,id',
+            'variations.*.attributes' => 'nullable|array',
+            'variations.*.price' => 'required_with:variations|numeric|min:0',
+            'variations.*.promo_price' => 'nullable|numeric|min:0',
+            'variations.*.stock' => 'required_with:variations|integer|min:0',
+            'variations.*.sku' => 'nullable|string|max:255',
+            'variations.*.is_default' => 'nullable|boolean',
+            'variations_to_delete' => 'nullable|array',
+            'variations_to_delete.*' => 'exists:product_variations,id',
         ]);
 
-        $data = $request->all();
+        $data = $request->only([
+            'name', 'description', 'stock', 'category_id', 
+            'subcategory_id', 'store_id', 'brand', 'model', 'warranty',
+            'meta_description', 'meta_keywords', 'status'
+        ]);
+        
+        // Gérer store_id : si vide, mettre null
+        if (empty($data['store_id'])) {
+            $data['store_id'] = null;
+        }
+        
         $data['is_active'] = $request->has('is_active');
+        
+        // Gestion des prix : convertir prix normal et prix promo en price, old_price et discount
+        $normalPrice = $request->price;
+        $promoPrice = $request->promo_price;
+        
+        if ($promoPrice && $promoPrice > 0 && $promoPrice < $normalPrice) {
+            // Produit en promo : price = prix promo (prix actuel), old_price = prix normal (ancien prix)
+            $data['price'] = $promoPrice;
+            $data['old_price'] = $normalPrice;
+            $data['discount_percentage'] = round((($normalPrice - $promoPrice) / $normalPrice) * 100, 2);
+        } else {
+            // Pas de promo : price = prix normal, pas d'old_price
+            $data['price'] = $normalPrice;
+            $data['old_price'] = null;
+            $data['discount_percentage'] = $request->discount_percentage ?: null;
+        }
 
         // Gestion des images
         $currentImages = $product->images ?? [];
@@ -85,14 +148,64 @@ class ProductController extends Controller
         }
 
         // Ajouter les nouvelles images
+        $newImages = [];
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('products', 'public');
-                $currentImages[] = $path;
+            $uploadedImages = $request->file('images');
+            $mainNewImageIndex = $request->input('main_new_image_index');
+            
+            // Convertir en tableau indexé
+            $uploadedImagesArray = [];
+            foreach ($uploadedImages as $index => $img) {
+                if ($img && $img->isValid()) {
+                    $uploadedImagesArray[$index] = $img;
+                }
+            }
+            
+            // Réorganiser les nouvelles images si une principale est définie
+            if ($mainNewImageIndex !== null && $mainNewImageIndex !== '' && isset($uploadedImagesArray[$mainNewImageIndex])) {
+                $mainImage = $uploadedImagesArray[$mainNewImageIndex];
+                unset($uploadedImagesArray[$mainNewImageIndex]);
+                $uploadedImagesArray = array_merge([$mainImage], array_values($uploadedImagesArray));
+            } else {
+                $uploadedImagesArray = array_values($uploadedImagesArray);
+            }
+            
+            // Uploader toutes les nouvelles images
+            foreach ($uploadedImagesArray as $img) {
+                $newImages[] = $img->store('products', 'public');
             }
         }
 
-        $data['images'] = $currentImages;
+        // Gérer la réorganisation : déterminer quelle image est principale
+        $mainExistingImageIndex = $request->input('main_existing_image_index');
+        $hasNewMainImage = $request->input('main_new_image_index') !== null && $request->input('main_new_image_index') !== '';
+        
+        // Si une nouvelle image est principale, la mettre en premier de toutes les images
+        if ($hasNewMainImage && !empty($newImages)) {
+            $finalImages = array_merge([$newImages[0]], $currentImages, array_slice($newImages, 1));
+        }
+        // Si une image existante est principale, la mettre en premier
+        elseif ($mainExistingImageIndex !== null && isset($currentImages[$mainExistingImageIndex])) {
+            $mainImage = $currentImages[$mainExistingImageIndex];
+            unset($currentImages[$mainExistingImageIndex]);
+            $finalImages = array_merge([$mainImage], array_values($currentImages), $newImages);
+        }
+        // Sinon, garder l'ordre actuel (existantes + nouvelles)
+        else {
+            $finalImages = array_merge($currentImages, $newImages);
+        }
+
+        $data['images'] = $finalImages;
+        // Définir l'image principale (première image du tableau)
+        if (!empty($finalImages)) {
+            $data['image'] = $finalImages[0];
+        }
+        
+        // Gestion des tags (séparer par virgules)
+        if ($request->filled('tags')) {
+            $tags = array_map('trim', explode(',', $request->tags));
+            $data['tags'] = array_filter($tags); // Supprimer les valeurs vides
+        }
 
         $product->update($data);
 
@@ -110,6 +223,129 @@ class ProductController extends Controller
             $product->attributeValues()->sync($attributeValueIds);
         } else {
             $product->attributeValues()->detach();
+        }
+
+        // Gestion des variations de produits
+        // Supprimer les variations marquées pour suppression
+        if ($request->has('variations_to_delete')) {
+            ProductVariation::whereIn('id', $request->variations_to_delete)
+                ->where('product_id', $product->id)
+                ->delete();
+        }
+
+        // Mettre à jour ou créer les variations
+        if ($request->has('enable_variations') && $request->enable_variations && $request->has('variations')) {
+            $variations = $request->input('variations', []);
+            $hasDefault = false;
+            $variationIds = [];
+            
+            foreach ($variations as $index => $variationData) {
+                // Vérifier que la variation a au moins un attribut
+                if (empty($variationData['attributes']) || !is_array($variationData['attributes'])) {
+                    continue;
+                }
+                
+                // Calculer les prix
+                $variationPrice = $variationData['price'] ?? 0;
+                $variationPromoPrice = $variationData['promo_price'] ?? null;
+                $variationOldPrice = null;
+                $variationDiscount = null;
+                
+                if ($variationPromoPrice && $variationPromoPrice > 0 && $variationPromoPrice < $variationPrice) {
+                    $variationOldPrice = $variationPrice;
+                    $variationPrice = $variationPromoPrice;
+                    $variationDiscount = round((($variationOldPrice - $variationPrice) / $variationOldPrice) * 100, 2);
+                }
+                
+                // Générer le SKU si non fourni
+                $sku = $variationData['sku'] ?? null;
+                if (!$sku && isset($variationData['id'])) {
+                    $existingVariation = ProductVariation::find($variationData['id']);
+                    $sku = $existingVariation ? $existingVariation->sku : ProductVariation::generateSku(
+                        $product->id, 
+                        array_values($variationData['attributes'])
+                    );
+                } elseif (!$sku) {
+                    $sku = ProductVariation::generateSku(
+                        $product->id, 
+                        array_values($variationData['attributes'])
+                    );
+                }
+                
+                // Vérifier si c'est une mise à jour ou création
+                if (isset($variationData['id']) && $variationData['id']) {
+                    // Mettre à jour la variation existante
+                    $variation = ProductVariation::where('id', $variationData['id'])
+                        ->where('product_id', $product->id)
+                        ->first();
+                    
+                    if ($variation) {
+                        $variation->update([
+                            'sku' => $sku,
+                            'price' => $variationPrice,
+                            'old_price' => $variationOldPrice,
+                            'discount_percentage' => $variationDiscount,
+                            'stock' => $variationData['stock'] ?? 0,
+                            'is_default' => !$hasDefault && ($variationData['is_default'] ?? false),
+                            'is_active' => true,
+                            'order' => $index
+                        ]);
+                        
+                        // Mettre à jour les attributs
+                        $attributeValueIds = array_values(array_filter($variationData['attributes']));
+                        if (!empty($attributeValueIds)) {
+                            $variation->attributeValues()->sync($attributeValueIds);
+                        }
+                        
+                        $variationIds[] = $variation->id;
+                        if ($variation->is_default) {
+                            $hasDefault = true;
+                        }
+                    }
+                } else {
+                    // Créer une nouvelle variation
+                    $variation = ProductVariation::create([
+                        'product_id' => $product->id,
+                        'sku' => $sku,
+                        'price' => $variationPrice,
+                        'old_price' => $variationOldPrice,
+                        'discount_percentage' => $variationDiscount,
+                        'stock' => $variationData['stock'] ?? 0,
+                        'is_default' => !$hasDefault && ($variationData['is_default'] ?? false),
+                        'is_active' => true,
+                        'order' => $index
+                    ]);
+                    
+                    // Lier les valeurs d'attributs
+                    $attributeValueIds = array_values(array_filter($variationData['attributes']));
+                    if (!empty($attributeValueIds)) {
+                        $variation->attributeValues()->attach($attributeValueIds);
+                    }
+                    
+                    $variationIds[] = $variation->id;
+                    if ($variation->is_default) {
+                        $hasDefault = true;
+                    }
+                }
+            }
+            
+            // S'il n'y a pas de variation par défaut, définir la première comme défaut
+            if (!$hasDefault && !empty($variations)) {
+                $firstVariation = $product->variations()->orderBy('order')->first();
+                if ($firstVariation) {
+                    $firstVariation->update(['is_default' => true]);
+                }
+            }
+            
+            // Supprimer les variations qui ne sont plus dans la liste (si enable_variations est activé)
+            if (!empty($variationIds)) {
+                ProductVariation::where('product_id', $product->id)
+                    ->whereNotIn('id', $variationIds)
+                    ->delete();
+            }
+        } elseif ($request->has('enable_variations') && !$request->enable_variations) {
+            // Si les variations sont désactivées, supprimer toutes les variations
+            ProductVariation::where('product_id', $product->id)->delete();
         }
 
         return redirect()->route('admin.products.index')->with('success', 'Produit mis à jour avec succès.');
@@ -142,10 +378,17 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load(['store', 'category', 'subcategory', 'attributeValues.attribute']);
+        $product->load([
+            'store', 
+            'category', 
+            'subcategory', 
+            'attributeValues.attribute',
+            'variations.attributeValues.attribute'
+        ]);
         $categories = Category::all();
         $attributes = Attribute::with('attributeValues')->ordered()->get();
-        return view('admin.products.edit', compact('product', 'categories', 'attributes'));
+        $stores = \App\Models\Store::with('user')->orderBy('name')->get();
+        return view('admin.products.edit', compact('product', 'categories', 'attributes', 'stores'));
     }
 
     public function deleteImage(Product $product, $index)
@@ -176,7 +419,8 @@ class ProductController extends Controller
     {
         $categories = Category::all();
         $attributes = Attribute::with('attributeValues')->ordered()->get();
-        return view('admin.products.create', compact('categories', 'attributes'));
+        $stores = \App\Models\Store::with('user')->orderBy('name')->get();
+        return view('admin.products.create', compact('categories', 'attributes', 'stores'));
     }
 
     public function store(Request $request)
@@ -185,22 +429,193 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
+            'promo_price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
+            'subcategory_id' => 'nullable|exists:subcategories,id',
+            'store_id' => 'nullable|exists:stores,id',
+            'status' => 'required|in:pending,approved,rejected',
+            'is_active' => 'boolean',
+            'brand' => 'nullable|string|max:100',
+            'model' => 'nullable|string|max:100',
+            'warranty' => 'nullable|string|max:100',
+            'tags' => 'nullable|string',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'attributes' => 'nullable|array',
+            'enable_variations' => 'nullable|boolean',
+            'variations' => 'nullable|array',
+            'variations.*.attributes' => 'nullable|array',
+            'variations.*.price' => 'required_with:variations|numeric|min:0',
+            'variations.*.promo_price' => 'nullable|numeric|min:0',
+            'variations.*.stock' => 'required_with:variations|integer|min:0',
+            'variations.*.sku' => 'nullable|string|max:255',
+            'variations.*.is_default' => 'nullable|boolean',
         ]);
 
-        $data = $request->all();
+        $data = $request->only([
+            'name', 'description', 'stock', 'category_id', 
+            'subcategory_id', 'store_id', 'brand', 'model', 'warranty',
+            'meta_description', 'meta_keywords'
+        ]);
+        
+        // Gérer store_id : si vide, mettre null
+        if (empty($data['store_id'])) {
+            $data['store_id'] = null;
+        }
+
+        // Gestion des prix : convertir prix normal et prix promo en price, old_price et discount
+        $normalPrice = $request->price;
+        $promoPrice = $request->promo_price;
+        
+        if ($promoPrice && $promoPrice > 0 && $promoPrice < $normalPrice) {
+            // Produit en promo : price = prix promo (prix actuel), old_price = prix normal (ancien prix)
+            $data['price'] = $promoPrice;
+            $data['old_price'] = $normalPrice;
+            $data['discount_percentage'] = round((($normalPrice - $promoPrice) / $normalPrice) * 100, 2);
+        } else {
+            // Pas de promo : price = prix normal, pas d'old_price
+            $data['price'] = $normalPrice;
+            $data['old_price'] = null;
+            $data['discount_percentage'] = $request->discount_percentage ?: null;
+        }
+
+        // Gestion des images - Au moins une image est requise
         $images = [];
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $img) {
+            $uploadedImages = $request->file('images');
+            $mainImageIndex = (int) $request->input('main_image_index', 0);
+            
+            // Convertir en tableau indexé
+            $uploadedImagesArray = [];
+            foreach ($uploadedImages as $index => $img) {
+                if ($img && $img->isValid()) {
+                    $uploadedImagesArray[$index] = $img;
+                }
+            }
+            
+            // Réorganiser pour mettre l'image principale en première position
+            if ($mainImageIndex > 0 && isset($uploadedImagesArray[$mainImageIndex])) {
+                // Extraire l'image principale
+                $mainImage = $uploadedImagesArray[$mainImageIndex];
+                unset($uploadedImagesArray[$mainImageIndex]);
+                
+                // Mettre l'image principale en premier
+                $uploadedImagesArray = array_merge([$mainImage], $uploadedImagesArray);
+            } else {
+                // Si pas d'index spécifique ou index invalide, utiliser le tableau tel quel
+                $uploadedImagesArray = array_values($uploadedImagesArray);
+            }
+            
+            // Uploader toutes les images dans l'ordre
+            foreach ($uploadedImagesArray as $img) {
                 $images[] = $img->store('products', 'public');
             }
         }
+        
+        if (empty($images)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['images' => 'Au moins une image est requise pour le produit.']);
+        }
+        
         $data['images'] = $images;
-        $data['is_active'] = true;
-        $data['status'] = 'pending';
+        // Définir l'image principale (première image du tableau)
+        $data['image'] = $images[0];
+
+        // Gestion des tags (séparer par virgules)
+        if ($request->filled('tags')) {
+            $tags = array_map('trim', explode(',', $request->tags));
+            $data['tags'] = array_filter($tags); // Supprimer les valeurs vides
+        }
+
+        // Statut et actif
+        $data['is_active'] = $request->has('is_active');
+        $data['status'] = $request->status ?? 'pending';
+
+        // Créer le produit
         $product = Product::create($data);
+
+        // Gestion des attributs
+        if ($request->has('attributes')) {
+            $attributesData = $request->input('attributes');
+            $attributeValueIds = [];
+            foreach ($attributesData as $attributeId => $valueIds) {
+                if (is_array($valueIds)) {
+                    $attributeValueIds = array_merge($attributeValueIds, $valueIds);
+                } else {
+                    $attributeValueIds[] = $valueIds;
+                }
+            }
+            if (!empty($attributeValueIds)) {
+                $product->attributeValues()->attach($attributeValueIds);
+            }
+        }
+
+        // Gestion des variations de produits
+        if ($request->has('enable_variations') && $request->enable_variations && $request->has('variations')) {
+            $variations = $request->input('variations', []);
+            $hasDefault = false;
+            
+            foreach ($variations as $index => $variationData) {
+                // Vérifier que la variation a au moins un attribut
+                if (empty($variationData['attributes']) || !is_array($variationData['attributes'])) {
+                    continue;
+                }
+                
+                // Calculer les prix
+                $variationPrice = $variationData['price'] ?? 0;
+                $variationPromoPrice = $variationData['promo_price'] ?? null;
+                $variationOldPrice = null;
+                $variationDiscount = null;
+                
+                if ($variationPromoPrice && $variationPromoPrice > 0 && $variationPromoPrice < $variationPrice) {
+                    $variationOldPrice = $variationPrice;
+                    $variationPrice = $variationPromoPrice;
+                    $variationDiscount = round((($variationOldPrice - $variationPrice) / $variationOldPrice) * 100, 2);
+                }
+                
+                // Générer le SKU si non fourni
+                $sku = $variationData['sku'] ?? ProductVariation::generateSku(
+                    $product->id, 
+                    array_values($variationData['attributes'])
+                );
+                
+                // Créer la variation
+                $variation = ProductVariation::create([
+                    'product_id' => $product->id,
+                    'sku' => $sku,
+                    'price' => $variationPrice,
+                    'old_price' => $variationOldPrice,
+                    'discount_percentage' => $variationDiscount,
+                    'stock' => $variationData['stock'] ?? 0,
+                    'is_default' => !$hasDefault && ($variationData['is_default'] ?? false),
+                    'is_active' => true,
+                    'order' => $index
+                ]);
+                
+                if ($variation->is_default) {
+                    $hasDefault = true;
+                }
+                
+                // Lier les valeurs d'attributs à la variation
+                $attributeValueIds = array_values(array_filter($variationData['attributes']));
+                if (!empty($attributeValueIds)) {
+                    $variation->attributeValues()->attach($attributeValueIds);
+                }
+            }
+            
+            // S'il n'y a pas de variation par défaut, définir la première comme défaut
+            if (!$hasDefault && !empty($variations)) {
+                $firstVariation = $product->variations()->first();
+                if ($firstVariation) {
+                    $firstVariation->update(['is_default' => true]);
+                }
+            }
+        }
+
         return redirect()->route('admin.products.index')->with('success', 'Produit ajouté avec succès.');
     }
 }

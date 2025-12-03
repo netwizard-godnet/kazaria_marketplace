@@ -925,13 +925,15 @@ use Illuminate\Support\Str;
                     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Changement...';
                     
                     try {
-                        const response = await fetch('/api/profile/change-password', {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                        
+                        const response = await fetch('/profile/change-password', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`,
                                 'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
                             },
                             body: JSON.stringify({
                                 current_password: currentPassword,
@@ -940,11 +942,24 @@ use Illuminate\Support\Str;
                             })
                         });
 
-                        const data = await response.json();
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            showToast('error', 'Erreur lors du traitement de la réponse du serveur.');
+                            return;
+                        }
                         
-                        if (data.success) {
+                        if (response.ok && data.success) {
                             showToast('success', 'Mot de passe mis à jour avec succès !');
                             passwordForm.reset();
+                            
+                            // Demander si l'utilisateur veut déconnecter tous les appareils
+                            setTimeout(() => {
+                                if (confirm('Voulez-vous déconnecter tous vos appareils connectés ? Cela améliorera la sécurité de votre compte.')) {
+                                    logoutAllDevicesAfterPasswordChange();
+                                }
+                            }, 500);
                         } else {
                             if (data.errors) {
                                 const firstError = Object.values(data.errors)[0];
@@ -1151,42 +1166,79 @@ use Illuminate\Support\Str;
             }
         }
 
-        // Fonction pour déconnecter tous les appareils
-        async function logoutAllDevices() {
-            if (!confirm('Êtes-vous sûr de vouloir déconnecter tous les appareils ? Vous devrez vous reconnecter.')) {
-                return;
-            }
-
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                showToast('error', 'Session expirée. Veuillez vous reconnecter.');
-                showToast('error', 'Erreur lors de la déconnexion.');
-                return;
-            }
-
+        // Fonction pour déconnecter tous les appareils après changement de mot de passe (utilise la route web)
+        async function logoutAllDevicesAfterPasswordChange() {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
             try {
-                const response = await fetch('/api/logout-all-devices', {
+                const response = await fetch('/profile/logout-all-devices', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    showToast('error', 'Erreur lors du traitement de la réponse.');
+                    return;
+                }
                 
-                if (data.success) {
-                    showToast('success', 'Tous les appareils ont été déconnectés.');
+                if (response.ok && data.success) {
+                    showToast('success', 'Tous les autres appareils ont été déconnectés avec succès. Vous restez connecté sur cet appareil.');
                     
-                    // Déconnecter l'utilisateur actuel
-                    setTimeout(() => {
-                        // Redirection vers la page d'accueil après déconnexion
-                        window.location.href = '/';
-                    }, 2000);
+                    // Nettoyer le localStorage des tokens (ils seront régénérés si nécessaire)
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_data');
                 } else {
-                    showToast('error', 'Erreur: ' + data.message);
+                    showToast('error', data.message || 'Erreur lors de la déconnexion des appareils.');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showToast('error', 'Erreur de connexion. Veuillez réessayer.');
+            }
+        }
+
+        // Fonction pour déconnecter tous les appareils (utilise la route web avec session)
+        async function logoutAllDevices() {
+            if (!confirm('Êtes-vous sûr de vouloir déconnecter tous les appareils ? Cela supprimera tous les tokens de connexion des autres appareils. Vous resterez connecté sur cet appareil.')) {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
+            try {
+                const response = await fetch('/profile/logout-all-devices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    showToast('error', 'Erreur lors du traitement de la réponse.');
+                    return;
+                }
+                
+                if (response.ok && data.success) {
+                    showToast('success', 'Tous les autres appareils ont été déconnectés avec succès. Vous restez connecté sur cet appareil.');
+                    
+                    // Nettoyer les tokens du localStorage (s'ils existent)
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_data');
+                } else {
+                    showToast('error', data.message || 'Erreur lors de la déconnexion des appareils.');
                 }
             } catch (error) {
                 console.error('Erreur:', error);

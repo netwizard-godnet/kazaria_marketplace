@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -128,7 +129,7 @@ class AuthController extends Controller
                 'requires_code' => true
             ]);
         } catch (\Exception $e) {
-            \Log::error('Erreur envoi code connexion: ' . $e->getMessage());
+            Log::error('Erreur envoi code connexion: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'envoi du code. Veuillez réessayer.'
@@ -141,6 +142,23 @@ class AuthController extends Controller
      */
     public function verifyLoginCode(Request $request)
     {
+        // Vérifier que la session est disponible
+        try {
+            if (!$request->hasSession()) {
+                Log::error('Session store not set on request for verifyLoginCode');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Erreur session verifyLoginCode: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
+            ], 500);
+        }
+
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'code' => 'required|string|size:8',
@@ -206,74 +224,46 @@ class AuthController extends Controller
                     )
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Erreur création token dans verifyLoginCode: ' . $e->getMessage());
+                Log::error('Erreur création token mobile: ' . $e->getMessage());
                 return response()->json([
                     'success' => false,
-                    'message' => 'Erreur lors de la création du token: ' . $e->getMessage()
+                    'message' => 'Erreur lors de la connexion'
                 ], 500);
             }
         }
 
-        // Route web : utiliser les sessions (route web a toujours accès aux sessions)
+        // Pour les routes web, utiliser les sessions
         try {
-            // La route web a toujours accès aux sessions via le middleware 'web'
-            // Régénérer la session AVANT le login pour éviter les problèmes
+            // Marquer le code comme utilisé
+            $authCode->markAsUsed();
+            
+            // Régénérer l'ID de session AVANT le login pour éviter les problèmes
             $request->session()->regenerate();
             
-            // Connecter l'utilisateur avec "remember" pour une session persistante
+            // Créer une session web persistante
             Auth::login($user, true);
             
             // Régénérer le token CSRF
             $request->session()->regenerateToken();
+            
+            // Forcer la sauvegarde de la session
             $request->session()->save();
 
-            // Marquer le code comme utilisé après succès
-            $authCode->markAsUsed();
-
-            // Vérifier que l'utilisateur est bien connecté
-            \Log::info('Utilisateur connecté via session web: ' . Auth::id());
-            \Log::info('Session ID: ' . $request->session()->getId());
-            \Log::info('Auth check: ' . (Auth::check() ? 'true' : 'false'));
-
-            // Si c'est une requête AJAX, retourner JSON pour redirection JavaScript
-            if ($request->ajax() || $request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Connexion réussie',
-                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
-                    'redirect' => route('accueil'),
-                    'authenticated' => Auth::check(),
-                    'session_id' => $request->session()->getId()
-                ]);
-            }
-            
-            // Sinon, redirection HTTP directe
-            return redirect()->route('accueil')
-                ->with('success', 'Connexion réussie ! Bienvenue ' . $user->prenoms);
+            return response()->json([
+                'success' => true,
+                'message' => 'Connexion réussie',
+                'user' => array_merge(
+                    $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
+                    ['has_store' => $user->store()->exists()]
+                ),
+                'redirect' => route('accueil')
+            ]);
         } catch (\Exception $e) {
-            // Si la session échoue, utiliser un token comme fallback
-            \Log::warning('Erreur session dans verifyLoginCode, utilisation du token: ' . $e->getMessage());
-            
-            try {
-                $token = $user->createToken('web-app')->plainTextToken;
-                
-                // Marquer le code comme utilisé après succès
-                $authCode->markAsUsed();
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Connexion réussie',
-                    'token' => $token,
-                    'token_type' => 'Bearer',
-                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
-                ]);
-            } catch (\Exception $tokenError) {
-                \Log::error('Erreur création token de fallback: ' . $tokenError->getMessage());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur lors de la connexion: ' . $tokenError->getMessage()
-                ], 500);
-            }
+            Log::error('Erreur connexion web: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la connexion'
+            ], 500);
         }
     }
 
@@ -497,7 +487,7 @@ class AuthController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Erreur lors de la déconnexion de tous les appareils: ' . $e->getMessage());
+            Log::error('Erreur lors de la déconnexion de tous les appareils: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la déconnexion'
