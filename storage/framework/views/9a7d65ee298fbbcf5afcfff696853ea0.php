@@ -110,39 +110,39 @@
         <section class="border border-light py-3">
             <div class="container">
                 <div class="row g-3">
-                    <div class="col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-start">
+                    <div class="col-3 col-md-3 border-end">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
                             <i class="fa-solid fa-rocket fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Livraison Gratuite</p>
-                                <span class="fs-8 text-secondary">Livraison gratuite pour tout achat de 100.000F ou plus</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Livraison gratuite pour tout achat de 100.000F ou plus</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-start">
+                    <div class="col-3 col-md-3 border-end">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
                             <i class="fa-solid fa-shield-halved fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">90 Jours Garantie</p>
-                                <span class="fs-8 text-secondary">Garantie complète sur tous les produits électroniques achetés, réparation ou remboursement.</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Garantie complète sur tous les produits électroniques achetés, réparation ou remboursement.</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-start">
+                    <div class="col-3 col-md-3 border-end">
+                        <div class="d-flex align-items-center justify-content-center justify-content-md-start flex-column flex-sm-row">
                             <i class="fa-solid fa-credit-card fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Paiement sécurisé</p>
-                                <span class="fs-8 text-secondary">Transactions protégées par carte bancaire ou Mobile Money, vos données sont sécurisées.</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Transactions protégées par carte bancaire ou Mobile Money, vos données sont sécurisées.</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="d-flex align-items-center justify-content-start">
+                    <div class="col-3 col-md-3">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
                             <i class="fa-solid fa-comment-dots fa-3x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Service Client 24/7</p>
-                                <span class="fs-8 text-secondary">Support disponible à tout moment via chat, email ou téléphone pour vous aider.</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Support disponible à tout moment via chat, email ou téléphone pour vous aider.</span>
                             </div>
                         </div>
                     </div>
