@@ -42,22 +42,107 @@
         </div>
         <hr>
 
-        @if(isset($priceRange))
+        @if(isset($priceRange) && $priceRange->min_price && $priceRange->max_price)
             <div class="mb-4">
                 <p class="filter-title">Prix (FCFA)</p>
-                <div class="row g-2">
+                <div class="row g-2 mb-2">
                     <div class="col-6">
-                        <input type="number" class="form-control form-control-sm" name="min_price"
-                            placeholder="Min" value="{{ request('min_price') }}">
+                        <input type="number" class="form-control form-control-sm price-input" name="min_price"
+                            placeholder="Min" value="{{ request('min_price') }}"
+                            min="{{ $priceRange->min_price }}" max="{{ $priceRange->max_price }}"
+                            data-min="{{ $priceRange->min_price }}" data-max="{{ $priceRange->max_price }}">
                     </div>
                     <div class="col-6">
-                        <input type="number" class="form-control form-control-sm" name="max_price"
-                            placeholder="Max" value="{{ request('max_price') }}">
+                        <input type="number" class="form-control form-control-sm price-input" name="max_price"
+                            placeholder="Max" value="{{ request('max_price') }}"
+                            min="{{ $priceRange->min_price }}" max="{{ $priceRange->max_price }}"
+                            data-min="{{ $priceRange->min_price }}" data-max="{{ $priceRange->max_price }}">
                     </div>
+                </div>
+                <div class="price-range-display small text-muted">
+                    <span id="priceMinDisplay">{{ number_format($priceRange->min_price, 0, ',', ' ') }}</span> - 
+                    <span id="priceMaxDisplay">{{ number_format($priceRange->max_price, 0, ',', ' ') }}</span> FCFA
                 </div>
             </div>
             <hr>
         @endif
+        
+        @if(isset($availableBrands) && $availableBrands->count() > 0)
+            <div class="mb-4">
+                <p class="filter-title">Marques</p>
+                <div class="filter-search mb-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="Rechercher une marque..." 
+                           id="brandSearch{{ $formId }}" onkeyup="filterOptions(this, 'brandOptions{{ $formId }}')">
+                </div>
+                <div class="filter-options" id="brandOptions{{ $formId }}" style="max-height: 200px; overflow-y: auto;">
+                    @foreach($availableBrands as $brand)
+                        <div class="form-check mb-1 brand-option">
+                            <input class="form-check-input" type="checkbox" name="brand[]"
+                                value="{{ $brand }}" id="searchBrand{{ $formId }}{{ $loop->index }}"
+                                {{ in_array($brand, request('brand', [])) ? 'checked' : '' }}>
+                            <label class="form-check-label filter-label" for="searchBrand{{ $formId }}{{ $loop->index }}">
+                                {{ $brand }}
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <hr>
+        @endif
+        
+        @if(isset($availableStores) && $availableStores->count() > 0)
+            <div class="mb-4">
+                <p class="filter-title">Boutiques</p>
+                <div class="filter-search mb-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="Rechercher une boutique..." 
+                           id="storeSearch{{ $formId }}" onkeyup="filterOptions(this, 'storeOptions{{ $formId }}')">
+                </div>
+                <div class="filter-options" id="storeOptions{{ $formId }}" style="max-height: 200px; overflow-y: auto;">
+                    @foreach($availableStores as $store)
+                        <div class="form-check mb-1 store-option">
+                            <input class="form-check-input" type="checkbox" name="store_id[]"
+                                value="{{ $store->id }}" id="searchStore{{ $formId }}{{ $store->id }}"
+                                {{ in_array($store->id, request('store_id', [])) ? 'checked' : '' }}>
+                            <label class="form-check-label filter-label" for="searchStore{{ $formId }}{{ $store->id }}">
+                                {{ $store->name }}
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <hr>
+        @endif
+        
+        <div class="mb-4">
+            <p class="filter-title">Disponibilité</p>
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="radio" name="in_stock" value="1"
+                    id="searchStock1{{ $formId }}" {{ request('in_stock') == '1' ? 'checked' : '' }}>
+                <label class="form-check-label filter-label" for="searchStock1{{ $formId }}">
+                    <i class="fa-solid fa-check-circle text-success me-1"></i>En stock
+                </label>
+            </div>
+        </div>
+        <hr>
+        
+        <div class="mb-4">
+            <p class="filter-title">Options</p>
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="on_sale" value="1"
+                    id="searchOnsale{{ $formId }}" {{ request('on_sale') == '1' ? 'checked' : '' }}>
+                <label class="form-check-label filter-label" for="searchOnsale{{ $formId }}">
+                    <i class="fa-solid fa-tag text-danger me-1"></i>En promotion
+                </label>
+            </div>
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="is_new" value="1"
+                    id="searchNew{{ $formId }}" {{ request('is_new') == '1' ? 'checked' : '' }}>
+                <label class="form-check-label filter-label" for="searchNew{{ $formId }}">
+                    <i class="fa-solid fa-sparkles text-primary me-1"></i>Nouveautés
+                </label>
+            </div>
+        </div>
+        <hr>
 
         <div class="mb-4">
             <p class="filter-title">Note minimum</p>
