@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class ContactController extends Controller
 {
@@ -61,12 +62,12 @@ class ContactController extends Controller
                             ->replyTo($messageData['email'], $messageData['prenom'] . ' ' . $messageData['nom']);
                     });
                 } catch (\Exception $e) {
-                    \Log::warning('Erreur envoi email contact: ' . $e->getMessage());
+                    Log::warning('Erreur envoi email contact: ' . $e->getMessage());
                 }
             }
 
             // Log du message (pour debug et suivi)
-            \Log::info('Nouveau message de contact reçu', $messageData);
+            Log::info('Nouveau message de contact reçu', $messageData);
 
             return response()->json([
                 'success' => true,
@@ -78,7 +79,7 @@ class ContactController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Erreur traitement message contact: ' . $e->getMessage());
+            Log::error('Erreur traitement message contact: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
