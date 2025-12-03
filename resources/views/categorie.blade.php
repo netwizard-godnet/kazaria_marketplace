@@ -21,7 +21,7 @@
                         @endif
                     </ol>
                 </nav>
-                <h1 class="fw-bold mb-0" style="font-size: 2rem; color: #333;">
+                <h1 class="fw-bold mb-0" style="font-size: 1.6rem; color: #333;">
                     @if(isset($subcategory) && $subcategory)
                         {{ $subcategory->name }}
                     @else
@@ -70,7 +70,7 @@
                             @if($categoriePub1->link_url)
                                 <a href="{{ $categoriePub1->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                        <img src="{{ $categoriePub1Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 1">
+                        <img src="{{ $categoriePub1Image }}" class="w-100 object-fit-cover" alt="Catégorie Pub 1">
                             @if($categoriePub1->link_url)</a>@endif
                         </div>
                     @else
@@ -91,7 +91,7 @@
                             @if($categoriePub2->link_url)
                                 <a href="{{ $categoriePub2->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                        <img src="{{ $categoriePub2Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 2">
+                        <img src="{{ $categoriePub2Image }}" class="w-100 object-fit-cover" alt="Catégorie Pub 2">
                             @if($categoriePub2->link_url)</a>@endif
                         </div>
                     @else
@@ -112,7 +112,7 @@
                             @if($categoriePub3->link_url)
                                 <a href="{{ $categoriePub3->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                        <img src="{{ $categoriePub3Image }}" class="w-100 h-200px object-fit-cover" alt="Catégorie Pub 3">
+                        <img src="{{ $categoriePub3Image }}" class="w-100 object-fit-cover" alt="Catégorie Pub 3">
                             @if($categoriePub3->link_url)</a>@endif
                         </div>
                     @else
@@ -273,7 +273,7 @@
                             @if($categoriePub4->link_url)
                                 <a href="{{ $categoriePub4->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                        <img src="{{ $categoriePub4Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 4">
+                        <img src="{{ $categoriePub4Image }}" class="w-100 object-fit-cover" alt="Catégorie Pub 4">
                             @if($categoriePub4->link_url)</a>@endif
                         </div>
                     @else
@@ -294,7 +294,7 @@
                             @if($categoriePub5->link_url)
                                 <a href="{{ $categoriePub5->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                        <img src="{{ $categoriePub5Image }}" class="w-100 h-300px object-fit-cover" alt="Catégorie Pub 5">
+                        <img src="{{ $categoriePub5Image }}" class="w-100 object-fit-cover" alt="Catégorie Pub 5">
                             @if($categoriePub5->link_url)</a>@endif
                         </div>
                     @else
