@@ -2,6 +2,56 @@
     $formId = $formId ?? 'boutiqueFilterForm';
 ?>
 
+<style>
+.category-filters .form-check-input {
+    width: 1.25em;
+    height: 1.25em;
+    margin-top: 0.25em;
+    vertical-align: top;
+    background-color: #fff;
+    border: 2px solid #dee2e6;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.category-filters .form-check-input:checked {
+    background-color: #ff8c00;
+    border-color: #ff8c00;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100% 100%;
+}
+
+.category-filters .form-check-input[type="radio"] {
+    border-radius: 50%;
+}
+
+.category-filters .form-check-input[type="radio"]:checked {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+}
+
+.category-filters .form-check-input:focus {
+    border-color: #ff8c00;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(255, 140, 0, 0.25);
+}
+
+.category-filters .form-check-label {
+    cursor: pointer;
+    margin-left: 0.5em;
+}
+
+.category-filters .filter-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+</style>
+
 <div class="category-filters <?php echo e($wrapperClass ?? ''); ?>">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div class="d-flex align-items-center gap-2">
@@ -29,7 +79,10 @@
                             value="<?php echo e($cat->id); ?>" id="boutiqueCat<?php echo e($formId); ?><?php echo e($cat->id); ?>"
                             <?php echo e(request('category_id') == $cat->id ? 'checked' : ''); ?>>
                         <label class="form-check-label filter-label" for="boutiqueCat<?php echo e($formId); ?><?php echo e($cat->id); ?>">
-                            <?php if($cat->icon): ?>
+                            <?php if($cat->image && !empty($cat->image)): ?>
+                                <img src="<?php echo e(str_starts_with($cat->image, 'http') ? $cat->image : (str_starts_with($cat->image, 'images/') ? asset($cat->image) : Storage::url($cat->image))); ?>"
+                                    alt="<?php echo e($cat->name); ?>" class="filter-icon me-1">
+                            <?php elseif($cat->icon && !empty($cat->icon)): ?>
                                 <i class="<?php echo e($cat->icon); ?> me-1"></i>
                             <?php endif; ?>
                             <?php echo e($cat->name); ?>
