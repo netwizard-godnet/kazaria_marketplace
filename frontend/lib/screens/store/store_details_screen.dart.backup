@@ -1,0 +1,532 @@
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../models/store_model.dart';
+import '../../models/product_model.dart';
+import '../../utils/constants.dart';
+import '../../config/api_config.dart';
+import '../../services/store_service.dart';
+
+class StoreDetailsScreen extends StatefulWidget {
+  final StoreModel store;
+
+  const StoreDetailsScreen({
+    super.key,
+    required this.store,
+  });
+
+  @override
+  State<StoreDetailsScreen> createState() => _StoreDetailsScreenState();
+}
+
+class _StoreDetailsScreenState extends State<StoreDetailsScreen> {
+  final StoreService _storeService = StoreService();
+  final List<ProductModel> _products = [];
+  bool _isLoading = true;
+  String? _error;
+  int _currentPage = 1;
+  bool _hasMoreData = true;
+  StoreModel? _store; // détails actualisés (logo, bannière, stats)
+
+  String _resolveImageUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('storage/')) {
+      return '${ApiConfig.imageBaseUrl}/$path';
+    }
+    return '${ApiConfig.imageBaseUrl}/storage/$path';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreDetails();
+    _loadProducts();
+  }
+
+  Future<void> _loadStoreDetails() async {
+    try {
+      final resp = await _storeService.getStoreDetails(widget.store.id);
+      if (resp['success'] == true && resp['store'] != null) {
+        // Adapter le JSON vers StoreModel si nécessaire
+        final data = resp['store'];
+        setState(() {
+          _store = StoreModel(
+            id: widget.store.id,
+            userId: widget.store.userId,
+            name: data['name'] ?? widget.store.name,
+            slug: data['slug'] ?? widget.store.slug,
+            description: data['description'] ?? widget.store.description,
+            categoryId: data['category_id'] ?? widget.store.categoryId,
+            subcategoryId: data['subcategory_id'] ?? widget.store.subcategoryId,
+            phone: widget.store.phone,
+            email: widget.store.email,
+            address: widget.store.address,
+            city: widget.store.city,
+            // IMPORTANT: on privilégie les chemins relatifs pour construire l'URL avec ApiConfig.imageBaseUrl
+            logo: data['logo'] ?? data['logo_url'] ?? widget.store.logo,
+            banner: data['banner'] ?? data['banner_url'] ?? widget.store.banner,
+            status: widget.store.status,
+            isVerified: (data['is_verified'] ?? widget.store.isVerified) == true,
+            isOfficial: (data['is_official'] ?? widget.store.isOfficial) == true,
+            commissionRate: widget.store.commissionRate,
+            businessHours: widget.store.businessHours,
+            socialLinks: widget.store.socialLinks,
+            totalProducts: data['totalProducts'] ?? data['total_products'] ?? widget.store.totalProducts,
+            totalOrders: data['totalOrders'] ?? data['total_orders'] ?? widget.store.totalOrders,
+            totalSales: widget.store.totalSales,
+            rating: (data['rating'] ?? widget.store.rating)?.toDouble() ?? 0,
+            reviewsCount: data['reviews_count'] ?? widget.store.reviewsCount,
+            createdAt: widget.store.createdAt,
+            updatedAt: widget.store.updatedAt,
+          );
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadProducts({bool refresh = false}) async {
+    if (refresh) {
+      _currentPage = 1;
+      _products.clear();
+      _hasMoreData = true;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      print('🔄 [STORE_DETAILS] Chargement produits boutique: ${widget.store.id}');
+
+      final response = await _storeService.getStoreProducts(
+        widget.store.id,
+        page: _currentPage,
+      );
+
+      if (response['success']) {
+        final List<dynamic> productsData = response['products'] ?? [];
+        final List<ProductModel> newProducts = productsData
+            .map((product) => ProductModel.fromJson(product))
+            .toList();
+
+        if (refresh) {
+          _products.clear();
+        }
+        _products.addAll(newProducts);
+
+        // Gestion de la pagination
+        final pagination = response['pagination'] ?? {};
+        final lastPage = pagination['last_page'] ?? 1;
+        _hasMoreData = _currentPage < lastPage;
+
+        print('✅ [STORE_DETAILS] Produits chargés: ${_products.length}');
+      } else {
+        _error = response['message'] ?? 'Erreur lors du chargement des produits';
+        print('❌ [STORE_DETAILS] Erreur: $_error');
+      }
+    } catch (e) {
+      _error = e.toString();
+      print('💥 [STORE_DETAILS] Exception: $_error');
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadMoreProducts() async {
+    if (_hasMoreData && !_isLoading) {
+      _currentPage++;
+      await _loadProducts();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = _store ?? widget.store;
+    final String fallbackLogo = '${ApiConfig.imageBaseUrl}/storage/stores/logos/default-store.png';
+    final String fallbackBanner = '${ApiConfig.imageBaseUrl}/storage/stores/banners/default-banner.jpg';
+    final String bannerUrl = (store.banner != null && store.banner!.isNotEmpty)
+        ? _resolveImageUrl(store.banner)
+        : fallbackBanner;
+    final String logoUrl = (store.logo != null && store.logo!.isNotEmpty)
+        ? _resolveImageUrl(store.logo)
+        : fallbackLogo;
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // App Bar with banner
+          SliverAppBar(
+            expandedHeight: 220,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: CachedNetworkImage(
+                imageUrl: bannerUrl + '?v=${DateTime.now().millisecondsSinceEpoch}',
+                fit: BoxFit.cover,
+                errorWidget: (context, url, error) => Container(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          // Store info with logo below banner
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.all(AppSizes.paddingLarge),
+                child: Row(
+                  children: [
+                    // Logo
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.white,
+                          width: 4,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 15,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: logoUrl + '?v=${DateTime.now().millisecondsSinceEpoch}',
+                          fit: BoxFit.cover,
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.store,
+                            size: 45,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    // Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      store.name,
+                                      style: AppTextStyles.h2,
+                                    ),
+                                  ),
+                                  if (store.isOfficial)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.info,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.verified,
+                                            color: AppColors.white,
+                                            size: 16,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Officielle',
+                                            style: TextStyle(
+                                              color: AppColors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    color: AppColors.warning,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${store.rating} (${store.reviewsCount} avis)',
+                                    style: AppTextStyles.bodySmall,
+                                  ),
+                                ],
+                              ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Stats
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingLarge,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      '${store.totalProducts}',
+                      'Produits',
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      '${store.reviewsCount}',
+                      'Avis',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Description
+          if (store.description != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingLarge),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'À propos',
+                      style: AppTextStyles.h3,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      store.description!,
+                      style: AppTextStyles.body,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Products section title
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(AppSizes.paddingLarge),
+              child: Row(
+                children: [
+                  Text(
+                    'Produits de la boutique',
+                    style: AppTextStyles.h3,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Products grid
+          _isLoading && _products.isEmpty
+              ? const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : _error != null && _products.isEmpty
+                  ? SliverFillRemaining(
+                      child: _buildErrorState(),
+                    )
+                  : _products.isEmpty
+                      ? SliverFillRemaining(
+                          child: _buildEmptyState(),
+                        )
+                      : SliverPadding(
+                          padding: const EdgeInsets.all(AppSizes.paddingMedium),
+                          sliver: SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.75,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                if (index == _products.length) {
+                                  // Bouton "Charger plus"
+                                  return _buildLoadMoreButton();
+                                }
+                                return ModernProductCard(
+                                  product: _products[index],
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ProductDetailsScreen(product: _products[index]),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              childCount: _products.length + (_hasMoreData ? 1 : 0),
+                            ),
+                          ),
+                        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: AppTextStyles.h3.copyWith(
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: AppTextStyles.caption,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadMoreButton() {
+    return Container(
+      margin: const EdgeInsets.all(AppSizes.paddingMedium),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _loadMoreProducts,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingMedium),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+          ),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                ),
+              )
+            : const Text('Charger plus'),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingLarge),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                color: AppColors.error,
+                size: 64,
+              ),
+            ),
+            const SizedBox(height: AppSizes.space4),
+            Text(
+              'Erreur de chargement',
+              style: AppTextStyles.h3.copyWith(
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: AppSizes.space2),
+            Text(
+              _error ?? 'Une erreur est survenue',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.space4),
+            ElevatedButton(
+              onPressed: () => _loadProducts(refresh: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+              ),
+              child: const Text('Réessayer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingLarge),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.inventory_2_outlined,
+                color: AppColors.textMuted,
+                size: 64,
+              ),
+            ),
+            const SizedBox(height: AppSizes.space4),
+            Text(
+              'Aucun produit',
+              style: AppTextStyles.h3.copyWith(
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: AppSizes.space2),
+            Text(
+              'Cette boutique n\'a pas encore de produits disponibles',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.space4),
+            ElevatedButton(
+              onPressed: () => _loadProducts(refresh: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+              ),
+              child: const Text('Actualiser'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

@@ -115,9 +115,16 @@ class CartItem extends Model
         
         $items = $query->get();
         
-        // Formatter l'image pour chaque produit
+        // Formatter l'image pour chaque produit et corriger le prix si nécessaire
         $items->transform(function($item) {
             if ($item->product) {
+                // Corriger le prix si il est 0 ou null
+                if (!$item->price || $item->price == 0) {
+                    $item->price = $item->product->price;
+                    // Sauvegarder la correction
+                    $item->save();
+                }
+                
                 // Préparer l'URL de l'image
                 $imageUrl = asset('images/produit.jpg');
                 

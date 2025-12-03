@@ -1,0 +1,140 @@
+/* KAZARIA Admin - Styles personnalisés */
+
+/* Désactiver les notifications automatiques */
+.notifyjs-bootstrap-base {
+    display: none !important;
+}
+
+/* Masquer les toasts indésirables */
+.toast-container {
+    display: none !important;
+}
+
+/* Style pour les notifications KAZARIA */
+.kazaria-notification {
+    background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.kazaria-notification .notifyjs-bootstrap-base {
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+}
+
+/* Améliorer l'apparence du dashboard */
+.card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Style pour les boutons KAZARIA */
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #e55a2b 0%, #d44a1b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+}
+
+/* Style pour les badges de statut */
+.badge {
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.badge-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.badge-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    color: #212529;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+}
+
+.badge-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+}
+
+/* Améliorer les tableaux */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+    font-weight: 600;
+    color: #495057;
+    padding: 15px 12px;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 107, 53, 0.05);
+}
+
+/* Style pour les icônes */
+.fas, .far, .fab {
+    color: #ff6b35;
+}
+
+/* Améliorer les graphiques */
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+/* Style pour les statistiques */
+.card-stats .card-body {
+    padding: 20px;
+}
+
+.card-stats .numbers h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.card-stats .numbers p {
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-stats .numbers h4 {
+        font-size: 1.5rem;
+    }
+    
+    .btn-group .btn {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+}

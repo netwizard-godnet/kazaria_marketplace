@@ -86,27 +86,39 @@ class OrderController extends Controller
 
             // Formater les données
             $formattedOrders = $orders->map(function($order) use ($store) {
-                // Calculer le total pour cette boutique seulement
-                $storeTotal = $order->orderItems
-                    ->where('product.store_id', $store->id)
-                    ->sum('total');
-
+                // Calculer les totaux pour cette boutique
+                $storeItems = $order->orderItems->where('product.store_id', $store->id);
+                $storeSubtotal = $storeItems->sum('total');
+                $orderTotalSubtotal = $order->orderItems->sum('total');
+                $percentageOfTotal = $orderTotalSubtotal > 0 ? ($storeSubtotal / $orderTotalSubtotal) : 0;
+                $storeShippingCost = $order->shipping_cost * $percentageOfTotal;
+                $storeTax = $order->tax * $percentageOfTotal;
+                $storeDiscount = $order->discount * $percentageOfTotal;
+                // Calculer le total final pour cette boutique
+                $storeTotal = $storeSubtotal + $storeShippingCost + $storeTax - $storeDiscount;
+                
                 return [
                     'id' => $order->id,
                     'order_number' => 'CMD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT), // Numéro masqué
+                    'user_id' => $order->user_id,
                     'created_at' => $order->created_at,
                     'updated_at' => $order->updated_at,
                     'status' => $order->status,
                     'payment_status' => $order->payment_status,
+                    'payment_method' => $order->payment_method,
                     // Masquer les informations sensibles du client
                     'shipping_name' => 'Client KAZARIA',
                     'shipping_email' => 'client@kazaria.com',
                     'shipping_phone' => '***',
                     'shipping_address' => '***',
                     'shipping_city' => '***',
+                    'subtotal' => $storeSubtotal,
+                    'shipping_cost' => $storeShippingCost,
+                    'tax' => $storeTax,
+                    'discount' => $storeDiscount,
                     'total' => $storeTotal,
-                    'items_count' => $order->orderItems->where('product.store_id', $store->id)->count(),
-                    'items' => $order->orderItems->where('product.store_id', $store->id)->map(function($item) {
+                    'items_count' => $storeItems->count(),
+                    'items' => $storeItems->map(function($item) {
                         return [
                             'id' => $item->id,
                             'product_name' => $item->product_name,
@@ -115,6 +127,8 @@ class OrderController extends Controller
                             'attributes' => $item->attributes ?? [],
                             'quantity' => $item->quantity,
                             'total' => $item->total,
+                            'order_id' => $item->order_id,
+                            'product_id' => $item->product_id,
                             'product' => $item->product ? [
                                 'id' => $item->product->id,
                                 'name' => $item->product->name,
@@ -122,13 +136,13 @@ class OrderController extends Controller
                                 'image' => $item->product->image
                             ] : null
                         ];
-                    })
+                    })->values()
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'orders' => $formattedOrders,
+                'orders' => $formattedOrders->values()->all(), // ✅ S'assurer que c'est un tableau indexé
                 'pagination' => [
                     'current_page' => $orders->currentPage(),
                     'last_page' => $orders->lastPage(),

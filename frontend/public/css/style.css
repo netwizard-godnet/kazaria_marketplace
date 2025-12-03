@@ -1,0 +1,609 @@
+*{
+    font-family: "Open Sans", sans-serif;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* Réduction globale de la taille des textes */
+html {
+    font-size: 14.4px !important; /* 0.9rem */
+}
+
+body {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des titres */
+h1, .h1 {
+    font-size: 2rem !important; /* 32px - Augmenté */
+}
+
+h2, .h2 {
+    font-size: 1.75rem !important; /* 28px - Augmenté */
+}
+
+h3, .h3 {
+    font-size: 1.5rem !important; /* 24px - Augmenté */
+}
+
+h4, .h4 {
+    font-size: 1.125rem !important; /* 18px - Augmenté */
+}
+
+h5, .h5 {
+    font-size: 1rem !important; /* 16px - Augmenté */
+}
+
+h6, .h6 {
+    font-size: 0.9375rem !important; /* 15px - Augmenté */
+}
+
+/* Réduction des classes Bootstrap font-size */
+.fs-1 {
+    font-size: 2rem !important; /* 32px - Augmenté */
+}
+
+.fs-2 {
+    font-size: 1.75rem !important; /* 28px - Augmenté */
+}
+
+.fs-3 {
+    font-size: 1.5rem !important; /* 24px - Augmenté */
+}
+
+.fs-4 {
+    font-size: 1.125rem !important; /* 18px - Augmenté */
+}
+
+.fs-5 {
+    font-size: 1rem !important; /* 16px - Augmenté */
+}
+
+.fs-6 {
+    font-size: 0.9375rem !important; /* 15px - Augmenté */
+}
+
+.fs-7 {
+    font-size: 0.875rem !important; /* 14px - Augmenté */
+}
+
+/* Réduction des paragraphes et textes */
+p {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+span, a, li, td, th, label, input, textarea, select, button {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des petits textes */
+small, .small {
+    font-size: 0.8rem !important; /* Légèrement plus petit */
+}
+
+/* Réduction des textes dans les cartes et cards */
+.card-title {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+.card-text {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des textes dans les boutons */
+.btn {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+.btn-sm {
+    font-size: 0.85rem !important; /* Légèrement plus petit */
+}
+
+.btn-lg {
+    font-size: 0.95rem !important; /* Légèrement plus grand */
+}
+
+/* Réduction des textes dans les formulaires */
+.form-label {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+.form-control, .form-select {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des textes dans les badges */
+.badge {
+    font-size: 0.8rem !important; /* Légèrement plus petit */
+}
+
+/* Réduction des textes dans les alertes */
+.alert {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des textes dans les tables */
+.table {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+.table th {
+    font-size: 0.85rem !important; /* Légèrement plus petit */
+}
+
+.table td {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des textes dans les navs */
+.nav-link {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+/* Réduction des textes dans les breadcrumbs */
+.breadcrumb {
+    font-size: 0.85rem !important; /* Légèrement plus petit */
+}
+
+/* Réduction des textes dans les modals */
+.modal-title {
+    font-size: 1rem !important; /* Légèrement plus grand pour le titre */
+}
+
+.modal-body {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+:root {
+  --main-color: #f04e27;
+  --black-color : #000000;
+  --blue-color: #204fa1;
+  --blue-color-rgb: 32, 79, 161;
+
+  /* Override Bootstrap primary palette with brand blue */
+  --bs-primary: var(--blue-color);
+  --bs-primary-rgb: var(--blue-color-rgb);
+  --bs-link-color: var(--blue-color);
+  --bs-link-hover-color: #1a3f81;
+  --bs-primary-bg-subtle: rgba(var(--blue-color-rgb), 0.12);
+  --bs-primary-border-subtle: rgba(var(--blue-color-rgb), 0.3);
+  --bs-primary-text: #ffffff;
+}
+
+/* LOGO SIZE */
+.logo-size-header{
+    max-width: 150px;
+}
+.logo-size-footer{
+    max-width: 150px;
+}
+
+/* FONTS SIZE */
+.fs-8{
+    font-size: 11px;
+}
+
+/* Réduction de la taille des prix */
+.fs-3.orange-color,
+.fs-3.text-danger {
+    font-size: 1rem !important; /* Légèrement plus grand */
+}
+
+.fs-6.text-decoration-line-through {
+    font-size: 0.85rem !important; /* Légèrement plus petit */
+}
+
+.fs-7.text-danger,
+.fs-7.orange-color {
+    font-size: 0.85rem !important; /* Légèrement plus petit */
+}
+
+.fs-8.text-decoration-line-through {
+    font-size: 0.8rem !important; /* Plus petit */
+}
+
+/* Réduction des prix dans le panier et autres endroits */
+p.fw-bold.orange-color,
+span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+.fs-4.orange-color {
+    font-size: 0.95rem !important; /* Légèrement plus grand */
+}
+
+.fs-5.orange-color {
+    font-size: 0.9rem !important; /* 0.9rem */
+}
+
+.text-decoration-line-through.text-muted.small {
+    font-size: 0.8rem !important; /* Plus petit */
+}
+
+/* WIDTH */
+.width-100{
+    width: 100px;
+}
+.width-200{
+    width: 200px;
+}
+.width-300{
+    width: 300px;
+}
+.width-400{
+    width: 400px;
+}
+
+/* Écran de tablette (max 768px) */
+@media (max-width: 768px) {
+    .width-300{
+        width: 200px;
+    }
+    .width-400{
+        width: 300px;
+    }
+}
+
+/* Écran de téléphone (max 480px) */
+@media (max-width: 480px) {
+    .width-300{
+        width: 100%;
+    }
+    .width-400{
+        width: 100%;
+    }
+}
+
+/* COLORS */
+.orange-bg{
+    background-color: var(--main-color)!important;
+}
+.orange-color{
+    color: var(--main-color)!important;
+}
+.black-bg{
+    background-color: var(--black-color)!important;
+}
+.black-color{
+    color: var(--black-color)!important;
+}
+.blue-bg{
+    background-color: var(--blue-color)!important;
+}
+.blue-color{
+    color: var(--blue-color)!important;
+}
+
+/* MENUS */
+.header-menu > a:hover + div {
+    display: block!important;
+    transition: display 0.3s ease-in-out, height 0.5s ease;
+}
+.header-menu > a + div:hover {
+    display: block!important;
+    transition: display 0.3s ease-in-out, height 0.5s ease;
+}
+
+/* Z-INDEX */
+.z-index-5x{
+    z-index: 99999!important;
+}
+.z-index-6x{
+    z-index: 999999!important;
+}
+.z-index-7x{
+    z-index: 9999999!important;
+}
+.z-index-8x{
+    z-index: 99999999!important;
+}
+.z-index-9x{
+    z-index: 999999999!important;
+}
+
+/* HEIGHT */
+.h-100px{
+    height: 100px;
+}
+.h-200px{
+    height: 200px;
+}
+.h-300px{
+    height: 300px;
+}
+.h-400px{
+    height: 400px;
+}
+.h-500px{
+    height: 500px;
+}
+
+/* Écran de téléphone (max 480px) */
+@media (max-width: 480px) {
+    .h-300px{
+    height: 100%;
+    }
+    .h-400px{
+    height: 100%;
+    }
+    .h-500px{
+        height: 400px;
+    }
+}
+
+/* PRODUCT NAME TRUNCATION */
+.product-name-truncate {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.4; /* Hauteur de ligne consistante */
+}
+
+/* Variante pour les titres de produits dans les cartes */
+.product-card .card-title,
+.card-title.text-truncate {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.4;
+}
+
+/* Garantir que tous les noms de produits dans les cartes sont tronqués */
+.product-card p.orange-color,
+.product-card h6 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* ACTIVITY STYLES */
+.activity-item {
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+    background-color: rgba(240, 78, 39, 0.05);
+    border-radius: 8px;
+    padding: 12px !important;
+    margin: 0 -12px 12px -12px !important;
+}
+
+.activity-item:last-child {
+    border-bottom: none !important;
+}
+
+/* POPUP LAUNCHER STYLES */
+.popup-launcher-modal .modal-dialog {
+    height: 500px;
+}
+
+.popup-launcher-modal .modal-content {
+    border-radius: 0;
+    height: 500px;
+    overflow: hidden;
+}
+
+.popup-launcher-modal .modal-body {
+    height: 100%;
+    overflow-y: scroll!important;
+    overflow-x: hidden!important;
+}
+
+.popup-launcher-modal .popup-launcher-image-wrapper {
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Image fixe pour les layouts horizontaux */
+.popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+}
+
+.popup-launcher-modal img[data-popup-image] {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+
+/* Layout superposé (overlay) */
+.popup-launcher-modal [data-popup-row].layout-stacked {
+    position: relative;
+    height: 100%;
+    min-height: 400px;
+}
+
+.popup-launcher-modal [data-popup-row].layout-stacked .popup-launcher-image-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-wrapper] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    background: transparent;
+}
+
+.popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-inner] {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+.popup-launcher-modal .row:not(.flex-column) {
+    height: 100%;
+}
+
+.popup-launcher-modal .row.flex-column {
+    height: 100%;
+}
+
+/* Pour la disposition top-bottom, permettre le scroll vertical sur le modal */
+.popup-launcher-modal .modal-content.layout-top-bottom,
+.popup-launcher-modal .modal-body.layout-top-bottom {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Pour top-bottom, l'image doit pouvoir scroller horizontalement */
+.popup-launcher-modal .layout-top-bottom .popup-launcher-image-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.popup-launcher-modal .layout-top-bottom img[data-popup-image] {
+    width: auto !important;
+    max-width: none !important;
+    height: 100% !important;
+}
+
+.popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-launcher-modal [data-popup-content-inner] {
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-launcher-modal .popup-cta-btn {
+    background-color: var(--main-color) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.popup-launcher-modal .popup-cta-btn:hover {
+    background-color: #d93e1f !important;
+    color: white !important;
+}
+
+@media (max-width: 768px) {
+    .popup-launcher-modal .modal-content {
+        border-radius: 14px;
+    }
+
+    .popup-launcher-modal .popup-launcher-image-wrapper {
+        min-height: 200px;
+        max-height: 250px;
+    }
+
+    .popup-launcher-modal .row {
+        min-height: auto;
+    }
+
+    .popup-launcher-modal .col-md-5 {
+        min-height: auto;
+    }
+
+    .popup-launcher-modal .col-md-5 .p-4 {
+        padding: 1.5rem !important;
+    }
+}
+
+/* -------- Category Filters -------- */
+.category-filters {
+    background: var(--blue-color);
+    color: #fff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.category-filters hr {
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.category-filters .filter-title {
+    font-size: 0.9rem; /* 0.9rem */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+}
+
+.category-filters .filter-label {
+    font-size: 0.9rem; /* 0.9rem */
+}
+
+.category-filters .btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem; /* 0.9rem */
+    border-radius: 999px;
+}
+
+.category-filters .form-check-input:checked {
+    background-color: #fff;
+    border-color: #fff;
+}
+
+.category-filters .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+}
+
+.filter-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.filter-reset-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem; /* 0.9rem */
+}
+
+/* Titres de section */
+.section-title {
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
+    color: #333333 !important;
+}
+
+.filter-offcanvas {
+    z-index: 999999999 !important;
+}
+
+@media (max-width: 991.98px) {
+    .filter-offcanvas {
+        width: min(420px, 90vw);
+    }
+}

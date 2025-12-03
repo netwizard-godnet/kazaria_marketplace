@@ -436,28 +436,52 @@
                 formData.forEach((value, key) => {object[key] = value});
 
                     try {
-                        const response = await fetch('/api/verify-login-code', {
+                        // Utiliser la route web au lieu de /api/ pour avoir accès aux sessions
+                        const response = await fetch('{{ route("web.verify-login-code") }}', {
                             method: 'POST',
-                    headers: {
+                            headers: {
                                 'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify(object)
-                });
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'include', // CRITIQUE : inclure les cookies de session
+                            body: JSON.stringify(object)
+                        });
 
-                const data = await response.json();
+                        const data = await response.json();
                         
-                if (data.success) {
+                        if (data.success) {
                             showMessage('codeAlert', 'Connexion réussie ! Redirection...', 'success');
                             
-                            // Rediriger vers la page d'accueil avec session
-                            setTimeout(() => {
-                                // Ajouter un paramètre de cache-busting pour forcer le rechargement
-                                const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
-                                // Utiliser replace pour éviter de garder la page d'auth dans l'historique
-                                window.location.replace(redirectUrl);
-                            }, 1000);
+                            console.log('✅ Authentification réussie', data);
+                            console.log('Session ID:', data.session_id);
+                            
+                            // Vérifier immédiatement si on peut accéder à une route protégée
+                            // pour confirmer que la session fonctionne
+                            fetch('{{ route("accueil") }}', {
+                                method: 'GET',
+                                credentials: 'include',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            }).then(res => {
+                                console.log('✅ Test accès accueil - Status:', res.status);
+                                // Rediriger après le test
+                                setTimeout(() => {
+                                    const redirectUrl = data.redirect || '{{ route("accueil") }}';
+                                    const separator = redirectUrl.includes('?') ? '&' : '?';
+                                    const finalUrl = redirectUrl + separator + 'login=' + Date.now() + '&t=' + Math.random();
+                                    console.log('🔄 Redirection vers:', finalUrl);
+                                    window.location.href = finalUrl;
+                                }, 500);
+                            }).catch(err => {
+                                console.error('❌ Erreur test accueil:', err);
+                                // Rediriger quand même
+                                setTimeout(() => {
+                                    const redirectUrl = data.redirect || '{{ route("accueil") }}';
+                                    window.location.href = redirectUrl;
+                                }, 500);
+                            });
                         } else {
                             showMessage('codeAlert', data.message || 'Code invalide ou expiré', 'danger');
                         }

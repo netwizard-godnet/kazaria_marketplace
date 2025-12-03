@@ -478,7 +478,8 @@ use Illuminate\Support\Str;
                                         <div class="col-md-4">
                                             <label class="form-label small">Filtrer par statut</label>
                                             <select class="form-select form-select-sm" id="filterStatus">
-                                                <option value="">Commandes en cours (par défaut)</option>
+                                                <option value="">Toutes les commandes (par défaut)</option>
+                                                <option value="pending">Commandes en cours</option>
                                                 <option value="pending">En cours de validation</option>
                                                 <option value="processing">En cours de livraison</option>
                                                 <option value="delivered">Livrée</option>
@@ -1196,10 +1197,14 @@ use Illuminate\Support\Str;
         // Charger les commandes de l'utilisateur
         async function loadOrders() {
             try {
-                const response = await fetch('/api/orders/my-orders', {
+                // Utiliser la route web qui supporte les sessions
+                const response = await fetch('{{ route("web.orders.my-orders") }}', {
+                    method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'include' // Important pour les cookies de session
                 });
 
                 if (!response.ok) {
@@ -1227,17 +1232,26 @@ use Illuminate\Support\Str;
                 // Filtrer les commandes
                 let filteredOrders = data.orders || [];
                 
-                // Par défaut, afficher seulement les commandes en cours (pending ou processing)
-                if (!filterStatus) {
-                    // Aucun filtre sélectionné = afficher uniquement les commandes en cours
-                    filteredOrders = filteredOrders.filter(order => order.status === 'pending' || order.status === 'processing');
+                // Log pour debug
+                console.log('Total commandes reçues:', filteredOrders.length);
+                console.log('Commandes reçues:', filteredOrders);
+                
+                // Par défaut, afficher TOUTES les commandes (pas seulement celles en cours)
+                if (!filterStatus || filterStatus === '') {
+                    // Aucun filtre sélectionné = afficher toutes les commandes
+                    filteredOrders = data.orders || [];
                 } else if (filterStatus === 'all') {
                     // Afficher toutes les commandes
                     filteredOrders = data.orders || [];
+                } else if (filterStatus === 'pending') {
+                    // Afficher uniquement les commandes en attente
+                    filteredOrders = filteredOrders.filter(order => order.status === 'pending' || order.status === 'processing');
                 } else if (filterStatus) {
                     // Filtrer par statut spécifique
-                    filteredOrders = filteredOrders.filter(order => order.status === filterStatus);
+                    filteredOrders = filteredOrders.filter(order => order.status === filterStatus || order.payment_status === filterStatus);
                 }
+                
+                console.log('Commandes filtrées:', filteredOrders.length);
                 
                 if (filterDate) {
                     const now = new Date();

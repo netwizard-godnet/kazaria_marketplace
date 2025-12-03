@@ -165,17 +165,32 @@ class CartController extends Controller
             ->first();
 
         if ($existingItem) {
+            // Si le prix est 0 ou null, mettre à jour avec le prix actuel du produit
+            if (!$existingItem->price || $existingItem->price == 0) {
+                $existingItem->price = $product->price;
+                $existingItem->save();
+            }
             $existingItem->increment('quantity', $quantity);
         } else {
             // S'assurer que les attributs sont toujours stockés comme un objet, même s'ils sont vides
             // Convertir en objet si c'est un tableau
             $attributesToStore = empty($attributes) ? (object)[] : (is_array($attributes) ? (object)$attributes : $attributes);
             
+            // Déterminer le prix à utiliser (prix actuel du produit)
+            // Utiliser le prix promo si disponible, sinon le prix normal
+            $priceToUse = $product->price;
+            if ($product->old_price && $product->old_price > $product->price) {
+                // Si old_price est plus élevé, c'est probablement une promotion
+                // Dans ce cas, utiliser le prix actuel (qui est le prix promo)
+                $priceToUse = $product->price;
+            }
+            
             CartItem::create([
                 'product_id' => $product->id,
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'quantity' => $quantity,
+                'price' => $priceToUse, // ✅ Ajouter le prix
                 'attributes' => $attributesToStore,
             ]);
         }
@@ -295,10 +310,10 @@ class CartController extends Controller
             }
             $cartItem->save();
         } else {
-            // Déterminer le prix à utiliser (prix promo si disponible)
-            $priceToUse = ($product->old_price && $product->old_price < $product->price) 
-                ? $product->old_price 
-                : $product->price;
+            // Déterminer le prix à utiliser (prix actuel du produit)
+            // Le prix actuel ($product->price) est toujours le bon prix à utiliser
+            // old_price est le prix avant réduction, donc on utilise toujours price
+            $priceToUse = $product->price;
             
             // Créer un nouvel article
             // S'assurer que les attributs sont toujours un objet, jamais null

@@ -1,0 +1,379 @@
+@php
+use Illuminate\Support\Facades\Storage;
+use App\Models\Banner;
+@endphp
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="user-logged-in" content="{{ auth()->check() ? 'true' : 'false' }}">
+        {{-- Composant SEO --}}
+        <x-seo 
+            :title="$seoTitle ?? ($settings['site_name'] ?? 'KAZARIA') . ' - Votre marketplace en ligne en Côte d\'Ivoire'"
+            :description="$seoDescription ?? ($settings['site_description'] ?? 'Découvrez une large gamme de produits électroniques, électroménagers et accessoires sur KAZARIA. Livraison gratuite, paiement sécurisé et satisfaction garantie.')"
+            :keywords="$seoKeywords ?? ($settings['site_keywords'] ?? 'e-commerce, marketplace, Côte d\'Ivoire, Abidjan, téléphones, électronique, électroménager, ordinateurs, livraison gratuite')"
+            :image="$seoImage ?? null"
+            :url="$seoUrl ?? null"
+            :type="$seoType ?? 'website'"
+            :canonical="$seoCanonical ?? null"
+            :robots="$seoRobots ?? 'index,follow'"
+            :jsonLd="$seoJsonLd ?? null"
+        />
+
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <!-- Fontawesome Icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-(your integrity hash)" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <!-- Bootstrap Icons -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+        <!-- SLICK -->
+        <!-- <link rel="stylesheet" href="{{ asset('slick/slick.css') }}">
+        <link rel="stylesheet" href="{{ asset('slick/slick-theme.css') }}"> -->
+        <!-- CUSTOM CSS -->
+        <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+        <!-- <link rel="stylesheet" href="{{ asset('css/profil.css') }}"> -->
+        <link rel="stylesheet" href="{{ asset('css/carousel.css') }}">
+        @stack('styles')
+        
+        <!-- Styles pour l'autocomplétion -->
+        <style>
+            .suggestion-item {
+                transition: background-color 0.2s ease;
+            }
+            
+            .suggestion-item:hover {
+                background-color: #f8f9fa !important;
+            }
+            
+            .suggestion-item:last-child {
+                border-bottom: none !important;
+            }
+            
+            #searchSuggestions {
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                border: 1px solid #dee2e6;
+            }
+            
+            #searchSuggestions mark {
+                background-color: #fff3cd;
+                padding: 0;
+                border-radius: 2px;
+            }
+            
+            .cursor-pointer {
+                cursor: pointer;
+            }
+            
+            #clearSearch {
+                right: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 10;
+            }
+        </style>
+        <!-- FONTS -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    </head>
+
+    <body>
+        @includeWhen(config('kazar_ai.enabled'), 'components.kazar-ai')
+        @php
+            $headerGifBanner = Banner::getHeaderGif();
+        @endphp
+        <div class="z-index-9x" style="position: sticky; top: 0;">
+        <!-- Header Banner -->
+        <div class="container-fluid p-0 {{ $headerGifBanner->visibility_classes ?? '' }}">
+            @if($headerGifBanner && $headerGifBanner->image_url)
+                @if($headerGifBanner->link_url)
+                    <a href="{{ $headerGifBanner->link_url }}" target="_blank" rel="noopener" class="d-block">
+                        <img src="{{ $headerGifBanner->image_url }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+                    </a>
+                @else
+                    <img src="{{ $headerGifBanner->image_url }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+                @endif
+            @else
+            <img src="{{ asset('images/banner.gif') }}" alt="Banner KAZARIA" class="w-100" style="max-height: 60px; object-fit: cover; display: block;">
+            @endif
+        </div>
+        <header class="z-index-9x shadow d-none d-sm-block">
+            <div class="container-fluid blue-bg py-0 position-relative">
+                <nav class="navbar navbar-expand-lg py-0">
+                    <div class="container-fluid py-0">
+                        <a class="navbar-brand fw-bolder text-white fs-2" href="{{ route('accueil') }}">
+                            <img src="{{ asset('storage/' . ($settings['site_logo'] ?? 'logo.png')) }}" class="logo-size-header" alt="{{ $settings['site_name'] ?? 'KAZARIA' }}">
+                        </a>
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                            <form class="d-flex ms-auto position-relative" action="{{ route('search_product') }}" method="GET" role="search" id="searchForm">
+                                <div class="bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
+                                    <div class="dropdown">
+                                        <button class="btn dropdown-toggle fs-8" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Toutes les catégories
+                                        </button>
+                                        <ul class="bg-light dropdown-menu">
+                                            <li><a class="dropdown-item fs-8" href="{{ route('search_product') }}">Toutes les catégories</a></li>
+                                            @if(isset($allCategories))
+                                                @foreach($allCategories as $category)
+                                                <li>
+                                                    <a class="dropdown-item d-flex align-items-center fs-8" href="{{ route('categorie', $category->slug) }}">
+                                                        @if($category->image && !empty($category->image))
+                                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" style="width: 15px; height: 15px; object-fit: contain;" class="me-2">
+                                                        @endif
+                                                        {{ $category->name }}
+                                                    </a>
+                                                </li>
+                                                @endforeach
+                                            @endif
+                                        </ul>
+                                    </div>
+                                    <div class="position-relative">
+                                        <input class="form-control py-2 px-4 me-2 border-0 rounded-0 width-400 fs-8" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="searchInput" autocomplete="off"/>
+                                        <div id="searchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none fs-8" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
+                                            <!-- Les suggestions apparaîtront ici -->
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm text-muted position-absolute end-0 me-2 fs-8" id="clearSearch" style="display: none;">
+                                        <i class="fa-solid fa-times"></i>
+                                    </button>
+                                </div>
+                                <button class="btn orange-bg rounded-1 text-white text-uppercase fw-bolder fs-8" type="submit">
+                                Rechercher
+                                </button>
+                            </form>
+                            <ul class="navbar-nav">
+                                <li class="nav-item d-flex align-items-center justify-content-center">
+                                    <a class="nav-link position-relative" aria-current="page" href="#" onclick="goToFavorites(event)">
+                                        <i class="fa-solid fa-heart text-white fa-2x"></i>
+                                        <span class="position-absolute bottom-0 end-0 orange-bg px-2 rounded-2 fw-lighter fs-8 text-white favorites-count d-none">0</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item d-flex align-items-center justify-content-center">
+                                    <a class="nav-link position-relative" aria-current="page" href="{{ route('product-cart') }}">
+                                        <i class="fa-solid fa-shopping-cart text-white fa-2x"></i>
+                                        <span class="position-absolute bottom-0 end-0 orange-bg px-2 rounded-2 fw-lighter fs-8 text-white cart-count">0</span>
+                                    </a>
+                                </li>
+                                <li id="auth-section" class="nav-item d-flex align-items-center justify-content-center">
+                                    @auth
+                                        <div class="dropdown">
+                                            <button class="nav-link d-flex align-items-center btn btn-link text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
+                                                <i class="fa-solid fa-user text-white fa-2x"></i>
+                                                <div class="vstack text-white ms-1">
+                                                    <span class="fs-8 fw-bold fw-lighter">{{ Auth::user()->prenoms ?? 'Utilisateur' }}</span>
+                                                    <span class="fs-8 fw-lighter">Connecté(e)<i class="fa-solid fa-chevron-down text-white"></i></span>
+                                                </div>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item fs-8" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
+                                                @if(Auth::user()->is_seller)
+                                                    @if(Auth::user()->store)
+                                                        <li><a class="dropdown-item fs-8" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
+                                                    @else
+                                                        <li><a class="dropdown-item fs-8" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
+                                                    @endif
+                                                @endif
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li class="">
+                                                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item bg-danger text-white fs-8"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    @else
+                                        <a class="nav-link d-flex align-items-center" aria-current="page" href="/authentification">
+                                            <i class="fa-solid fa-user text-white fa-2x"></i>
+                                            <div class="vstack text-white ms-1">
+                                                <span class="fs-8 fw-lighter">Connexion</span>
+                                                <span class="fs-8 fw-lighter">Inscription</span>
+                                            </div>
+                                        </a>
+                                    @endauth
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+                <hr class="text-white my-1">
+                <div class="row gx-2 py-0">
+                    <!--  -->
+                    <div class="col-md-8 hstack gap-1">
+                        <div class="d-flex align-items-center justify-content-start">
+                            <a class="btn btn-sm orange-bg text-white fs-8 text-nowrap" href="{{ route('boutique_officielle') }}">
+                            Boutiques Officielles <i class="fa-solid fa-certificate"></i>
+                            </a>
+                        </div>
+                        @if(isset($allCategories))
+                            @foreach($allCategories->take(4) as $menuCategory)
+                        <div class="header-menu d-flex align-items-center justify-content-start">
+                                <a class="btn btn-sm text-white fs-8 text-nowrap" href="{{ route('categorie', $menuCategory->slug) }}">
+                                    @if($menuCategory->image && !empty($menuCategory->image))
+                                    <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" style="width: 20px; height: 20px; object-fit: contain;" class="me-1">
+                                    @endif
+                                    {{ $menuCategory->name }} <i class="fa-solid fas fa-chevron-down fs-8"></i>
+                                </a>
+                                <div class="w-100 bg-light py-2 position-absolute top-100 start-0 z-index-9x d-none container-fluid">
+                                <div class="row g-1">
+                                        @if($menuCategory->subcategories->count() > 0)
+                                        @foreach($menuCategory->subcategories->chunk(ceil($menuCategory->subcategories->count() / 4)) as $chunk)
+                                    <div class="col-md-2">
+                                        <div class="list-group">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0 d-none fs-8">
+                                                    @if($menuCategory->image && !empty($menuCategory->image))
+                                                    <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" alt="{{ $menuCategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
+                                                    @endif
+                                                    {{ $menuCategory->name }}
+                                                </a>
+                                                @foreach($chunk as $subcat)
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}?subcategory={{ $subcat->slug }}" class="list-group-item list-group-item-action fs-8">
+                                                    @if($subcat->image && !empty($subcat->image))
+                                                    <img src="{{ str_starts_with($subcat->image, 'http') ? $subcat->image : (str_starts_with($subcat->image, 'images/') ? asset($subcat->image) : Storage::url($subcat->image)) }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
+                                                    @endif
+                                                    {{ $subcat->name }}
+                                                </a>
+                                                @endforeach
+                                    </div>
+                                        </div>
+                                        @endforeach
+                                        @else
+                                        <div class="col-md-12">
+                                            <div class="list-group">
+                                                <a href="{{ route('categorie', $menuCategory->slug) }}" class="list-group-item list-group-item-action orange-bg text-white rounded-0">
+                                                    @if($menuCategory->image && !empty($menuCategory->image))
+                                                    <img src="{{ str_starts_with($menuCategory->image, 'http') ? $menuCategory->image : (str_starts_with($menuCategory->image, 'images/') ? asset($menuCategory->image) : Storage::url($menuCategory->image)) }}" alt="{{ $menuCategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
+                                                    @endif
+                                                    {{ $menuCategory->name }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        @endif
+                    </div>
+                    
+                    <div class="col-md-1">
+                        
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center justify-content-start">
+                            @auth
+                                @if(Auth::user()->is_seller)
+                                    @if(Auth::user()->store)
+                                        <a href="{{ route('store.dashboard') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                            <i class="fa-solid fa-store me-1"></i>Ma boutique
+                                        </a>
+                                    @else
+                                        <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                            <i class="fa-solid fa-plus me-1"></i>Créer ma boutique
+                                        </a>
+                                    @endif
+                                @else
+                                    <a href="{{ route('store.create') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                        <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
+                                    </a>
+                                @endif
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-sm fs-8 text-white rounded-0 border-end pe-3" style="border-right-color:var(--main-color)!important;">
+                                    <i class="fa-solid fa-store me-1"></i>Vendez sur KAZARIA
+                                </a>
+                            @endauth
+                            @auth
+                                <a href="{{ route('profil') }}#orders" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
+                                    <i class="fa-solid fa-box me-1"></i>Suivre ma commande
+                                </a>
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-sm fs-8 text-white rounded-0 ps-3">
+                                    <i class="fa-solid fa-box me-1"></i>Suivre ma commande
+                                </a>
+                            @endauth
+                        </div>
+                    </div>
+                    <!--  -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Header -->
+        <header class="z-index-9x shadow d-sm-none" style="position: sticky; top: 0;">
+            <div class="container-fluid blue-bg py-2 position-relative">
+                <nav class="py-0">
+                    <div class="vstack gap-2">
+                        <div class="w-100 d-flex align-items-center justify-content-between">
+                            <a class="" href="{{ route('accueil') }}">
+                                <img src="{{ asset('storage/' . ($settings['site_logo'] ?? 'logo.png')) }}" class="logo-size-header" alt="{{ $settings['site_name'] ?? 'KAZARIA' }}">
+                            </a>
+                            <ul class="d-flex align-items-center justify-content-evenly m-0">
+                                <li class="nav-item px-1 d-flex align-items-center justify-content-center me-2">
+                                    <a class="nav-link position-relative" aria-current="page" href="{{ route('product-cart') }}">
+                                        <i class="fa-solid fas fa-shopping-cart text-white fa-2x"></i>
+                                        <span class="position-absolute bottom-0 end-0 bg-danger px-2 rounded-2 fw-lighter fs-8 text-white cart-count">0</span>
+                                    </a>
+                                </li>
+                                @auth
+                                    <div class="dropdown">
+                                        <button class="nav-link d-flex align-items-center btn btn-link text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="userDropdown">
+                                            <i class="fa-solid fa-user-check text-white fa-2x"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="{{ route('profil') }}"><i class="fa-solid fa-user me-2 orange-color"></i>Mon profil</a></li>
+                                            @if(Auth::user()->is_seller)
+                                                @if(Auth::user()->store)
+                                                    <li><a class="dropdown-item" href="{{ route('store.dashboard') }}"><i class="fa-solid fa-store me-2 orange-color"></i>Ma boutique</a></li>
+                                                @else
+                                                    <li><a class="dropdown-item" href="{{ route('store.create') }}"><i class="fa-solid fa-plus me-2 orange-color"></i>Créer ma boutique</a></li>
+                                                @endif
+                                            @endif
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li class="">
+                                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="dropdown-item bg-danger text-white"><i class="fa-solid fa-sign-out-alt me-2"></i>Déconnexion</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                @else
+                                <li class="nav-item px-1 d-flex align-items-center justify-content-center">
+                                    <a class="nav-link d-flex align-items-center" aria-current="page" href="/authentification">
+                                        <i class="fa-solid fa-user text-white fa-2x"></i>
+                                    </a>
+                                </li>
+                                @endauth
+                            </ul>
+                        </div>
+                        <div class="">
+                            <form class="w-100 d-flex justify-content-center position-relative" action="{{ route('search_product') }}" method="GET" role="search" id="mobileSearchForm">
+                                <div class="w-100 bg-light d-flex align-items-center justify-content-between rounded-2 me-2 position-relative">
+                                    <div class="w-100 position-relative">
+                                        <input class="form-control px-4 me-2 border-0 width-400" type="search" name="q" placeholder="Je veux acheter..." aria-label="Search" id="mobileSearchInput" autocomplete="off"/>
+                                        <div id="mobileSearchSuggestions" class="position-absolute w-100 bg-white border rounded shadow-lg d-none" style="top: 100%; left: 0; z-index: 1000; max-height: 300px; overflow-y: auto;">
+                                            <!-- Les suggestions apparaîtront ici -->
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm text-muted position-absolute end-0 me-2" id="mobileClearSearch" style="display: none;">
+                                        <i class="fa-solid fa-times"></i>
+                                    </button>
+                                </div>
+                                <button class="btn orange-bg text-white text-uppercase fw-bolder" type="submit">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </header>
+        <!-- Header end -->
+        </div>

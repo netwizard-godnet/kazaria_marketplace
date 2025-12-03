@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('ai_interactions', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->string('session_id', 100)->nullable();
+            $table->string('type', 20); // click, add_to_cart, purchase
+            $table->string('source', 20)->default('ai');
+            $table->integer('weight')->default(1);
+            $table->timestamps();
+
+            $table->index(['product_id', 'type']);
+            $table->index(['user_id']);
+            $table->index(['session_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ai_interactions');
+    }
+};
+
+

@@ -366,15 +366,54 @@ class OrderController extends Controller
             ], 401);
         }
         
-        $orders = Order::forUser($user->id)
-            ->recent()
-            ->with('items')
-            ->get();
-        
-        return response()->json([
-            'success' => true,
-            'orders' => $orders
-        ]);
+        try {
+            // Compter le total de commandes pour cet utilisateur
+            $totalOrders = Order::forUser($user->id)->count();
+            \Log::info("Total commandes pour user {$user->id} ({$user->email}): {$totalOrders}");
+            
+            $orders = Order::forUser($user->id)
+                ->recent()
+                ->with('items.product')
+                ->get();
+            
+            \Log::info("Commandes chargées: " . $orders->count());
+            
+            $orders = $orders->map(function ($order) {
+                    return [
+                        'id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'status' => $order->status,
+                        'payment_status' => $order->payment_status,
+                        'total' => (float) $order->total,
+                        'subtotal' => (float) $order->subtotal,
+                        'shipping_cost' => (float) $order->shipping_cost,
+                        'created_at' => $order->created_at->toISOString(),
+                        'created_at_formatted' => $order->created_at->format('d/m/Y H:i'),
+                        'items_count' => $order->items->count(),
+                        'items' => $order->items->map(function ($item) {
+                            return [
+                                'id' => $item->id,
+                                'product_name' => $item->product_name,
+                                'quantity' => $item->quantity,
+                                'price' => (float) $item->price,
+                                'subtotal' => (float) $item->total,
+                                'product_image' => $item->product_image ? asset('storage/' . $item->product_image) : ($item->product->image ? asset('storage/' . $item->product->image) : null),
+                            ];
+                        }),
+                    ];
+                });
+            
+            return response()->json([
+                'success' => true,
+                'orders' => $orders
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors du chargement des commandes: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des commandes: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

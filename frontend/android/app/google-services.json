@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1020161722823",
+    "project_id": "kazaria-marketplace",
+    "storage_bucket": "kazaria-marketplace.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020161722823:android:b29326bbea47a20536b1e2",
+        "android_client_info": {
+          "package_name": "com.example.kazaria_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI1fAJcLh49fOWYp8sYvXJDcU053c4-ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

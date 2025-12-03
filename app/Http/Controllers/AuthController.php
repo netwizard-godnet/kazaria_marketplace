@@ -175,27 +175,106 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Marquer le code comme utilisé
-        $authCode->markAsUsed();
+        // Détecter si c'est une requête API (mobile) ou web
+        // Les routes web ont toujours accès aux sessions via le middleware 'web'
+        // Les routes API n'ont pas de sessions et utilisent des tokens
+        $isApiRoute = $request->is('api/*');
+        
+        // Vérifier si c'est une vraie app mobile
+        $userAgent = $request->header('User-Agent', '');
+        $isMobileApp = strpos($userAgent, 'Dart') !== false 
+            || strpos($userAgent, 'Flutter') !== false
+            || $request->header('X-Mobile-App') === 'true';
+        
+        // Pour les routes API mobiles, utiliser les tokens Sanctum (pas de session)
+        if ($isApiRoute && $isMobileApp) {
+            try {
+                // Créer le token AVANT de marquer le code comme utilisé
+                $token = $user->createToken('mobile-app')->plainTextToken;
+                
+                // Marquer le code comme utilisé seulement après succès
+                $authCode->markAsUsed();
 
-        // Régénérer l'ID de session AVANT le login pour éviter les problèmes
-        request()->session()->regenerate();
-        
-        // Créer une session web persistante
-        Auth::login($user, true);
-        
-        // Régénérer le token CSRF
-        request()->session()->regenerateToken();
-        
-        // Forcer la sauvegarde de la session
-        request()->session()->save();
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'user' => array_merge(
+                        $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
+                        ['has_store' => $user->store()->exists()]
+                    )
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur création token dans verifyLoginCode: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la création du token: ' . $e->getMessage()
+                ], 500);
+            }
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Connexion réussie',
-            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
-            'redirect' => route('accueil')
-        ]);
+        // Route web : utiliser les sessions (route web a toujours accès aux sessions)
+        try {
+            // La route web a toujours accès aux sessions via le middleware 'web'
+            // Régénérer la session AVANT le login pour éviter les problèmes
+            $request->session()->regenerate();
+            
+            // Connecter l'utilisateur avec "remember" pour une session persistante
+            Auth::login($user, true);
+            
+            // Régénérer le token CSRF
+            $request->session()->regenerateToken();
+            $request->session()->save();
+
+            // Marquer le code comme utilisé après succès
+            $authCode->markAsUsed();
+
+            // Vérifier que l'utilisateur est bien connecté
+            \Log::info('Utilisateur connecté via session web: ' . Auth::id());
+            \Log::info('Session ID: ' . $request->session()->getId());
+            \Log::info('Auth check: ' . (Auth::check() ? 'true' : 'false'));
+
+            // Si c'est une requête AJAX, retourner JSON pour redirection JavaScript
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
+                    'redirect' => route('accueil'),
+                    'authenticated' => Auth::check(),
+                    'session_id' => $request->session()->getId()
+                ]);
+            }
+            
+            // Sinon, redirection HTTP directe
+            return redirect()->route('accueil')
+                ->with('success', 'Connexion réussie ! Bienvenue ' . $user->prenoms);
+        } catch (\Exception $e) {
+            // Si la session échoue, utiliser un token comme fallback
+            \Log::warning('Erreur session dans verifyLoginCode, utilisation du token: ' . $e->getMessage());
+            
+            try {
+                $token = $user->createToken('web-app')->plainTextToken;
+                
+                // Marquer le code comme utilisé après succès
+                $authCode->markAsUsed();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
+                ]);
+            } catch (\Exception $tokenError) {
+                \Log::error('Erreur création token de fallback: ' . $tokenError->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la connexion: ' . $tokenError->getMessage()
+                ], 500);
+            }
+        }
     }
 
     /**
@@ -362,9 +441,14 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        $user = $request->user();
+        
         return response()->json([
             'success' => true,
-            'user' => $request->user()->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
+            'user' => array_merge(
+                $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
+                ['has_store' => $user->store()->exists()]
+            )
         ]);
     }
 

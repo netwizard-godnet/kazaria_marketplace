@@ -425,6 +425,112 @@ class StoreController extends Controller
     }
 
     /**
+     * API: Récupérer les informations complètes de la boutique (API - Tokens)
+     */
+    public function getStoreInfo(Request $request)
+    {
+        $user = $request->user();
+        $store = $user->store;
+
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Boutique non trouvée'
+            ], 404);
+        }
+
+        // Charger les relations nécessaires
+        $store->load(['category', 'subcategory']);
+
+        // Rafraîchir les données depuis la base
+        $store->refresh();
+
+        // Formater les données de la boutique
+        $storeData = [
+            'id' => $store->id,
+            'user_id' => $store->user_id,
+            'name' => $store->name,
+            'slug' => $store->slug,
+            'description' => $store->description,
+            'phone' => $store->phone,
+            'email' => $store->email,
+            'address' => $store->address,
+            'city' => $store->city,
+            'logo' => $store->logo ? asset('storage/' . $store->logo) : null,
+            'banner' => $store->banner ? asset('storage/' . $store->banner) : null,
+            'status' => $store->status,
+            'is_verified' => $store->is_verified,
+            'is_official' => $store->is_official ?? false,
+            'rating' => $store->rating ? (float) $store->rating : 0,
+            'reviews_count' => $store->reviews_count ?? 0,
+            'total_products' => $store->products()->count(),
+            'total_orders' => 0,
+            'total_sales' => $store->total_sales ?? 0,
+            'commission_rate' => $store->commission_rate ?? 0,
+            'social_links' => $this->parseJsonField($store->social_links),
+            'business_hours' => $this->parseJsonField($store->business_hours),
+            'created_at' => $store->created_at ? $store->created_at->toISOString() : null,
+            'updated_at' => $store->updated_at ? $store->updated_at->toISOString() : null,
+        ];
+
+        // Ajouter la catégorie si elle existe
+        if ($store->category) {
+            $storeData['category'] = [
+                'id' => $store->category->id,
+                'name' => $store->category->name,
+                'slug' => $store->category->slug,
+            ];
+            $storeData['category_id'] = $store->category->id;
+        }
+
+        // Ajouter la sous-catégorie si elle existe
+        if ($store->subcategory) {
+            $storeData['subcategory'] = [
+                'id' => $store->subcategory->id,
+                'name' => $store->subcategory->name,
+                'slug' => $store->subcategory->slug,
+            ];
+            $storeData['subcategory_id'] = $store->subcategory->id;
+        }
+
+        // Calculer le total des commandes
+        $storeProducts = $store->products()->pluck('id')->toArray();
+        if (!empty($storeProducts)) {
+            $storeData['total_orders'] = \App\Models\Order::whereHas('items', function($query) use ($storeProducts) {
+                $query->whereIn('product_id', $storeProducts);
+            })->count();
+        }
+
+        return response()->json([
+            'success' => true,
+            'store' => $storeData
+        ]);
+    }
+
+    /**
+     * Parser un champ JSON qui peut être une chaîne ou déjà un tableau
+     */
+    private function parseJsonField($value)
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        // Si c'est déjà un tableau, le retourner tel quel
+        if (is_array($value)) {
+            return $value;
+        }
+
+        // Si c'est une chaîne JSON, la décoder
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+        }
+
+        return [];
+    }
+
+    /**
      * API: Récupérer les statistiques de la boutique (API - Tokens)
      */
     public function getStats(Request $request)

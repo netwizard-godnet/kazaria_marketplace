@@ -1,0 +1,119 @@
+/* Pagination personnalisée */
+:root {
+    --kazaria-orange: #f04e26;
+    --kazaria-orange-dark: #e03d1a;
+    --kazaria-orange-light: #ff6b47;
+}
+
+.pagination .page-link {
+    color: var(--kazaria-orange);
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    color: #fff;
+    background-color: var(--kazaria-orange);
+    border-color: var(--kazaria-orange);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(240, 78, 38, 0.3);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--kazaria-orange);
+    border-color: var(--kazaria-orange);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(240, 78, 38, 0.4);
+    animation: pulse-orange 2s infinite;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Animation pour la page active */
+@keyframes pulse-orange {
+    0% { box-shadow: 0 2px 4px rgba(240, 78, 38, 0.4); }
+    50% { box-shadow: 0 2px 8px rgba(240, 78, 38, 0.6); }
+    100% { box-shadow: 0 2px 4px rgba(240, 78, 38, 0.4); }
+}
+
+/* Style pour les icônes dans la pagination */
+.pagination .page-link i {
+    font-size: 0.875rem;
+}
+
+/* Information de pagination */
+.pagination-info {
+    background: linear-gradient(135deg, #fff5f2 0%, #ffe8e1 100%);
+    border: 1px solid var(--kazaria-orange);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+    box-shadow: 0 2px 4px rgba(240, 78, 38, 0.1);
+}
+
+.pagination-info small {
+    color: var(--kazaria-orange);
+    font-weight: 500;
+}
+
+.pagination-info strong {
+    color: var(--kazaria-orange-dark);
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .pagination .page-link {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+        min-width: 35px;
+    }
+    
+    .pagination .page-link span {
+        display: none;
+    }
+    
+    .pagination .page-link i {
+        font-size: 1rem;
+    }
+}
+
+/* Style pour la pagination centrée */
+.pagination.justify-content-center {
+    margin: 1.5rem 0;
+}
+
+/* Style pour les séparateurs */
+.pagination .page-item.disabled .page-link:not(.page-link) {
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-weight: bold;
+    padding: 0.5rem 0.25rem;
+}

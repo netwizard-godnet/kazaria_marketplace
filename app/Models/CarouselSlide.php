@@ -21,6 +21,16 @@ class CarouselSlide extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image_path ? asset('storage/' . ltrim($this->image_path, '/')) : null;
+        if (!$this->image_path) {
+            return null;
+        }
+        
+        // Si l'image est déjà dans le dossier public/images, retourner directement
+        if (strpos($this->image_path, 'images/') === 0) {
+            return asset($this->image_path);
+        }
+        
+        // Sinon, c'est dans le storage (via lien symbolique)
+        return asset('storage/' . ltrim($this->image_path, '/'));
     }
 }
