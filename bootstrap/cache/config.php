@@ -118,7 +118,7 @@
     'name' => 'KAZARIA',
     'env' => 'local',
     'debug' => true,
-    'url' => 'https://kazaria-ci.com',
+    'url' => 'http://127.0.0.1:8000/',
     'frontend_url' => 'http://localhost:3000',
     'asset_url' => NULL,
     'timezone' => 'UTC',
@@ -337,7 +337,7 @@
       array (
         'driver' => 'sqlite',
         'url' => NULL,
-        'database' => 'kazaria_dev_kazaria_laravel',
+        'database' => 'kazaria_laravel',
         'prefix' => '',
         'foreign_key_constraints' => true,
         'busy_timeout' => NULL,
@@ -351,9 +351,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'kazaria_dev_kazaria_laravel',
-        'username' => 'kazaria_dev_kazaria_admin',
-        'password' => 'Kazaria&@2025',
+        'database' => 'kazaria_laravel',
+        'username' => 'root',
+        'password' => '',
         'unix_socket' => '',
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
@@ -378,9 +378,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'kazaria_dev_kazaria_laravel',
-        'username' => 'kazaria_dev_kazaria_admin',
-        'password' => 'Kazaria&@2025',
+        'database' => 'kazaria_laravel',
+        'username' => 'root',
+        'password' => '',
         'unix_socket' => '',
         'charset' => 'utf8mb4',
         'collation' => 'utf8mb4_unicode_ci',
@@ -398,9 +398,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'kazaria_dev_kazaria_laravel',
-        'username' => 'kazaria_dev_kazaria_admin',
-        'password' => 'Kazaria&@2025',
+        'database' => 'kazaria_laravel',
+        'username' => 'root',
+        'password' => '',
         'charset' => 'utf8',
         'prefix' => '',
         'prefix_indexes' => true,
@@ -413,9 +413,9 @@
         'url' => NULL,
         'host' => 'localhost',
         'port' => '3306',
-        'database' => 'kazaria_dev_kazaria_laravel',
-        'username' => 'kazaria_dev_kazaria_admin',
-        'password' => 'Kazaria&@2025',
+        'database' => 'kazaria_laravel',
+        'username' => 'root',
+        'password' => '',
         'charset' => 'utf8',
         'prefix' => '',
         'prefix_indexes' => true,
@@ -480,7 +480,7 @@
       array (
         'driver' => 'local',
         'root' => 'C:\\laragon\\www\\kazaria laravel v0\\storage\\app/public',
-        'url' => 'https://kazaria-ci.com/storage',
+        'url' => 'http://127.0.0.1:8000//storage',
         'visibility' => 'public',
         'throw' => false,
         'report' => false,
@@ -609,7 +609,7 @@
   ),
   'mail' => 
   array (
-    'default' => 'smtp',
+    'default' => 'log',
     'mailers' => 
     array (
       'smtp' => 
@@ -622,7 +622,7 @@
         'username' => 'kazaria2025@gmail.com',
         'password' => 'gpmp wgnl nqlr bfqq',
         'timeout' => NULL,
-        'local_domain' => 'kazaria-ci.com',
+        'local_domain' => '127.0.0.1',
       ),
       'ses' => 
       array (
@@ -754,7 +754,7 @@
       2 => '127.0.0.1',
       3 => '127.0.0.1:8000',
       4 => '::1',
-      5 => 'kazaria-ci.com',
+      5 => '127.0.0.1:8000',
     ),
     'guard' => 
     array (
@@ -784,7 +784,7 @@
     'site' => 
     array (
       'name' => 'KAZARIA',
-      'url' => 'https://kazaria-ci.com',
+      'url' => 'http://127.0.0.1:8000/',
       'logo' => 'images/KAZARIA.jpg',
       'description' => 'Marketplace en ligne #1 de Côte d\'Ivoire. Meilleurs prix garantis, livraison gratuite, service client 24/7. L\'alternative ivoirienne de confiance.',
       'language' => 'fr',
@@ -933,13 +933,13 @@
     array (
       'client_id' => '767971604992-2ca6gkiqabgu8mhqspvtqisslc8ee5d1.apps.googleusercontent.com',
       'client_secret' => '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',
-      'redirect' => 'https://kazaria-ci.com/auth/google/callback',
+      'redirect' => 'http://127.0.0.1:8000//auth/google/callback',
     ),
     'facebook' => 
     array (
       'client_id' => '1122957392981382',
       'client_secret' => '76f3e82880152264a78da917a3d5374e',
-      'redirect' => 'https://kazaria-ci.com/auth/facebook/callback',
+      'redirect' => 'http://127.0.0.1:8000//auth/facebook/callback',
     ),
   ),
   'session' => 
