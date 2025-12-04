@@ -4,26 +4,26 @@
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">BESOIN D'AIDE ?</p>
                 <div class="vstack gap-1 text-start ms-2">
-                    @php
+                    <?php
                         $whatsappPhone = str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '+225 07 00 00 00 00');
-                    @endphp
-                    <a href="https://wa.me/{{ $whatsappPhone }}" class="btn btn-sm text-secondary text-start fs-8" target="_blank">Discuter avec nous</a>
-                    <a href="{{ route('help-faq') }}" class="btn btn-sm text-secondary text-start fs-8">Aide & FAQ</a>
-                    <a href="{{ route('contact') }}" class="btn btn-sm text-secondary text-start fs-8">Contactez-nous</a>
+                    ?>
+                    <a href="https://wa.me/<?php echo e($whatsappPhone); ?>" class="btn btn-sm text-secondary text-start fs-8" target="_blank">Discuter avec nous</a>
+                    <a href="<?php echo e(route('help-faq')); ?>" class="btn btn-sm text-secondary text-start fs-8">Aide & FAQ</a>
+                    <a href="<?php echo e(route('contact')); ?>" class="btn btn-sm text-secondary text-start fs-8">Contactez-nous</a>
                 </div>
                 <p class="mt-3 mb-2 fw-bold">LIENS UTILES</p>
                 <div class="vstack gap-1 ms-2">
-                    <a href="{{ route('suivre-commande') }}" class="btn btn-sm text-secondary text-start fs-8">Suivre sa commande</a>
-                    <a href="{{ route('expedition-livraison') }}" class="btn btn-sm text-secondary text-start fs-8">Expédition & Livraison</a>
-                    <a href="{{ route('politique-retour') }}" class="btn btn-sm text-secondary text-start fs-8">Politique de retour</a>
-                    <a href="{{ route('comment-commander') }}" class="btn btn-sm text-secondary text-start fs-8">Comment commander ?</a>
-                    <a href="{{ route('agences-points-relais') }}" class="btn btn-sm text-secondary text-start fs-8">Agences & Points de relais KAZARIA?</a>
+                    <a href="<?php echo e(route('suivre-commande')); ?>" class="btn btn-sm text-secondary text-start fs-8">Suivre sa commande</a>
+                    <a href="<?php echo e(route('expedition-livraison')); ?>" class="btn btn-sm text-secondary text-start fs-8">Expédition & Livraison</a>
+                    <a href="<?php echo e(route('politique-retour')); ?>" class="btn btn-sm text-secondary text-start fs-8">Politique de retour</a>
+                    <a href="<?php echo e(route('comment-commander')); ?>" class="btn btn-sm text-secondary text-start fs-8">Comment commander ?</a>
+                    <a href="<?php echo e(route('agences-points-relais')); ?>" class="btn btn-sm text-secondary text-start fs-8">Agences & Points de relais KAZARIA?</a>
                 </div>
             </div>
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">A PROPOS</p>
                 <div class="vstack gap-1 ms-2">
-                    <a href="{{ route('qui-nous-sommes') }}" class="btn btn-sm text-secondary text-start fs-8">Qui nous sommes ?</a>
+                    <a href="<?php echo e(route('qui-nous-sommes')); ?>" class="btn btn-sm text-secondary text-start fs-8">Qui nous sommes ?</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Carrières chez KAZARIA</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">Conditions générales d'utilisation</a>
                     <a href="" class="btn btn-sm text-secondary text-start fs-8">KAZARIA Express</a>
@@ -47,27 +47,27 @@
             <div class="col-md-3">
                 <p class="mb-2 fw-bold">CATEGORIES</p>
                 <div class="vstack gap-1 ms-2">
-                    @if(isset($allCategories) && $allCategories->count() > 0)
-                        @foreach($allCategories as $category)
-                            <a href="{{ route('categorie', $category->slug) }}" class="btn btn-sm text-secondary text-start fs-8">{{ $category->name }}</a>
-                        @endforeach
-                    @else
-                        {{-- Fallback si pas de catégories en base --}}
+                    <?php if(isset($allCategories) && $allCategories->count() > 0): ?>
+                        <?php $__currentLoopData = $allCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <a href="<?php echo e(route('categorie', $category->slug)); ?>" class="btn btn-sm text-secondary text-start fs-8"><?php echo e($category->name); ?></a>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    <?php else: ?>
+                        
                         <a href="#" class="btn btn-sm text-secondary text-start fs-8">Téléphones et tablettes</a>
                         <a href="#" class="btn btn-sm text-secondary text-start fs-8">TV et Electronique</a>
                         <a href="#" class="btn btn-sm text-secondary text-start fs-8">Electroménager</a>
                         <a href="#" class="btn btn-sm text-secondary text-start fs-8">Ordinateurs et accessoires</a>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
     <div class="container py-2 d-flex flex-column flex-sm-row align-items-center justify-content-between">
-        <p class="mb-0 fs-8">&copy; {{ \Carbon\Carbon::now()->format('Y') }}. Tous droits réservés</>
+        <p class="mb-0 fs-8">&copy; <?php echo e(\Carbon\Carbon::now()->format('Y')); ?>. Tous droits réservés</>
         <div class="d-flex align-items-center justify-content-start">
             <p class="mb-0 me-2 fs-8">Paiement sécurisé avec :</p>
-            <img src="{{ asset('images/mastercard.jpg') }}" class="me-2" alt="">
-            <img src="{{ asset('images/visa.jpg') }}" alt="">
+            <img src="<?php echo e(asset('images/mastercard.jpg')); ?>" class="me-2" alt="">
+            <img src="<?php echo e(asset('images/visa.jpg')); ?>" alt="">
         </div>
     </div>
 </footer>
@@ -100,7 +100,7 @@
             </div>
         </div>
         <div class="cart-reminder-footer">
-            <a href="{{ route('product-cart') }}" class="btn orange-bg text-white w-100 fw-bold" onclick="if (window.hideCartReminderPopup) window.hideCartReminderPopup();">
+            <a href="<?php echo e(route('product-cart')); ?>" class="btn orange-bg text-white w-100 fw-bold" onclick="if (window.hideCartReminderPopup) window.hideCartReminderPopup();">
                 <i class="bi bi-cart-check-fill me-2"></i>Voir mon panier
             </a>
         </div>
@@ -374,7 +374,7 @@
                 </button>
             </div>
             <div class="mt-3">
-                <a href="{{ route('privacy-policy') ?? '#' }}" class="small text-muted text-decoration-none">
+                <a href="<?php echo e(route('privacy-policy') ?? '#'); ?>" class="small text-muted text-decoration-none">
                     <i class="bi bi-info-circle me-1"></i>En savoir plus sur notre politique de confidentialité
                 </a>
             </div>
@@ -732,7 +732,7 @@
 <footer class="bg-white px-2 py-3 d-sm-none container-fluid shadow-lg border-top" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;">
     <div class="row g-1 text-center">
         <div class="col-3">
-            <a href="{{ route('accueil') }}" class="text-decoration-none">
+            <a href="<?php echo e(route('accueil')); ?>" class="text-decoration-none">
                 <div class="vstack gap-1 align-items-center p-1 mobile-nav-item">
                     <i class="fa-solid fa-home orange-color" style="font-size: 1.2rem;"></i>
                     <span class="fs-8 text-muted">Accueil</span>
@@ -756,7 +756,7 @@
             </a>
         </div>
         <div class="col-3">
-            <a href="{{ route('product-cart') }}" class="text-decoration-none">
+            <a href="<?php echo e(route('product-cart')); ?>" class="text-decoration-none">
                 <div class="vstack gap-1 align-items-center p-1 mobile-nav-item position-relative">
                     <i class="fa-solid fa-shopping-bag orange-color" style="font-size: 1.2rem;"></i>
                     <span class="fs-8 text-muted">Panier</span>
@@ -780,59 +780,59 @@
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body p-0">
-        @if(isset($allCategories))
+        <?php if(isset($allCategories)): ?>
             <div class="list-group list-group-flush">
-                @foreach($allCategories as $category)
+                <?php $__currentLoopData = $allCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="list-group-item p-0">
                     <!-- Catégorie principale -->
-                    <a href="{{ route('categorie', $category->slug) }}" class="d-flex align-items-center p-3 text-decoration-none category-main-link">
-                                        @if($category->image && !empty($category->image))
-                                        <img src="{{ str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image)) }}" alt="{{ $category->name }}" style="width: 24px; height: 24px; object-fit: contain;" class="me-3">
-                                        @endif
+                    <a href="<?php echo e(route('categorie', $category->slug)); ?>" class="d-flex align-items-center p-3 text-decoration-none category-main-link">
+                                        <?php if($category->image && !empty($category->image)): ?>
+                                        <img src="<?php echo e(str_starts_with($category->image, 'http') ? $category->image : (str_starts_with($category->image, 'images/') ? asset($category->image) : Storage::url($category->image))); ?>" alt="<?php echo e($category->name); ?>" style="width: 24px; height: 24px; object-fit: contain;" class="me-3">
+                                        <?php endif; ?>
                         <div class="flex-grow-1">
-                            <span class="fw-bold text-dark">{{ $category->name }}</span>
+                            <span class="fw-bold text-dark"><?php echo e($category->name); ?></span>
                         </div>
                         <i class="fa-solid fa-chevron-right text-muted"></i>
                     </a>
                     
                     <!-- Sous-catégories (collapsible) -->
-                    @if($category->subcategories && $category->subcategories->count() > 0)
-                    <div class="collapse" id="subcategories{{ $category->id }}">
+                    <?php if($category->subcategories && $category->subcategories->count() > 0): ?>
+                    <div class="collapse" id="subcategories<?php echo e($category->id); ?>">
                         <div class="px-3 pb-2">
-                            @foreach($category->subcategories->take(6) as $subcategory)
-                            <a href="{{ route('categorie', $category->slug) }}" class="d-flex align-items-center py-2 px-3 text-decoration-none subcategory-link">
-                                            @if($subcategory->image && !empty($subcategory->image))
-                                            <img src="{{ str_starts_with($subcategory->image, 'http') ? $subcategory->image : (str_starts_with($subcategory->image, 'images/') ? asset($subcategory->image) : Storage::url($subcategory->image)) }}" alt="{{ $subcategory->name }}" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
-                                            @endif
-                                <span class="text-muted">{{ $subcategory->name }}</span>
+                            <?php $__currentLoopData = $category->subcategories->take(6); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <a href="<?php echo e(route('categorie', $category->slug)); ?>" class="d-flex align-items-center py-2 px-3 text-decoration-none subcategory-link">
+                                            <?php if($subcategory->image && !empty($subcategory->image)): ?>
+                                            <img src="<?php echo e(str_starts_with($subcategory->image, 'http') ? $subcategory->image : (str_starts_with($subcategory->image, 'images/') ? asset($subcategory->image) : Storage::url($subcategory->image))); ?>" alt="<?php echo e($subcategory->name); ?>" style="width: 16px; height: 16px; object-fit: contain;" class="me-2">
+                                            <?php endif; ?>
+                                <span class="text-muted"><?php echo e($subcategory->name); ?></span>
                             </a>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             
-                            @if($category->subcategories->count() > 6)
-                            <a href="{{ route('categorie', $category->slug) }}" class="d-flex align-items-center py-2 px-3 text-decoration-none">
+                            <?php if($category->subcategories->count() > 6): ?>
+                            <a href="<?php echo e(route('categorie', $category->slug)); ?>" class="d-flex align-items-center py-2 px-3 text-decoration-none">
                                 <span class="text-primary fs-7">
                                     <i class="fa-solid fa-plus me-1"></i>
-                                    Voir {{ $category->subcategories->count() - 6 }} autres...
+                                    Voir <?php echo e($category->subcategories->count() - 6); ?> autres...
                                 </span>
                             </a>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </div>
                     
                     <!-- Bouton pour afficher/masquer les sous-catégories -->
-                    <button class="btn btn-link w-100 text-start p-0 border-0" type="button" data-bs-toggle="collapse" data-bs-target="#subcategories{{ $category->id }}" aria-expanded="false" aria-controls="subcategories{{ $category->id }}">
+                    <button class="btn btn-link w-100 text-start p-0 border-0" type="button" data-bs-toggle="collapse" data-bs-target="#subcategories<?php echo e($category->id); ?>" aria-expanded="false" aria-controls="subcategories<?php echo e($category->id); ?>">
                         <div class="px-3 py-2 border-top">
                             <small class="text-muted">
-                                <i class="fa-solid fa-chevron-down me-1" id="chevron{{ $category->id }}"></i>
-                                {{ $category->subcategories->count() }} sous-catégories
+                                <i class="fa-solid fa-chevron-down me-1" id="chevron<?php echo e($category->id); ?>"></i>
+                                <?php echo e($category->subcategories->count()); ?> sous-catégories
                             </small>
                         </div>
                     </button>
-                    @endif
+                    <?php endif; ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
-        @endif
+        <?php endif; ?>
         
         <!-- Section rapide -->
         <div class="border-top mt-3 pt-3">
@@ -841,11 +841,11 @@
                 Accès rapide
             </h6>
             <div class="px-3">
-                <a href="{{ route('boutique_officielle') }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                <a href="<?php echo e(route('boutique_officielle')); ?>" class="btn btn-outline-primary btn-sm w-100 mb-2">
                     <i class="fa-solid fa-store me-2"></i>
                     Boutiques Officielles
                 </a>
-                <a href="{{ route('search_product') }}" class="btn btn-outline-secondary btn-sm w-100">
+                <a href="<?php echo e(route('search_product')); ?>" class="btn btn-outline-secondary btn-sm w-100">
                     <i class="fa-solid fa-search me-2"></i>
                     Rechercher
                 </a>
@@ -970,12 +970,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="http://127.0.0.1:8001/widget.js" async></script> -->
 
 <!-- MAIN JS -->
-{{-- <script src="{{ asset('js/main.js') }}"></script> --}}
- <script src="{{ asset('js/carousel.js') }}"></script>
-<script src="{{ asset('js/cart.js') }}"></script>
-<script src="{{ asset('js/filters.js') }}"></script>
-<script src="{{ asset('js/search-autocomplete.js') }}"></script>
-{{-- auth.js supprimé - fonctionnalités intégrées dans Blade --}}
+
+ <script src="<?php echo e(asset('js/carousel.js')); ?>"></script>
+<script src="<?php echo e(asset('js/cart.js')); ?>"></script>
+<script src="<?php echo e(asset('js/filters.js')); ?>"></script>
+<script src="<?php echo e(asset('js/search-autocomplete.js')); ?>"></script>
+
  <script>
     document.addEventListener("DOMContentLoaded", () => {
         // Initialiser les dropdowns Bootstrap
@@ -987,15 +987,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialiser les carousels
         document.querySelectorAll("[data-multi-carousel]").forEach(el => {
-            // Vérifier qu'il y a des éléments avant d'initialiser
-            const track = el.querySelector(".multi-carousel-track");
-            const items = track ? Array.from(track.querySelectorAll(".multi-carousel-item")) : [];
-            
-            // Si pas d'éléments, ne pas créer d'instance (évite les warnings inutiles)
-            if (!track || !items || items.length === 0) {
-                return; // Passer au suivant sans créer d'instance
-            }
-            
             const options = {
             slidesToShow: parseInt(el.dataset.slidesToShow || 4),
             slidesToScroll: parseInt(el.dataset.slidesToScroll || 1),
@@ -1269,7 +1260,26 @@ if (typeof window.showNotification !== 'function') {
 }
 </script>
 
-<x-popup-launcher />
+<?php if (isset($component)) { $__componentOriginal1c2f983aed04baf4e8352d945f0f624d = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal1c2f983aed04baf4e8352d945f0f624d = $attributes; } ?>
+<?php $component = App\View\Components\PopupLauncher::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('popup-launcher'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\PopupLauncher::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal1c2f983aed04baf4e8352d945f0f624d)): ?>
+<?php $attributes = $__attributesOriginal1c2f983aed04baf4e8352d945f0f624d; ?>
+<?php unset($__attributesOriginal1c2f983aed04baf4e8352d945f0f624d); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal1c2f983aed04baf4e8352d945f0f624d)): ?>
+<?php $component = $__componentOriginal1c2f983aed04baf4e8352d945f0f624d; ?>
+<?php unset($__componentOriginal1c2f983aed04baf4e8352d945f0f624d); ?>
+<?php endif; ?>
 
 <!-- JQUERY -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1277,6 +1287,6 @@ if (typeof window.showNotification !== 'function') {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
-@stack('scripts')
+<?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
-</html>
+</html><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/layouts/footer.blade.php ENDPATH**/ ?>
