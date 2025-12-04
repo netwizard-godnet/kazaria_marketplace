@@ -7,7 +7,10 @@ use App\Models\Product;
 use App\Models\FAQ;
 use App\Models\Category;
 use App\Models\Review;
+use App\Models\Favorite;
+use App\Models\ProductView;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class AIController extends Controller
 {
@@ -22,6 +25,11 @@ class AIController extends Controller
             if (trim($text) === '') {
                 return response()->json(['success' => false, 'message' => 'Message vide'], 422);
             }
+            
+            // Récupérer l'utilisateur connecté ou la session
+            $user = Auth::user();
+            $userId = $user ? $user->id : null;
+            $sessionId = $request->session()->getId();
 
             // Normaliser le texte pour améliorer la compréhension
             $normalizedText = $this->normalizeText($text);
@@ -59,9 +67,15 @@ class AIController extends Controller
             ]);
         }
         $userName = session('ai_user_name');
-        if (preg_match("/(tu t'appelles comment|ton nom|qui es-tu|comment tu t'appelles|c'est qui|qui es tu)/i", $text)) {
+        if (preg_match("/(tu t'appelles comment|ton nom|qui es-tu|comment tu t'appelles|c'est qui|qui es tu|qui êtes-vous)/i", $text)) {
+            $responses = [
+                "Je suis KAZAR I.A, l'assistant de KAZARIA. Dites-moi votre besoin et je m'occupe du reste !",
+                "Je suis KAZAR I.A ! Votre assistant shopping personnel. Comment puis-je vous aider ?",
+                "Moi c'est KAZAR I.A ! Je suis là pour vous aider à trouver les meilleurs produits sur KAZARIA.",
+                "Je suis KAZAR I.A, votre assistant virtuel. Dites-moi ce que vous cherchez et je vous guide !"
+            ];
             $msg = $userName ? ("Ravi de vous revoir, $userName ! ") : '';
-            $msg .= "Je suis KAZAR I.A, l’assistant de KAZARIA. Dites‑moi votre besoin et je m’occupe du reste !";
+            $msg .= $responses[array_rand($responses)];
             return response()->json([
                 'success' => true,
                 'message' => $msg,
@@ -71,9 +85,15 @@ class AIController extends Controller
                 'understood' => []
             ]);
         }
-        if (preg_match('/comment ça va|ça va|sa va|comment vas-tu/i', $tLower)) {
-            $msg = $userName ? ("Ça va très bien, merci $userName ! ") : "Très bien, merci ! ";
-            $msg .= "Je suis là pour vous aider avec vos achats sur KAZARIA.";
+        if (preg_match('/comment ça va|ça va|sa va|comment vas-tu|comment allez-vous/i', $tLower)) {
+            $responses = [
+                "Ça va très bien, merci ! Je suis là pour vous aider avec vos achats sur KAZARIA.",
+                "Très bien, merci ! Comment puis-je vous aider aujourd'hui ?",
+                "Parfaitement ! Je suis prêt à vous aider à trouver ce que vous cherchez.",
+                "Ça va super ! Dites-moi ce que vous recherchez et je m'en occupe."
+            ];
+            $msg = $userName ? ("Ça va très bien, merci $userName ! ") : "";
+            $msg .= $responses[array_rand($responses)];
             return response()->json([
                 'success' => true,
                 'message' => $msg,
@@ -85,7 +105,14 @@ class AIController extends Controller
         }
         // Merci / au revoir / salutations
         if (preg_match('/\bmerci\b/i', $text)) {
-            $msg = $userName ? ("Avec plaisir, $userName ! Besoin d’autre chose ?") : "Avec plaisir ! Besoin d’autre chose ?";
+            $responses = [
+                "Avec plaisir ! Besoin d'autre chose ?",
+                "De rien ! Je suis là si vous avez d'autres questions.",
+                "C'est un plaisir ! N'hésitez pas si vous avez besoin d'aide.",
+                "Je vous en prie ! Autre chose ?"
+            ];
+            $msg = $userName ? ("Avec plaisir, $userName ! ") : "";
+            $msg .= $responses[array_rand($responses)];
             return response()->json([
                 'success' => true,
                 'message' => $msg,
@@ -95,8 +122,15 @@ class AIController extends Controller
                 'understood' => []
             ]);
         }
-        if (preg_match('/au revoir|à bientôt|a bientôt|a plus|à plus/i', $tLower)) {
-            $msg = $userName ? ("À bientôt, $userName !") : "À bientôt !";
+        if (preg_match('/au revoir|à bientôt|a bientôt|a plus|à plus|bye|goodbye/i', $tLower)) {
+            $responses = [
+                "À bientôt ! Bonne journée !",
+                "À très bientôt ! Passez une excellente journée !",
+                "Au revoir ! N'hésitez pas à revenir si besoin.",
+                "À bientôt ! Bon shopping !"
+            ];
+            $msg = $userName ? ("À bientôt, $userName ! ") : "";
+            $msg .= $responses[array_rand($responses)];
             return response()->json([
                 'success' => true,
                 'message' => $msg,
@@ -106,9 +140,15 @@ class AIController extends Controller
                 'understood' => []
             ]);
         }
-        if (preg_match('/\b(bonjour|salut|bonsoir)\b/i', $tLower)) {
-            $msg = $userName ? ("Bonjour $userName ! ") : "Bonjour ! ";
-            $msg .= "Dites‑moi votre besoin (budget, catégorie, marque…) et je vous ferai une sélection.";
+        if (preg_match('/\b(bonjour|salut|bonsoir|bonne\s+journée|bonne\s+soirée)\b/i', $tLower)) {
+            $greetings = [
+                "Bonjour ! Dites-moi votre besoin (budget, catégorie, marque…) et je vous ferai une sélection.",
+                "Salut ! Comment puis-je vous aider aujourd'hui ?",
+                "Bonjour ! Que recherchez-vous ? Je peux vous aider à trouver le produit idéal.",
+                "Bonjour ! Dites-moi ce que vous cherchez et je vous propose les meilleures options."
+            ];
+            $msg = $userName ? ("Bonjour $userName ! ") : "";
+            $msg .= $greetings[array_rand($greetings)];
             return response()->json([
                 'success' => true,
                 'message' => $msg,
@@ -370,7 +410,10 @@ class AIController extends Controller
                           preg_match('/\b(montre|montre-moi|affiche|affiche-moi)\s+(des|les|du|de\s+la|de)\s+(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)/i', $text) ||
                           preg_match('/\b(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)\s+(téléphone|telephone|smartphone)/i', $text) ||
                           preg_match('/\b(montre|montre-moi|affiche|affiche-moi)\s+(des|les|du|de\s+la|de)\s+(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)/i', $text) ||
-                          preg_match('/\b(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)/i', $text);
+                          preg_match('/\b(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)/i', $text) ||
+                          // Détecter les recherches avec couleur ou caractéristiques
+                          preg_match('/\b(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(noir|blanc|bleu|rouge|or|argent|vert|violet|jaune|rose|gris|marron|beige)/i', $text) ||
+                          preg_match('/\b(noir|blanc|bleu|rouge|or|argent|vert|violet|jaune|rose|gris|marron|beige)\s+(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)/i', $text);
         
         if (!$isProductSearch) {
             $faqMatch = FAQ::findMatching($normalizedText);
@@ -395,7 +438,7 @@ class AIController extends Controller
         [$intent, $intentParams] = $this->detectIntent($text, $normalizedText);
         
         // Si c'est une recherche de produit, forcer l'intention à 'search'
-        if ($isProductSearch && !in_array($intent, ['category_info', 'promotion_info', 'review_info', 'product_info'])) {
+        if ($isProductSearch && !in_array($intent, ['favorites_info', 'category_info', 'promotion_info', 'review_info', 'product_info'])) {
             $intent = 'search';
         }
 
@@ -403,6 +446,33 @@ class AIController extends Controller
         // Si pas encore détecté, le détecter maintenant
         if (!isset($intent)) {
             [$intent, $intentParams] = $this->detectIntent($text, $normalizedText);
+        }
+
+        // Questions sur les favoris
+        if ($intent === 'favorites_info') {
+            try {
+                $favoritesInfo = $this->answerFavoritesQuestion($text, $userId, $sessionId);
+                if ($favoritesInfo) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $favoritesInfo['message'],
+                        'items' => $favoritesInfo['items'],
+                        'intent' => 'favorites_info',
+                        'intent_params' => [],
+                        'understood' => []
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // En cas d'erreur, retourner un message d'erreur gracieux
+                return response()->json([
+                    'success' => true,
+                    'message' => "Je n'ai pas pu récupérer vos favoris pour le moment. Veuillez réessayer plus tard.",
+                    'items' => [],
+                    'intent' => 'favorites_info',
+                    'intent_params' => [],
+                    'understood' => []
+                ]);
+            }
         }
 
         // Questions sur un produit spécifique
@@ -489,7 +559,7 @@ class AIController extends Controller
             $actionResult = $actionResult->getData(true);
         }
 
-        $products = $q->limit(10)->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+        $products = $q->limit(10)->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
         
         // Si aucun résultat avec filtres stricts, élargir la recherche progressivement
         if ($products->isEmpty() && ($category || !empty($requestedKeywords))) {
@@ -543,7 +613,7 @@ class AIController extends Controller
             } else {
                 $q2->orderBy('price');
             }
-            $products = $q2->limit(10)->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+            $products = $q2->limit(10)->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
         }
         
         // Niveau 3: Si toujours vide avec catégorie + stockage, retirer le filtre stockage mais garder la catégorie
@@ -589,7 +659,7 @@ class AIController extends Controller
                 });
             }
             $q3a->orderBy('discount_percentage', 'desc')->orderBy('price');
-            $products = $q3a->limit(10)->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+            $products = $q3a->limit(10)->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
         }
         
         // Si toujours vide, recherche large par mots-clés
@@ -605,7 +675,7 @@ class AIController extends Controller
             if ($priceMin !== null) $q3->where('price', '>=', $priceMin);
             if ($priceMax !== null) $q3->where('price', '<=', $priceMax);
             $q3->orderBy('discount_percentage', 'desc')->orderBy('price');
-            $products = $q3->limit(10)->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+            $products = $q3->limit(10)->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
         }
         
         // Détecter la marque demandée dans le texte original (pour messages plus précis)
@@ -647,10 +717,49 @@ class AIController extends Controller
 
         $reply = $this->buildReply($products, $priceMin, $priceMax, $storageGb, $ramGb, $brand, $category, $color, $screenInch, $batteryMah, $cameraMp, $needsDualSim, $needs5g, $refreshHz, $hasNfc, $hasEsim, $ipRating, $selfieMp, $ultraWideMp, $requestedBrandKeyword, $brandFound);
 
+        // Transformer les images en URLs complètes juste avant de renvoyer
+        $productsArray = $products->map(function($product) {
+            $productArray = $product->toArray();
+            // Construire l'URL de l'image - utiliser les données déjà chargées
+            $imageUrl = asset('images/produit.jpg'); // Par défaut
+            
+            // Priorité 1: images (array)
+            if (!empty($productArray['images']) && is_array($productArray['images']) && count($productArray['images']) > 0) {
+                $firstImg = $productArray['images'][0];
+                if (filter_var($firstImg, FILTER_VALIDATE_URL)) {
+                    $imageUrl = $firstImg;
+                } elseif (strpos($firstImg, 'products/') === 0) {
+                    $imageUrl = asset('storage/' . $firstImg);
+                } elseif (strpos($firstImg, 'images/') === 0) {
+                    $imageUrl = asset($firstImg);
+                } else {
+                    $imageUrl = asset('storage/' . $firstImg);
+                }
+            }
+            // Priorité 2: image (string)
+            elseif (!empty($productArray['image'])) {
+                $img = $productArray['image'];
+                if (filter_var($img, FILTER_VALIDATE_URL)) {
+                    $imageUrl = $img;
+                } elseif (strpos($img, 'storage/') === 0) {
+                    $imageUrl = asset($img);
+                } elseif (strpos($img, 'products/') === 0) {
+                    $imageUrl = asset('storage/' . $img);
+                } elseif (strpos($img, 'images/') === 0) {
+                    $imageUrl = asset($img);
+                } else {
+                    $imageUrl = asset('storage/' . $img);
+                }
+            }
+            
+            $productArray['image'] = $imageUrl;
+            return $productArray;
+        });
+
         return response()->json([
             'success' => true,
             'message' => $reply,
-            'items' => $products,
+            'items' => $productsArray,
             'intent' => $intent,
             'intent_params' => $intentParams,
             'action_result' => $actionResult,
@@ -714,23 +823,39 @@ class AIController extends Controller
 
     private function buildReply($products, $priceMin, $priceMax, $storageGb, $ramGb, $brand, $category, $color, $screenInch, $batteryMah, $cameraMp, $needsDualSim, $needs5g, $refreshHz, $hasNfc, $hasEsim, $ipRating, $selfieMp, $ultraWideMp, $requestedBrandKeyword = null, $brandFound = true)
     {
+        $userName = session('ai_user_name');
+        
         if ($products->isEmpty()) {
-            $msg = "Je n'ai pas trouvé d'article correspondant exactement.";
+            $noResultsResponses = [
+                "Je n'ai pas trouvé d'article correspondant exactement à vos critères.",
+                "Désolé, je n'ai pas trouvé de produit correspondant à votre recherche.",
+                "Aucun produit ne correspond exactement à vos critères pour le moment."
+            ];
+            $msg = $noResultsResponses[array_rand($noResultsResponses)];
             if ($requestedBrandKeyword) {
                 $displayBrand = ($requestedBrandKeyword === 'pixel') ? 'Pixel' : ucfirst($requestedBrandKeyword);
                 $msg .= " Nous n'avons pas de " . $displayBrand . " pour le moment.";
             }
-            $msg .= " Souhaitez‑vous élargir le budget ou voir d'autres marques similaires ?";
+            $suggestions = [
+                "Souhaitez-vous élargir le budget ou voir d'autres marques similaires ?",
+                "Voulez-vous que je vous propose des alternatives ou ajuster vos critères ?",
+                "Je peux vous proposer des produits similaires si vous le souhaitez."
+            ];
+            $msg .= " " . $suggestions[array_rand($suggestions)];
             return $msg;
         }
         
         // Si une marque était demandée mais pas trouvée dans les résultats
         if ($requestedBrandKeyword && !$brandFound) {
             $displayBrand = ($requestedBrandKeyword === 'pixel') ? 'Pixel' : ucfirst($requestedBrandKeyword);
-            $msg = "Je n'ai pas trouvé de " . $displayBrand . " correspondant à vos critères.";
-            $msg .= " Voici des alternatives similaires :";
-            return $msg;
+            $alternativesResponses = [
+                "Je n'ai pas trouvé de " . $displayBrand . " correspondant à vos critères. Voici des alternatives similaires :",
+                "Aucun " . $displayBrand . " ne correspond à vos critères. Mais j'ai trouvé ces alternatives intéressantes :",
+                "Pas de " . $displayBrand . " pour le moment avec ces critères. Voici d'autres options qui pourraient vous plaire :"
+            ];
+            return $alternativesResponses[array_rand($alternativesResponses)];
         }
+        
         $intro = [];
         if ($priceMin !== null || $priceMax !== null) {
             if ($priceMin !== null && $priceMax !== null) {
@@ -759,7 +884,30 @@ class AIController extends Controller
         if ($ipRating) $intro[] = 'IP' . $ipRating;
         if ($selfieMp) $intro[] = $selfieMp . ' MP (selfie)';
         if ($ultraWideMp) $intro[] = $ultraWideMp . ' MP (ultra‑wide)';
-        $introText = $intro ? 'Pour ' . implode(', ', $intro) . ', voici des propositions :' : 'Voici des propositions populaires :';
+        
+        // Varier les introductions selon le contexte
+        if ($intro) {
+            $introVariations = [
+                'Pour ' . implode(', ', $intro) . ', voici des propositions :',
+                'Voici ce que j\'ai trouvé pour ' . implode(', ', $intro) . ' :',
+                'J\'ai sélectionné pour vous ces produits correspondant à ' . implode(', ', $intro) . ' :',
+                'Parfait ! Voici des produits qui correspondent à ' . implode(', ', $intro) . ' :'
+            ];
+            $introText = $introVariations[array_rand($introVariations)];
+        } else {
+            $popularVariations = [
+                'Voici des propositions populaires :',
+                'Voici quelques produits qui pourraient vous intéresser :',
+                'J\'ai sélectionné pour vous ces produits populaires :',
+                'Voici une sélection de produits qui ont du succès :'
+            ];
+            $introText = $popularVariations[array_rand($popularVariations)];
+        }
+        
+        // Ajouter une touche personnelle si on connaît le nom
+        if ($userName && rand(0, 2) === 0) {
+            $introText = $userName . ', ' . mb_strtolower($introText);
+        }
 
         return $introText;
     }
@@ -774,15 +922,20 @@ class AIController extends Controller
         
         // Remplacer les synonymes et variations courantes
         $synonyms = [
-            // Questions
+            // Questions de prix
             'combien coûte' => 'prix',
             'combien vaut' => 'prix',
             'quel est le prix' => 'prix',
             'quelle est la prix' => 'prix',
+            'quelle est le prix' => 'prix',
             'c\'est combien' => 'prix',
             'c est combien' => 'prix',
             'ça coûte combien' => 'prix',
             'ca coute combien' => 'prix',
+            'prix de' => 'prix',
+            'coût de' => 'prix',
+            'tarif de' => 'prix',
+            'valeur de' => 'prix',
             
             // Caractéristiques
             'caractéristiques' => 'caracteristiques',
@@ -790,6 +943,9 @@ class AIController extends Controller
             'spécificités' => 'specifications',
             'infos' => 'informations',
             'détails' => 'details',
+            'fiche technique' => 'specifications',
+            'fiche technique' => 'specifications',
+            'données techniques' => 'specifications',
             
             // Disponibilité
             'disponible' => 'stock',
@@ -798,6 +954,10 @@ class AIController extends Controller
             'il y a' => 'stock',
             'y a t il' => 'stock',
             'y a-t-il' => 'stock',
+            'avez-vous' => 'stock',
+            'avez vous' => 'stock',
+            'est disponible' => 'stock',
+            'sont disponibles' => 'stock',
             
             // Avis
             'avis' => 'avis',
@@ -808,6 +968,10 @@ class AIController extends Controller
             'opinions' => 'avis',
             'que pensent' => 'avis',
             'que pense' => 'avis',
+            'ce que pensent' => 'avis',
+            'ce que pense' => 'avis',
+            'témoignages' => 'avis',
+            'temoignages' => 'avis',
             
             // Promotions
             'promo' => 'promotion',
@@ -816,11 +980,33 @@ class AIController extends Controller
             'remise' => 'promotion',
             'offre' => 'promotion',
             'solde' => 'promotion',
+            'promotions' => 'promotion',
+            'promos' => 'promotion',
+            'réductions' => 'promotion',
+            'reductions' => 'promotion',
+            'remises' => 'promotion',
+            'offres' => 'promotion',
+            'soldes' => 'promotion',
+            'en promotion' => 'promotion',
+            'en promo' => 'promotion',
             
             // Catégories
             'types' => 'categories',
             'sortes' => 'categories',
             'genres' => 'categories',
+            'gammes' => 'categories',
+            'familles' => 'categories',
+            
+            // Recherche
+            'je cherche' => 'recherche',
+            'je veux' => 'recherche',
+            'j\'ai besoin' => 'recherche',
+            'j ai besoin' => 'recherche',
+            'montre-moi' => 'recherche',
+            'montre moi' => 'recherche',
+            'affiche' => 'recherche',
+            'donne-moi' => 'recherche',
+            'donne moi' => 'recherche',
         ];
         
         foreach ($synonyms as $synonym => $replacement) {
@@ -848,6 +1034,25 @@ class AIController extends Controller
                 return ['apply_coupon', ['code' => strtoupper($m[1])]];
             }
             return ['apply_coupon', []];
+        }
+        
+        // Questions sur les favoris - DOIT être AVANT les autres détections
+        $favoritePatterns = [
+            '/\b(mes\s+)?favoris\b/i',
+            '/\b(mes\s+)?produits\s+favoris/i',
+            '/\b(mes\s+)?produits\s+aimés/i',
+            '/\b(mes\s+)?produits\s+enregistrés/i',
+            '/\b(mes\s+)?souhaits/i',
+            '/\b(mes\s+)?wishlist/i',
+            '/\b(montre|affiche|donne)\s+(moi\s+)?(mes\s+)?favoris/i',
+            '/\b(quels|quelles)\s+(sont|est)\s+(mes\s+)?favoris/i',
+            '/\b(liste|liste\s+des)\s+(mes\s+)?favoris/i',
+        ];
+        
+        foreach ($favoritePatterns as $pattern) {
+            if (preg_match($pattern, $t)) {
+                return ['favorites_info', []];
+            }
         }
         
         // Questions sur les catégories - DOIT être AVANT product_info
@@ -1036,22 +1241,45 @@ class AIController extends Controller
     {
         $t = mb_strtolower($text);
         $num = function ($s) { return (int) str_replace([' ','.',','], '', $s); };
+        
         // entre X et Y
         if (preg_match('/entre\s*(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?\s*(?:et|-|à)\s*(\d+[\s\.,]?\d*)/i', $t, $m)) {
             return [$num($m[1]), $num($m[2])];
         }
-        // moins de / au plus / maximum Y
+        
+        // moins de / au plus / maximum Y / X ou moins / X et moins
         if (preg_match('/(?:moins\s*de|au\s*plus|max(?:imum)?)\s*(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?/i', $t, $m)) {
             return [null, $num($m[1])];
         }
-        // au moins / minimum X
+        // Pattern "X FCFA ou moins" / "X F ou moins" / "X.000F ou moins"
+        if (preg_match('/(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?\s*(?:ou|et)\s*(?:moins|inférieur|inférieure)/i', $t, $m)) {
+            return [null, $num($m[1])];
+        }
+        // Pattern "inférieur à X" / "inférieure à X"
+        if (preg_match('/(?:inférieur(?:e)?\s*(?:à|a))\s*(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?/i', $t, $m)) {
+            return [null, $num($m[1])];
+        }
+        
+        // au moins / minimum X / X ou plus / X et plus
         if (preg_match('/(?:au\s*moins|min(?:imum)?)\s*(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?/i', $t, $m)) {
             return [$num($m[1]), null];
         }
-        // un seul nombre avec FCFA interprété comme max
-        if (preg_match('/(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)\b/i', $t, $m)) {
-            return [null, $num($m[1])];
+        // Pattern "X FCFA ou plus" / "X F ou plus" / "X.000F ou plus"
+        if (preg_match('/(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?\s*(?:ou|et)\s*(?:plus|supérieur|supérieure)/i', $t, $m)) {
+            return [$num($m[1]), null];
         }
+        // Pattern "plus de X" / "plus que X" / "supérieur à X"
+        if (preg_match('/(?:plus\s*(?:de|que)|supérieur(?:e)?\s*(?:à|a))\s*(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)?/i', $t, $m)) {
+            return [$num($m[1]), null];
+        }
+        
+        // un seul nombre avec FCFA interprété comme max (seulement si pas de contexte "ou plus")
+        if (!preg_match('/ou\s*plus|et\s*plus|supérieur/i', $t)) {
+            if (preg_match('/(\d+[\s\.,]?\d*)\s*(?:fcfa|fr|f)\b/i', $t, $m)) {
+                return [null, $num($m[1])];
+            }
+        }
+        
         return [null, null];
     }
 
@@ -1094,6 +1322,28 @@ class AIController extends Controller
             'pixel' => 'google',
             'google pixel' => 'google',
             'galaxy' => 'samsung',
+            'samsung galaxy' => 'samsung',
+            'iphone' => 'apple',
+            'ipad' => 'apple',
+            'macbook' => 'apple',
+            'mac' => 'apple',
+            'redmi' => 'xiaomi',
+            'mi' => 'xiaomi',
+            'xiaomi mi' => 'xiaomi',
+            'note' => 'samsung', // Samsung Galaxy Note
+            'galaxy note' => 'samsung',
+            'galaxy s' => 'samsung',
+            'galaxy a' => 'samsung',
+            'thinkpad' => 'lenovo',
+            'ideapad' => 'lenovo',
+            'yoga' => 'lenovo',
+            'inspiron' => 'dell',
+            'xps' => 'dell',
+            'pavilion' => 'hp',
+            'envy' => 'hp',
+            'vivobook' => 'asus',
+            'zenbook' => 'asus',
+            'rog' => 'asus',
         ];
         // D'abord vérifier les alias
         foreach ($alias as $a => $mapped) {
@@ -1108,12 +1358,33 @@ class AIController extends Controller
     private function extractCategory(string $text): ?string
     {
         $t = mb_strtolower($text);
-        if (preg_match('/téléphone|telephone|smartphone/', $t)) return 'phone';
-        if (preg_match('/ordinateur|laptop|pc/', $t)) return 'laptop';
-        if (preg_match('/tv|télévision|television/', $t)) return 'tv';
-        if (preg_match('/frigo|réfrigérateur|refrigerateur/', $t)) return 'fridge';
-        if (preg_match('/congélateur|congelateur|freezer/', $t)) return 'freezer';
-        if (preg_match('/bouilloire|kettle/', $t)) return 'kettle';
+        // Téléphones - patterns plus complets
+        if (preg_match('/téléphone|telephone|smartphone|mobile|portable|gsm|cellulaire|iphone|galaxy|redmi|mi\s+\d+/i', $t)) return 'phone';
+        
+        // Ordinateurs - patterns plus complets
+        if (preg_match('/ordinateur|laptop|pc|portable|notebook|macbook|thinkpad|ideapad|pavilion|inspiron|xps|vivobook|zenbook/i', $t)) return 'laptop';
+        
+        // TV - patterns plus complets
+        if (preg_match('/tv|télévision|television|téléviseur|televiseur|écran\s+tv|smart\s+tv/i', $t)) return 'tv';
+        
+        // Réfrigérateurs - patterns plus complets
+        if (preg_match('/frigo|réfrigérateur|refrigerateur|refrigerateur|frigidaire/i', $t)) return 'fridge';
+        
+        // Congélateurs - patterns plus complets
+        if (preg_match('/congélateur|congelateur|freezer|congel/i', $t)) return 'freezer';
+        
+        // Bouilloires - patterns plus complets
+        if (preg_match('/bouilloire|kettle|bouilloir/i', $t)) return 'kettle';
+        
+        // Tablettes
+        if (preg_match('/tablette|ipad|tab\s+\d+|matepad/i', $t)) return 'tablet';
+        
+        // Écouteurs/Casques
+        if (preg_match('/écouteur|ecouteur|casque|headphone|earbud|airpods/i', $t)) return 'headphone';
+        
+        // Montres connectées
+        if (preg_match('/montre\s+connectée|smartwatch|watch|montre\s+intelligente/i', $t)) return 'smartwatch';
+        
         return null;
     }
 
@@ -1244,7 +1515,7 @@ class AIController extends Controller
     private function isStopword(string $w): bool
     {
         static $stop = [
-            'le','la','les','un','une','des','de','du','d','et','ou','a','à','au','aux','pour','avec','sans','sur','en','par','mon','ma','mes','ton','ta','tes','son','sa','ses','nos','vos','leurs','je','tu','il','elle','on','nous','vous','ils','elles','ce','cet','cette','ces','plus','moins','très','tres','bon','bien','meilleur','nouveau','neuf','neuve','neufs','neuves','chez','vers','dans','entre','the','and'
+            'le','la','les','un','une','des','de','du','d','et','ou','a','à','au','aux','pour','avec','sans','sur','en','par','mon','ma','mes','ton','ta','tes','son','sa','ses','nos','vos','leurs','je','tu','il','elle','on','nous','vous','ils','elles','ce','cet','cette','ces','plus','moins','très','tres','bon','bien','meilleur','nouveau','neuf','neuve','neufs','neuves','chez','vers','dans','entre','the','and','est','sont','a','ont','être','avoir','faire','aller','venir','voir','dire','savoir','vouloir','pouvoir','devoir','falloir','donner','prendre','mettre','faire','trouver','chercher','acheter','vendre'
         ];
         return in_array($w, $stop, true);
     }
@@ -1252,9 +1523,22 @@ class AIController extends Controller
     private function extractColor(string $text): ?string
     {
         $colors = [
-            'noir'=>['noir','black'], 'blanc'=>['blanc','white'], 'bleu'=>['bleu','blue'], 'rouge'=>['rouge','red'],
-            'or'=>['doré','or','gold'], 'argent'=>['argent','silver'], 'vert'=>['vert','green'], 'violet'=>['violet','purple'],
-            'jaune'=>['jaune','yellow'], 'rose'=>['rose','pink']
+            'noir'=>['noir','black','noire','noirs','noires'],
+            'blanc'=>['blanc','white','blanche','blancs','blanches'],
+            'bleu'=>['bleu','blue','bleue','bleus','bleues'],
+            'rouge'=>['rouge','red','rouges'],
+            'or'=>['doré','or','gold','dorée','dorés','dorées','golden'],
+            'argent'=>['argent','silver','argente','argentes','silver'],
+            'vert'=>['vert','green','verte','verts','vertes'],
+            'violet'=>['violet','purple','violette','violets','violettes'],
+            'jaune'=>['jaune','yellow','jaunes'],
+            'rose'=>['rose','pink','roses'],
+            'gris'=>['gris','gray','grey','grise','grises'],
+            'marron'=>['marron','brown','brun','brune','bruns','brunes'],
+            'beige'=>['beige','beiges'],
+            'turquoise'=>['turquoise','turquoises'],
+            'cyan'=>['cyan','cyans'],
+            'magenta'=>['magenta','magentas'],
         ];
         foreach ($colors as $k=>$syns) {
             foreach ($syns as $s) if (preg_match('/\b'.$s.'\b/i', $text)) return $k;
@@ -1477,13 +1761,28 @@ class AIController extends Controller
         $product = $this->findProductFuzzy($productName);
 
         if (!$product) {
+            $userName = session('ai_user_name');
+            $notFoundMessages = [
+                "Je n'ai pas trouvé de produit correspondant à \"$productName\". Pouvez-vous être plus précis ?",
+                "Désolé, je n'ai pas trouvé de produit nommé \"$productName\". Pourriez-vous vérifier l'orthographe ou être plus spécifique ?",
+                "Aucun produit ne correspond à \"$productName\". Essayez avec le nom complet ou la marque.",
+                "Je ne trouve pas de produit correspondant à \"$productName\". Pouvez-vous donner plus de détails ?"
+            ];
+            $msg = ($userName ? "$userName, " : "") . $notFoundMessages[array_rand($notFoundMessages)];
             return [
-                'message' => "Je n'ai pas trouvé de produit correspondant à \"$productName\". Pouvez-vous être plus précis ?",
+                'message' => $msg,
                 'items' => []
             ];
         }
 
-        $message = "Voici les informations sur " . $product->name . " :\n\n";
+        $userName = session('ai_user_name');
+        $introMessages = [
+            "Voici les informations sur " . $product->name . " :\n\n",
+            "Parfait ! Voici ce que j'ai trouvé sur " . $product->name . " :\n\n",
+            "J'ai trouvé " . $product->name . ". Voici les détails :\n\n",
+            "Voici tout ce que je sais sur " . $product->name . " :\n\n"
+        ];
+        $message = ($userName && rand(0, 1) ? "$userName, " : "") . $introMessages[array_rand($introMessages)];
         
         // Prix
         if (preg_match('/\b(prix|coût|tarif)/i', $t)) {
@@ -1538,9 +1837,13 @@ class AIController extends Controller
             }
         }
 
+        // Transformer l'image en URL complète
+        $productArray = $product->toArray();
+        $productArray['image'] = $product->first_image_url ?: asset('images/produit.jpg');
+        
         return [
             'message' => $message,
-            'items' => [$product]
+            'items' => [$productArray]
         ];
     }
 
@@ -1552,10 +1855,23 @@ class AIController extends Controller
         $categories = Category::active()->with('subcategories')->orderBy('order')->get();
         
         if ($categories->isEmpty()) {
-            return "Aucune catégorie disponible pour le moment.";
+            $userName = session('ai_user_name');
+            $emptyMessages = [
+                "Aucune catégorie disponible pour le moment.",
+                "Désolé, il n'y a pas de catégories disponibles actuellement.",
+                "Aucune catégorie n'est disponible pour le moment."
+            ];
+            return ($userName ? "$userName, " : "") . $emptyMessages[array_rand($emptyMessages)];
         }
 
-        $message = "Voici nos catégories de produits :\n\n";
+        $userName = session('ai_user_name');
+        $categoryIntros = [
+            "Voici nos catégories de produits :\n\n",
+            "Parfait ! Voici toutes nos catégories disponibles :\n\n",
+            "Voici la liste de nos catégories :\n\n",
+            "Nous avons les catégories suivantes :\n\n"
+        ];
+        $message = ($userName && rand(0, 1) ? "$userName, " : "") . $categoryIntros[array_rand($categoryIntros)];
         foreach ($categories as $category) {
             $message .= "📁 " . $category->name;
             if ($category->subcategories->isNotEmpty()) {
@@ -1589,7 +1905,13 @@ class AIController extends Controller
                 ->first();
 
             if (!$product) {
-                return "Je n'ai pas trouvé de produit correspondant à \"$productName\".";
+                $userName = session('ai_user_name');
+                $notFoundMessages = [
+                    "Je n'ai pas trouvé de produit correspondant à \"$productName\".",
+                    "Désolé, aucun produit ne correspond à \"$productName\".",
+                    "Je ne trouve pas de produit nommé \"$productName\"."
+                ];
+                return ($userName ? "$userName, " : "") . $notFoundMessages[array_rand($notFoundMessages)];
             }
 
             $reviews = Review::where('product_id', $product->id)
@@ -1598,7 +1920,13 @@ class AIController extends Controller
                 ->limit(3)
                 ->get();
 
-            $message = "Avis sur " . $product->name . " :\n\n";
+            $userName = session('ai_user_name');
+            $reviewIntros = [
+                "Avis sur " . $product->name . " :\n\n",
+                "Voici les avis clients pour " . $product->name . " :\n\n",
+                "Les avis sur " . $product->name . " :\n\n"
+            ];
+            $message = ($userName && rand(0, 1) ? "$userName, " : "") . $reviewIntros[array_rand($reviewIntros)];
             if ($product->rating > 0) {
                 $message .= "⭐ Note moyenne : " . number_format($product->rating, 1) . "/5 (" . $product->reviews_count . " avis)\n\n";
             }
@@ -1634,7 +1962,14 @@ class AIController extends Controller
             ->where('discount_percentage', '>', 0)
             ->orderBy('discount_percentage', 'desc')
             ->limit(10)
-            ->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+            ->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
+
+        // Transformer les images en URLs complètes
+        $promotions = $promotions->map(function($product) {
+            $productArray = $product->toArray();
+            $productArray['image'] = $product->first_image_url ?: asset('images/produit.jpg');
+            return $productArray;
+        });
 
         if ($promotions->isEmpty()) {
             return [
@@ -1645,12 +1980,17 @@ class AIController extends Controller
 
         $message = "🔥 Promotions en cours :\n\n";
         foreach ($promotions->take(5) as $product) {
-            $message .= "• " . $product->name . " : " . number_format($product->price, 0, ',', ' ') . " FCFA";
-            if ($product->old_price) {
-                $message .= " (au lieu de " . number_format($product->old_price, 0, ',', ' ') . " FCFA)";
+            $productName = is_array($product) ? $product['name'] : $product->name;
+            $productPrice = is_array($product) ? $product['price'] : $product->price;
+            $productOldPrice = is_array($product) ? ($product['old_price'] ?? null) : $product->old_price;
+            $productDiscount = is_array($product) ? ($product['discount_percentage'] ?? null) : $product->discount_percentage;
+            
+            $message .= "• " . $productName . " : " . number_format($productPrice, 0, ',', ' ') . " FCFA";
+            if ($productOldPrice) {
+                $message .= " (au lieu de " . number_format($productOldPrice, 0, ',', ' ') . " FCFA)";
             }
-            if ($product->discount_percentage) {
-                $message .= " - " . $product->discount_percentage . "% de réduction";
+            if ($productDiscount) {
+                $message .= " - " . $productDiscount . "% de réduction";
             }
             $message .= "\n";
         }
@@ -1726,6 +2066,166 @@ class AIController extends Controller
     }
 
     /**
+     * Répondre aux questions sur les favoris
+     */
+    private function answerFavoritesQuestion(string $text, ?int $userId, ?string $sessionId): ?array
+    {
+        // Récupérer les favoris selon l'utilisateur ou la session
+        $favoritesQuery = Favorite::with('product');
+        if ($userId) {
+            $favoritesQuery->where('user_id', $userId);
+        } elseif ($sessionId) {
+            $favoritesQuery->where('session_id', $sessionId);
+        } else {
+            // Pas d'utilisateur ni de session
+            $userName = session('ai_user_name');
+            return [
+                'message' => ($userName ? "$userName, " : "") . "Vous n'avez pas encore de produits en favoris. Ajoutez-en en cliquant sur le cœur sur les produits qui vous intéressent !",
+                'items' => []
+            ];
+        }
+        $favorites = $favoritesQuery->orderBy('created_at', 'desc')->get();
+        
+        if ($favorites->isEmpty()) {
+            $userName = session('ai_user_name');
+            $emptyMessages = [
+                "Vous n'avez pas encore de produits en favoris. Ajoutez-en en cliquant sur le cœur sur les produits qui vous intéressent !",
+                "Votre liste de favoris est vide pour le moment. Parcourez nos produits et ajoutez ceux qui vous plaisent !",
+                "Aucun produit dans vos favoris. Explorez notre catalogue et ajoutez vos produits préférés !"
+            ];
+            return [
+                'message' => ($userName ? "$userName, " : "") . $emptyMessages[array_rand($emptyMessages)],
+                'items' => []
+            ];
+        }
+        
+        $products = $favorites->map(function($favorite) {
+            return $favorite->product;
+        })->filter()->take(10);
+        
+        if ($products->isEmpty()) {
+            return [
+                'message' => "Vos favoris contiennent des produits qui ne sont plus disponibles.",
+                'items' => []
+            ];
+        }
+        
+        // Transformer les images en URLs complètes
+        $productsArray = $products->map(function($product) {
+            if (!$product) {
+                return null;
+            }
+            try {
+                $productArray = $product->toArray();
+                // Utiliser l'accessor first_image_url si disponible
+                $productArray['image'] = $product->first_image_url ?? asset('images/produit.jpg');
+                return $productArray;
+            } catch (\Exception $e) {
+                return null;
+            }
+        })->filter();
+        
+        $userName = session('ai_user_name');
+        $favoriteIntros = [
+            "Voici vos produits favoris :\n\n",
+            "Parfait ! Voici vos favoris :\n\n",
+            "Voici la liste de vos produits favoris :\n\n",
+            "J'ai trouvé " . $products->count() . " produit(s) dans vos favoris :\n\n"
+        ];
+        $message = ($userName && rand(0, 1) ? "$userName, " : "") . $favoriteIntros[array_rand($favoriteIntros)];
+        
+        return [
+            'message' => $message,
+            'items' => $productsArray
+        ];
+    }
+    
+    /**
+     * API endpoint pour obtenir des suggestions basées sur l'historique de vues
+     * Peut être appelé depuis n'importe quelle page (hors chat box)
+     */
+    public function getSuggestions(Request $request)
+    {
+        try {
+            if (!config('kazar_ai.enabled')) {
+                return response()->json(['success' => false, 'message' => 'KAZAR I.A désactivée'], 403);
+            }
+            
+            // Récupérer l'utilisateur connecté ou la session
+            $user = Auth::user();
+            $userId = $user ? $user->id : null;
+            $sessionId = $request->session()->getId();
+            
+            // Récupérer les produits basés sur l'historique de vues
+            $products = $this->getProductsFromRecentViews($userId, $sessionId);
+            
+            if ($products->isEmpty()) {
+                // Si aucun historique, proposer des produits populaires
+                $products = Product::active()
+                    ->inStock()
+                    ->orderBy('views_count', 'desc')
+                    ->orderBy('discount_percentage', 'desc')
+                    ->limit(10)
+                    ->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
+            }
+            
+            // Transformer les images en URLs complètes
+            $productsArray = $products->map(function($product) {
+                $productArray = $product->toArray();
+                $productArray['image'] = $product->first_image_url ?? asset('images/produit.jpg');
+                $productArray['url'] = route('product-page', $product->slug);
+                return $productArray;
+            });
+            
+            return response()->json([
+                'success' => true,
+                'products' => $productsArray,
+                'title' => 'Produits que vous avez récemment consultés',
+                'count' => $productsArray->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des suggestions',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Obtenir des produits basés sur l'historique de vues récentes
+     */
+    private function getProductsFromRecentViews(?int $userId, ?string $sessionId): \Illuminate\Database\Eloquent\Collection
+    {
+        // Récupérer les IDs des produits récemment consultés
+        $recentViews = ProductView::where(function($query) use ($userId, $sessionId) {
+                if ($userId) {
+                    $query->where('user_id', $userId);
+                } else {
+                    $query->where('session_id', $sessionId);
+                }
+            })
+            ->recent(1440) // 24 heures
+            ->orderBy('created_at', 'desc')
+            ->distinct('product_id')
+            ->pluck('product_id')
+            ->take(10);
+        
+        if ($recentViews->isEmpty()) {
+            return Product::whereRaw('1 = 0')->get(); // Retourner une collection vide de type Eloquent
+        }
+        
+        // Récupérer les produits actifs correspondants
+        $products = Product::active()
+            ->whereIn('id', $recentViews)
+            ->orderByRaw('FIELD(id, ' . $recentViews->implode(',') . ')')
+            ->limit(10)
+            ->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
+        
+        return $products;
+    }
+    
+    /**
      * Système de fallback intelligent - Essayer plusieurs interprétations
      */
     private function tryFallbackInterpretations(string $text, string $normalizedText): ?array
@@ -1744,7 +2244,14 @@ class AIController extends Controller
                     }
                 })
                 ->limit(5)
-                ->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+                ->get(['id','name','slug','image','images','price','old_price','discount_percentage','brand']);
+            
+            // Transformer les images en URLs complètes
+            $products = $products->map(function($product) {
+                $productArray = $product->toArray();
+                $productArray['image'] = $product->first_image_url ?: asset('images/produit.jpg');
+                return $productArray;
+            });
             
             if ($products->isNotEmpty()) {
                 return [

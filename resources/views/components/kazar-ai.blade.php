@@ -269,9 +269,22 @@ document.addEventListener('DOMContentLoaded', function(){
                             const isButton = e.target.closest('button');
                             if(!isButton){ logAiInteraction('click', p.id); }
                         });
+                        // Construire l'URL de l'image correctement
+                        let imageUrl = '/images/produit.jpg'; // Par défaut
+                        if (p.image) {
+                            if (p.image.startsWith('http')) {
+                                imageUrl = p.image; // URL complète
+                            } else if (p.image.startsWith('storage/') || p.image.startsWith('products/')) {
+                                imageUrl = '/storage/' + p.image.replace(/^(storage\/|products\/)/, '');
+                            } else if (p.image.startsWith('images/')) {
+                                imageUrl = '/' + p.image;
+                            } else {
+                                imageUrl = '/storage/' + p.image;
+                            }
+                        }
                         card.innerHTML = `
                             <div class="d-flex align-items-center gap-2">
-                                <img src="${p.image ? (p.image.startsWith('http')?p.image:'/'+p.image) : '/images/produit.jpg'}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;" onerror="this.src='/images/produit.jpg'">
+                                <img src="${imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;" onerror="this.src='/images/produit.jpg'">
                                 <div class="flex-grow-1">
                                     <div class="small fw-bold">${p.name}</div>
                                     <div class="small text-muted">${new Intl.NumberFormat('fr-FR').format(p.price)} FCFA</div>

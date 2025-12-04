@@ -1,11 +1,9 @@
-@extends('layouts.app')
-
-@php
+<?php
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-@endphp
+?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <style>
         /* Styles pour les boutons de navigation de la sidebar */
         .sidebar .nav-pills .nav-link {
@@ -72,11 +70,11 @@ use Illuminate\Support\Str;
                 <div class="row g-2">
                     <div class="col-12 col-md-2">
                         <div class="position-relative">
-                            @if($user->profile_pic_url)
-                                <img src="{{ asset($user->profile_pic_url) }}" alt="Photo de profil" class="profile-avatar rounded-circle" id="profileAvatar" style="cursor: pointer; width: 120px; height: 120px; object-fit: cover;">
-                            @else
-                                <img src="https://via.placeholder.com/120x120/f04e26/ffffff?text={{ strtoupper(substr($user->prenoms, 0, 1) . substr($user->nom, 0, 1)) }}" alt="Photo de profil" class="profile-avatar rounded-circle" id="profileAvatar" style="cursor: pointer; width: 120px; height: 120px; object-fit: cover;">
-                            @endif
+                            <?php if($user->profile_pic_url): ?>
+                                <img src="<?php echo e(asset($user->profile_pic_url)); ?>" alt="Photo de profil" class="profile-avatar rounded-circle" id="profileAvatar" style="cursor: pointer; width: 120px; height: 120px; object-fit: cover;">
+                            <?php else: ?>
+                                <img src="https://via.placeholder.com/120x120/f04e26/ffffff?text=<?php echo e(strtoupper(substr($user->prenoms, 0, 1) . substr($user->nom, 0, 1))); ?>" alt="Photo de profil" class="profile-avatar rounded-circle" id="profileAvatar" style="cursor: pointer; width: 120px; height: 120px; object-fit: cover;">
+                            <?php endif; ?>
                             <div class="position-absolute bottom-0 end-0">
                                 <button class="btn btn-sm orange-bg text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#changePhotoModal" style="width: 35px; height: 35px;">
                                     <i class="bi bi-camera"></i>
@@ -85,38 +83,38 @@ use Illuminate\Support\Str;
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <h3 class="mb-1">{{ $user->prenoms }} {{ $user->nom }}</h3>
+                        <h3 class="mb-1"><?php echo e($user->prenoms); ?> <?php echo e($user->nom); ?></h3>
                         <div class="d-flex gap-3">
-                            @if(isset($userRating) && $userRating > 0)
-                                <span class="badge orange-bg text-white"><i class="bi bi-star-fill me-1"></i>{{ number_format($userRating, 1) }}/5</span>
-                            @endif
-                            @if($user->is_verified)
+                            <?php if(isset($userRating) && $userRating > 0): ?>
+                                <span class="badge orange-bg text-white"><i class="bi bi-star-fill me-1"></i><?php echo e(number_format($userRating, 1)); ?>/5</span>
+                            <?php endif; ?>
+                            <?php if($user->is_verified): ?>
                             <span class="badge orange-bg text-white"><i class="bi bi-shield-check me-1"></i>Vérifié</span>
-                            @else
+                            <?php else: ?>
                             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Non vérifié</span>
-                            @endif
-                            @if($user->ville)
-                            <span class="badge orange-bg text-white"><i class="bi bi-geo-alt me-1"></i>{{ $user->ville }}{{ $user->pays ? ', ' . $user->pays : '' }}</span>
-                            @endif
+                            <?php endif; ?>
+                            <?php if($user->ville): ?>
+                            <span class="badge orange-bg text-white"><i class="bi bi-geo-alt me-1"></i><?php echo e($user->ville); ?><?php echo e($user->pays ? ', ' . $user->pays : ''); ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col-12 col-md-4 text-md-end">
                         <div class="row g-2">
                             <div class="col-4">
                                 <div class="card text-center orange-bg text-white">
-                                    <div class="fs-2 stats-number" id="totalOrders">{{ $stats['total_orders'] }}</div>
+                                    <div class="fs-2 stats-number" id="totalOrders"><?php echo e($stats['total_orders']); ?></div>
                                     <span class="fs-8">Commandes</span>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="card text-center orange-bg text-white">
-                                    <div class="fs-2 stats-number" id="totalFavorites">{{ $stats['total_favorites'] }}</div>
+                                    <div class="fs-2 stats-number" id="totalFavorites"><?php echo e($stats['total_favorites']); ?></div>
                                     <span class="fs-8">Favoris</span>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="card text-center orange-bg text-white">
-                                    <div class="fs-2 stats-number" id="totalReviews">{{ $stats['total_reviews'] }}</div>
+                                    <div class="fs-2 stats-number" id="totalReviews"><?php echo e($stats['total_reviews']); ?></div>
                                     <span class="fs-8">Avis donnés</span>
                                 </div>
                             </div>
@@ -191,52 +189,52 @@ use Illuminate\Support\Str;
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label for="firstName" class="form-label">Prénom</label>
-                                                <input type="text" class="form-control" id="firstName" value="{{ $user->prenoms }}">
+                                                <input type="text" class="form-control" id="firstName" value="<?php echo e($user->prenoms); ?>">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="lastName" class="form-label">Nom</label>
-                                                <input type="text" class="form-control" id="lastName" value="{{ $user->nom }}">
+                                                <input type="text" class="form-control" id="lastName" value="<?php echo e($user->nom); ?>">
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label for="email" class="form-label">Email</label>
-                                                <input type="email" class="form-control" id="email" value="{{ $user->email }}">
+                                                <input type="email" class="form-control" id="email" value="<?php echo e($user->email); ?>">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="phone" class="form-label">Téléphone</label>
-                                                <input type="tel" class="form-control" id="phone" value="{{ $user->telephone }}">
+                                                <input type="tel" class="form-control" id="phone" value="<?php echo e($user->telephone); ?>">
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-8 mb-3">
                                                 <label for="address" class="form-label">Adresse</label>
-                                                <input type="text" class="form-control" id="address" value="{{ $user->adresse ?? '' }}">
+                                                <input type="text" class="form-control" id="address" value="<?php echo e($user->adresse ?? ''); ?>">
                                             </div>
                                             <div class="col-md-4 mb-3">
                                                 <label for="postalCode" class="form-label">Code postal</label>
-                                                <input type="text" class="form-control" id="postalCode" value="{{ $user->code_postal ?? '' }}">
+                                                <input type="text" class="form-control" id="postalCode" value="<?php echo e($user->code_postal ?? ''); ?>">
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label for="city" class="form-label">Ville</label>
-                                                <input type="text" class="form-control" id="city" value="{{ $user->ville ?? '' }}">
+                                                <input type="text" class="form-control" id="city" value="<?php echo e($user->ville ?? ''); ?>">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="country" class="form-label">Pays</label>
                                                 <select class="form-control" id="country">
-                                                    <option value="CI" {{ ($user->pays ?? 'CI') == 'CI' ? 'selected' : '' }}>Côte d'Ivoire</option>
-                                                    <option value="SN" {{ ($user->pays ?? '') == 'SN' ? 'selected' : '' }}>Sénégal</option>
-                                                    <option value="ML" {{ ($user->pays ?? '') == 'ML' ? 'selected' : '' }}>Mali</option>
-                                                    <option value="BF" {{ ($user->pays ?? '') == 'BF' ? 'selected' : '' }}>Burkina Faso</option>
-                                                    <option value="GH" {{ ($user->pays ?? '') == 'GH' ? 'selected' : '' }}>Ghana</option>
+                                                    <option value="CI" <?php echo e(($user->pays ?? 'CI') == 'CI' ? 'selected' : ''); ?>>Côte d'Ivoire</option>
+                                                    <option value="SN" <?php echo e(($user->pays ?? '') == 'SN' ? 'selected' : ''); ?>>Sénégal</option>
+                                                    <option value="ML" <?php echo e(($user->pays ?? '') == 'ML' ? 'selected' : ''); ?>>Mali</option>
+                                                    <option value="BF" <?php echo e(($user->pays ?? '') == 'BF' ? 'selected' : ''); ?>>Burkina Faso</option>
+                                                    <option value="GH" <?php echo e(($user->pays ?? '') == 'GH' ? 'selected' : ''); ?>>Ghana</option>
                                                 </select>
                                             </div>
                                         </div>
                                         <div class="mb-3">
                                             <label for="bio" class="form-label">Biographie</label>
-                                            <textarea class="form-control" id="bio" rows="3" placeholder="Parlez-nous de vous...">{{ $user->bio ?? '' }}</textarea>
+                                            <textarea class="form-control" id="bio" rows="3" placeholder="Parlez-nous de vous..."><?php echo e($user->bio ?? ''); ?></textarea>
                                         </div>
                                         <button type="submit" class="btn btn-sm orange-bg text-white">
                                             <i class="bi bi-save me-2"></i>Enregistrer les modifications
@@ -350,26 +348,28 @@ use Illuminate\Support\Str;
                                                             <i class="bi bi-shield-check text-success me-2"></i>
                                                             <strong>Connexion réussie</strong>
                                                             <div class="small text-muted">
-                                                                Aujourd'hui à {{ date('H:i') }}
+                                                                Aujourd'hui à <?php echo e(date('H:i')); ?>
+
                                                             </div>
                                                         </div>
                                                         <span class="badge bg-success">Succès</span>
                                                     </div>
                                                 </div>
-                                                @if($user->email_verified_at)
+                                                <?php if($user->email_verified_at): ?>
                                                 <div class="list-group-item">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <i class="bi bi-envelope-check text-info me-2"></i>
                                                             <strong>Email vérifié</strong>
                                                             <div class="small text-muted">
-                                                                {{ \Carbon\Carbon::parse($user->email_verified_at)->format('d/m/Y à H:i') }}
+                                                                <?php echo e(\Carbon\Carbon::parse($user->email_verified_at)->format('d/m/Y à H:i')); ?>
+
                                                             </div>
                                                         </div>
                                                         <span class="badge bg-info">Vérifié</span>
                                                     </div>
                                                 </div>
-                                                @endif
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -528,10 +528,10 @@ use Illuminate\Support\Str;
                                         <h5 class="card-title mb-0"><i class="bi bi-inbox me-2"></i>Boîte de réception</h5>
                                         <small class="text-muted">Messages de support qui vous sont attribués</small>
                                     </div>
-                                    <span class="badge orange-bg text-white">{{ $tickets->count() }} message{{ $tickets->count() > 1 ? 's' : '' }}</span>
+                                    <span class="badge orange-bg text-white"><?php echo e($tickets->count()); ?> message<?php echo e($tickets->count() > 1 ? 's' : ''); ?></span>
                                 </div>
                                 <div class="card-body">
-                                    @if($tickets->isEmpty())
+                                    <?php if($tickets->isEmpty()): ?>
                                         <div class="text-center py-5">
                                             <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
                                             <h5 class="mt-3 text-muted">Aucun message pour le moment</h5>
@@ -540,12 +540,12 @@ use Illuminate\Support\Str;
                                                 <i class="bi bi-envelope me-1"></i>Contacter le support
                                             </a>
                                         </div>
-                                    @else
+                                    <?php else: ?>
                                         <div class="row g-3">
                                             <div class="col-lg-4">
                                                 <div class="list-group" id="ticketList">
-                                                    @foreach($tickets as $index => $ticket)
-                                                        @php
+                                                    <?php $__currentLoopData = $tickets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $ticket): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                        <?php
                                                             $statusLabels = [
                                                                 'open' => 'Ouvert',
                                                                 'pending' => 'En attente',
@@ -573,96 +573,102 @@ use Illuminate\Support\Str;
                                                                 'urgent' => 'badge bg-danger text-white',
                                                             ];
                                                             $latestMessage = $ticket->messages->where('is_internal', false)->sortByDesc('created_at')->first();
-                                                        @endphp
-                                                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start {{ $index === 0 ? 'active' : '' }}"
-                                                           data-ticket="#ticket-thread-{{ $ticket->id }}">
+                                                        ?>
+                                                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start <?php echo e($index === 0 ? 'active' : ''); ?>"
+                                                           data-ticket="#ticket-thread-<?php echo e($ticket->id); ?>">
                                                             <div class="me-3">
-                                                                <div class="fw-bold">{{ $ticket->subject ?? 'Message #' . $ticket->ticket_number }}</div>
-                                                                <small class="text-muted d-block">{{ $latestMessage ? $latestMessage->created_at->format('d/m/Y H:i') : $ticket->created_at->format('d/m/Y H:i') }}</small>
-                                                                @if($latestMessage)
+                                                                <div class="fw-bold"><?php echo e($ticket->subject ?? 'Message #' . $ticket->ticket_number); ?></div>
+                                                                <small class="text-muted d-block"><?php echo e($latestMessage ? $latestMessage->created_at->format('d/m/Y H:i') : $ticket->created_at->format('d/m/Y H:i')); ?></small>
+                                                                <?php if($latestMessage): ?>
                                                                     <small class="text-truncate d-block" style="max-width: 220px;">
-                                                                        {{ Str::limit(strip_tags($latestMessage->message), 50) }}
+                                                                        <?php echo e(Str::limit(strip_tags($latestMessage->message), 50)); ?>
+
                                                                     </small>
-                                                                @else
+                                                                <?php else: ?>
                                                                     <small class="text-muted">En attente d'un premier message</small>
-                                                                @endif
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="text-end">
-                                                                <span class="badge {{ $statusClasses[$ticket->status] ?? 'bg-secondary' }} mb-1">
-                                                                    {{ $statusLabels[$ticket->status] ?? ucfirst($ticket->status) }}
+                                                                <span class="badge <?php echo e($statusClasses[$ticket->status] ?? 'bg-secondary'); ?> mb-1">
+                                                                    <?php echo e($statusLabels[$ticket->status] ?? ucfirst($ticket->status)); ?>
+
                                                                 </span>
                                                                 <div class="small text-muted">Priorité</div>
-                                                                <span class="{{ $priorityClasses[$ticket->priority] ?? 'badge bg-secondary' }}">{{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}</span>
+                                                                <span class="<?php echo e($priorityClasses[$ticket->priority] ?? 'badge bg-secondary'); ?>"><?php echo e($priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority)); ?></span>
                                                             </div>
                                                         </a>
-                                                    @endforeach
+                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                 </div>
                                             </div>
                                             <div class="col-lg-8">
-                                                @foreach($tickets as $index => $ticket)
-                                                    @php
+                                                <?php $__currentLoopData = $tickets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $ticket): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <?php
                                                         $visibleMessages = $ticket->messages->where('is_internal', false);
-                                                    @endphp
-                                                    <div class="ticket-thread {{ $index === 0 ? '' : 'd-none' }}" id="ticket-thread-{{ $ticket->id }}">
+                                                    ?>
+                                                    <div class="ticket-thread <?php echo e($index === 0 ? '' : 'd-none'); ?>" id="ticket-thread-<?php echo e($ticket->id); ?>">
                                                         <div class="d-flex justify-content-between align-items-start mb-3">
                                                             <div>
-                                                                <h6 class="fw-bold mb-1">{{ $ticket->subject ?? 'Message #' . $ticket->ticket_number }}</h6>
+                                                                <h6 class="fw-bold mb-1"><?php echo e($ticket->subject ?? 'Message #' . $ticket->ticket_number); ?></h6>
                                                                 <div class="d-flex flex-wrap gap-2">
-                                                                    <span class="badge {{ $statusClasses[$ticket->status] ?? 'bg-secondary' }}">
-                                                                        {{ $statusLabels[$ticket->status] ?? ucfirst($ticket->status) }}
+                                                                    <span class="badge <?php echo e($statusClasses[$ticket->status] ?? 'bg-secondary'); ?>">
+                                                                        <?php echo e($statusLabels[$ticket->status] ?? ucfirst($ticket->status)); ?>
+
                                                                     </span>
                                                                     <span class="badge bg-light text-muted border">
-                                                                        <i class="bi bi-hash me-1"></i>{{ $ticket->ticket_number ?? $ticket->id }}
+                                                                        <i class="bi bi-hash me-1"></i><?php echo e($ticket->ticket_number ?? $ticket->id); ?>
+
                                                                     </span>
-                                                                    <span class="{{ $priorityClasses[$ticket->priority] ?? 'badge bg-secondary' }}">
-                                                                        <i class="bi bi-flag me-1"></i>{{ $priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority) }}
+                                                                    <span class="<?php echo e($priorityClasses[$ticket->priority] ?? 'badge bg-secondary'); ?>">
+                                                                        <i class="bi bi-flag me-1"></i><?php echo e($priorityLabels[$ticket->priority] ?? ucfirst($ticket->priority)); ?>
+
                                                                     </span>
-                                                                    @if($ticket->order_id)
+                                                                    <?php if($ticket->order_id): ?>
                                                                         <span class="badge bg-light text-muted border">
-                                                                            <i class="bi bi-bag me-1"></i>Commande #{{ $ticket->order_id }}
+                                                                            <i class="bi bi-bag me-1"></i>Commande #<?php echo e($ticket->order_id); ?>
+
                                                                         </span>
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                 </div>
                                                             </div>
-                                                            <small class="text-muted">Mis à jour le {{ $ticket->updated_at->format('d/m/Y à H:i') }}</small>
+                                                            <small class="text-muted">Mis à jour le <?php echo e($ticket->updated_at->format('d/m/Y à H:i')); ?></small>
                                                         </div>
 
                                                         <div class="border rounded p-3 bg-light-subtle">
                                                             <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Messages</h6>
-                                                            @if($visibleMessages->isEmpty())
+                                                            <?php if($visibleMessages->isEmpty()): ?>
                                                         <p class="text-muted mb-0">Aucun message n'a encore été publié dans cette conversation.</p>
-                                                            @else
+                                                            <?php else: ?>
                                                                 <div class="timeline">
-                                                                    @foreach($visibleMessages as $message)
+                                                                    <?php $__currentLoopData = $visibleMessages; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $message): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                                         <div class="mb-4">
                                                                             <div class="d-flex justify-content-between align-items-start">
                                                                                 <div>
-                                                                                    <strong>{{ $message->user_id === $user->id ? 'Vous' : ($message->author?->prenoms . ' ' . $message->author?->nom ?? 'Support Kazaria') }}</strong>
-                                                                                    @if($message->user_id === $user->id)
+                                                                                    <strong><?php echo e($message->user_id === $user->id ? 'Vous' : ($message->author?->prenoms . ' ' . $message->author?->nom ?? 'Support Kazaria')); ?></strong>
+                                                                                    <?php if($message->user_id === $user->id): ?>
                                                                                         <span class="badge bg-primary-subtle text-primary ms-2">Client</span>
-                                                                                    @else
+                                                                                    <?php else: ?>
                                                                                         <span class="badge bg-success-subtle text-success ms-2">Support</span>
-                                                                                    @endif
+                                                                                    <?php endif; ?>
                                                                                 </div>
-                                                                                <small class="text-muted">{{ $message->created_at->format('d/m/Y à H:i') }}</small>
+                                                                                <small class="text-muted"><?php echo e($message->created_at->format('d/m/Y à H:i')); ?></small>
                                                                             </div>
                                                                             <div class="mt-2 ps-3 border-start">
-                                                                                <p class="mb-2">{!! nl2br(e($message->message)) !!}</p>
-                                                                                @if(!empty($message->attachments))
+                                                                                <p class="mb-2"><?php echo nl2br(e($message->message)); ?></p>
+                                                                                <?php if(!empty($message->attachments)): ?>
                                                                                     <div class="mt-2">
                                                                                         <small class="text-muted d-block mb-1"><i class="bi bi-paperclip me-1"></i>Pièces jointes :</small>
-                                                                                        @foreach($message->attachments as $attachment)
-                                                                                            <a href="{{ $attachment }}" target="_blank" class="btn btn-outline-secondary btn-sm me-2 mb-2">
+                                                                                        <?php $__currentLoopData = $message->attachments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attachment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                                                            <a href="<?php echo e($attachment); ?>" target="_blank" class="btn btn-outline-secondary btn-sm me-2 mb-2">
                                                                                                 <i class="bi bi-file-earmark-arrow-down me-1"></i>Télécharger
                                                                                             </a>
-                                                                                        @endforeach
+                                                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                                                     </div>
-                                                                                @endif
+                                                                                <?php endif; ?>
                                                                             </div>
                                                                         </div>
-                                                                    @endforeach
+                                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                                 </div>
-                                                            @endif
+                                                            <?php endif; ?>
                                                         </div>
 
                                                         <div class="alert alert-info mt-3 mb-0">
@@ -670,10 +676,10 @@ use Illuminate\Support\Str;
                                                             Pour répondre à ce message, merci de répondre directement à l'email reçu ou d'utiliser votre espace vendeur si vous êtes marchand.
                                                         </div>
                                                     </div>
-                                                @endforeach
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                             </div>
                                         </div>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -692,7 +698,7 @@ use Illuminate\Support\Str;
                                         <i class="bi bi-heart text-muted" style="font-size: 3rem;"></i>
                                         <h5 class="mt-3 text-muted">Aucun produit favori</h5>
                                         <p class="text-muted">Découvrez nos produits et ajoutez-les à vos favoris !</p>
-                                        <a href="{{ route('boutique_officielle') }}" class="btn orange-bg text-white">
+                                        <a href="<?php echo e(route('boutique_officielle')); ?>" class="btn orange-bg text-white">
                                             <i class="bi bi-shop me-2"></i>Découvrir la boutique
                                         </a>
                                     </div>
@@ -740,11 +746,11 @@ use Illuminate\Support\Str;
                     <div class="modal-body">
                         <div class="text-center mb-4">
                             <div class="position-relative d-inline-block">
-                                @if($user->profile_pic_url)
-                                    <img id="photoPreview" src="{{ asset($user->profile_pic_url) }}" alt="Aperçu" class="rounded-circle" width="150" height="150" style="object-fit: cover;">
-                                @else
-                                    <img id="photoPreview" src="https://via.placeholder.com/150x150/f04e27/ffffff?text={{ strtoupper(substr($user->prenoms, 0, 1) . substr($user->nom, 0, 1)) }}" alt="Aperçu" class="rounded-circle" width="150" height="150" style="object-fit: cover;">
-                                @endif
+                                <?php if($user->profile_pic_url): ?>
+                                    <img id="photoPreview" src="<?php echo e(asset($user->profile_pic_url)); ?>" alt="Aperçu" class="rounded-circle" width="150" height="150" style="object-fit: cover;">
+                                <?php else: ?>
+                                    <img id="photoPreview" src="https://via.placeholder.com/150x150/f04e27/ffffff?text=<?php echo e(strtoupper(substr($user->prenoms, 0, 1) . substr($user->nom, 0, 1))); ?>" alt="Aperçu" class="rounded-circle" width="150" height="150" style="object-fit: cover;">
+                                <?php endif; ?>
                                 <div class="position-absolute bottom-0 end-0">
                                     <label for="photoInput" class="btn btn-sm orange-bg text-white rounded-circle" style="width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                         <i class="bi bi-camera"></i>
@@ -2275,4 +2281,5 @@ use Illuminate\Support\Str;
         document.addEventListener('DOMContentLoaded', checkUserStore);
     </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/profil.blade.php ENDPATH**/ ?>

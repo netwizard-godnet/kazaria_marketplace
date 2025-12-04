@@ -82,6 +82,11 @@ class TestAI extends Command
                     'message' => $question
                 ]);
                 
+                // Créer une session pour la requête
+                $session = app('session.store');
+                $session->start();
+                $request->setLaravelSession($session);
+                
                 $response = $controller->query($request);
                 $data = json_decode($response->getContent(), true);
                 

@@ -530,6 +530,20 @@
         </section>
         <!-- SECTION Tendance END -->
 
+        <!-- SECTION Suggestions basées sur l'historique (hors chat box) -->
+        <section id="ai-suggestions-section" class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true" style="display: none;">
+            <div class="bg-light d-flex align-items-center justify-content-between mb-4 border-bottom p-2">
+                <h5 class="mb-0" id="ai-suggestions-title">Pour vous</h5>
+            </div>
+            <div class="multi-carousel-track d-flex" id="ai-suggestions-container">
+                <!-- Les produits seront chargés dynamiquement ici -->
+            </div>
+            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
+            <div class="multi-carousel-dots text-center mt-2"></div>
+        </section>
+        <!-- SECTION Suggestions basées sur l'historique END -->
+
         <!-- SECTION Politique de confidentialité -->
         <section class="container-fluid py-5 bg-light">
             <div class="container">
@@ -788,5 +802,111 @@ unset($__errorArgs, $__bag); ?>
         })();
     </script>
 
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Charger les suggestions basées sur l'historique de vues
+        loadAISuggestions();
+        
+        function loadAISuggestions() {
+            fetch('/api/ai/suggestions', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.products && data.products.length > 0) {
+                    displayAISuggestions(data.products, data.title);
+                }
+            })
+            .catch(error => {
+                console.log('Erreur lors du chargement des suggestions:', error);
+                // Ne pas afficher d'erreur à l'utilisateur, simplement ne pas afficher la section
+            });
+        }
+        
+        function displayAISuggestions(products, title) {
+            const section = document.getElementById('ai-suggestions-section');
+            const container = document.getElementById('ai-suggestions-container');
+            const titleElement = document.getElementById('ai-suggestions-title');
+            
+            if (!section || !container) return;
+            
+            // Mettre à jour le titre
+            if (titleElement && title) {
+                titleElement.textContent = title;
+            }
+            
+            // Vider le conteneur
+            container.innerHTML = '';
+            
+            // Créer les cartes produits en utilisant le même format que les autres sections
+            products.forEach(product => {
+                const productCard = createProductCard(product);
+                container.appendChild(productCard);
+            });
+            
+            // Afficher la section
+            section.style.display = 'block';
+            
+            // Réinitialiser le carousel si nécessaire
+            if (typeof initMultiCarousel === 'function') {
+                initMultiCarousel(section);
+            }
+        }
+        
+        function createProductCard(product) {
+            const div = document.createElement('div');
+            div.className = 'multi-carousel-item px-2';
+            
+            // Utiliser le même format que les autres cartes produits
+            const price = parseFloat(product.price) || 0;
+            const oldPrice = parseFloat(product.old_price) || 0;
+            const discount = product.discount_percentage || 0;
+            const hasDiscount = oldPrice > price && discount > 0;
+            
+            // Créer une structure similaire à celle utilisée dans product-card.blade.php
+            div.innerHTML = `
+                <div class="card border-0 shadow-sm h-100 product-card">
+                    <a href="${product.url || '/produit/' + product.slug}" class="text-decoration-none">
+                        <div class="position-relative">
+                            <img src="${product.image || '/images/produit.jpg'}" 
+                                 class="card-img-top" 
+                                 alt="${product.name || 'Produit'}"
+                                 style="height: 200px; object-fit: cover;"
+                                 onerror="this.src='/images/produit.jpg'">
+                            ${hasDiscount ? `<span class="badge bg-danger position-absolute top-0 end-0 m-2">-${discount}%</span>` : ''}
+                        </div>
+                        <div class="card-body p-2">
+                            <h6 class="card-title text-dark mb-1" style="font-size: 0.9rem; line-height: 1.3; height: 2.6em; overflow: hidden;">
+                                ${product.name || 'Produit'}
+                            </h6>
+                            ${product.brand ? `<small class="text-muted d-block mb-1">${product.brand}</small>` : ''}
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <span class="fw-bold text-dark">${formatPrice(price)}</span>
+                                    ${hasDiscount ? `<small class="text-muted text-decoration-line-through ms-2">${formatPrice(oldPrice)}</small>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        function formatPrice(price) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'XOF',
+                minimumFractionDigits: 0
+            }).format(price).replace('XOF', 'FCFA');
+        }
+    });
+    </script>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/accueil.blade.php ENDPATH**/ ?>
