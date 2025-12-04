@@ -50,6 +50,69 @@ use Illuminate\Support\Str;
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Styles pour les boutons d'actions des commandes */
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid;
+            background: white;
+            transition: all 0.3s ease;
+            padding: 0;
+            margin-right: 0.5rem;
+            text-decoration: none;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .action-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .action-btn-danger {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        .action-btn-danger:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .action-btn-success {
+            border-color: #28a745;
+            color: #28a745;
+        }
+        .action-btn-success:hover {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .action-btn-primary {
+            border-color: #007bff;
+            color: #007bff;
+        }
+        .action-btn-primary:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .action-btn-orange {
+            border-color: var(--main-color);
+            background-color: var(--main-color);
+            color: white;
+        }
+        .action-btn-orange:hover {
+            background-color: #e03d1a;
+            border-color: #e03d1a;
+            color: white;
+        }
+
         /* Responsive pour mobile */
         @media (max-width: 768px) {
             .sidebar .nav-pills {
@@ -60,6 +123,16 @@ use Illuminate\Support\Str;
             
             .sidebar .nav-pills .nav-item {
                 flex: 0 0 auto;
+            }
+            
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                margin-right: 0.25rem;
+            }
+            
+            .action-btn i {
+                font-size: 1rem;
             }
         }
     </style>
@@ -1337,7 +1410,7 @@ use Illuminate\Support\Str;
                         
                         // Bouton d'annulation (seulement si statut = pending)
                         const cancelButton = order.status === 'pending' 
-                            ? `<button class="btn btn-sm btn-outline-danger me-1" onclick="cancelOrder('${order.order_number}')" title="Annuler la commande">
+                            ? `<button class="action-btn action-btn-danger" onclick="cancelOrder('${order.order_number}')" title="Annuler la commande">
                                     <i class="bi bi-x-circle"></i>
                                 </button>`
                             : '';
@@ -1348,16 +1421,18 @@ use Illuminate\Support\Str;
                             <td><span class="badge ${statusBadge.class}">${statusBadge.label}</span></td>
                             <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
                             <td>
-                                ${cancelButton}
-                                <button class="btn btn-sm btn-outline-success me-1" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
-                                    <i class="bi bi-truck"></i>
-                                </button>
-                                <a href="/order/invoice/${order.order_number}" class="btn btn-sm btn-outline-primary me-1" title="Voir la facture">
-                                    <i class="bi bi-file-earmark-text"></i>
-                                </a>
-                                <a href="/order/download/${order.order_number}" class="btn btn-sm orange-bg text-white" title="Télécharger PDF">
-                                    <i class="bi bi-download"></i>
-                                </a>
+                                <div class="d-flex align-items-center">
+                                    ${cancelButton}
+                                    <button class="action-btn action-btn-success" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
+                                        <i class="bi bi-truck"></i>
+                                    </button>
+                                    <a href="/order/invoice/${order.order_number}" class="action-btn action-btn-primary" title="Voir la facture">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
+                                    <a href="/order/download/${order.order_number}" class="action-btn action-btn-orange" title="Télécharger PDF">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </div>
                             </td>
                         `;
                         tbody.appendChild(row);
@@ -1539,65 +1614,264 @@ use Illuminate\Support\Str;
             const progressPercentage = getProgressPercentage(order.status);
             const paymentMethodLabel = getPaymentMethodLabel(order.payment_method);
             
+            // Déterminer les états des étapes
+            const isValidationComplete = order.status === 'pending' || order.status === 'processing' || order.status === 'delivered';
+            const isDeliveryInProgress = order.status === 'processing' || order.status === 'delivered';
+            const isDelivered = order.status === 'delivered';
+            
+            // Déterminer l'étape active
+            let activeStep = 1;
+            if (isDelivered) activeStep = 3;
+            else if (isDeliveryInProgress) activeStep = 2;
+            
             document.getElementById('trackOrderContent').innerHTML = `
-                <div class="row mb-4">
+                <style>
+                    .order-info-card {
+                        background: #fff;
+                        border-radius: 12px;
+                        padding: 1.5rem;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                        transition: transform 0.2s, box-shadow 0.2s;
+                        height: 100%;
+                    }
+                    .order-info-card:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+                    }
+                    .order-info-card .card-icon {
+                        width: 48px;
+                        height: 48px;
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-bottom: 1rem;
+                    }
+                    .order-info-card .card-icon.orange {
+                        background: linear-gradient(135deg, var(--main-color) 0%, #ff8c00 100%);
+                        color: white;
+                    }
+                    .order-info-card .card-icon.blue {
+                        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+                        color: white;
+                    }
+                    .info-item {
+                        display: flex;
+                        align-items: flex-start;
+                        padding: 0.75rem 0;
+                        border-bottom: 1px solid #f0f0f0;
+                    }
+                    .info-item:last-child {
+                        border-bottom: none;
+                    }
+                    .info-label {
+                        font-weight: 600;
+                        color: #666;
+                        min-width: 100px;
+                        font-size: 0.9rem;
+                    }
+                    .info-value {
+                        color: #333;
+                        flex: 1;
+                        font-size: 0.95rem;
+                    }
+                    .info-value.total {
+                        font-size: 1.2rem;
+                        font-weight: 700;
+                        color: var(--main-color);
+                    }
+                    .timeline-container {
+                        position: relative;
+                        padding: 1.5rem 0;
+                    }
+                    .timeline-step {
+                        position: relative;
+                        padding-left: 3rem;
+                        padding-bottom: 2rem;
+                    }
+                    .timeline-step:last-child {
+                        padding-bottom: 0;
+                    }
+                    .timeline-step::before {
+                        content: '';
+                        position: absolute;
+                        left: 0.75rem;
+                        top: 2rem;
+                        width: 2px;
+                        height: calc(100% - 1rem);
+                        background: #e0e0e0;
+                    }
+                    .timeline-step:last-child::before {
+                        display: none;
+                    }
+                    .timeline-step.completed::before {
+                        background: var(--main-color);
+                    }
+                    .timeline-step.active::before {
+                        background: linear-gradient(to bottom, var(--main-color) 0%, #e0e0e0 100%);
+                    }
+                    .timeline-icon {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 1.5rem;
+                        height: 1.5rem;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.75rem;
+                        border: 2px solid #e0e0e0;
+                        background: white;
+                        z-index: 2;
+                    }
+                    .timeline-step.completed .timeline-icon {
+                        background: var(--main-color);
+                        border-color: var(--main-color);
+                        color: white;
+                    }
+                    .timeline-step.active .timeline-icon {
+                        background: white;
+                        border-color: var(--main-color);
+                        color: var(--main-color);
+                        box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.1);
+                    }
+                    .timeline-content h6 {
+                        margin: 0;
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 0.95rem;
+                    }
+                    .timeline-step.completed .timeline-content h6 {
+                        color: var(--main-color);
+                    }
+                    .timeline-step.active .timeline-content h6 {
+                        color: var(--main-color);
+                        font-weight: 700;
+                    }
+                    .progress-bar-modern {
+                        height: 6px;
+                        background: #f0f0f0;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        margin-bottom: 2rem;
+                    }
+                    .progress-fill {
+                        height: 100%;
+                        background: linear-gradient(90deg, var(--main-color) 0%, #ff8c00 100%);
+                        border-radius: 10px;
+                        transition: width 0.5s ease;
+                    }
+                </style>
+                
+                <div class="row g-4 mb-4">
+                    <!-- Informations de commande -->
                     <div class="col-md-6">
-                        <h6 class="fw-bold">Informations de commande</h6>
-                        <table class="table table-sm">
-                            <tr><td class="fw-bold">Numéro:</td><td>${order.order_number}</td></tr>
-                            <tr><td class="fw-bold">Date:</td><td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td></tr>
-                            <tr><td class="fw-bold">Total:</td><td class="fw-bold orange-color">${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</td></tr>
-                            <tr><td class="fw-bold">Paiement:</td><td>${paymentMethodLabel}</td></tr>
-                        </table>
+                        <div class="order-info-card">
+                            <div class="card-icon orange">
+                                <i class="bi bi-receipt fs-4"></i>
+                            </div>
+                            <h6 class="fw-bold mb-3" style="color: #333;">Informations de commande</h6>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-hash me-1"></i>Numéro:</span>
+                                <span class="info-value">${order.order_number}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-calendar3 me-1"></i>Date:</span>
+                                <span class="info-value">${new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-currency-exchange me-1"></i>Total:</span>
+                                <span class="info-value total">${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-credit-card me-1"></i>Paiement:</span>
+                                <span class="info-value">${paymentMethodLabel}</span>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <!-- Livraison -->
                     <div class="col-md-6">
-                        <h6 class="fw-bold">Livraison</h6>
-                        <table class="table table-sm">
-                            <tr><td class="fw-bold">Nom:</td><td>${order.shipping_name}</td></tr>
-                            <tr><td class="fw-bold">Adresse:</td><td>${order.shipping_address}</td></tr>
-                            <tr><td class="fw-bold">Ville:</td><td>${order.shipping_city}</td></tr>
-                            <tr><td class="fw-bold">Téléphone:</td><td>${order.shipping_phone}</td></tr>
-                        </table>
+                        <div class="order-info-card">
+                            <div class="card-icon blue">
+                                <i class="bi bi-truck fs-4"></i>
+                            </div>
+                            <h6 class="fw-bold mb-3" style="color: #333;">Livraison</h6>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-person me-1"></i>Nom:</span>
+                                <span class="info-value">${order.shipping_name}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-geo-alt me-1"></i>Adresse:</span>
+                                <span class="info-value">${order.shipping_address}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-building me-1"></i>Ville:</span>
+                                <span class="info-value">${order.shipping_city}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="bi bi-telephone me-1"></i>Téléphone:</span>
+                                <span class="info-value">${order.shipping_phone}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <hr>
                 
                 ${order.status === 'cancelled' ? `
                 <!-- Commande annulée -->
                 <div class="mb-4">
-                    <div class="alert alert-danger d-flex align-items-center">
+                    <div class="alert alert-danger d-flex align-items-center p-3" style="border-radius: 12px; border-left: 4px solid #dc3545;">
                         <i class="bi bi-x-circle-fill me-3 fs-3"></i>
                         <div>
-                            <h6 class="mb-0 fw-bold">Commande annulée</h6>
+                            <h6 class="mb-1 fw-bold">Commande annulée</h6>
                             <p class="mb-0 small">Cette commande a été annulée et n'est plus en cours de traitement.</p>
                         </div>
                     </div>
                 </div>
                 ` : `
-                <!-- Progression de livraison -->
+                <!-- Suivi de livraison -->
                 <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Suivi de livraison</h6>
-                    <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar orange-bg" role="progressbar" style="width: ${progressPercentage}%"></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="bi ${order.status === 'pending' || order.status === 'processing' || order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
-                                <p class="mb-0 mt-1 small">En cours de validation</p>
+                    <div class="order-info-card">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon orange me-3" style="margin-bottom: 0;">
+                                <i class="bi bi-clipboard-check fs-5"></i>
                             </div>
+                            <h6 class="fw-bold mb-0" style="color: #333;">Suivi de livraison</h6>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="bi ${order.status === 'processing' || order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
-                                <p class="mb-0 mt-1 small">En cours de livraison</p>
+                        
+                        <!-- Barre de progression -->
+                        <div class="progress-bar-modern">
+                            <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                        </div>
+                        
+                        <!-- Timeline -->
+                        <div class="timeline-container">
+                            <div class="timeline-step ${isValidationComplete ? 'completed' : activeStep === 1 ? 'active' : ''}">
+                                <div class="timeline-icon">
+                                    ${isValidationComplete ? '<i class="bi bi-check"></i>' : activeStep === 1 ? '<i class="bi bi-clock"></i>' : ''}
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>En cours de validation</h6>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <i class="bi ${order.status === 'delivered' ? 'bi-check-circle-fill text-success' : 'bi-circle text-muted'} fs-4"></i>
-                                <p class="mb-0 mt-1 small">Livrée</p>
+                            
+                            <div class="timeline-step ${isDelivered ? 'completed' : activeStep === 2 ? 'active' : ''}">
+                                <div class="timeline-icon">
+                                    ${isDelivered ? '<i class="bi bi-check"></i>' : activeStep === 2 ? '<i class="bi bi-truck"></i>' : ''}
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>En cours de livraison</h6>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-step ${isDelivered ? 'completed' : ''}">
+                                <div class="timeline-icon">
+                                    ${isDelivered ? '<i class="bi bi-check"></i>' : ''}
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Livrée</h6>
+                                </div>
                             </div>
                         </div>
                     </div>

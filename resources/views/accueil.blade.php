@@ -112,39 +112,39 @@
         <section class="border border-light py-3">
             <div class="container">
                 <div class="row g-3">
-                    <div class="col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-start">
-                            <i class="fa-solid fa-rocket fa-3x me-3 orange-color"></i>
+                    <div class="col-3 col-md-3 border-end">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
+                            <i class="fa-solid fa-rocket fa-2x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Livraison Gratuite</p>
-                                <span class="fs-8 text-secondary">Livraison gratuite pour tout achat de 100.000F ou plus</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Livraison gratuite pour tout achat de 100.000F ou plus</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-start">
-                            <i class="fa-solid fa-shield-halved fa-3x me-3 orange-color"></i>
+                    <div class="col-3 col-md-3 border-end">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
+                            <i class="fa-solid fa-shield-halved fa-2x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">90 Jours Garantie</p>
-                                <span class="fs-8 text-secondary">Garantie complète sur tous les produits électroniques achetés, réparation ou remboursement.</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Garantie complète sur tous les produits électroniques achetés, réparation ou remboursement.</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 border-end">
-                        <div class="d-flex align-items-center justify-content-start">
-                            <i class="fa-solid fa-credit-card fa-3x me-3 orange-color"></i>
+                    <div class="col-3 col-md-3 border-end">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
+                            <i class="fa-solid fa-credit-card fa-2x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Paiement sécurisé</p>
-                                <span class="fs-8 text-secondary">Transactions protégées par carte bancaire ou Mobile Money, vos données sont sécurisées.</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Transactions protégées par carte bancaire ou Mobile Money, vos données sont sécurisées.</span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="d-flex align-items-center justify-content-start">
-                            <i class="fa-solid fa-comment-dots fa-3x me-3 orange-color"></i>
+                    <div class="col-3 col-md-3">
+                        <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
+                            <i class="fa-solid fa-comment-dots fa-2x me-3 orange-color"></i>
                             <div class="vstack gap-2">
                                 <p class="fs-7 fw-bold mb-0">Service Client 24/7</p>
-                                <span class="fs-8 text-secondary">Support disponible à tout moment via chat, email ou téléphone pour vous aider.</span>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Support disponible à tout moment via chat, email ou téléphone pour vous aider.</span>
                             </div>
                         </div>
                     </div>
@@ -292,7 +292,7 @@
                             @if($publicite1->link_url)
                                 <a href="{{ $publicite1->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite1Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 1">
+                            <img src="{{ $publicite1Image }}" class="w-100 object-fit-cover" alt="Publicité 1">
                             @if($publicite1->link_url)</a>@endif
                         </div>
                     @else
@@ -313,7 +313,7 @@
                             @if($publicite2->link_url)
                                 <a href="{{ $publicite2->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite2Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 2">
+                            <img src="{{ $publicite2Image }}" class="w-100 object-fit-cover" alt="Publicité 2">
                             @if($publicite2->link_url)</a>@endif
                         </div>
                     @else
@@ -334,7 +334,7 @@
                             @if($publicite3->link_url)
                                 <a href="{{ $publicite3->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite3Image }}" class="w-100 h-200px object-fit-cover" alt="Publicité 3">
+                            <img src="{{ $publicite3Image }}" class="w-100 object-fit-cover" alt="Publicité 3">
                             @if($publicite3->link_url)</a>@endif
                         </div>
                     @else
@@ -459,7 +459,7 @@
                             @if($publicite4->link_url)
                                 <a href="{{ $publicite4->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite4Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 4">
+                            <img src="{{ $publicite4Image }}" class="w-100 object-fit-cover" alt="Publicité 4">
                             @if($publicite4->link_url)</a>@endif
                         </div>
                     @else
@@ -480,7 +480,7 @@
                             @if($publicite5->link_url)
                                 <a href="{{ $publicite5->link_url }}" target="_blank" rel="noopener" class="d-block">
                             @endif
-                            <img src="{{ $publicite5Image }}" class="w-100 h-300px object-fit-cover" alt="Publicité 5">
+                            <img src="{{ $publicite5Image }}" class="w-100 object-fit-cover" alt="Publicité 5">
                             @if($publicite5->link_url)</a>@endif
                         </div>
                     @else
@@ -531,6 +531,20 @@
             <div class="multi-carousel-dots text-center mt-2"></div>
         </section>
         <!-- SECTION Tendance END -->
+
+        <!-- SECTION Suggestions basées sur l'historique (hors chat box) -->
+        <section id="ai-suggestions-section" class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true" style="display: none;">
+            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
+                <h5 class="mb-0 me-4" id="ai-suggestions-title">Pour vous</h5>
+            </div>
+            <div class="multi-carousel-track d-flex" id="ai-suggestions-container">
+                <!-- Les produits seront chargés dynamiquement ici -->
+            </div>
+            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
+            <div class="multi-carousel-dots text-center mt-2"></div>
+        </section>
+        <!-- SECTION Suggestions basées sur l'historique END -->
 
         <!-- SECTION Politique de confidentialité -->
         <section class="container-fluid py-5 bg-light">
@@ -775,4 +789,175 @@
         })();
     </script>
 
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que MultiCarousel soit disponible
+        function waitForMultiCarousel(callback) {
+            if (typeof MultiCarousel !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForMultiCarousel(callback), 100);
+            }
+        }
+        
+        // Charger les suggestions basées sur l'historique de vues
+        waitForMultiCarousel(() => {
+            loadAISuggestions();
+        });
+        
+        function loadAISuggestions() {
+            fetch('/api/ai/suggestions', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.products && data.products.length > 0) {
+                    displayAISuggestions(data.products, data.title);
+                }
+            })
+            .catch(error => {
+                console.log('Erreur lors du chargement des suggestions:', error);
+                // Ne pas afficher d'erreur à l'utilisateur, simplement ne pas afficher la section
+            });
+        }
+        
+        function displayAISuggestions(products, title) {
+            const section = document.getElementById('ai-suggestions-section');
+            const container = document.getElementById('ai-suggestions-container');
+            const titleElement = document.getElementById('ai-suggestions-title');
+            
+            if (!section || !container) return;
+            
+            // Mettre à jour le titre
+            if (titleElement && title) {
+                titleElement.textContent = title;
+            }
+            
+            // Vider le conteneur
+            container.innerHTML = '';
+            
+            // Créer les cartes produits en utilisant le même format que les autres sections
+            products.forEach(product => {
+                const productCard = createProductCard(product);
+                container.appendChild(productCard);
+            });
+            
+            // Afficher la section
+            section.style.display = 'block';
+            
+            // Initialiser le carousel avec MultiCarousel (comme les autres sections)
+            // Attendre un peu pour que le DOM soit mis à jour
+            setTimeout(() => {
+                if (typeof MultiCarousel !== 'undefined') {
+                    // Supprimer l'ancienne instance si elle existe
+                    if (section.multiCarouselInstance) {
+                        // Nettoyer l'ancienne instance si nécessaire
+                        delete section.multiCarouselInstance;
+                    }
+                    
+                    // Créer une nouvelle instance de MultiCarousel
+                    const options = {
+                        slidesToShow: parseInt(section.dataset.slidesToShow || 6),
+                        slidesToScroll: 1,
+                        gap: parseInt(section.dataset.gap || 0),
+                        autoplay: section.dataset.autoplay === "true",
+                        autoplaySpeed: parseInt(section.dataset.autoplaySpeed || 2000),
+                        pauseOnHover: section.dataset.pauseOnHover !== "false",
+                        responsive: [
+                            { breakpoint: 1200, settings: { slidesToShow: parseInt(section.dataset.slidesLg || section.dataset.slidesToShow) } },
+                            { breakpoint: 992,  settings: { slidesToShow: parseInt(section.dataset.slidesMd || section.dataset.slidesToShow) } },
+                            { breakpoint: 768,  settings: { slidesToShow: parseInt(section.dataset.slidesSm || section.dataset.slidesToShow) } },
+                            { breakpoint: 576,  settings: { slidesToShow: parseInt(section.dataset.slidesXs || section.dataset.slidesToShow) } }
+                        ]
+                    };
+                    
+                    section.multiCarouselInstance = new MultiCarousel(section, options);
+                }
+            }, 100);
+        }
+        
+        function createProductCard(product) {
+            const div = document.createElement('div');
+            div.className = 'multi-carousel-item px-2';
+            
+            // Utiliser le même format que le composant product-card.blade.php
+            const price = parseFloat(product.price) || 0;
+            const oldPrice = parseFloat(product.old_price) || 0;
+            const discount = product.discount_percentage || 0;
+            const hasDiscount = oldPrice > price && discount > 0;
+            const productUrl = product.url || (product.slug ? `/produit/${product.slug}` : '#');
+            const productImage = product.image || '/images/produit.jpg';
+            const productName = product.name || 'Produit';
+            const productId = product.id || 0;
+            
+            // Structure identique à product-card.blade.php
+            div.innerHTML = `
+                <div class="px-1 position-relative product-card">
+                    <a class="text-decoration-none" href="${productUrl}">
+                        <div class="position-relative">
+                            <img src="${productImage}" 
+                                 class="h-200px w-100 object-fit-contain" 
+                                 alt="${productName}"
+                                 onerror="this.src='/images/produit.jpg'">
+                            ${hasDiscount ? `<span class="position-absolute bottom-0 end-0 bg-light text-success fs-8 p-1 rounded-2">-${discount}%</span>` : ''}
+                            
+                            <!-- Bouton Favori -->
+                            <button class="btn btn-sm position-absolute top-0 end-0 m-2 bg-white border-0 shadow-sm favorite-btn" 
+                                    data-product-id="${productId}" 
+                                    onclick="event.preventDefault(); toggleFavorite(${productId}, this)">
+                                <i class="bi bi-heart fs-6"></i>
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <div class="d-flex align-items-center justify-content-start fs-7">
+                                ${hasDiscount ? `
+                                    <span class="fs-7 text-danger fw-bold text-nowrap me-2">${formatPrice(price)}</span>
+                                    <span class="fs-8 text-decoration-line-through text-secondary text-nowrap">${formatPrice(oldPrice)}</span>
+                                ` : `
+                                    <span class="fs-7 text-danger fw-bold text-nowrap">${formatPrice(price)}</span>
+                                `}
+                            </div>
+                            <p class="fs-7 my-2 orange-color product-name-truncate" title="${productName}">${productName}</p>
+                            <div class="hstack gap-1 mb-2">
+                                ${generateStars(product.rating || 0)}
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <!-- Bouton Ajouter au panier -->
+                    <button class="btn btn-sm orange-bg text-white w-100 add-to-cart-btn" 
+                            data-product-id="${productId}" 
+                            onclick="event.preventDefault(); addToCart(${productId})">
+                        <i class="bi bi-cart-plus me-1"></i>Ajouter au panier
+                    </button>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        function generateStars(rating) {
+            const fullStars = Math.floor(rating);
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                const starClass = i <= fullStars ? 'text-warning' : 'text-secondary';
+                starsHtml += `<i class="fa-solid fa-star ${starClass} fs-8"></i>`;
+            }
+            return starsHtml;
+        }
+        
+        function formatPrice(price) {
+            // Formater comme dans product-card.blade.php : "123 456 FCFA"
+            return new Intl.NumberFormat('fr-FR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(price) + ' FCFA';
+        }
+    });
+    </script>
 @endsection

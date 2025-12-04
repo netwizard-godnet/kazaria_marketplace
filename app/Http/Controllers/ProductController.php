@@ -111,7 +111,19 @@ class ProductController extends Controller
             $seoKey = 'seo' . ucfirst($key);
             view()->share($seoKey, $value);
         }
-        $category = $category->load('subcategories');
+        // Charger les sous-catégories qui ont des produits disponibles dans cette catégorie
+        $category->load(['subcategories' => function($query) use ($category) {
+            $query->where('is_active', true)
+                  ->whereHas('productsMany', function($q) use ($category) {
+                      $q->where('is_active', true)
+                        ->where('stock', '>', 0)
+                        ->whereHas('categories', function($catQuery) use ($category) {
+                            $catQuery->where('categories.id', $category->id);
+                        });
+                  })
+                  ->orderBy('order')
+                  ->orderBy('name');
+        }]);
         
         // Meilleures offres de la catégorie
         $bestOffers = Product::active()
@@ -174,6 +186,59 @@ class ProductController extends Controller
             $query->where('rating', '>=', $request->min_rating);
         }
         
+        // Filtre par marque
+        if ($request->filled('brand')) {
+            $brands = is_array($request->brand) ? $request->brand : [$request->brand];
+            $query->where(function($q) use ($brands) {
+                foreach ($brands as $brand) {
+                    $q->orWhere('brand', 'like', "%{$brand}%");
+                }
+            });
+        }
+        
+        // Filtre par boutique
+        if ($request->filled('store_id')) {
+            $storeIds = is_array($request->store_id) ? $request->store_id : [$request->store_id];
+            $query->whereIn('store_id', $storeIds);
+        }
+        
+        // Filtre par disponibilité/stock
+        if ($request->filled('in_stock')) {
+            if ($request->in_stock == '1') {
+                $query->where('stock', '>', 0);
+            } elseif ($request->in_stock == '0') {
+                $query->where('stock', '<=', 0);
+            }
+        }
+        
+        // Filtre par promotions
+        if ($request->filled('on_sale')) {
+            if ($request->on_sale == '1') {
+                $query->where(function($q) {
+                    $q->whereNotNull('old_price')
+                      ->whereColumn('old_price', '>', 'price')
+                      ->orWhere(function($subQ) {
+                          $subQ->whereNotNull('discount_percentage')
+                               ->where('discount_percentage', '>', 0);
+                      });
+                });
+            }
+        }
+        
+        // Filtre par nouveautés
+        if ($request->filled('is_new')) {
+            if ($request->is_new == '1') {
+                $query->where('is_new', true);
+            }
+        }
+        
+        // Filtre par tendance
+        if ($request->filled('is_trending')) {
+            if ($request->is_trending == '1') {
+                $query->where('is_trending', true);
+            }
+        }
+        
         // Filtre par attributs
         if ($request->filled('attributes')) {
             foreach ($request->attributes as $attributeValues) {
@@ -208,19 +273,60 @@ class ProductController extends Controller
         
         $products = $query->paginate(15)->withQueryString();
         
-        // Récupérer les attributs filtrables pour cette catégorie
+        // Récupérer les attributs filtrables pour cette catégorie qui ont des produits disponibles
         $attributes = \App\Models\Attribute::filterable()
             ->ordered()
-            ->with('attributeValues')
+            ->whereHas('attributeValues.products', function($q) use ($category) {
+                $q->where('is_active', true)
+                  ->where('stock', '>', 0)
+                  ->whereHas('categories', function($query) use ($category) {
+                      $query->where('categories.id', $category->id);
+                  });
+            })
+            ->with(['attributeValues' => function($query) use ($category) {
+                $query->whereHas('products', function($q) use ($category) {
+                    $q->where('is_active', true)
+                      ->where('stock', '>', 0)
+                      ->whereHas('categories', function($query) use ($category) {
+                          $query->where('categories.id', $category->id);
+                      });
+                })->orderBy('value');
+            }])
             ->get();
         
-        // Calculer les plages de prix
+        // Calculer les plages de prix pour cette catégorie (produits disponibles uniquement)
         $priceRange = Product::active()
-            ->where('category_id', $category->id)
+            ->where('stock', '>', 0)
+            ->whereHas('categories', function($query) use ($category) {
+                $query->where('categories.id', $category->id);
+            })
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
             ->first();
         
-        return view('categorie', compact('category', 'subcategory', 'bestOffers', 'newProducts', 'products', 'attributes', 'priceRange'));
+        // Récupérer les marques disponibles pour cette catégorie
+        $availableBrands = Product::active()
+            ->whereHas('categories', function($query) use ($category) {
+                $query->where('categories.id', $category->id);
+            })
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->selectRaw('DISTINCT brand')
+            ->orderBy('brand')
+            ->pluck('brand')
+            ->filter()
+            ->values();
+        
+        // Récupérer les boutiques disponibles pour cette catégorie
+        $availableStores = \App\Models\Store::whereHas('products', function($query) use ($category) {
+                $query->whereHas('categories', function($q) use ($category) {
+                    $q->where('categories.id', $category->id);
+                })->where('is_active', true);
+            })
+            ->select('id', 'name', 'slug')
+            ->orderBy('name')
+            ->get();
+        
+        return view('categorie', compact('category', 'subcategory', 'bestOffers', 'newProducts', 'products', 'attributes', 'priceRange', 'availableBrands', 'availableStores'));
     }
     
     public function search(Request $request)
@@ -262,6 +368,59 @@ class ProductController extends Controller
             $query->where('rating', '>=', $request->min_rating);
         }
         
+        // Filtre par marque
+        if ($request->filled('brand')) {
+            $brands = is_array($request->brand) ? $request->brand : [$request->brand];
+            $query->where(function($q) use ($brands) {
+                foreach ($brands as $brand) {
+                    $q->orWhere('brand', 'like', "%{$brand}%");
+                }
+            });
+        }
+        
+        // Filtre par boutique
+        if ($request->filled('store_id')) {
+            $storeIds = is_array($request->store_id) ? $request->store_id : [$request->store_id];
+            $query->whereIn('store_id', $storeIds);
+        }
+        
+        // Filtre par disponibilité/stock
+        if ($request->filled('in_stock')) {
+            if ($request->in_stock == '1') {
+                $query->where('stock', '>', 0);
+            } elseif ($request->in_stock == '0') {
+                $query->where('stock', '<=', 0);
+            }
+        }
+        
+        // Filtre par promotions
+        if ($request->filled('on_sale')) {
+            if ($request->on_sale == '1') {
+                $query->where(function($q) {
+                    $q->whereNotNull('old_price')
+                      ->whereColumn('old_price', '>', 'price')
+                      ->orWhere(function($subQ) {
+                          $subQ->whereNotNull('discount_percentage')
+                               ->where('discount_percentage', '>', 0);
+                      });
+                });
+            }
+        }
+        
+        // Filtre par nouveautés
+        if ($request->filled('is_new')) {
+            if ($request->is_new == '1') {
+                $query->where('is_new', true);
+            }
+        }
+        
+        // Filtre par tendance
+        if ($request->filled('is_trending')) {
+            if ($request->is_trending == '1') {
+                $query->where('is_trending', true);
+            }
+        }
+        
         // Filtre par attributs
         if ($request->filled('attributes')) {
             foreach ($request->attributes as $attributeValues) {
@@ -293,20 +452,90 @@ class ProductController extends Controller
         
         $products = $query->paginate(15)->withQueryString();
         
-        $categories = Category::active()->ordered()->get();
-        
-        // Récupérer les attributs filtrables
-        $attributes = \App\Models\Attribute::filterable()
+        // Récupérer uniquement les catégories qui ont des produits correspondant à la recherche
+        $categories = Category::active()
+            ->whereHas('products', function($q) use ($searchQuery, $categoryId) {
+                $q->where('is_active', true)->where('stock', '>', 0);
+                if ($searchQuery) {
+                    $q->where(function($query) use ($searchQuery) {
+                        $query->where('name', 'like', "%{$searchQuery}%")
+                              ->orWhere('description', 'like', "%{$searchQuery}%")
+                              ->orWhere('brand', 'like', "%{$searchQuery}%");
+                    });
+                }
+                if ($categoryId) {
+                    $q->where('category_id', $categoryId);
+                }
+            })
             ->ordered()
-            ->with('attributeValues')
             ->get();
         
-        // Calculer les plages de prix
-        $priceRange = Product::active()
-            ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
-            ->first();
+        // Récupérer les attributs filtrables qui ont des produits correspondants
+        $attributes = \App\Models\Attribute::filterable()
+            ->ordered()
+            ->whereHas('attributeValues.products', function($q) use ($searchQuery, $categoryId) {
+                $q->where('is_active', true)->where('stock', '>', 0);
+                if ($searchQuery) {
+                    $q->where(function($query) use ($searchQuery) {
+                        $query->where('name', 'like', "%{$searchQuery}%")
+                              ->orWhere('description', 'like', "%{$searchQuery}%")
+                              ->orWhere('brand', 'like', "%{$searchQuery}%");
+                    });
+                }
+                if ($categoryId) {
+                    $q->where('category_id', $categoryId);
+                }
+            })
+            ->with(['attributeValues' => function($query) use ($searchQuery, $categoryId) {
+                $query->whereHas('products', function($q) use ($searchQuery, $categoryId) {
+                    $q->where('is_active', true)->where('stock', '>', 0);
+                    if ($searchQuery) {
+                        $q->where(function($query) use ($searchQuery) {
+                            $query->where('name', 'like', "%{$searchQuery}%")
+                                  ->orWhere('description', 'like', "%{$searchQuery}%")
+                                  ->orWhere('brand', 'like', "%{$searchQuery}%");
+                        });
+                    }
+                    if ($categoryId) {
+                        $q->where('category_id', $categoryId);
+                    }
+                })->orderBy('value');
+            }])
+            ->get();
         
-        return view('search_product', compact('products', 'categories', 'searchQuery', 'attributes', 'priceRange'));
+        // Calculer les plages de prix pour les produits correspondants
+        $priceQuery = Product::active()->where('stock', '>', 0);
+        if ($searchQuery) {
+            $priceQuery->where(function($q) use ($searchQuery) {
+                $q->where('name', 'like', "%{$searchQuery}%")
+                  ->orWhere('description', 'like', "%{$searchQuery}%")
+                  ->orWhere('brand', 'like', "%{$searchQuery}%");
+            });
+        }
+        if ($categoryId) {
+            $priceQuery->where('category_id', $categoryId);
+        }
+        $priceRange = $priceQuery->selectRaw('MIN(price) as min_price, MAX(price) as max_price')->first();
+        
+        // Récupérer les marques disponibles
+        $availableBrands = Product::active()
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->selectRaw('DISTINCT brand')
+            ->orderBy('brand')
+            ->pluck('brand')
+            ->filter()
+            ->values();
+        
+        // Récupérer les boutiques disponibles
+        $availableStores = \App\Models\Store::whereHas('products', function($query) {
+                $query->where('is_active', true);
+            })
+            ->select('id', 'name', 'slug')
+            ->orderBy('name')
+            ->get();
+        
+        return view('search_product', compact('products', 'categories', 'searchQuery', 'attributes', 'priceRange', 'availableBrands', 'availableStores'));
     }
     
     public function boutique(Request $request)
@@ -370,6 +599,57 @@ class ProductController extends Controller
             $query->where('rating', '>=', $request->min_rating);
         }
         
+        // Filtre par marque
+        if ($request->filled('brand')) {
+            $brands = is_array($request->brand) ? $request->brand : [$request->brand];
+            $query->where(function($q) use ($brands) {
+                foreach ($brands as $brand) {
+                    $q->orWhere('brand', 'like', "%{$brand}%");
+                }
+            });
+        }
+        
+        // Filtre par disponibilité/stock
+        if ($request->filled('in_stock')) {
+            if ($request->in_stock == '1') {
+                $query->where('stock', '>', 0);
+            } elseif ($request->in_stock == '0') {
+                $query->where('stock', '<=', 0);
+            }
+        }
+        
+        // Filtre par promotions
+        if ($request->filled('on_sale')) {
+            if ($request->on_sale == '1') {
+                $query->where(function($q) {
+                    $q->whereNotNull('old_price')
+                      ->whereColumn('old_price', '>', 'price')
+                      ->orWhere(function($subQ) {
+                          $subQ->whereNotNull('discount_percentage')
+                               ->where('discount_percentage', '>', 0);
+                      });
+                });
+            }
+        }
+        
+        // Filtre par nouveautés
+        if ($request->filled('is_new')) {
+            if ($request->is_new == '1') {
+                $query->where('is_new', true);
+            }
+        }
+        
+        // Filtre par attributs
+        if ($request->filled('attributes')) {
+            foreach ($request->attributes as $attributeValues) {
+                if (!empty($attributeValues)) {
+                    $query->whereHas('attributeValues', function($q) use ($attributeValues) {
+                        $q->whereIn('attribute_values.id', $attributeValues);
+                    });
+                }
+            }
+        }
+        
         // Tri
         switch ($request->input('sort')) {
             case 'price_asc':
@@ -390,21 +670,62 @@ class ProductController extends Controller
         
         $products = $query->paginate(15)->withQueryString();
         
-        $categories = Category::active()->ordered()->get();
-        
-        $attributes = \App\Models\Attribute::filterable()
+        // Récupérer uniquement les catégories qui ont des produits dans les boutiques officielles
+        $categories = Category::active()
+            ->whereHas('products', function($q) {
+                $q->where('is_active', true)
+                  ->where('stock', '>', 0)
+                  ->whereHas('store', function($storeQuery) {
+                      $storeQuery->where('is_official', true);
+                  });
+            })
             ->ordered()
-            ->with('attributeValues')
             ->get();
         
+        // Récupérer les attributs filtrables qui ont des produits dans les boutiques officielles
+        $attributes = \App\Models\Attribute::filterable()
+            ->ordered()
+            ->whereHas('attributeValues.products', function($q) {
+                $q->where('is_active', true)
+                  ->where('stock', '>', 0)
+                  ->whereHas('store', function($storeQuery) {
+                      $storeQuery->where('is_official', true);
+                  });
+            })
+            ->with(['attributeValues' => function($query) {
+                $query->whereHas('products', function($q) {
+                    $q->where('is_active', true)
+                      ->where('stock', '>', 0)
+                      ->whereHas('store', function($storeQuery) {
+                          $storeQuery->where('is_official', true);
+                      });
+                })->orderBy('value');
+            }])
+            ->get();
+        
+        // Calculer les plages de prix pour les produits des boutiques officielles
         $priceRange = Product::active()
+            ->where('stock', '>', 0)
             ->whereHas('store', function($q) {
                 $q->where('is_official', true);
             })
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
             ->first();
         
-        return view('boutique_officielle', compact('bestOffers', 'newProducts', 'products', 'categories', 'attributes', 'priceRange'));
+        // Récupérer les marques disponibles pour les boutiques officielles
+        $availableBrands = Product::active()
+            ->whereHas('store', function($q) {
+                $q->where('is_official', true);
+            })
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->selectRaw('DISTINCT brand')
+            ->orderBy('brand')
+            ->pluck('brand')
+            ->filter()
+            ->values();
+        
+        return view('boutique_officielle', compact('bestOffers', 'newProducts', 'products', 'categories', 'attributes', 'priceRange', 'availableBrands'));
     }
 
     /**

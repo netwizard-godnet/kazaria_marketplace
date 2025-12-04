@@ -49,19 +49,26 @@
         </div>
         <div class="py-1">
             <div class="d-flex align-items-center justify-content-start fs-7">
-                @if($product->old_price && $product->old_price > $product->price)
+                @php
+                    $price = $product->price ?? 0;
+                    $oldPrice = $product->old_price ?? null;
+                @endphp
+                @if($oldPrice && $oldPrice > $price)
                     {{-- Produit en promo: price = prix actuel, old_price = ancien prix --}}
-                    <span class="fs-7 text-danger fw-bold text-nowrap me-2">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
-                    <span class="fs-8 text-decoration-line-through text-secondary text-nowrap">{{ number_format($product->old_price, 0, ',', ' ') }} FCFA</span>
+                    <span class="fs-7 text-danger fw-bold text-nowrap me-2">{{ number_format($price, 0, ',', ' ') }} FCFA</span>
+                    <span class="fs-8 text-decoration-line-through text-secondary text-nowrap">{{ number_format($oldPrice, 0, ',', ' ') }} FCFA</span>
                 @else
                     {{-- Produit sans promo: afficher seulement le prix --}}
-                    <span class="fs-7 text-danger fw-bold text-nowrap">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
+                    <span class="fs-7 text-danger fw-bold text-nowrap">{{ number_format($price, 0, ',', ' ') }} FCFA</span>
                 @endif
             </div>
             <p class="fs-7 my-2 orange-color product-name-truncate" title="{{ $product->name }}">{{ $product->name }}</p>
             <div class="hstack gap-1 mb-2">
+                @php
+                    $rating = $product->rating ?? 0;
+                @endphp
                 @for($i = 1; $i <= 5; $i++)
-                    <i class="fa-solid fa-star {{ $i <= floor($product->rating) ? 'text-warning' : 'text-secondary' }} fs-8"></i>
+                    <i class="fa-solid fa-star {{ $i <= floor($rating) ? 'text-warning' : 'text-secondary' }} fs-8"></i>
                 @endfor
             </div>
         </div>

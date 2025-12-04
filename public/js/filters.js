@@ -1,3 +1,16 @@
+// Fonction pour filtrer les options dans les listes
+function filterOptions(input, containerId) {
+    const filter = input.value.toLowerCase();
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const options = container.querySelectorAll('.brand-option, .store-option, .attr-option');
+    options.forEach(option => {
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+
 // Système de filtrage dynamique sans rechargement de page
 class ProductFilter {
     constructor(formId, resultsContainerId) {
@@ -13,7 +26,20 @@ class ProductFilter {
     init() {
         // Écouter tous les changements de filtres
         this.form.querySelectorAll('input, select').forEach(input => {
-            input.addEventListener('change', () => this.applyFilters());
+            // Pour les checkboxes et radios, appliquer immédiatement
+            if (input.type === 'checkbox' || input.type === 'radio') {
+                input.addEventListener('change', () => {
+                    // Délai pour éviter trop de requêtes
+                    clearTimeout(this.filterTimeout);
+                    this.filterTimeout = setTimeout(() => this.applyFilters(), 300);
+                });
+            } else {
+                // Pour les inputs texte, attendre la fin de la saisie
+                input.addEventListener('input', () => {
+                    clearTimeout(this.filterTimeout);
+                    this.filterTimeout = setTimeout(() => this.applyFilters(), 500);
+                });
+            }
         });
         
         // Empêcher la soumission normale du formulaire
@@ -21,6 +47,30 @@ class ProductFilter {
             e.preventDefault();
             this.applyFilters();
         });
+        
+        // Mettre à jour l'affichage des prix
+        this.initPriceDisplay();
+    }
+    
+    initPriceDisplay() {
+        const minInput = this.form.querySelector('input[name="min_price"]');
+        const maxInput = this.form.querySelector('input[name="max_price"]');
+        const minDisplay = document.getElementById('priceMinDisplay');
+        const maxDisplay = document.getElementById('priceMaxDisplay');
+        
+        if (minInput && minDisplay) {
+            minInput.addEventListener('input', () => {
+                const value = parseInt(minInput.value) || parseInt(minInput.dataset.min) || 0;
+                minDisplay.textContent = new Intl.NumberFormat('fr-FR').format(value);
+            });
+        }
+        
+        if (maxInput && maxDisplay) {
+            maxInput.addEventListener('input', () => {
+                const value = parseInt(maxInput.value) || parseInt(maxInput.dataset.max) || 0;
+                maxDisplay.textContent = new Intl.NumberFormat('fr-FR').format(value);
+            });
+        }
     }
     
     async applyFilters() {
