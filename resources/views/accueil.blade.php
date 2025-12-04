@@ -534,8 +534,8 @@
 
         <!-- SECTION Suggestions basées sur l'historique (hors chat box) -->
         <section id="ai-suggestions-section" class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true" style="display: none;">
-            <div class="bg-light d-flex align-items-center justify-content-between mb-4 border-bottom p-2">
-                <h5 class="mb-0" id="ai-suggestions-title">Pour vous</h5>
+            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
+                <h5 class="mb-0 me-4" id="ai-suggestions-title">Pour vous</h5>
             </div>
             <div class="multi-carousel-track d-flex" id="ai-suggestions-container">
                 <!-- Les produits seront chargés dynamiquement ici -->
@@ -791,8 +791,19 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que MultiCarousel soit disponible
+        function waitForMultiCarousel(callback) {
+            if (typeof MultiCarousel !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForMultiCarousel(callback), 100);
+            }
+        }
+        
         // Charger les suggestions basées sur l'historique de vues
-        loadAISuggestions();
+        waitForMultiCarousel(() => {
+            loadAISuggestions();
+        });
         
         function loadAISuggestions() {
             fetch('/api/ai/suggestions', {
@@ -839,59 +850,113 @@
             // Afficher la section
             section.style.display = 'block';
             
-            // Réinitialiser le carousel si nécessaire
-            if (typeof initMultiCarousel === 'function') {
-                initMultiCarousel(section);
-            }
+            // Initialiser le carousel avec MultiCarousel (comme les autres sections)
+            // Attendre un peu pour que le DOM soit mis à jour
+            setTimeout(() => {
+                if (typeof MultiCarousel !== 'undefined') {
+                    // Supprimer l'ancienne instance si elle existe
+                    if (section.multiCarouselInstance) {
+                        // Nettoyer l'ancienne instance si nécessaire
+                        delete section.multiCarouselInstance;
+                    }
+                    
+                    // Créer une nouvelle instance de MultiCarousel
+                    const options = {
+                        slidesToShow: parseInt(section.dataset.slidesToShow || 6),
+                        slidesToScroll: 1,
+                        gap: parseInt(section.dataset.gap || 0),
+                        autoplay: section.dataset.autoplay === "true",
+                        autoplaySpeed: parseInt(section.dataset.autoplaySpeed || 2000),
+                        pauseOnHover: section.dataset.pauseOnHover !== "false",
+                        responsive: [
+                            { breakpoint: 1200, settings: { slidesToShow: parseInt(section.dataset.slidesLg || section.dataset.slidesToShow) } },
+                            { breakpoint: 992,  settings: { slidesToShow: parseInt(section.dataset.slidesMd || section.dataset.slidesToShow) } },
+                            { breakpoint: 768,  settings: { slidesToShow: parseInt(section.dataset.slidesSm || section.dataset.slidesToShow) } },
+                            { breakpoint: 576,  settings: { slidesToShow: parseInt(section.dataset.slidesXs || section.dataset.slidesToShow) } }
+                        ]
+                    };
+                    
+                    section.multiCarouselInstance = new MultiCarousel(section, options);
+                }
+            }, 100);
         }
         
         function createProductCard(product) {
             const div = document.createElement('div');
             div.className = 'multi-carousel-item px-2';
             
-            // Utiliser le même format que les autres cartes produits
+            // Utiliser le même format que le composant product-card.blade.php
             const price = parseFloat(product.price) || 0;
             const oldPrice = parseFloat(product.old_price) || 0;
             const discount = product.discount_percentage || 0;
             const hasDiscount = oldPrice > price && discount > 0;
+            const productUrl = product.url || (product.slug ? `/produit/${product.slug}` : '#');
+            const productImage = product.image || '/images/produit.jpg';
+            const productName = product.name || 'Produit';
+            const productId = product.id || 0;
             
-            // Créer une structure similaire à celle utilisée dans product-card.blade.php
+            // Structure identique à product-card.blade.php
             div.innerHTML = `
-                <div class="card border-0 shadow-sm h-100 product-card">
-                    <a href="${product.url || '/produit/' + product.slug}" class="text-decoration-none">
+                <div class="px-1 position-relative product-card">
+                    <a class="text-decoration-none" href="${productUrl}">
                         <div class="position-relative">
-                            <img src="${product.image || '/images/produit.jpg'}" 
-                                 class="card-img-top" 
-                                 alt="${product.name || 'Produit'}"
-                                 style="height: 200px; object-fit: cover;"
+                            <img src="${productImage}" 
+                                 class="h-200px w-100 object-fit-contain" 
+                                 alt="${productName}"
                                  onerror="this.src='/images/produit.jpg'">
-                            ${hasDiscount ? `<span class="badge bg-danger position-absolute top-0 end-0 m-2">-${discount}%</span>` : ''}
+                            ${hasDiscount ? `<span class="position-absolute bottom-0 end-0 bg-light text-success fs-8 p-1 rounded-2">-${discount}%</span>` : ''}
+                            
+                            <!-- Bouton Favori -->
+                            <button class="btn btn-sm position-absolute top-0 end-0 m-2 bg-white border-0 shadow-sm favorite-btn" 
+                                    data-product-id="${productId}" 
+                                    onclick="event.preventDefault(); toggleFavorite(${productId}, this)">
+                                <i class="bi bi-heart fs-6"></i>
+                            </button>
                         </div>
-                        <div class="card-body p-2">
-                            <h6 class="card-title text-dark mb-1" style="font-size: 0.9rem; line-height: 1.3; height: 2.6em; overflow: hidden;">
-                                ${product.name || 'Produit'}
-                            </h6>
-                            ${product.brand ? `<small class="text-muted d-block mb-1">${product.brand}</small>` : ''}
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <span class="fw-bold text-dark">${formatPrice(price)}</span>
-                                    ${hasDiscount ? `<small class="text-muted text-decoration-line-through ms-2">${formatPrice(oldPrice)}</small>` : ''}
-                                </div>
+                        <div class="py-1">
+                            <div class="d-flex align-items-center justify-content-start fs-7">
+                                ${hasDiscount ? `
+                                    <span class="fs-7 text-danger fw-bold text-nowrap me-2">${formatPrice(price)}</span>
+                                    <span class="fs-8 text-decoration-line-through text-secondary text-nowrap">${formatPrice(oldPrice)}</span>
+                                ` : `
+                                    <span class="fs-7 text-danger fw-bold text-nowrap">${formatPrice(price)}</span>
+                                `}
+                            </div>
+                            <p class="fs-7 my-2 orange-color product-name-truncate" title="${productName}">${productName}</p>
+                            <div class="hstack gap-1 mb-2">
+                                ${generateStars(product.rating || 0)}
                             </div>
                         </div>
                     </a>
+                    
+                    <!-- Bouton Ajouter au panier -->
+                    <button class="btn btn-sm orange-bg text-white w-100 add-to-cart-btn" 
+                            data-product-id="${productId}" 
+                            onclick="event.preventDefault(); addToCart(${productId})">
+                        <i class="bi bi-cart-plus me-1"></i>Ajouter au panier
+                    </button>
                 </div>
             `;
             
             return div;
         }
         
+        function generateStars(rating) {
+            const fullStars = Math.floor(rating);
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                const starClass = i <= fullStars ? 'text-warning' : 'text-secondary';
+                starsHtml += `<i class="fa-solid fa-star ${starClass} fs-8"></i>`;
+            }
+            return starsHtml;
+        }
+        
         function formatPrice(price) {
+            // Formater comme dans product-card.blade.php : "123 456 FCFA"
             return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'XOF',
-                minimumFractionDigits: 0
-            }).format(price).replace('XOF', 'FCFA');
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(price) + ' FCFA';
         }
     });
     </script>
