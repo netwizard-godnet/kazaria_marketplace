@@ -1,4 +1,4 @@
-<div id="popup-launcher-root" data-popups='@json($payload, JSON_UNESCAPED_UNICODE)'></div>
+<div id="popup-launcher-root" data-popups='<?php echo json_encode($payload, JSON_UNESCAPED_UNICODE, 512) ?>'></div>
 
 <div class="modal fade popup-launcher-modal z-index-9x" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
@@ -22,7 +22,7 @@
     </div>
 </div>
 
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
     .popup-launcher-modal .modal-dialog {
         height: 500px;
@@ -179,9 +179,9 @@
         }
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 (function() {
     // Vérifier que document est disponible
@@ -450,4 +450,4 @@
     });
 })();
 </script>
-@endpush
+<?php $__env->stopPush(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/components/popup-launcher.blade.php ENDPATH**/ ?>

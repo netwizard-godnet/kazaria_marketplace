@@ -1,13 +1,11 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <main class="container-fluid">
         <div class="row g-2 py-2 d-flex align-items-center justify-content-center">
             <div class="col-md-8">
                 <div class="">
                     <div id="carouselExampleAutoplaying" class="carousel slide h-400px" data-bs-ride="carousel">
                         <div class="carousel-inner h-400px">
-                            @php
+                            <?php
                                 use App\Models\CarouselSlide;
                                 $carouselSlides = CarouselSlide::where('is_active', true)
                                     ->where(function($query) {
@@ -20,32 +18,32 @@
                                     })
                                     ->orderBy('sort_order')
                                     ->get();
-                            @endphp
+                            ?>
                             
-                            @forelse($carouselSlides as $index => $slide)
-                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}" data-bs-interval="2000">
-                                @if($slide->link_url)
-                                <a href="{{ $slide->link_url }}" class="d-block">
-                                @endif
-                                    <img src="{{ $slide->image_url }}" class="d-block w-100 h-400px" alt="{{ $slide->title }}" style="object-fit: cover;">
-                                    @if($slide->title || $slide->description)
+                            <?php $__empty_1 = true; $__currentLoopData = $carouselSlides; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $slide): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <div class="carousel-item <?php echo e($index === 0 ? 'active' : ''); ?>" data-bs-interval="2000">
+                                <?php if($slide->link_url): ?>
+                                <a href="<?php echo e($slide->link_url); ?>" class="d-block">
+                                <?php endif; ?>
+                                    <img src="<?php echo e($slide->image_url); ?>" class="d-block w-100 h-400px" alt="<?php echo e($slide->title); ?>" style="object-fit: cover;">
+                                    <?php if($slide->title || $slide->description): ?>
                                     <div class="carousel-caption d-none d-md-block">
-                                        @if($slide->title)
-                                        <h3 class="text-white">{{ $slide->title }}</h3>
-                                        @endif
-                                        @if($slide->description)
-                                        <p class="text-white">{{ $slide->description }}</p>
-                                        @endif
-                                        @if($slide->button_text && $slide->link_url)
-                                        <a href="{{ $slide->link_url }}" class="btn btn-primary btn-lg mt-2">{{ $slide->button_text }}</a>
-                                        @endif
+                                        <?php if($slide->title): ?>
+                                        <h3 class="text-white"><?php echo e($slide->title); ?></h3>
+                                        <?php endif; ?>
+                                        <?php if($slide->description): ?>
+                                        <p class="text-white"><?php echo e($slide->description); ?></p>
+                                        <?php endif; ?>
+                                        <?php if($slide->button_text && $slide->link_url): ?>
+                                        <a href="<?php echo e($slide->link_url); ?>" class="btn btn-primary btn-lg mt-2"><?php echo e($slide->button_text); ?></a>
+                                        <?php endif; ?>
                                     </div>
-                                    @endif
-                                @if($slide->link_url)
+                                    <?php endif; ?>
+                                <?php if($slide->link_url): ?>
                                 </a>
-                                @endif
+                                <?php endif; ?>
                             </div>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <!-- Message si aucun slide -->
                             <div class="carousel-item active" data-bs-interval="2000">
                                 <div class="d-flex align-items-center justify-content-center h-400px bg-light">
@@ -55,7 +53,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @endforelse
+                            <?php endif; ?>
                         </div>
                         <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleAutoplaying" data-bs-slide="prev">
                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -71,38 +69,38 @@
             <div class="col-md-4">
                 <div class="row gy-2">
                     <div class="col-md-12">
-                        @php
+                        <?php
                             $banner1 = App\Models\Banner::getHomepageBanner1();
                             $banner1Image = $banner1 ? $banner1->image_url : null;
-                        @endphp
-                        @if($banner1 && $banner1Image)
-                            <div class="{{ $banner1->visibility_classes ?? '' }}">
-                                @if($banner1->link_url)
-                                    <a href="{{ $banner1->link_url }}" target="_blank" rel="noopener" class="d-block">
-                                @endif
-                                <div style="background: url('{{ $banner1Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
-                                @if($banner1->link_url)
+                        ?>
+                        <?php if($banner1 && $banner1Image): ?>
+                            <div class="<?php echo e($banner1->visibility_classes ?? ''); ?>">
+                                <?php if($banner1->link_url): ?>
+                                    <a href="<?php echo e($banner1->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                                <?php endif; ?>
+                                <div style="background: url('<?php echo e($banner1Image); ?>'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
+                                <?php if($banner1->link_url): ?>
                                     </a>
-                                @endif
+                                <?php endif; ?>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                     <div class="col-md-12">
-                        @php
+                        <?php
                             $banner2 = App\Models\Banner::getHomepageBanner2();
                             $banner2Image = $banner2 ? $banner2->image_url : null;
-                        @endphp
-                        @if($banner2 && $banner2Image)
-                            <div class="{{ $banner2->visibility_classes ?? '' }}">
-                                @if($banner2->link_url)
-                                    <a href="{{ $banner2->link_url }}" target="_blank" rel="noopener" class="d-block">
-                                @endif
-                                <div style="background: url('{{ $banner2Image }}'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
-                                @if($banner2->link_url)
+                        ?>
+                        <?php if($banner2 && $banner2Image): ?>
+                            <div class="<?php echo e($banner2->visibility_classes ?? ''); ?>">
+                                <?php if($banner2->link_url): ?>
+                                    <a href="<?php echo e($banner2->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                                <?php endif; ?>
+                                <div style="background: url('<?php echo e($banner2Image); ?>'); background-size: cover; background-repeat: no-repeat; height: 200px;"></div>
+                                <?php if($banner2->link_url): ?>
                                     </a>
-                                @endif
+                                <?php endif; ?>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -159,47 +157,47 @@
                 <div class="text-center mb-2">
                     <p class="fw-bold mb-0 px-4 py-2 orange-bg">Marques officielles</p>
                 </div>
-                @if(isset($topBrands) && $topBrands->count() > 0)
+                <?php if(isset($topBrands) && $topBrands->count() > 0): ?>
                     <div class="row g-2">
-                        @foreach($topBrands->chunk(6) as $brandRow)
+                        <?php $__currentLoopData = $topBrands->chunk(6); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $brandRow): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <div class="row g-3 mb-2">
-                                @foreach($brandRow as $brand)
+                                <?php $__currentLoopData = $brandRow; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $brand): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <div class="col-4 col-md-3 col-lg-2 col-xl-2">
-                                        @php
+                                        <?php
                                             $brandHasName = filled($brand->name);
                                             $brandLink = $brand->link_url ?: ($brandHasName ? route('search_product', ['q' => $brand->name]) : null);
-                                        @endphp
-                                        @if($brandLink)
-                                            <a href="{{ $brandLink }}" target="{{ $brand->link_url ? '_blank' : '_self' }}" @if($brand->link_url) rel="noopener noreferrer" @endif class="text-decoration-none">
-                                        @else
+                                        ?>
+                                        <?php if($brandLink): ?>
+                                            <a href="<?php echo e($brandLink); ?>" target="<?php echo e($brand->link_url ? '_blank' : '_self'); ?>" <?php if($brand->link_url): ?> rel="noopener noreferrer" <?php endif; ?> class="text-decoration-none">
+                                        <?php else: ?>
                                             <div class="text-decoration-none">
-                                        @endif
+                                        <?php endif; ?>
                                             <div class="brand-card bg-white rounded shadow-sm p-3 h-100 d-flex align-items-center justify-content-center text-center" style="min-height: 140px; border: 1px solid #e9ecef; transition: all 0.3s ease; cursor: pointer;">
                                                 <div class="w-100">
-                                                    @if($brand->image_url)
-                                                        <img src="{{ $brand->image_url }}" alt="{{ $brandHasName ? $brand->name : 'Logo de marque' }}" class="img-fluid mb-3 brand-logo" style="max-height: 90px; object-fit: cover;">
-                                                    @endif
-                                                    @if($brandHasName)
-                                                        <h6 class="mb-0 fw-bold text-dark brand-name" style="font-size: 0.9rem; word-break: break-word;">{{ $brand->name }}</h6>
-                                                    @endif
+                                                    <?php if($brand->image_url): ?>
+                                                        <img src="<?php echo e($brand->image_url); ?>" alt="<?php echo e($brandHasName ? $brand->name : 'Logo de marque'); ?>" class="img-fluid mb-3 brand-logo" style="max-height: 90px; object-fit: cover;">
+                                                    <?php endif; ?>
+                                                    <?php if($brandHasName): ?>
+                                                        <h6 class="mb-0 fw-bold text-dark brand-name" style="font-size: 0.9rem; word-break: break-word;"><?php echo e($brand->name); ?></h6>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
-                                        @if($brandLink)
+                                        <?php if($brandLink): ?>
                                             </a>
-                                        @else
+                                        <?php else: ?>
                                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </div>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
-                @else
+                <?php else: ?>
                     <div class="text-center py-5">
                         <i class="fas fa-tags fa-3x text-white mb-3"></i>
                         <p class="text-white">Aucune marque disponible pour le moment</p>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
         </section>
         <!-- SECTION MARQUES END -->
@@ -266,11 +264,11 @@
                 <span class="orange-bg px-3 fs-7 text-white" id="dealsCountdown">Fin dans <span id="countdownTime">00:00:00</span></span>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($dealsProducts as $product)
+                <?php $__currentLoopData = $dealsProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
+                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -283,65 +281,65 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <!-- Publicité 1 -->
-                    @php
+                    <?php
                         $publicite1 = App\Models\Banner::getPublicite1();
                         $publicite1Image = $publicite1 ? $publicite1->image_url : null;
-                    @endphp
-                    @if($publicite1 && $publicite1Image)
-                        <div class="{{ $publicite1->visibility_classes ?? '' }}">
-                            @if($publicite1->link_url)
-                                <a href="{{ $publicite1->link_url }}" target="_blank" rel="noopener" class="d-block">
-                            @endif
-                            <img src="{{ $publicite1Image }}" class="w-100 object-fit-cover" alt="Publicité 1">
-                            @if($publicite1->link_url)</a>@endif
+                    ?>
+                    <?php if($publicite1 && $publicite1Image): ?>
+                        <div class="<?php echo e($publicite1->visibility_classes ?? ''); ?>">
+                            <?php if($publicite1->link_url): ?>
+                                <a href="<?php echo e($publicite1->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                            <?php endif; ?>
+                            <img src="<?php echo e($publicite1Image); ?>" class="w-100 object-fit-cover" alt="Publicité 1">
+                            <?php if($publicite1->link_url): ?></a><?php endif; ?>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
                         </div>
-                    @endif
+                    <?php endif; ?>
                     <!-- Publicité 1 end -->
                 </div>
                 <div class="col-md-4">
                     <!-- Publicité 2 -->
-                    @php
+                    <?php
                         $publicite2 = App\Models\Banner::getPublicite2();
                         $publicite2Image = $publicite2 ? $publicite2->image_url : null;
-                    @endphp
-                    @if($publicite2 && $publicite2Image)
-                        <div class="{{ $publicite2->visibility_classes ?? '' }}">
-                            @if($publicite2->link_url)
-                                <a href="{{ $publicite2->link_url }}" target="_blank" rel="noopener" class="d-block">
-                            @endif
-                            <img src="{{ $publicite2Image }}" class="w-100 object-fit-cover" alt="Publicité 2">
-                            @if($publicite2->link_url)</a>@endif
+                    ?>
+                    <?php if($publicite2 && $publicite2Image): ?>
+                        <div class="<?php echo e($publicite2->visibility_classes ?? ''); ?>">
+                            <?php if($publicite2->link_url): ?>
+                                <a href="<?php echo e($publicite2->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                            <?php endif; ?>
+                            <img src="<?php echo e($publicite2Image); ?>" class="w-100 object-fit-cover" alt="Publicité 2">
+                            <?php if($publicite2->link_url): ?></a><?php endif; ?>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
                         </div>
-                    @endif
+                    <?php endif; ?>
                     <!-- Publicité 2 end -->
                 </div>
                 <div class="col-md-4">
                     <!-- Publicité 3 -->
-                    @php
+                    <?php
                         $publicite3 = App\Models\Banner::getPublicite3();
                         $publicite3Image = $publicite3 ? $publicite3->image_url : null;
-                    @endphp
-                    @if($publicite3 && $publicite3Image)
-                        <div class="{{ $publicite3->visibility_classes ?? '' }}">
-                            @if($publicite3->link_url)
-                                <a href="{{ $publicite3->link_url }}" target="_blank" rel="noopener" class="d-block">
-                            @endif
-                            <img src="{{ $publicite3Image }}" class="w-100 object-fit-cover" alt="Publicité 3">
-                            @if($publicite3->link_url)</a>@endif
+                    ?>
+                    <?php if($publicite3 && $publicite3Image): ?>
+                        <div class="<?php echo e($publicite3->visibility_classes ?? ''); ?>">
+                            <?php if($publicite3->link_url): ?>
+                                <a href="<?php echo e($publicite3->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                            <?php endif; ?>
+                            <img src="<?php echo e($publicite3Image); ?>" class="w-100 object-fit-cover" alt="Publicité 3">
+                            <?php if($publicite3->link_url): ?></a><?php endif; ?>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="w-100 h-200px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
                         </div>
-                    @endif
+                    <?php endif; ?>
                     <!-- Publicité 3 end -->
                 </div>
             </div>
@@ -354,21 +352,21 @@
                 <h5 class="mb-0 me-4">Top Catégories du Mois</h5>
             </div>
             <div class="row g-3">
-                @foreach ($categories as $item)
+                <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="col-6 col-md-4 col-lg-3 col-xl">
-                    <a class="px-1 card text-decoration-none hover-shadow h-100" href="{{ $item['route'] ?? '#' }}">
+                    <a class="px-1 card text-decoration-none hover-shadow h-100" href="<?php echo e($item['route'] ?? '#'); ?>">
                         <div class="position-relative text-center py-2">
-                                    @if(isset($item['image']) && !empty($item['image']))
-                                    <img src="{{ str_starts_with($item['image'], 'http') ? $item['image'] : (str_starts_with($item['image'], 'images/') ? asset($item['image']) : Storage::url($item['image'])) }}" class="w-100" style="height: 80px; object-fit: contain;" alt="{{ $item['name'] }}">
-                                    @endif
+                                    <?php if(isset($item['image']) && !empty($item['image'])): ?>
+                                    <img src="<?php echo e(str_starts_with($item['image'], 'http') ? $item['image'] : (str_starts_with($item['image'], 'images/') ? asset($item['image']) : Storage::url($item['image']))); ?>" class="w-100" style="height: 80px; object-fit: contain;" alt="<?php echo e($item['name']); ?>">
+                                    <?php endif; ?>
                         </div>
                         <div class="py-3 border-top">
-                            <p class="fs-6 my-0 orange-color text-center fw-bold">{{ $item['name'] }}</p>
-                            <small class="text-muted text-center d-block">{{ $item['type'] === 'category' ? 'Catégorie' : 'Sous-catégorie' }}</small>
+                            <p class="fs-6 my-0 orange-color text-center fw-bold"><?php echo e($item['name']); ?></p>
+                            <small class="text-muted text-center d-block"><?php echo e($item['type'] === 'category' ? 'Catégorie' : 'Sous-catégorie'); ?></small>
                         </div>
                     </a>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </section>
         <!-- SECTION TOP CATEGORIES END -->
@@ -379,11 +377,11 @@
                 <h5 class="mb-0 me-4">Téléphones et tablettes</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($phoneProducts as $product)
+                <?php $__currentLoopData = $phoneProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
+                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -397,11 +395,11 @@
                 <h5 class="mb-0 me-4">TV et Electronique</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($tvProducts as $product)
+                <?php $__currentLoopData = $tvProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
+                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -415,11 +413,11 @@
                 <h5 class="mb-0 me-4">Electroménager</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($electroProducts as $product)
+                <?php $__currentLoopData = $electroProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
+                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -433,11 +431,11 @@
                 <h5 class="mb-0 me-4">Ordinateurs et accessoires</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($computerProducts as $product)
+                <?php $__currentLoopData = $computerProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
+                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -450,44 +448,44 @@
             <div class="row g-3">
                 <div class="col-md-8">
                     <!-- Publicité 4 -->
-                    @php
+                    <?php
                         $publicite4 = App\Models\Banner::getPublicite4();
                         $publicite4Image = $publicite4 ? $publicite4->image_url : null;
-                    @endphp
-                    @if($publicite4 && $publicite4Image)
-                        <div class="{{ $publicite4->visibility_classes ?? '' }}">
-                            @if($publicite4->link_url)
-                                <a href="{{ $publicite4->link_url }}" target="_blank" rel="noopener" class="d-block">
-                            @endif
-                            <img src="{{ $publicite4Image }}" class="w-100 object-fit-cover" alt="Publicité 4">
-                            @if($publicite4->link_url)</a>@endif
+                    ?>
+                    <?php if($publicite4 && $publicite4Image): ?>
+                        <div class="<?php echo e($publicite4->visibility_classes ?? ''); ?>">
+                            <?php if($publicite4->link_url): ?>
+                                <a href="<?php echo e($publicite4->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                            <?php endif; ?>
+                            <img src="<?php echo e($publicite4Image); ?>" class="w-100 object-fit-cover" alt="Publicité 4">
+                            <?php if($publicite4->link_url): ?></a><?php endif; ?>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
                         </div>
-                    @endif
+                    <?php endif; ?>
                     <!-- Publicité 4 end -->
                 </div>
                 <div class="col-md-4">
                     <!-- Publicité 5 -->
-                    @php
+                    <?php
                         $publicite5 = App\Models\Banner::getPublicite5();
                         $publicite5Image = $publicite5 ? $publicite5->image_url : null;
-                    @endphp
-                    @if($publicite5 && $publicite5Image)
-                        <div class="{{ $publicite5->visibility_classes ?? '' }}">
-                            @if($publicite5->link_url)
-                                <a href="{{ $publicite5->link_url }}" target="_blank" rel="noopener" class="d-block">
-                            @endif
-                            <img src="{{ $publicite5Image }}" class="w-100 object-fit-cover" alt="Publicité 5">
-                            @if($publicite5->link_url)</a>@endif
+                    ?>
+                    <?php if($publicite5 && $publicite5Image): ?>
+                        <div class="<?php echo e($publicite5->visibility_classes ?? ''); ?>">
+                            <?php if($publicite5->link_url): ?>
+                                <a href="<?php echo e($publicite5->link_url); ?>" target="_blank" rel="noopener" class="d-block">
+                            <?php endif; ?>
+                            <img src="<?php echo e($publicite5Image); ?>" class="w-100 object-fit-cover" alt="Publicité 5">
+                            <?php if($publicite5->link_url): ?></a><?php endif; ?>
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="w-100 h-300px bg-light d-flex align-items-center justify-content-center">
                             <i class="fas fa-image text-muted fa-3x"></i>
                         </div>
-                    @endif
+                    <?php endif; ?>
                     <!-- Publicité 5 end -->
                 </div>
             </div>
@@ -498,15 +496,15 @@
         <section class="container pt-5">
             <div class="row g-3">
                 <div class="col-md-6 d-flex align-items-end justify-content-center">
-                    <img src="{{ asset('images/mockup.png') }}" class="w-100 h-400px object-fit-contain object-position-" alt="">
+                    <img src="<?php echo e(asset('images/mockup.png')); ?>" class="w-100 h-400px object-fit-contain object-position-" alt="">
                 </div>
                 <div class="col-md-6 d-flex align-items-center justify-content-center">
                     <div class="">
                         <h1 class="fw-bolder mb-3 orange-color">Télécharger l'application maintenant !</h1>
                         <p class="mb-3">Lorem ipsum dolor sit amet consectetur adipisicing elit. Neque, doloribus in nemo illo officia laudantium incidunt soluta iusto!</p>
                         <div class="hstack gap-2">
-                            <img src="{{ asset('images/google-play.png') }}" alt="">
-                            <img src="{{ asset('images/app-store.png') }}" alt="">
+                            <img src="<?php echo e(asset('images/google-play.png')); ?>" alt="">
+                            <img src="<?php echo e(asset('images/app-store.png')); ?>" alt="">
                         </div>
                     </div>
                 </div>
@@ -520,11 +518,11 @@
                 <h5 class="mb-0">Tendance</h5>
             </div>
             <div class="multi-carousel-track d-flex">
-                @foreach ($trendingProducts as $product)
+                <?php $__currentLoopData = $trendingProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
+                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                 </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
             <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
@@ -681,7 +679,7 @@
                                 Consultez notre politique de confidentialité complète pour découvrir tous les détails 
                                 sur la collecte, l'utilisation et la protection de vos informations personnelles.
                             </p>
-                            <a href="{{ route('privacy-policy') }}" class="btn orange-bg text-white btn-sm">
+                            <a href="<?php echo e(route('privacy-policy')); ?>" class="btn orange-bg text-white btn-sm">
                                 <i class="bi bi-file-text me-2"></i>Lire la politique complète
                             </a>
                             <a href="mailto:privacy@kazaria.ci" class="btn btn-outline-secondary btn-sm ms-2">
@@ -701,19 +699,34 @@
                                     <p class="text-muted mb-0">Une seule newsletter par semaine avec les promotions exclusives, nouveaux arrivages et conseils shopping.</p>
                                 </div>
                                 <div class="col-lg-6">
-                                    @if(session('newsletter_success'))
+                                    <?php if(session('newsletter_success')): ?>
                                         <div class="alert alert-success py-2 px-3 mb-3">
-                                            {{ session('newsletter_success') }}
+                                            <?php echo e(session('newsletter_success')); ?>
+
                                         </div>
-                                    @endif
-                                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="row g-2 justify-content-end">
-                                        @csrf
+                                    <?php endif; ?>
+                                    <form action="<?php echo e(route('newsletter.subscribe')); ?>" method="POST" class="row g-2 justify-content-end">
+                                        <?php echo csrf_field(); ?>
                                         <input type="hidden" name="source" value="homepage">
                                         <div class="col-md-8 col-lg-7">
-                                            <input type="email" name="newsletter_email" class="form-control @error('newsletter_email') is-invalid @enderror" placeholder="Votre email" value="{{ old('newsletter_email') }}" required>
-                                            @error('newsletter_email')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                            <input type="email" name="newsletter_email" class="form-control <?php $__errorArgs = ['newsletter_email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" placeholder="Votre email" value="<?php echo e(old('newsletter_email')); ?>" required>
+                                            <?php $__errorArgs = ['newsletter_email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                         </div>
                                         <div class="col-md-4 col-lg-3 text-md-end">
                                             <button class="btn orange-bg text-white">
@@ -741,7 +754,7 @@
                 return;
             }
             
-            const endTime = {{ $countdownEndTime }}; // Temps de fin en millisecondes
+            const endTime = <?php echo e($countdownEndTime); ?>; // Temps de fin en millisecondes
             
             function updateCountdown() {
                 const now = Date.now();
@@ -978,4 +991,5 @@
         });
     })();
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/accueil.blade.php ENDPATH**/ ?>
