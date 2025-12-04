@@ -748,6 +748,12 @@ unset($__errorArgs, $__bag); ?>
     <script>
         // Countdown pour les deals du jour
         (function() {
+            // Vérifier que document est disponible
+            if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+                console.error('Document ou addEventListener non disponible pour le countdown');
+                return;
+            }
+            
             const endTime = <?php echo e($countdownEndTime); ?>; // Temps de fin en millisecondes
             
             function updateCountdown() {
@@ -793,30 +799,41 @@ unset($__errorArgs, $__bag); ?>
     <script>
         // Nettoyer l'URL si on vient d'une connexion (sans recharger)
         (function() {
+            if (typeof window === 'undefined' || typeof document === 'undefined') {
+                return;
+            }
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('login')) {
                 // Nettoyer l'URL en retirant le paramètre login sans recharger
                 const cleanUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, cleanUrl);
+                const pageTitle = document.title || '';
+                window.history.replaceState({}, pageTitle, cleanUrl);
             }
         })();
     </script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Attendre que MultiCarousel soit disponible
-        function waitForMultiCarousel(callback) {
-            if (typeof MultiCarousel !== 'undefined') {
-                callback();
-            } else {
-                setTimeout(() => waitForMultiCarousel(callback), 100);
-            }
+    (function() {
+        // Vérifier que document est disponible
+        if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+            console.error('Document ou addEventListener non disponible');
+            return;
         }
         
-        // Charger les suggestions basées sur l'historique de vues
-        waitForMultiCarousel(() => {
-            loadAISuggestions();
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attendre que MultiCarousel soit disponible
+            function waitForMultiCarousel(callback) {
+                if (typeof MultiCarousel !== 'undefined') {
+                    callback();
+                } else {
+                    setTimeout(() => waitForMultiCarousel(callback), 100);
+                }
+            }
+            
+            // Charger les suggestions basées sur l'historique de vues
+            waitForMultiCarousel(() => {
+                loadAISuggestions();
+            });
         
         function loadAISuggestions() {
             fetch('/api/ai/suggestions', {
@@ -971,7 +988,8 @@ unset($__errorArgs, $__bag); ?>
                 maximumFractionDigits: 0
             }).format(price) + ' FCFA';
         }
-    });
+        });
+    })();
     </script>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\accueil.blade.php ENDPATH**/ ?>
