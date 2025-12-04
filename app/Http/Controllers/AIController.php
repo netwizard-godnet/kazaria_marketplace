@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\FAQ;
+use App\Models\Category;
+use App\Models\Review;
 use Illuminate\Support\Facades\Cache;
 
 class AIController extends Controller
@@ -20,15 +23,21 @@ class AIController extends Controller
                 return response()->json(['success' => false, 'message' => 'Message vide'], 422);
             }
 
+            // Normaliser le texte pour améliorer la compréhension
+            $normalizedText = $this->normalizeText($text);
+
+        // Utiliser le texte normalisé pour l'extraction
+        $textForExtraction = $normalizedText;
+        
         // Extraction enrichie
-        [$priceMin, $priceMax] = $this->extractPriceRange($text);
-        $storageGb = $this->extractNumber($text, '(?:stockage|mémoire\s*interne|rom|go|gb)');
-        $ramGb = $this->extractNumber($text, '(?:ram|mémoire\s*vive)');
-        $brand = $this->extractBrand($text);
-        $category = $this->extractCategory($text); // phone, laptop, tv, fridge, freezer, kettle ...
+        [$priceMin, $priceMax] = $this->extractPriceRange($textForExtraction);
+        $storageGb = $this->extractNumber($textForExtraction, '(?:stockage|mémoire\s*interne|rom|go|gb)');
+        $ramGb = $this->extractNumber($textForExtraction, '(?:ram|mémoire\s*vive)');
+        $brand = $this->extractBrand($textForExtraction);
+        $category = $this->extractCategory($textForExtraction); // phone, laptop, tv, fridge, freezer, kettle ...
         // Essayez de résoudre dynamiquement une catégorie/sous-catégorie depuis la BDD
-        [$resolvedCategoryId, $resolvedSubcategoryId] = $this->resolveCategoryFromDatabase($text);
-        $requestedKeywords = $this->extractProductKeywords($text); // ex: ['bouilloire']
+        [$resolvedCategoryId, $resolvedSubcategoryId] = $this->resolveCategoryFromDatabase($textForExtraction);
+        $requestedKeywords = $this->extractProductKeywords($textForExtraction); // ex: ['bouilloire']
         $hasDemand = ($category !== null) || ($brand !== null) || ($storageGb !== null) || ($ramGb !== null)
             || ($priceMin !== null) || ($priceMax !== null) || (!empty($requestedKeywords));
 
@@ -110,18 +119,32 @@ class AIController extends Controller
             ]);
         }
 
-        // Si l'utilisateur salue ou ne donne aucun critère, ne pas proposer d'articles arbitraires
+        // Si l'utilisateur salue ou ne donne aucun critère, vérifier d'abord si c'est une question FAQ
         if (!$hasDemand) {
-            $msg = $userName ? ("Bonjour $userName ! ") : "Bonjour ! ";
-            $msg .= "Dites‑moi votre besoin (budget, catégorie, marque, etc.) et je vous ferai une sélection.";
-            return response()->json([
-                'success' => true,
-                'message' => $msg,
-                'items' => [],
-                'intent' => 'greeting',
-                'intent_params' => [],
-                'understood' => []
-            ]);
+            // Vérifier si c'est une question FAQ simple (un seul mot comme "Contact", "Livraison", etc.)
+            $trimmedText = trim(mb_strtolower($text));
+            $faqKeywords = ['contact', 'contacter', 'livraison', 'paiement', 'payer', 'retour', 'garantie', 'vendeur', 'horaires'];
+            
+            if (in_array($trimmedText, $faqKeywords)) {
+                // C'est une question FAQ simple, laisser passer pour la détection d'intentions
+                // Ne pas retourner greeting ici
+            } else {
+                // Vérifier si c'est une salutation
+                $isGreeting = preg_match('/\b(bonjour|salut|bonsoir|bonne\s+journée|bonne\s+soirée)\b/i', $text);
+                if ($isGreeting) {
+                    $msg = $userName ? ("Bonjour $userName ! ") : "Bonjour ! ";
+                    $msg .= "Dites‑moi votre besoin (budget, catégorie, marque, etc.) et je vous ferai une sélection.";
+                    return response()->json([
+                        'success' => true,
+                        'message' => $msg,
+                        'items' => [],
+                        'intent' => 'greeting',
+                        'intent_params' => [],
+                        'understood' => []
+                    ]);
+                }
+                // Sinon, laisser passer pour la détection d'intentions
+            }
         }
         $isPhone = $category === 'phone';
 
@@ -339,8 +362,108 @@ class AIController extends Controller
             });
         }
 
-        // Intent + dispatcher
-        [$intent, $intentParams] = $this->detectIntent($text);
+        // Vérifier d'abord dans la base de connaissances FAQ (AVANT la détection d'intentions)
+        // Car les FAQs sont plus spécifiques et doivent avoir priorité
+        // MAIS seulement si ce n'est pas clairement une demande de produit
+        $isProductSearch = preg_match('/\b(je\s*veux|je\s*cherche|montre|affiche|donne|j\'?ai|budget|prix|combien\s+coûte|combien\s+vaut)\s+(un|des|le|la|les|du|de\s+la)?\s*(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire|produit)/i', $text) ||
+                          preg_match('/\b(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(128|256|512|64|32)\s*(gb|go)/i', $text) ||
+                          preg_match('/\b(montre|montre-moi|affiche|affiche-moi)\s+(des|les|du|de\s+la|de)\s+(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)/i', $text) ||
+                          preg_match('/\b(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)\s+(téléphone|telephone|smartphone)/i', $text) ||
+                          preg_match('/\b(montre|montre-moi|affiche|affiche-moi)\s+(des|les|du|de\s+la|de)\s+(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)/i', $text) ||
+                          preg_match('/\b(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)\s+(samsung|apple|iphone|tecno|infinix|xiaomi|huawei|oppo)/i', $text);
+        
+        if (!$isProductSearch) {
+            $faqMatch = FAQ::findMatching($normalizedText);
+            if (!$faqMatch) {
+                // Essayer aussi avec le texte original (au cas où la normalisation aurait supprimé des infos importantes)
+                $faqMatch = FAQ::findMatching($text);
+            }
+            if ($faqMatch) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $faqMatch->answer,
+                    'items' => [],
+                    'intent' => 'faq',
+                    'intent_params' => ['faq_id' => $faqMatch->id],
+                    'understood' => []
+                ]);
+            }
+        }
+        
+        // Détecter les intentions spéciales (catégories, promotions) APRÈS la FAQ
+        // Car ces intentions sont moins spécifiques que les FAQs
+        [$intent, $intentParams] = $this->detectIntent($text, $normalizedText);
+        
+        // Si c'est une recherche de produit, forcer l'intention à 'search'
+        if ($isProductSearch && !in_array($intent, ['category_info', 'promotion_info', 'review_info', 'product_info'])) {
+            $intent = 'search';
+        }
+
+        // Intent déjà détecté plus haut pour les intentions spéciales
+        // Si pas encore détecté, le détecter maintenant
+        if (!isset($intent)) {
+            [$intent, $intentParams] = $this->detectIntent($text, $normalizedText);
+        }
+
+        // Questions sur un produit spécifique
+        if ($intent === 'product_info') {
+            $productInfo = $this->answerProductQuestion($text, $intentParams);
+            if ($productInfo) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $productInfo['message'],
+                    'items' => $productInfo['items'] ?? [],
+                    'intent' => 'product_info',
+                    'intent_params' => $intentParams,
+                    'understood' => []
+                ]);
+            }
+        }
+
+        // Questions sur les catégories
+        if ($intent === 'category_info') {
+            $categoryInfo = $this->answerCategoryQuestion($text);
+            if ($categoryInfo) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $categoryInfo,
+                    'items' => [],
+                    'intent' => 'category_info',
+                    'intent_params' => [],
+                    'understood' => []
+                ]);
+            }
+        }
+
+        // Questions sur les avis/notes
+        if ($intent === 'review_info') {
+            $reviewInfo = $this->answerReviewQuestion($text, $intentParams);
+            if ($reviewInfo) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $reviewInfo,
+                    'items' => [],
+                    'intent' => 'review_info',
+                    'intent_params' => $intentParams,
+                    'understood' => []
+                ]);
+            }
+        }
+
+        // Questions sur les promotions
+        if ($intent === 'promotion_info') {
+            $promoInfo = $this->answerPromotionQuestion($text);
+            if ($promoInfo) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $promoInfo['message'],
+                    'items' => $promoInfo['items'] ?? [],
+                    'intent' => 'promotion_info',
+                    'intent_params' => [],
+                    'understood' => []
+                ]);
+            }
+        }
 
         // Réponses FAQ générales (livraison, paiement, retours, garantie, contact, vendeur, horaires)
         if ($intent === 'qa') {
@@ -514,6 +637,14 @@ class AIController extends Controller
             }
         }
 
+        // Si l'intention est "search" mais qu'on n'a pas de demande claire, essayer le fallback
+        if ($intent === 'search' && !$hasDemand) {
+            $fallback = $this->tryFallbackInterpretations($text, $normalizedText);
+            if ($fallback) {
+                return response()->json($fallback);
+            }
+        }
+
         $reply = $this->buildReply($products, $priceMin, $priceMax, $storageGb, $ramGb, $brand, $category, $color, $screenInch, $batteryMah, $cameraMp, $needsDualSim, $needs5g, $refreshHz, $hasNfc, $hasEsim, $ipRating, $selfieMp, $ultraWideMp, $requestedBrandKeyword, $brandFound);
 
         return response()->json([
@@ -633,9 +764,84 @@ class AIController extends Controller
         return $introText;
     }
 
-    private function detectIntent(string $text): array
+    /**
+     * Normaliser le texte pour améliorer la compréhension
+     */
+    private function normalizeText(string $text): string
     {
+        // Convertir en minuscules
+        $normalized = mb_strtolower($text);
+        
+        // Remplacer les synonymes et variations courantes
+        $synonyms = [
+            // Questions
+            'combien coûte' => 'prix',
+            'combien vaut' => 'prix',
+            'quel est le prix' => 'prix',
+            'quelle est la prix' => 'prix',
+            'c\'est combien' => 'prix',
+            'c est combien' => 'prix',
+            'ça coûte combien' => 'prix',
+            'ca coute combien' => 'prix',
+            
+            // Caractéristiques
+            'caractéristiques' => 'caracteristiques',
+            'spécifications' => 'specifications',
+            'spécificités' => 'specifications',
+            'infos' => 'informations',
+            'détails' => 'details',
+            
+            // Disponibilité
+            'disponible' => 'stock',
+            'en stock' => 'stock',
+            'disponibilité' => 'stock',
+            'il y a' => 'stock',
+            'y a t il' => 'stock',
+            'y a-t-il' => 'stock',
+            
+            // Avis
+            'avis' => 'avis',
+            'commentaires' => 'avis',
+            'notes' => 'avis',
+            'évaluations' => 'avis',
+            'evaluations' => 'avis',
+            'opinions' => 'avis',
+            'que pensent' => 'avis',
+            'que pense' => 'avis',
+            
+            // Promotions
+            'promo' => 'promotion',
+            'réduction' => 'promotion',
+            'reduction' => 'promotion',
+            'remise' => 'promotion',
+            'offre' => 'promotion',
+            'solde' => 'promotion',
+            
+            // Catégories
+            'types' => 'categories',
+            'sortes' => 'categories',
+            'genres' => 'categories',
+        ];
+        
+        foreach ($synonyms as $synonym => $replacement) {
+            $normalized = str_ireplace($synonym, $replacement, $normalized);
+        }
+        
+        // Normaliser les espaces multiples
+        $normalized = preg_replace('/\s+/', ' ', $normalized);
+        
+        // Supprimer la ponctuation excessive (garder les ? et !)
+        $normalized = preg_replace('/[.,;:]+/', ' ', $normalized);
+        
+        return trim($normalized);
+    }
+
+    private function detectIntent(string $text, string $normalizedText = null): array
+    {
+        // Utiliser le texte normalisé si fourni, sinon normaliser
+        // MAIS pour les patterns, utiliser le texte original en minuscules pour éviter les problèmes de normalisation
         $t = mb_strtolower($text);
+        
         // apply coupon
         if (preg_match('/(code\s*promo|coupon)/', $t)) {
             if (preg_match('/([a-z0-9]{3,}-?[a-z0-9]{3,})/i', $text, $m)) {
@@ -643,12 +849,125 @@ class AIController extends Controller
             }
             return ['apply_coupon', []];
         }
+        
+        // Questions sur les catégories - DOIT être AVANT product_info
+        // Utiliser le texte original pour éviter les problèmes d'encodage
+        $tOriginal = mb_strtolower($text);
+        $categoryPatterns = [
+            '/\b(quelles|quels)\s+(categories|categorie|catégories|catégorie|types|sortes|genres)\s+(avez|avez-vous|avez\s+vous|proposez|proposez-vous|disposez|disposez-vous)/i',
+            '/\b(quelles|quels)\s+(categories|categorie|catégories|catégorie|types|sortes|genres)/i', // Pattern simplifié - correspond même avec d'autres mots après
+            '/\b(quels|quelles)\s+(types|sortes|genres)\s+(de\s+)?(produits?)/i',
+            '/\b(qu\s+avez\s+vous|qu\'avez-vous|avez\s+vous|qu\'est-ce\s+que\s+vous\s+avez)\s+(comme\s+)?(categories|categorie|catégories|catégorie|types|produits?)/i',
+            '/\b(liste|liste\s+des)\s+(categories|categorie|catégories|catégorie|types|produits?)/i',
+            '/\b(categories|categorie|catégories|catégorie|types|sortes|genres)\s+(disponibles?|proposées?)/i',
+        ];
+        
+        foreach ($categoryPatterns as $pattern) {
+            if (preg_match($pattern, $tOriginal) || preg_match($pattern, $t)) {
+                return ['category_info', []];
+            }
+        }
+        
+        // Questions sur les promotions - DOIT être AVANT product_info
+        $promotionPatterns = [
+            '/\b(quelles|quels)\s+(sont|avez-vous|avez\s+vous|y\s+a\s+t\s+il|y\s+a-t-il)\s+(les\s+)?(promotions?|promo|offres?|reductions?|remises?)\s+(en\s+)?(cours|actuelles?|disponibles?)/i',
+            '/\b(promotions?|promo|reduction|reductions?|remise|remises?|offre|offres?|solde|soldes?)\s+(en\s+)?(cours|actuelles?|actuelles?|disponibles?|disponible)/i',
+            '/\b(quelles|quels)\s+(sont|avez-vous|avez\s+vous|y\s+a\s+t\s+il|y\s+a-t-il)\s+(les\s+)?(promotions?|promo|offres?|reductions?|remises?)\b/i',
+            '/\b(il\s+y\s+a|y\s+a\s+t\s+il|y\s+a-t-il)\s+(des\s+)?(promotions?|promo|offres?|reductions?)/i',
+            '/\b(quels|quelles)\s+(sont|est)\s+(vos|vos\s+meilleures?)\s+(promotions?|promo|offres?)/i',
+        ];
+        
+        foreach ($promotionPatterns as $pattern) {
+            if (preg_match($pattern, $t)) {
+                return ['promotion_info', []];
+            }
+        }
+        
+        // Questions sur un produit spécifique - Patterns très flexibles
+        $productInfoPatterns = [
+            // "Quel est le prix du X?", "Combien coûte le X?", "Le prix du X?"
+            '/\b(prix|cout|tarif|valeur)\s+(du|de\s+la|de|le|la|les|un|une|d\s+un|d\s+une)\s+/i',
+            '/\b(combien\s+)?(coute|coûte|vaut)\s+(le|la|les|un|une|du|de\s+la|de)\s+/i',
+            '/\b(quel|quelle|quels|quelles)\s+(est|sont|a|ont)\s+(le|la|les|un|une)\s+(prix|cout|tarif)\s+(du|de\s+la|de|le|la|les)\s+/i',
+            
+            // "Caractéristiques du X", "Infos sur le X", "Détails du X"
+            '/\b(caracteristiques|specifications|specs|details|infos|informations|description)\s+(du|de\s+la|de|le|la|les|sur|concernant)\s+/i',
+            '/\b(quel|quelle|quels|quelles)\s+(sont|est)\s+(les|la)\s+(caracteristiques|specifications|details|infos)\s+(du|de\s+la|de|le|la|les)\s+/i',
+            
+            // "Le stock du X?", "Disponibilité du X?"
+            '/\b(stock|disponibilite|disponible)\s+(du|de\s+la|de|le|la|les|d\s+un|d\s+une)\s+/i',
+            '/\b(il\s+y\s+a|y\s+a\s+t\s+il|y\s+a-t-il)\s+(du|de\s+la|de|le|la|les)\s+/i',
+            '/\b(est|sont)\s+(il|elle|ils|elles)\s+(disponible|en\s+stock)\s+(le|la|les|du|de\s+la|de)\s+/i',
+            
+            // "La garantie du X?"
+            '/\b(garantie|warranty)\s+(du|de\s+la|de|le|la|les)\s+/i',
+            
+            // "Quel est le X?", "C'est quoi le X?" - MAIS exclure les questions sur catégories/promotions
+            '/\b(quel|quelle|quels|quelles)\s+(est|sont|a|ont)\s+(le|la|les|un|une)\s+(?!categories|categorie|promotions?|promo)/i',
+            '/\b(c\s+est\s+quoi|qu\s+est\s+ce\s+que|qu\'est-ce que)\s+(le|la|les|un|une|du|de\s+la|de)\s+(?!categories|categorie|promotions?|promo)/i',
+        ];
+        
+        foreach ($productInfoPatterns as $pattern) {
+            if (preg_match($pattern, $t)) {
+                $productName = $this->extractProductNameFromQuestion($text, $t);
+                if ($productName) {
+                    return ['product_info', ['product_name' => $productName]];
+                }
+            }
+        }
+        
+        // Questions sur les avis/notes - Patterns flexibles
+        $reviewPatterns = [
+            '/\b(avis|commentaires|notes|note|evaluation|evaluations|opinions|opinion)\s+(sur|du|de\s+la|de|le|la|les|concernant)/i',
+            '/\b(comment|que\s+pensent|que\s+pense|pensent|pense)\s+(les\s+)?(clients?|utilisateurs?|gens|acheteurs?)/i',
+            '/\b(quels|quelles)\s+(sont|est)\s+(les|la)\s+(avis|commentaires|notes|opinions)\s+(sur|du|de\s+la|de|le|la|les)/i',
+            '/\b(est|sont)\s+(il|elle|ils|elles)\s+(bien|bon|mauvais|mauvaises)\s+(le|la|les|du|de\s+la|de)\s+/i',
+        ];
+        
+        foreach ($reviewPatterns as $pattern) {
+            if (preg_match($pattern, $t)) {
+                $productName = $this->extractProductNameFromQuestion($text, $t);
+                return ['review_info', ['product_name' => $productName]];
+            }
+        }
+        
+        
         // general QA (livraison, paiement, retours, garanties, contact, vendeur, horaires)
         // Ne pas déclencher QA si c'est une demande de produit (ex: "je veux un téléphone")
         $isProductRequest = preg_match('/\b(je\s*veux|je\s*cherche|montre|affiche|donne|j\'?ai|budget|prix)\s+(un|des|le|la|les|du|de\s+la)?\s*(téléphone|telephone|smartphone|laptop|ordinateur|tv|frigo|réfrigérateur|congélateur|bouilloire)/i', $t);
         
-        if (!$isProductRequest && preg_match('/livraison|delai|frais\s*de\s*livraison|paiement|payer|retour|remboursement|garantie|votre\s*contact|contact\s*(téléphone|telephone|email|whatsapp)|numéro\s*(téléphone|telephone)|appeler|appelle|votre\s*(téléphone|telephone|whatsapp|email)|whatsapp|email|vendeur|devenir\s*vendeur|horaires|ouverture|fermeture/i', $t)) {
+        // Mots-clés simples qui déclenchent directement QA (doivent être seuls ou avec peu de contexte)
+        $simpleKeywords = ['contact', 'contacter', 'téléphone', 'telephone', 'whatsapp', 'email', 'livraison', 'paiement', 'payer', 'retour', 'garantie', 'vendeur', 'horaires', 'ouverture', 'fermeture'];
+        $trimmedText = trim($t);
+        if (!$isProductRequest && (in_array($trimmedText, $simpleKeywords) || in_array($trimmedText, array_map('mb_strtolower', $simpleKeywords)))) {
             return ['qa', []];
+        }
+        
+        // Patterns améliorés pour détecter les questions FAQ
+        $qaPatterns = [
+            '/\b(comment|comment\s+puis|comment\s+faire|comment\s+on)\s+(suivre|suis|suis-je|suivre\s+ma|suivre\s+mon)\s+(commande|colis)/i',
+            '/\b(quels?|quelles?)\s+(sont|est)\s+(les?\s+)?(moyens?\s+de\s+)?paiement/i',
+            '/\b(quels?|quelles?)\s+(sont|est)\s+(les?\s+)?(délais?|delais?)\s+(de\s+)?livraison/i',
+            '/\b(quels?|quelles?)\s+(sont|est)\s+(les?\s+)?frais\s+(de\s+)?livraison/i',
+            '/\b(puis|peut|peux)\s*(-je\s+)?(retourner|retour|échanger|rembourser)/i',
+            '/\b(quelle|quel)\s+(est|sont)\s+(la\s+)?garantie/i',
+            '/\b(comment|comment\s+puis)\s+(vous\s+)?contacter/i',
+            '/\b(comment|comment\s+puis)\s+(devenir|être)\s+vendeur/i',
+            '/\b(contact|contacter|téléphone|telephone|whatsapp|email|numéro)/i',
+            '/\b(livraison|delai|delais?|expédition|expedition|frais\s+livraison)/i',
+            '/\b(paiement|payer|moyen\s+de\s+paiement)/i',
+            '/\b(retour|remboursement|échanger|echanger)/i',
+            '/\b(garantie|warranty)/i',
+            '/\b(vendeur|devenir\s+vendeur|vendre)/i',
+            '/\b(horaires?|ouverture|fermeture)/i',
+        ];
+        
+        if (!$isProductRequest) {
+            foreach ($qaPatterns as $pattern) {
+                if (preg_match($pattern, $t)) {
+                    return ['qa', []];
+                }
+            }
         }
         // track order
         if (preg_match('/(suivre|statut).*commande/i', $t)) {
@@ -1020,6 +1339,447 @@ class AIController extends Controller
     {
         if (preg_match('/(?:ultra\s*wide|grand\s*angle)[^\d]*(\d{1,3})\s?(?:mp|mpx)/i', $text, $m)) return (int)$m[1];
         return null;
+    }
+
+    /**
+     * Extraire le nom d'un produit depuis une question avec correspondance floue
+     */
+    private function extractProductNameFromQuestion(string $text, string $normalizedText = null): ?string
+    {
+        $t = $normalizedText ?: mb_strtolower($text);
+        
+        // Patterns pour extraire le nom du produit
+        $patterns = [
+            // "du iPhone 15", "de Samsung Galaxy", "le Samsung S23"
+            '/\b(du|de\s+la|de|le|la|les|un|une|d\s+un|d\s+une)\s+([a-z0-9\s\-]+?)(?:\s|$|,|\?|\.|combien|prix|cout|caracteristiques|stock|disponible|garantie|avis)/i',
+            // "iPhone 15", "Samsung Galaxy" (sans article)
+            '/\b([A-Z][a-z0-9]+(?:\s+[A-Z]?[a-z0-9]+)*)\s+(?:combien|prix|cout|caracteristiques|stock|disponible|garantie|avis)/i',
+            // "sur le X", "concernant le X"
+            '/\b(sur|concernant|a\s+propos\s+de)\s+(le|la|les|du|de\s+la|de|un|une)\s+([a-z0-9\s\-]+?)(?:\s|$|,|\?|\.)/i',
+        ];
+        
+        $candidates = [];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $m)) {
+                $name = trim($m[count($m) - 1]); // Dernier groupe capturé
+                if (strlen($name) >= 3) {
+                    $candidates[] = $name;
+                }
+            }
+        }
+        
+        // Si aucun pattern ne correspond, essayer d'extraire les mots significatifs
+        if (empty($candidates)) {
+            // Chercher des mots qui ressemblent à des noms de produits (majuscules, chiffres, etc.)
+            if (preg_match_all('/\b([A-Z][a-z0-9]+(?:\s+[A-Z]?[a-z0-9]+)*|\d+\s*[A-Z][a-z]+)/', $text, $matches)) {
+                $candidates = $matches[1];
+            }
+        }
+        
+        // Filtrer et nettoyer les candidats
+        $stopwords = ['les', 'des', 'du', 'de', 'la', 'le', 'un', 'une', 'est', 'sont', 'a', 'ont', 
+                      'quel', 'quelle', 'quels', 'quelles', 'combien', 'prix', 'cout', 'tarif',
+                      'caracteristiques', 'specifications', 'details', 'infos', 'informations',
+                      'stock', 'disponible', 'disponibilite', 'garantie', 'avis', 'commentaires'];
+        
+        foreach ($candidates as $candidate) {
+            $words = preg_split('/\s+/', mb_strtolower($candidate));
+            $filtered = array_filter($words, function($w) use ($stopwords) {
+                return !in_array($w, $stopwords) && strlen($w) >= 2;
+            });
+            
+            if (!empty($filtered) && count($filtered) >= 1) {
+                $productName = implode(' ', array_slice($filtered, 0, 5));
+                
+                // Vérifier si ce nom correspond à un produit dans la base
+                $found = $this->fuzzyFindProduct($productName);
+                if ($found) {
+                    return $found;
+                }
+            }
+        }
+        
+        // Retourner le meilleur candidat même sans correspondance exacte
+        if (!empty($candidates)) {
+            $best = $candidates[0];
+            $words = preg_split('/\s+/', mb_strtolower($best));
+            $filtered = array_filter($words, function($w) use ($stopwords) {
+                return !in_array($w, $stopwords) && strlen($w) >= 2;
+            });
+            if (!empty($filtered)) {
+                return implode(' ', array_slice($filtered, 0, 5));
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Recherche floue d'un produit dans la base de données
+     */
+    private function fuzzyFindProduct(string $searchTerm): ?string
+    {
+        if (strlen($searchTerm) < 3) {
+            return null;
+        }
+        
+        // Recherche exacte d'abord
+        $exact = Product::active()
+            ->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('brand', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('model', 'like', '%' . $searchTerm . '%');
+            })
+            ->first();
+        
+        if ($exact) {
+            return $searchTerm;
+        }
+        
+        // Recherche par mots individuels
+        $words = explode(' ', $searchTerm);
+        if (count($words) > 1) {
+            // Essayer avec chaque mot significatif
+            foreach ($words as $word) {
+                if (strlen($word) >= 3) {
+                    $found = Product::active()
+                        ->where(function($q) use ($word) {
+                            $q->where('name', 'like', '%' . $word . '%')
+                              ->orWhere('brand', 'like', '%' . $word . '%');
+                        })
+                        ->first();
+                    
+                    if ($found) {
+                        // Retourner le nom de marque ou le début du nom du produit
+                        return $found->brand ?: substr($found->name, 0, 30);
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Répondre aux questions sur un produit spécifique
+     */
+    private function answerProductQuestion(string $text, array $params): ?array
+    {
+        $productName = $params['product_name'] ?? null;
+        if (!$productName) {
+            return null;
+        }
+
+        $t = mb_strtolower($text);
+        
+        // Recherche floue du produit avec plusieurs stratégies
+        $product = $this->findProductFuzzy($productName);
+
+        if (!$product) {
+            return [
+                'message' => "Je n'ai pas trouvé de produit correspondant à \"$productName\". Pouvez-vous être plus précis ?",
+                'items' => []
+            ];
+        }
+
+        $message = "Voici les informations sur " . $product->name . " :\n\n";
+        
+        // Prix
+        if (preg_match('/\b(prix|coût|tarif)/i', $t)) {
+            $message .= "💰 Prix : " . number_format($product->price, 0, ',', ' ') . " FCFA";
+            if ($product->old_price && $product->old_price > $product->price) {
+                $message .= " (au lieu de " . number_format($product->old_price, 0, ',', ' ') . " FCFA)";
+                if ($product->discount_percentage) {
+                    $message .= " - " . $product->discount_percentage . "% de réduction";
+                }
+            }
+            $message .= "\n";
+        }
+        
+        // Stock
+        if (preg_match('/\b(stock|disponibilité|disponible)/i', $t)) {
+            $message .= "📦 Stock : " . ($product->stock > 0 ? $product->stock . " unités disponibles" : "Rupture de stock") . "\n";
+        }
+        
+        // Garantie
+        if (preg_match('/\b(garantie)/i', $t) && $product->warranty) {
+            $message .= "🛡️ Garantie : " . $product->warranty . "\n";
+        }
+        
+        // Caractéristiques générales
+        if (preg_match('/\b(caractéristiques|spécifications|spécificités|détails|infos|informations)/i', $t)) {
+            $message .= "📋 Caractéristiques :\n";
+            if ($product->brand) $message .= "• Marque : " . $product->brand . "\n";
+            if ($product->model) $message .= "• Modèle : " . $product->model . "\n";
+            if ($product->description) {
+                $desc = strip_tags($product->description);
+                $message .= "• Description : " . mb_substr($desc, 0, 200) . (mb_strlen($desc) > 200 ? '...' : '') . "\n";
+            }
+            if ($product->attributes && is_array($product->attributes)) {
+                foreach ($product->attributes as $key => $value) {
+                    if (is_string($value) || is_numeric($value)) {
+                        $message .= "• " . ucfirst($key) . " : " . $value . "\n";
+                    }
+                }
+            }
+        }
+        
+        // Note et avis
+        if (preg_match('/\b(note|avis|commentaires|évaluation)/i', $t)) {
+            if ($product->rating > 0) {
+                $message .= "⭐ Note : " . number_format($product->rating, 1) . "/5";
+                if ($product->reviews_count > 0) {
+                    $message .= " (" . $product->reviews_count . " avis)";
+                }
+                $message .= "\n";
+            } else {
+                $message .= "⭐ Aucun avis pour le moment\n";
+            }
+        }
+
+        return [
+            'message' => $message,
+            'items' => [$product]
+        ];
+    }
+
+    /**
+     * Répondre aux questions sur les catégories
+     */
+    private function answerCategoryQuestion(string $text): ?string
+    {
+        $categories = Category::active()->with('subcategories')->orderBy('order')->get();
+        
+        if ($categories->isEmpty()) {
+            return "Aucune catégorie disponible pour le moment.";
+        }
+
+        $message = "Voici nos catégories de produits :\n\n";
+        foreach ($categories as $category) {
+            $message .= "📁 " . $category->name;
+            if ($category->subcategories->isNotEmpty()) {
+                $subNames = $category->subcategories->pluck('name')->take(5)->implode(', ');
+                $message .= " (" . $subNames;
+                if ($category->subcategories->count() > 5) {
+                    $message .= " et " . ($category->subcategories->count() - 5) . " autres";
+                }
+                $message .= ")";
+            }
+            $message .= "\n";
+        }
+
+        return $message;
+    }
+
+    /**
+     * Répondre aux questions sur les avis
+     */
+    private function answerReviewQuestion(string $text, array $params): ?string
+    {
+        $productName = $params['product_name'] ?? null;
+        
+        if ($productName) {
+            // Avis sur un produit spécifique
+            $product = Product::active()
+                ->where(function($q) use ($productName) {
+                    $q->where('name', 'like', '%' . $productName . '%')
+                      ->orWhere('brand', 'like', '%' . $productName . '%');
+                })
+                ->first();
+
+            if (!$product) {
+                return "Je n'ai pas trouvé de produit correspondant à \"$productName\".";
+            }
+
+            $reviews = Review::where('product_id', $product->id)
+                ->approved()
+                ->orderBy('created_at', 'desc')
+                ->limit(3)
+                ->get();
+
+            $message = "Avis sur " . $product->name . " :\n\n";
+            if ($product->rating > 0) {
+                $message .= "⭐ Note moyenne : " . number_format($product->rating, 1) . "/5 (" . $product->reviews_count . " avis)\n\n";
+            }
+
+            if ($reviews->isEmpty()) {
+                $message .= "Aucun avis pour le moment.";
+            } else {
+                foreach ($reviews as $review) {
+                    $stars = str_repeat('⭐', $review->rating) . str_repeat('☆', 5 - $review->rating);
+                    $message .= $stars . " " . ($review->title ?: 'Avis') . "\n";
+                    if ($review->comment) {
+                        $comment = mb_substr($review->comment, 0, 150);
+                        $message .= $comment . (mb_strlen($review->comment) > 150 ? '...' : '') . "\n";
+                    }
+                    $message .= "\n";
+                }
+            }
+
+            return $message;
+        } else {
+            // Avis généraux
+            return "Pour voir les avis sur un produit, précisez le nom du produit. Exemple : \"Quels sont les avis sur le Samsung Galaxy?\"";
+        }
+    }
+
+    /**
+     * Répondre aux questions sur les promotions
+     */
+    private function answerPromotionQuestion(string $text): ?array
+    {
+        // Produits en promotion (avec discount_percentage > 0)
+        $promotions = Product::active()
+            ->where('discount_percentage', '>', 0)
+            ->orderBy('discount_percentage', 'desc')
+            ->limit(10)
+            ->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+
+        if ($promotions->isEmpty()) {
+            return [
+                'message' => "Il n'y a pas de promotions en cours pour le moment. Revenez bientôt !",
+                'items' => []
+            ];
+        }
+
+        $message = "🔥 Promotions en cours :\n\n";
+        foreach ($promotions->take(5) as $product) {
+            $message .= "• " . $product->name . " : " . number_format($product->price, 0, ',', ' ') . " FCFA";
+            if ($product->old_price) {
+                $message .= " (au lieu de " . number_format($product->old_price, 0, ',', ' ') . " FCFA)";
+            }
+            if ($product->discount_percentage) {
+                $message .= " - " . $product->discount_percentage . "% de réduction";
+            }
+            $message .= "\n";
+        }
+
+        if ($promotions->count() > 5) {
+            $message .= "\n... et " . ($promotions->count() - 5) . " autres promotions !";
+        }
+
+        return [
+            'message' => $message,
+            'items' => $promotions
+        ];
+    }
+
+    /**
+     * Recherche floue améliorée d'un produit
+     */
+    private function findProductFuzzy(string $searchTerm): ?Product
+    {
+        if (strlen($searchTerm) < 2) {
+            return null;
+        }
+        
+        $searchLower = mb_strtolower($searchTerm);
+        $words = explode(' ', $searchLower);
+        $words = array_filter($words, fn($w) => strlen($w) >= 2);
+        
+        // Stratégie 1: Recherche exacte dans le nom
+        $product = Product::active()
+            ->where('name', 'like', '%' . $searchTerm . '%')
+            ->first();
+        
+        if ($product) return $product;
+        
+        // Stratégie 2: Recherche dans la marque
+        $product = Product::active()
+            ->where('brand', 'like', '%' . $searchTerm . '%')
+            ->first();
+        
+        if ($product) return $product;
+        
+        // Stratégie 3: Recherche par mots individuels (tous les mots doivent être présents)
+        if (count($words) > 1) {
+            $query = Product::active();
+            foreach ($words as $word) {
+                $query->where(function($q) use ($word) {
+                    $q->where('name', 'like', '%' . $word . '%')
+                      ->orWhere('brand', 'like', '%' . $word . '%')
+                      ->orWhere('description', 'like', '%' . $word . '%');
+                });
+            }
+            $product = $query->first();
+            if ($product) return $product;
+        }
+        
+        // Stratégie 4: Recherche par au moins un mot significatif
+        foreach ($words as $word) {
+            if (strlen($word) >= 3) {
+                $product = Product::active()
+                    ->where(function($q) use ($word) {
+                        $q->where('name', 'like', '%' . $word . '%')
+                          ->orWhere('brand', 'like', '%' . $word . '%')
+                          ->orWhere('model', 'like', '%' . $word . '%');
+                    })
+                    ->orderBy('views_count', 'desc') // Prioriser les produits populaires
+                    ->first();
+                
+                if ($product) return $product;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Système de fallback intelligent - Essayer plusieurs interprétations
+     */
+    private function tryFallbackInterpretations(string $text, string $normalizedText): ?array
+    {
+        // Si aucune intention n'a été détectée, essayer des interprétations alternatives
+        
+        // 1. Peut-être que c'est une recherche de produit mal formulée
+        $productKeywords = $this->extractProductKeywords($normalizedText);
+        if (!empty($productKeywords)) {
+            $products = Product::active()
+                ->where(function($q) use ($productKeywords) {
+                    foreach ($productKeywords as $kw) {
+                        $q->orWhere('name', 'like', '%' . $kw . '%')
+                          ->orWhere('description', 'like', '%' . $kw . '%')
+                          ->orWhere('tags', 'like', '%' . $kw . '%');
+                    }
+                })
+                ->limit(5)
+                ->get(['id','name','slug','image','price','old_price','discount_percentage','brand']);
+            
+            if ($products->isNotEmpty()) {
+                return [
+                    'success' => true,
+                    'message' => "Voici des produits qui pourraient vous intéresser :",
+                    'items' => $products,
+                    'intent' => 'search',
+                    'intent_params' => [],
+                    'understood' => []
+                ];
+            }
+        }
+        
+        // 2. Peut-être une question FAQ mal formulée
+        $faqMatch = FAQ::findMatching($normalizedText);
+        if ($faqMatch) {
+            return [
+                'success' => true,
+                'message' => $faqMatch->answer,
+                'items' => [],
+                'intent' => 'faq',
+                'intent_params' => ['faq_id' => $faqMatch->id],
+                'understood' => []
+            ];
+        }
+        
+        // 3. Réponse générique mais utile
+        return [
+            'success' => true,
+            'message' => "Je n'ai pas bien compris votre question. Pouvez-vous reformuler ?\n\nJe peux vous aider avec :\n• Recherche de produits\n• Informations sur les produits\n• Catégories disponibles\n• Promotions en cours\n• Avis clients\n• Questions sur la livraison, paiement, etc.",
+            'items' => [],
+            'intent' => 'fallback',
+            'intent_params' => [],
+            'understood' => []
+        ];
     }
 }
 
