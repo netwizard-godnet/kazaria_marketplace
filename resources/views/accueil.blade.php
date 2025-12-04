@@ -871,11 +871,11 @@
             // Attendre un peu pour que le DOM soit mis à jour
             setTimeout(() => {
                 if (typeof MultiCarousel !== 'undefined') {
-                    // Supprimer l'ancienne instance si elle existe
-                    if (section.multiCarouselInstance) {
-                        // Nettoyer l'ancienne instance si nécessaire
-                        delete section.multiCarouselInstance;
+                    // Nettoyer l'ancienne instance si elle existe
+                    if (section.multiCarouselInstance && typeof section.multiCarouselInstance.destroy === 'function') {
+                        section.multiCarouselInstance.destroy();
                     }
+                    section.multiCarouselInstance = null;
                     
                     // Créer une nouvelle instance de MultiCarousel
                     const options = {
@@ -894,7 +894,7 @@
                     };
                     
                     section.multiCarouselInstance = new MultiCarousel(section, options);
-            }
+                }
             }, 100);
         }
         
