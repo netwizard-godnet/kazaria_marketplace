@@ -10,14 +10,8 @@ class WishlistProvider with ChangeNotifier {
   final Map<int, bool> _sharesLoading = {};
   final Map<int, String?> _sharesErrors = {};
   List<Map<String, dynamic>> _alertItems = [];
-  List<Map<String, dynamic>> _alertHistory = [];
   bool _alertsLoading = false;
-  bool _alertHistoryLoading = false;
   String? _alertsError;
-  String? _alertHistoryError;
-  Map<String, dynamic>? _notificationPreferences;
-  bool _preferencesLoading = false;
-  String? _preferencesError;
   bool _isLoading = false;
   String? _error;
 
@@ -29,12 +23,6 @@ class WishlistProvider with ChangeNotifier {
   List<Map<String, dynamic>> get alertItems => _alertItems;
   bool get alertsLoading => _alertsLoading;
   String? get alertsError => _alertsError;
-  List<Map<String, dynamic>> get alertHistory => _alertHistory;
-  bool get alertHistoryLoading => _alertHistoryLoading;
-  String? get alertHistoryError => _alertHistoryError;
-  Map<String, dynamic>? get notificationPreferences => _notificationPreferences;
-  bool get preferencesLoading => _preferencesLoading;
-  String? get preferencesError => _preferencesError;
   List<Map<String, dynamic>> sharesForWishlist(int wishlistId) =>
       _sharesByWishlist[wishlistId] ?? [];
   bool isSharesLoading(int wishlistId) => _sharesLoading[wishlistId] ?? false;
@@ -50,7 +38,9 @@ class WishlistProvider with ChangeNotifier {
       final response = await _wishlistService.getWishlists();
 
       if (response['success'] == true) {
-        _wishlists = List<Map<String, dynamic>>.from(response['wishlists'] ?? []);
+        _wishlists = List<Map<String, dynamic>>.from(
+          response['wishlists'] ?? [],
+        );
         print('✅ [WISHLIST_PROVIDER] ${_wishlists.length} listes chargées');
       } else {
         _error = response['message'];
@@ -102,7 +92,9 @@ class WishlistProvider with ChangeNotifier {
 
       if (response['success'] == true) {
         _currentWishlist = response['wishlist'];
-        print('✅ [WISHLIST_PROVIDER] Liste chargée: ${_currentWishlist?['name']}');
+        print(
+          '✅ [WISHLIST_PROVIDER] Liste chargée: ${_currentWishlist?['name']}',
+        );
       } else {
         _error = response['message'];
       }
@@ -147,45 +139,54 @@ class WishlistProvider with ChangeNotifier {
     }
   }
 
-  /// Mettre à jour un item (alertes, note, priorité)
-  Future<Map<String, dynamic>> updateItem(
-    int itemId, {
-    double? targetPrice,
-    bool sendTargetPrice = false,
-    bool? priceAlertEnabled,
-    bool? stockAlertEnabled,
-    String? note,
-    int? priority,
+  /// Créer une alerte de prix pour un produit
+  Future<Map<String, dynamic>> createPriceAlert({
+    required int productId,
+    required double targetPrice,
   }) async {
     try {
-      final response = await _wishlistService.updateWishlistItem(
-        itemId,
+      final response = await _wishlistService.createPriceAlert(
+        productId: productId,
         targetPrice: targetPrice,
-        sendTargetPrice: sendTargetPrice,
-        priceAlertEnabled: priceAlertEnabled,
-        stockAlertEnabled: stockAlertEnabled,
-        note: note,
-        priority: priority,
       );
 
       if (response['success'] == true) {
-        if (_currentWishlist != null) {
-          await loadWishlist(_currentWishlist!['id']);
-        }
         await loadAlerts();
       }
 
       return response;
     } catch (e) {
-      print('❌ [WISHLIST_PROVIDER] Erreur mise à jour item: $e');
+      print('❌ [WISHLIST_PROVIDER] Erreur création alerte: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Supprimer une alerte de prix
+  Future<Map<String, dynamic>> deletePriceAlert(int alertId) async {
+    try {
+      final response = await _wishlistService.deletePriceAlert(alertId);
+
+      if (response['success'] == true) {
+        await loadAlerts();
+      }
+
+      return response;
+    } catch (e) {
+      print('❌ [WISHLIST_PROVIDER] Erreur suppression alerte: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
   /// Retirer un produit d'une wishlist
-  Future<Map<String, dynamic>> removeProduct(int itemId, int wishlistId) async {
+  Future<Map<String, dynamic>> removeProduct(
+    int wishlistId,
+    int productId,
+  ) async {
     try {
-      final response = await _wishlistService.removeProduct(itemId);
+      final response = await _wishlistService.removeProduct(
+        wishlistId,
+        productId,
+      );
 
       if (response['success'] == true) {
         if (_currentWishlist != null && _currentWishlist!['id'] == wishlistId) {
@@ -202,23 +203,14 @@ class WishlistProvider with ChangeNotifier {
     }
   }
 
-  /// Partager une wishlist
-  Future<Map<String, dynamic>> shareWishlist({
-    required int wishlistId,
-    String? email,
-    String permission = 'view',
-    int? expiresInDays,
-  }) async {
+  /// Partager une wishlist (la rendre publique)
+  Future<Map<String, dynamic>> shareWishlist(int wishlistId) async {
     try {
-      final response = await _wishlistService.shareWishlist(
-        wishlistId: wishlistId,
-        email: email,
-        permission: permission,
-        expiresInDays: expiresInDays,
-      );
+      final response = await _wishlistService.shareWishlist(wishlistId);
 
       if (response['success'] == true) {
-        await loadWishlistShares(wishlistId);
+        await loadWishlist(wishlistId);
+        await loadWishlists();
       }
 
       return response;
@@ -228,60 +220,59 @@ class WishlistProvider with ChangeNotifier {
     }
   }
 
-  /// Charger les partages d'une wishlist
-  Future<void> loadWishlistShares(int wishlistId) async {
-    _sharesLoading[wishlistId] = true;
-    _sharesErrors[wishlistId] = null;
-    notifyListeners();
-
+  /// Arrêter le partage d'une wishlist (la rendre privée)
+  Future<Map<String, dynamic>> unshareWishlist(int wishlistId) async {
     try {
-      final response = await _wishlistService.getWishlistShares(wishlistId);
+      final response = await _wishlistService.unshareWishlist(wishlistId);
 
       if (response['success'] == true) {
-        _sharesByWishlist[wishlistId] =
-            List<Map<String, dynamic>>.from(response['shares'] ?? []);
-      } else {
-        _sharesErrors[wishlistId] = response['message'];
-      }
-    } catch (e) {
-      _sharesErrors[wishlistId] = e.toString();
-      print('❌ [WISHLIST_PROVIDER] Erreur chargement partages: $e');
-    }
-
-    _sharesLoading[wishlistId] = false;
-    notifyListeners();
-  }
-
-  /// Révoquer un partage
-  Future<Map<String, dynamic>> revokeWishlistShare(
-    int shareId,
-    int wishlistId,
-  ) async {
-    try {
-      final response = await _wishlistService.revokeWishlistShare(shareId);
-
-      if (response['success'] == true) {
-        await loadWishlistShares(wishlistId);
+        await loadWishlist(wishlistId);
+        await loadWishlists();
       }
 
       return response;
     } catch (e) {
-      print('❌ [WISHLIST_PROVIDER] Erreur révocation partage: $e');
+      print('❌ [WISHLIST_PROVIDER] Erreur arrêt partage: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  /// Charger les items avec alertes actives
+  /// Voir une wishlist partagée (par token)
+  Future<void> loadSharedWishlist(String token) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _wishlistService.viewSharedWishlist(token);
+
+      if (response['success'] == true) {
+        _currentWishlist = response['wishlist'];
+        print('✅ [WISHLIST_PROVIDER] Wishlist partagée chargée');
+      } else {
+        _error = response['message'];
+      }
+    } catch (e) {
+      _error = e.toString();
+      print('❌ [WISHLIST_PROVIDER] Erreur wishlist partagée: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Charger toutes les alertes de prix
   Future<void> loadAlerts() async {
     _alertsLoading = true;
     _alertsError = null;
     notifyListeners();
 
     try {
-      final response = await _wishlistService.getWishlistAlerts();
+      final response = await _wishlistService.getPriceAlerts();
 
       if (response['success'] == true) {
-        _alertItems = List<Map<String, dynamic>>.from(response['items'] ?? []);
+        _alertItems = List<Map<String, dynamic>>.from(response['alerts'] ?? []);
+        print('✅ [WISHLIST_PROVIDER] ${_alertItems.length} alertes chargées');
       } else {
         _alertsError = response['message'];
       }
@@ -294,77 +285,6 @@ class WishlistProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Charger l'historique des alertes déclenchées
-  Future<void> loadAlertHistory() async {
-    _alertHistoryLoading = true;
-    _alertHistoryError = null;
-    notifyListeners();
-
-    try {
-      final response = await _wishlistService.getAlertHistory();
-
-      if (response['success'] == true) {
-        _alertHistory = List<Map<String, dynamic>>.from(response['logs'] ?? []);
-      } else {
-        _alertHistoryError = response['message'];
-      }
-    } catch (e) {
-      _alertHistoryError = e.toString();
-      print('❌ [WISHLIST_PROVIDER] Erreur historique alertes: $e');
-    }
-
-    _alertHistoryLoading = false;
-    notifyListeners();
-  }
-
-  /// Charger les préférences de notification
-  Future<void> loadNotificationPreferences() async {
-    _preferencesLoading = true;
-    _preferencesError = null;
-    notifyListeners();
-
-    try {
-      final response = await _wishlistService.getNotificationPreferences();
-
-      if (response['success'] == true) {
-        _notificationPreferences = Map<String, dynamic>.from(response['preferences'] ?? {});
-      } else {
-        _preferencesError = response['message'];
-      }
-    } catch (e) {
-      _preferencesError = e.toString();
-      print('❌ [WISHLIST_PROVIDER] Erreur chargement préférences: $e');
-    }
-
-    _preferencesLoading = false;
-    notifyListeners();
-  }
-
-  /// Mettre à jour les préférences de notification
-  Future<Map<String, dynamic>> updateNotificationPreferences(Map<String, dynamic> payload) async {
-    try {
-      final response = await _wishlistService.updateNotificationPreferences(payload);
-
-      if (response['success'] == true) {
-        _notificationPreferences = Map<String, dynamic>.from(response['preferences'] ?? {});
-      }
-
-      notifyListeners();
-      return response;
-    } catch (e) {
-      print('❌ [WISHLIST_PROVIDER] Erreur update préférences: $e');
-      return {'success': false, 'message': e.toString()};
-    }
-  }
-
-  /// Mettre à jour localement une préférence (sans API)
-  void setNotificationPreferenceValue(String key, dynamic value) {
-    final prefs = Map<String, dynamic>.from(_notificationPreferences ?? {});
-    prefs[key] = value;
-    _notificationPreferences = prefs;
-    notifyListeners();
-  }
-
   /// Supprimer une wishlist
   Future<Map<String, dynamic>> deleteWishlist(int id) async {
     try {
@@ -373,7 +293,6 @@ class WishlistProvider with ChangeNotifier {
       if (response['success'] == true) {
         await loadWishlists();
         await loadAlerts();
-        await loadAlertHistory();
         _sharesByWishlist.remove(id);
         _sharesLoading.remove(id);
         _sharesErrors.remove(id);
@@ -400,17 +319,10 @@ class WishlistProvider with ChangeNotifier {
     _sharesLoading.clear();
     _sharesErrors.clear();
     _alertItems = [];
-    _alertHistory = [];
     _alertsLoading = false;
-    _alertHistoryLoading = false;
     _alertsError = null;
-    _alertHistoryError = null;
-    _notificationPreferences = null;
-    _preferencesLoading = false;
-    _preferencesError = null;
     _isLoading = false;
     _error = null;
     notifyListeners();
   }
 }
-

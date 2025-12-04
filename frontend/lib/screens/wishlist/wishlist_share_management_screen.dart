@@ -16,16 +16,18 @@ class WishlistShareManagementScreen extends StatefulWidget {
   });
 
   @override
-  State<WishlistShareManagementScreen> createState() => _WishlistShareManagementScreenState();
+  State<WishlistShareManagementScreen> createState() =>
+      _WishlistShareManagementScreenState();
 }
 
-class _WishlistShareManagementScreenState extends State<WishlistShareManagementScreen> {
+class _WishlistShareManagementScreenState
+    extends State<WishlistShareManagementScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<WishlistProvider>().loadWishlistShares(widget.wishlistId);
+        context.read<WishlistProvider>().loadWishlist(widget.wishlistId);
       }
     });
   }
@@ -62,7 +64,7 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.loadWishlistShares(widget.wishlistId),
+            onRefresh: () => provider.loadWishlist(widget.wishlistId),
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: shares.length,
@@ -112,7 +114,9 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
                       if (email != null)
                         Text(
                           'Partager avec : $email',
-                          style: AppTextStyles.caption.copyWith(color: AppColors.textLight),
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textLight,
+                          ),
                         ),
                     ],
                   ),
@@ -124,9 +128,10 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
                         if (shareUrl != null) _copyLink(shareUrl);
                         break;
                       case 'share':
-                        if (shareUrl != null) Share.share(
-                          'Découvre ma liste "${widget.wishlistName}" : $shareUrl',
-                        );
+                        if (shareUrl != null)
+                          Share.share(
+                            'Découvre ma liste "${widget.wishlistName}" : $shareUrl',
+                          );
                         break;
                       case 'revoke':
                         _revokeShare(share['id'] as int);
@@ -153,8 +158,14 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
                     const PopupMenuItem(
                       value: 'revoke',
                       child: ListTile(
-                        leading: Icon(Icons.delete_outline, color: AppColors.error),
-                        title: Text('Révoquer', style: TextStyle(color: AppColors.error)),
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: AppColors.error,
+                        ),
+                        title: Text(
+                          'Révoquer',
+                          style: TextStyle(color: AppColors.error),
+                        ),
                       ),
                     ),
                   ],
@@ -173,7 +184,10 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
                 if (expiresAt != null)
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: _buildChip(Icons.timer, 'Expire le ${_formatDate(expiresAt)}'),
+                    child: _buildChip(
+                      Icons.timer,
+                      'Expire le ${_formatDate(expiresAt)}',
+                    ),
                   ),
               ],
             ),
@@ -246,7 +260,9 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => context.read<WishlistProvider>().loadWishlistShares(widget.wishlistId),
+            onPressed: () => context.read<WishlistProvider>().loadWishlist(
+              widget.wishlistId,
+            ),
             child: const Text('Réessayer'),
           ),
         ],
@@ -308,18 +324,24 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
             ),
             const ListTile(
               title: Text('Choisir le type de partage'),
-              subtitle: Text('Définissez les permissions accordées au destinataire'),
+              subtitle: Text(
+                'Définissez les permissions accordées au destinataire',
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.visibility),
               title: const Text('Lecture seule'),
-              subtitle: const Text('Le destinataire peut seulement consulter la liste'),
+              subtitle: const Text(
+                'Le destinataire peut seulement consulter la liste',
+              ),
               onTap: () => Navigator.pop(context, 'view'),
             ),
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('Peut modifier'),
-              subtitle: const Text('Le destinataire peut ajouter ou retirer des produits'),
+              subtitle: const Text(
+                'Le destinataire peut ajouter ou retirer des produits',
+              ),
               onTap: () => Navigator.pop(context, 'edit'),
             ),
             const SizedBox(height: 12),
@@ -331,17 +353,16 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
     if (permission == null) return;
 
     final provider = context.read<WishlistProvider>();
-    final response = await provider.shareWishlist(
-      wishlistId: widget.wishlistId,
-      permission: permission,
-      expiresInDays: 30,
-    );
+    final response = await provider.shareWishlist(widget.wishlistId);
 
     if (!mounted) return;
 
     if (response['success'] == true) {
-      final shareUrl = response['share_url'] as String?;
-      if (shareUrl != null) {
+      final wishlist = response['wishlist'] as Map<String, dynamic>?;
+      final shareToken = wishlist?['share_token'] as String?;
+
+      if (shareToken != null) {
+        final shareUrl = 'kazaria://wishlists/shared/$shareToken';
         await Clipboard.setData(ClipboardData(text: shareUrl));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -353,7 +374,9 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(response['message'] ?? 'Impossible de créer le partage'),
+          content: Text(
+            response['message'] ?? 'Impossible de créer le partage',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -383,7 +406,7 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
     if (confirm != true) return;
 
     final provider = context.read<WishlistProvider>();
-    final response = await provider.revokeWishlistShare(shareId, widget.wishlistId);
+    final response = await provider.unshareWishlist(widget.wishlistId);
 
     if (!mounted) return;
 
@@ -424,5 +447,3 @@ class _WishlistShareManagementScreenState extends State<WishlistShareManagementS
     }
   }
 }
-
-

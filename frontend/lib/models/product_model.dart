@@ -1,4 +1,5 @@
 import '../utils/constants.dart';
+import 'product_variation_model.dart';
 
 class ProductModel {
   final int id;
@@ -32,6 +33,11 @@ class ProductModel {
   final DateTime? updatedAt;
   final StoreBasicInfo? store;
   final CategoryBasicInfo? category;
+  // ✅ Nouveaux champs pour les variations
+  final bool hasVariations;
+  final List<ProductAttribute>? productAttributes;
+  final List<ProductVariation>? variations;
+  final int? defaultVariationId;
 
   ProductModel({
     required this.id,
@@ -65,6 +71,10 @@ class ProductModel {
     this.updatedAt,
     this.store,
     this.category,
+    this.hasVariations = false,
+    this.productAttributes,
+    this.variations,
+    this.defaultVariationId,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -144,6 +154,22 @@ class ProductModel {
         }
       }
 
+      // ✅ Parse product attributes
+      List<ProductAttribute>? productAttrs;
+      if (json['product_attributes'] != null && json['product_attributes'] is List) {
+        productAttrs = (json['product_attributes'] as List)
+            .map((attr) => ProductAttribute.fromJson(attr as Map<String, dynamic>))
+            .toList();
+      }
+
+      // ✅ Parse variations
+      List<ProductVariation>? productVariations;
+      if (json['variations'] != null && json['variations'] is List) {
+        productVariations = (json['variations'] as List)
+            .map((variation) => ProductVariation.fromJson(variation as Map<String, dynamic>))
+            .toList();
+      }
+
       return ProductModel(
         id: json['id'] ?? 0,
         storeId: json['store_id'],
@@ -186,6 +212,11 @@ class ProductModel {
             : null,
         store: storeInfo,
         category: categoryInfo,
+        // ✅ Nouveaux champs variations
+        hasVariations: json['has_variations'] ?? false,
+        productAttributes: productAttrs,
+        variations: productVariations,
+        defaultVariationId: json['default_variation_id'],
       );
     } catch (e) {
       print('💥 [ProductModel] Erreur fromJson: $e');

@@ -14,7 +14,7 @@ import '../../config/api_config.dart';
 import '../../widgets/order/order_timeline.dart';
 import '../../services/invoice_service.dart';
 import '../../services/storage_service.dart';
-// import '../../services/order_service.dart';
+import '../../services/order_service.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final OrderModel order;
@@ -27,7 +27,6 @@ class OrderDetailsScreen extends StatefulWidget {
 
 class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     with SingleTickerProviderStateMixin {
-  // OrderService non utilisé ici car nous recevons déjà l'objet OrderModel
   OrderModel? _order;
   bool _isLoading = true;
   String? _error;
@@ -35,6 +34,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   late Animation<double> _fadeAnimation;
   Timer? _refreshTimer;
   final InvoiceService _invoiceService = InvoiceService();
+  final OrderService _orderService = OrderService(); // ✅ Service pour annulation
 
   String _effectivePaymentStatus(OrderModel o) {
     if (o.paymentStatus == 'paid') return 'paid';
@@ -196,6 +196,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
 
               // Informations de livraison
               _buildDeliveryInfo(),
+
+              const SizedBox(height: AppSizes.space2),
+
+              // ✅ Bouton d'annulation (si commande en attente)
+              if (_order!.status == 'pending')
+                _buildCancelButton(),
 
               const SizedBox(height: AppSizes.space2),
 
@@ -1146,5 +1152,173 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
         );
       }
     }
+  }
+
+  /// 🚫 Annuler une commande
+  Future<void> _cancelOrder() async {
+    // Confirmer l'annulation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            const SizedBox(width: 12),
+            const Text('Annuler la commande ?'),
+          ],
+        ),
+        content: const Text(
+          'Êtes-vous sûr de vouloir annuler cette commande ? '
+          'Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Non'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Oui, annuler'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Afficher un loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final response = await _orderService.cancelOrder(_order!.orderNumber);
+
+      if (mounted) {
+        Navigator.pop(context); // Fermer le loader
+
+        if (response['success']) {
+          // Succès
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Commande annulée avec succès'),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // Retourner à la liste des commandes (avec refresh)
+          Navigator.pop(context, true);
+        } else {
+          // Erreur
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                response['message'] ?? 'Impossible d\'annuler cette commande',
+              ),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ [ORDER_CANCEL] Erreur: $e');
+      
+      if (mounted) {
+        Navigator.pop(context); // Fermer le loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 🚫 Bouton d'annulation de commande
+  Widget _buildCancelButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMedium),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+          boxShadow: AppShadows.shadowSM,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _cancelOrder,
+            borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingMedium),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMD),
+                    ),
+                    child: Icon(
+                      Icons.cancel_outlined,
+                      color: AppColors.error,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.space3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Annuler la commande',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.error,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Vous pouvez annuler tant que la commande n\'est pas validée',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.error,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

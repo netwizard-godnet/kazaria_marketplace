@@ -436,31 +436,17 @@
                 formData.forEach((value, key) => {object[key] = value});
 
                     try {
-<<<<<<< HEAD
                         // Utiliser la route web au lieu de /api/ pour avoir accès aux sessions
                         const response = await fetch('{{ route("web.verify-login-code") }}', {
-=======
-                        const response = await fetch('/verify-login-code', {
->>>>>>> d519aa27deb89c16992635c21674ec027da47804
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-<<<<<<< HEAD
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
                                 'X-Requested-With': 'XMLHttpRequest'
                             },
                             credentials: 'include', // CRITIQUE : inclure les cookies de session
                             body: JSON.stringify(object)
                         });
-=======
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify(object)
-                });
->>>>>>> d519aa27deb89c16992635c21674ec027da47804
 
                         const data = await response.json();
                         

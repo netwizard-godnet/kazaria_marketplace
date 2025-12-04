@@ -52,6 +52,8 @@ class ApiConfig {
   // Endpoints avis
   static const String reviews = '$baseUrl/reviews';
   static const String reviewVote = '$baseUrl/reviews';
+  static const String myReviews = '$baseUrl/reviews/my-reviews';
+  static const String myReviewsCount = '$baseUrl/reviews/my-reviews-count';
 
   // Endpoints coupons
   static const String applyCoupon = '$baseUrl/coupons/apply';
@@ -105,6 +107,23 @@ class ApiConfig {
   static const String sellerOrders = '$baseUrl/store/orders';
   static const String sellerStoreInfo = '$baseUrl/store/info';
   static const String sellerUpdateStore = '$baseUrl/store/update';
+
+  // Endpoints wishlists
+  static const String wishlists = '$baseUrl/wishlists';
+  static const String wishlistsShared = '$baseUrl/wishlists/shared';
+
+  // Endpoints comparaison
+  static const String comparison = '$baseUrl/comparison';
+  static const String comparisonCompare = '$baseUrl/comparison/compare';
+
+  // Endpoints alertes de prix
+  static const String priceAlerts = '$baseUrl/price-alerts';
+
+  // Endpoints historique paiements et factures
+  static const String paymentHistory = '$baseUrl/payments/history';
+  static const String paymentDetails = '$baseUrl/payments';
+  static const String invoiceHistory = '$baseUrl/invoices/history';
+  static const String invoiceDownload = '$baseUrl/invoices';
 
   // Headers
   static Map<String, String> headers({String? token}) {

@@ -84,10 +84,14 @@ class CartProvider with ChangeNotifier {
     required ProductModel product,
     required int quantity,
     Map<String, String>? attributes, // ✅ Ajout paramètre attributs
+    int? variationId, // ✅ Ajout paramètre variation
   }) async {
     print('🛒 [CART] Tentative d\'ajout au panier');
     print('📦 [CART] Produit: ${product.name} (ID: ${product.id})');
     print('🔢 [CART] Quantité: $quantity');
+    if (variationId != null) {
+      print('🎨 [CART] Variation ID: $variationId');
+    }
 
     try {
       // Vérifier si le produit est déjà dans le panier
@@ -126,6 +130,7 @@ class CartProvider with ChangeNotifier {
         productId: product.id,
         quantity: quantity,
         attributes: attributes,
+        variationId: variationId, // ✅ Passer la variation
       ).then((response) async {
         print('📥 [CART] Réponse API reçue: ${response['success']}');
         

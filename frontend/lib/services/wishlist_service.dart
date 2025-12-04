@@ -8,7 +8,8 @@ class WishlistService {
   Future<Map<String, dynamic>> getWishlists() async {
     try {
       final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/wishlists',
+        ApiConfig.wishlists,
+        requiresAuth: true,
       );
       return result;
     } catch (e) {
@@ -25,16 +26,11 @@ class WishlistService {
     String privacy = 'private',
   }) async {
     try {
-      final result = await _apiService.post(
-        '${ApiConfig.baseUrl}/wishlists',
-        {
-          'name': name,
-          'description': description,
-          'icon': icon ?? '❤️',
-          'privacy': privacy,
-        },
-        requiresAuth: true,
-      );
+      final result = await _apiService.post(ApiConfig.wishlists, {
+        'name': name,
+        'description': description,
+        'is_public': privacy == 'public',
+      }, requiresAuth: true);
       return result;
     } catch (e) {
       print('❌ [WISHLIST_SERVICE] Erreur création: $e');
@@ -46,7 +42,8 @@ class WishlistService {
   Future<Map<String, dynamic>> getWishlist(int id) async {
     try {
       final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/wishlists/$id',
+        '${ApiConfig.wishlists}/$id',
+        requiresAuth: true,
       );
       return result;
     } catch (e) {
@@ -71,8 +68,9 @@ class WishlistService {
       if (privacy != null) data['privacy'] = privacy;
 
       final result = await _apiService.put(
-        '${ApiConfig.baseUrl}/wishlists/$id',
+        '${ApiConfig.wishlists}/$id',
         data,
+        requiresAuth: true,
       );
       return result;
     } catch (e) {
@@ -85,7 +83,8 @@ class WishlistService {
   Future<Map<String, dynamic>> deleteWishlist(int id) async {
     try {
       final result = await _apiService.delete(
-        '${ApiConfig.baseUrl}/wishlists/$id',
+        '${ApiConfig.wishlists}/$id',
+        requiresAuth: true,
       );
       return result;
     } catch (e) {
@@ -104,14 +103,8 @@ class WishlistService {
   }) async {
     try {
       final result = await _apiService.post(
-        '${ApiConfig.baseUrl}/wishlists/items',
-        {
-          'wishlist_id': wishlistId,
-          'product_id': productId,
-          'target_price': targetPrice,
-          'note': note,
-          'priority': priority,
-        },
+        '${ApiConfig.wishlists}/$wishlistId/products',
+        {'product_id': productId, 'notes': note, 'priority': priority},
         requiresAuth: true,
       );
       return result;
@@ -122,10 +115,14 @@ class WishlistService {
   }
 
   /// Retirer un produit d'une wishlist
-  Future<Map<String, dynamic>> removeProduct(int itemId) async {
+  Future<Map<String, dynamic>> removeProduct(
+    int wishlistId,
+    int productId,
+  ) async {
     try {
       final result = await _apiService.delete(
-        '${ApiConfig.baseUrl}/wishlists/items/$itemId',
+        '${ApiConfig.wishlists}/$wishlistId/products/$productId',
+        requiresAuth: true,
       );
       return result;
     } catch (e) {
@@ -134,106 +131,28 @@ class WishlistService {
     }
   }
 
-  /// Mettre à jour un produit dans la wishlist (alertes, note, priorité)
-  Future<Map<String, dynamic>> updateWishlistItem(
-    int itemId, {
-    double? targetPrice,
-    bool sendTargetPrice = false,
-    bool? priceAlertEnabled,
-    bool? stockAlertEnabled,
-    String? note,
-    int? priority,
+  /// Créer une alerte de prix
+  Future<Map<String, dynamic>> createPriceAlert({
+    required int productId,
+    required double targetPrice,
   }) async {
     try {
-      final payload = <String, dynamic>{};
-      if (sendTargetPrice) payload['target_price'] = targetPrice;
-      if (priceAlertEnabled != null) payload['price_alert_enabled'] = priceAlertEnabled;
-      if (stockAlertEnabled != null) payload['stock_alert_enabled'] = stockAlertEnabled;
-      if (note != null) payload['note'] = note;
-      if (priority != null) payload['priority'] = priority;
-
-      final result = await _apiService.put(
-        '${ApiConfig.baseUrl}/wishlists/items/$itemId',
-        payload,
-        requiresAuth: true,
-      );
+      final result = await _apiService.post(ApiConfig.priceAlerts, {
+        'product_id': productId,
+        'target_price': targetPrice,
+      }, requiresAuth: true);
       return result;
     } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur mise à jour produit: $e');
+      print('❌ [WISHLIST_SERVICE] Erreur création alerte: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  /// Partager une wishlist
-  Future<Map<String, dynamic>> shareWishlist({
-    required int wishlistId,
-    String? email,
-    String permission = 'view',
-    int? expiresInDays,
-  }) async {
-    try {
-      final result = await _apiService.post(
-        '${ApiConfig.baseUrl}/wishlists/$wishlistId/share',
-        {
-          'email': email,
-          'permission': permission,
-          'expires_in_days': expiresInDays,
-        },
-        requiresAuth: true,
-      );
-      return result;
-    } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur partage: $e');
-      return {'success': false, 'message': e.toString()};
-    }
-  }
-
-  /// Voir une wishlist partagée
-  Future<Map<String, dynamic>> viewSharedWishlist(String token) async {
+  /// Obtenir toutes les alertes de prix
+  Future<Map<String, dynamic>> getPriceAlerts() async {
     try {
       final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/wishlists/shared/$token',
-      );
-      return result;
-    } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur wishlist partagée: $e');
-      return {'success': false, 'message': e.toString()};
-    }
-  }
-
-  /// Lister les partages d'une wishlist
-  Future<Map<String, dynamic>> getWishlistShares(int wishlistId) async {
-    try {
-      final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/wishlists/$wishlistId/shares',
-        requiresAuth: true,
-      );
-      return result;
-    } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur récupération partages: $e');
-      return {'success': false, 'message': e.toString()};
-    }
-  }
-
-  /// Révoquer un partage de wishlist
-  Future<Map<String, dynamic>> revokeWishlistShare(int shareId) async {
-    try {
-      final result = await _apiService.delete(
-        '${ApiConfig.baseUrl}/wishlists/shares/$shareId',
-        requiresAuth: true,
-      );
-      return result;
-    } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur révocation partage: $e');
-      return {'success': false, 'message': e.toString()};
-    }
-  }
-
-  /// Récupérer tous les items avec alertes actives
-  Future<Map<String, dynamic>> getWishlistAlerts() async {
-    try {
-      final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/wishlists/alerts',
+        ApiConfig.priceAlerts,
         requiresAuth: true,
       );
       return result;
@@ -243,47 +162,76 @@ class WishlistService {
     }
   }
 
-  /// Récupérer l'historique des alertes déclenchées
-  Future<Map<String, dynamic>> getAlertHistory() async {
+  /// Supprimer une alerte de prix
+  Future<Map<String, dynamic>> deletePriceAlert(int alertId) async {
     try {
-      final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/wishlists/alerts/history',
+      final result = await _apiService.delete(
+        '${ApiConfig.priceAlerts}/$alertId',
         requiresAuth: true,
       );
       return result;
     } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur historique alertes: $e');
+      print('❌ [WISHLIST_SERVICE] Erreur suppression alerte: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  /// Récupérer les préférences de notification
-  Future<Map<String, dynamic>> getNotificationPreferences() async {
+  /// Partager une wishlist (génère un lien public)
+  Future<Map<String, dynamic>> shareWishlist(int wishlistId) async {
     try {
-      final result = await _apiService.get(
-        '${ApiConfig.baseUrl}/notifications/preferences',
+      // Mettre la wishlist en public pour générer un token de partage
+      final result = await _apiService.put(
+        '${ApiConfig.wishlists}/$wishlistId',
+        {'is_public': true},
         requiresAuth: true,
       );
       return result;
     } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur préférences notifications: $e');
+      print('❌ [WISHLIST_SERVICE] Erreur partage: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  /// Mettre à jour les préférences de notification
-  Future<Map<String, dynamic>> updateNotificationPreferences(Map<String, dynamic> payload) async {
+  /// Voir une wishlist partagée (par token)
+  Future<Map<String, dynamic>> viewSharedWishlist(String token) async {
+    try {
+      final result = await _apiService.get(
+        '${ApiConfig.wishlistsShared}/$token',
+        requiresAuth: false,
+      );
+      return result;
+    } catch (e) {
+      print('❌ [WISHLIST_SERVICE] Erreur wishlist partagée: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Rendre une wishlist privée (désactiver le partage)
+  Future<Map<String, dynamic>> unshareWishlist(int wishlistId) async {
     try {
       final result = await _apiService.put(
-        '${ApiConfig.baseUrl}/notifications/preferences',
-        payload,
+        '${ApiConfig.wishlists}/$wishlistId',
+        {'is_public': false},
         requiresAuth: true,
       );
       return result;
     } catch (e) {
-      print('❌ [WISHLIST_SERVICE] Erreur mise à jour préférences: $e');
+      print('❌ [WISHLIST_SERVICE] Erreur désactivation partage: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Récupérer toutes les alertes de prix actives
+  Future<Map<String, dynamic>> getWishlistAlerts() async {
+    try {
+      final result = await _apiService.get(
+        ApiConfig.priceAlerts,
+        requiresAuth: true,
+      );
+      return result;
+    } catch (e) {
+      print('❌ [WISHLIST_SERVICE] Erreur récupération alertes: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
 }
-

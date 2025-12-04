@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final response = await authProvider.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -47,9 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => VerifyCodeScreen(
-            email: _emailController.text.trim(),
-          ),
+          builder: (_) => VerifyCodeScreen(email: _emailController.text.trim()),
         ),
       );
     } else {
@@ -65,9 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Connexion'),
-      ),
+      appBar: AppBar(title: const Text('Connexion')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.paddingLarge),
@@ -77,10 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                const Text(
-                  'Bon retour !',
-                  style: AppTextStyles.h2,
-                ),
+                const Text('Bon retour !', style: AppTextStyles.h2),
                 const SizedBox(height: 8),
                 const Text(
                   'Connectez-vous pour continuer vos achats',
@@ -140,6 +133,106 @@ class _LoginScreenState extends State<LoginScreen> {
                     );
                   },
                 ),
+
+                const SizedBox(height: 32),
+
+                // Séparateur "OU"
+                Row(
+                  children: [
+                    const Expanded(child: Divider(thickness: 1)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OU',
+                        style: TextStyle(
+                          color: AppColors.textLight,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider(thickness: 1)),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Bouton Google
+                SizedBox(
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // TODO: Implémenter la connexion Google
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Connexion Google bientôt disponible'),
+                          backgroundColor: AppColors.info,
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.g_mobiledata_rounded,
+                      size: 28,
+                      color: Colors.red,
+                    ),
+                    label: const Text(
+                      'Continuer avec Google',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.grey, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Bouton Facebook
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Implémenter la connexion Facebook
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Connexion Facebook bientôt disponible',
+                          ),
+                          backgroundColor: AppColors.info,
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.facebook,
+                      size: 24,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Continuer avec Facebook',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1877F2),
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -189,4 +282,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

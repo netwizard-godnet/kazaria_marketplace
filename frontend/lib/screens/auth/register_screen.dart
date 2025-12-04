@@ -99,9 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Créer un compte'),
-      ),
+      appBar: AppBar(title: const Text('Créer un compte')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.paddingLarge),
@@ -111,10 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                const Text(
-                  'Rejoignez KAZARIA',
-                  style: AppTextStyles.h2,
-                ),
+                const Text('Rejoignez KAZARIA', style: AppTextStyles.h2),
                 const SizedBox(height: 8),
                 const Text(
                   'Créez votre compte pour commencer vos achats',
@@ -125,14 +120,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: 'Nom',
                   controller: _nomController,
                   prefixIcon: Icons.person_outlined,
-                  validator: (value) => Helpers.validateRequired(value, 'Le nom'),
+                  validator: (value) =>
+                      Helpers.validateRequired(value, 'Le nom'),
                 ),
                 const SizedBox(height: 16),
                 CustomTextField(
                   label: 'Prénoms',
                   controller: _prenomsController,
                   prefixIcon: Icons.person_outlined,
-                  validator: (value) => Helpers.validateRequired(value, 'Le prénom'),
+                  validator: (value) =>
+                      Helpers.validateRequired(value, 'Le prénom'),
                 ),
                 const SizedBox(height: 16),
                 CustomTextField(
@@ -230,6 +227,108 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     );
                   },
                 ),
+
+                const SizedBox(height: 32),
+
+                // Séparateur "OU"
+                Row(
+                  children: [
+                    const Expanded(child: Divider(thickness: 1)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OU',
+                        style: TextStyle(
+                          color: AppColors.textLight,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider(thickness: 1)),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Bouton Google
+                SizedBox(
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // TODO: Implémenter la connexion Google
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Inscription avec Google bientôt disponible',
+                          ),
+                          backgroundColor: AppColors.info,
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.g_mobiledata_rounded,
+                      size: 28,
+                      color: Colors.red,
+                    ),
+                    label: const Text(
+                      'S\'inscrire avec Google',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.grey, width: 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Bouton Facebook
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Implémenter la connexion Facebook
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Inscription avec Facebook bientôt disponible',
+                          ),
+                          backgroundColor: AppColors.info,
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.facebook,
+                      size: 24,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'S\'inscrire avec Facebook',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1877F2),
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -262,4 +361,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-

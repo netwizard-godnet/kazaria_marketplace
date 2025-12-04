@@ -15,7 +15,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   String? _logoUrl;
-  String _appDescription = 'Marketplace premium';
+  String _appDescription = 'Marketplace préféré';
 
   @override
   void initState() {
@@ -36,7 +36,9 @@ class _SplashScreenState extends State<SplashScreen> {
         setState(() {
           _logoUrl = response['logo'];
           _appDescription =
-              response['app_tagline'] ?? response['app_description'] ?? 'Marketplace premium';
+              response['app_tagline'] ??
+              response['app_description'] ??
+              'Marketplace premium';
         });
       }
     } catch (e) {

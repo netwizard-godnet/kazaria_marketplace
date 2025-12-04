@@ -25,6 +25,7 @@ import '../products/recent_products_screen.dart';
 import '../cart/cart_screen.dart';
 import '../promotions/black_friday_screen.dart';
 import '../ai/ai_chatbot_screen.dart';
+import '../stores/stores_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,17 +50,22 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Charger les données au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final productProvider = Provider.of<ProductProvider>(context, listen: false);
-      
+      final productProvider = Provider.of<ProductProvider>(
+        context,
+        listen: false,
+      );
+
       // Charger d'abord les données de la page d'accueil (inclut les catégories)
       await productProvider.loadHomeData();
-      
+
       // Si les catégories ne sont pas chargées, les charger séparément
       if (productProvider.categories.isEmpty) {
-        print('⚠️ [HOME] Catégories vides après loadHomeData, chargement séparé...');
+        print(
+          '⚠️ [HOME] Catégories vides après loadHomeData, chargement séparé...',
+        );
         await productProvider.loadCategories();
       }
-      
+
       await productProvider.loadPersonalizedSections();
       Provider.of<CartProvider>(context, listen: false).loadCart();
       Provider.of<FavoritesProvider>(context, listen: false).loadFavorites();
@@ -992,7 +998,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Builder(
                       builder: (context) {
                         final banners = _buildDynamicBanners(productProvider);
-                        print('🎯 [HOME] Bannières passées au widget: ${banners.length}');
+                        print(
+                          '🎯 [HOME] Bannières passées au widget: ${banners.length}',
+                        );
                         if (banners.isEmpty) {
                           return const SizedBox.shrink();
                         }
@@ -1031,7 +1039,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       products: productProvider.forYouProducts,
                       icon: Icons.thumb_up_alt,
                       category: null,
-                      isLoading: productProvider.personalizedLoading &&
+                      isLoading:
+                          productProvider.personalizedLoading &&
                           productProvider.forYouProducts.isEmpty,
                     ),
 
@@ -1041,7 +1050,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       products: productProvider.recommendedProducts,
                       icon: Icons.star,
                       category: 'best_offers',
-                      isLoading: productProvider.personalizedLoading &&
+                      isLoading:
+                          productProvider.personalizedLoading &&
                           productProvider.recommendedProducts.isEmpty,
                     ),
 
@@ -1067,7 +1077,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       products: productProvider.newProducts,
                       icon: Icons.new_releases,
                       category: 'new',
-                      isLoading: productProvider.isLoading &&
+                      isLoading:
+                          productProvider.isLoading &&
                           productProvider.newProducts.isEmpty,
                     ),
 
@@ -1080,15 +1091,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       products: productProvider.bestOffers,
                       icon: Icons.local_offer,
                       category: 'best_offers',
-                      isLoading: productProvider.isLoading &&
+                      isLoading:
+                          productProvider.isLoading &&
                           productProvider.bestOffers.isEmpty,
                     ),
 
                     // 🎨 Bannière publicitaire / Publicités de la page d'accueil
                     if (productProvider.homepageAds.isNotEmpty)
-                      PromoBanner(
-                        homepageAds: productProvider.homepageAds,
-                      )
+                      PromoBanner(homepageAds: productProvider.homepageAds)
                     else
                       PromoBanner(
                         imageUrl: 'assets/images/bg-2.jpg',
@@ -1117,7 +1127,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       products: productProvider.trendingProducts,
                       icon: Icons.trending_up,
                       category: 'trending',
-                      isLoading: productProvider.isLoading &&
+                      isLoading:
+                          productProvider.isLoading &&
                           productProvider.trendingProducts.isEmpty,
                     ),
 
@@ -1162,8 +1173,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // ✅ Utiliser les bannières depuis l'API si disponibles
     // Le carousel affiche uniquement: slides du carousel principal + homepage_banner_1 + homepage_banner_2
-    print('📊 [HOME] Vérification des bannières: ${productProvider.banners.length}');
-    
+    print(
+      '📊 [HOME] Vérification des bannières: ${productProvider.banners.length}',
+    );
+
     if (productProvider.banners.isNotEmpty) {
       for (var banner in productProvider.banners) {
         // ✅ Ne pas ajouter de bannière sans image
@@ -1171,12 +1184,15 @@ class _HomeScreenState extends State<HomeScreen> {
           print('⚠️ [HOME] Bannière sans image ignorée: ${banner.title}');
           continue;
         }
-        
+
         // Utiliser button_text si disponible (pour les slides du carousel), sinon utiliser actionType
-        final buttonText = banner.buttonText ?? _getBannerButtonText(banner.actionType);
-        
-        print('✅ [HOME] Ajout bannière: ${banner.title}, image: ${banner.image}');
-        
+        final buttonText =
+            banner.buttonText ?? _getBannerButtonText(banner.actionType);
+
+        print(
+          '✅ [HOME] Ajout bannière: ${banner.title}, image: ${banner.image}',
+        );
+
         items.add(
           ModernBannerItem(
             imageUrl: banner.image, // URL complète depuis l'API
@@ -1264,27 +1280,189 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Gérer le tap sur une bannière
   void _handleBannerTap(BannerModel banner) {
-    // TODO: Implémenter la navigation selon banner.actionType et banner.actionData
     print('👆 [HOME] Tap sur bannière: ${banner.title}');
     print('   - Type d\'action: ${banner.actionType}');
     print('   - Données: ${banner.actionData}');
 
-    // Exemple de navigation selon le type
+    // Navigation selon le type d'action
     switch (banner.actionType) {
       case 'product':
-        // Navigator.push vers ProductDetailsScreen
+        // Navigation vers les détails d'un produit
+        final productId =
+            banner.actionData?['product_id'] ?? banner.actionData?['id'];
+        if (productId != null) {
+          _navigateToProduct(productId);
+        }
         break;
+
       case 'category':
-        // Navigator.push vers CategoryProductsScreen
+        // Navigation vers une catégorie
+        final categoryId =
+            banner.actionData?['category_id'] ?? banner.actionData?['id'];
+        final categorySlug = banner.actionData?['slug'];
+        if (categoryId != null || categorySlug != null) {
+          _navigateToCategory(categoryId, categorySlug);
+        }
         break;
+
+      case 'store':
+        // Navigation vers une boutique
+        final storeId =
+            banner.actionData?['store_id'] ?? banner.actionData?['id'];
+        if (storeId != null) {
+          _navigateToStore(storeId);
+        }
+        break;
+
       case 'url':
-        // Ouvrir l'URL externe
+        // Ouvrir une URL externe
+        final url = banner.actionData?['url'] ?? banner.actionData?['link'];
+        if (url != null) {
+          _openExternalUrl(url);
+        }
         break;
+
       case 'screen':
         // Navigation vers un écran spécifique
+        final screenName = banner.actionData?['screen'];
+        if (screenName != null) {
+          _navigateToScreen(screenName);
+        }
+        break;
+
+      default:
+        // Aucune action définie
+        print('⚠️ [HOME] Type d\'action non géré: ${banner.actionType}');
+        break;
+    }
+  }
+
+  /// Naviguer vers un produit
+  void _navigateToProduct(dynamic productId) {
+    final productProvider = Provider.of<ProductProvider>(
+      context,
+      listen: false,
+    );
+
+    // Chercher le produit dans les données déjà chargées
+    ProductModel? product;
+    for (var p in productProvider.allProducts) {
+      if (p.id.toString() == productId.toString()) {
+        product = p;
+        break;
+      }
+    }
+
+    if (product != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailsScreen(product: product!),
+        ),
+      );
+    } else {
+      // Si le produit n'est pas trouvé, afficher un message
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Produit non disponible')));
+    }
+  }
+
+  /// Naviguer vers une catégorie
+  void _navigateToCategory(dynamic categoryId, String? categorySlug) {
+    // Trouver la catégorie pour obtenir son nom
+    final productProvider = Provider.of<ProductProvider>(
+      context,
+      listen: false,
+    );
+    String categoryName = 'Catégorie';
+
+    try {
+      final category = productProvider.categories.firstWhere(
+        (cat) => cat.id.toString() == categoryId.toString(),
+      );
+      categoryName = category.name;
+    } catch (e) {
+      print('⚠️ [HOME] Catégorie non trouvée: $categoryId');
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductsListScreen(
+          title: categoryName,
+          category: categorySlug ?? categoryId?.toString() ?? '',
+          icon: Icons.category,
+        ),
+      ),
+    );
+  }
+
+  /// Naviguer vers une boutique
+  void _navigateToStore(dynamic storeId) {
+    // Import nécessaire ajouté en haut du fichier
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            const StoresScreen(), // Ou StoreDetailsScreen si on a l'ID
+      ),
+    );
+  }
+
+  /// Ouvrir une URL externe
+  void _openExternalUrl(String url) {
+    // Afficher un dialogue de confirmation avant d'ouvrir l'URL
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ouvrir le lien'),
+        content: Text('Voulez-vous ouvrir ce lien ?\n\n$url'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Utiliser url_launcher pour ouvrir l'URL
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Ouverture de $url')));
+            },
+            child: const Text('Ouvrir'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Naviguer vers un écran spécifique
+  void _navigateToScreen(String screenName) {
+    switch (screenName.toLowerCase()) {
+      case 'cart':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CartScreen()),
+        );
+        break;
+      case 'blackfriday':
+      case 'black_friday':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BlackFridayScreen()),
+        );
+        break;
+      case 'ai':
+      case 'chatbot':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AIChatbotScreen()),
+        );
         break;
       default:
-        // Ne rien faire
+        print('⚠️ [HOME] Écran non reconnu: $screenName');
         break;
     }
   }

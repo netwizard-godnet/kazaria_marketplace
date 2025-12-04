@@ -21,12 +21,18 @@ class CartService {
     required int productId,
     required int quantity,
     Map<String, String>? attributes, // ✅ Ajout paramètre attributs
+    int? variationId, // ✅ Ajout paramètre variation
   }) async {
     try {
       final Map<String, dynamic> body = {
         'product_id': productId,
         'quantity': quantity,
       };
+
+      // ✅ Ajouter la variation si présente
+      if (variationId != null) {
+        body['variation_id'] = variationId;
+      }
 
       // ✅ Ajouter les attributs si présents
       if (attributes != null && attributes.isNotEmpty) {

@@ -24,7 +24,7 @@ class StoreProvider with ChangeNotifier {
   bool _isLoadingOfficial = false;
   bool _isLoadingDetails = false;
   bool _isSearching = false;
-  
+
   // Contrôle des chargements
   bool _popularStoresLoaded = false;
   bool _verifiedStoresLoaded = false;
@@ -128,7 +128,9 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔄 [STORE_PROVIDER] Chargement des boutiques (page $_currentPage)');
+      print(
+        '🔄 [STORE_PROVIDER] Chargement des boutiques (page $_currentPage)',
+      );
 
       final response = await _storeService.getAllStores(
         page: _currentPage,
@@ -156,7 +158,8 @@ class StoreProvider with ChangeNotifier {
 
         print('✅ [STORE_PROVIDER] Boutiques chargées: ${_stores.length}');
       } else {
-        _error = response['message'] ?? 'Erreur lors du chargement des boutiques';
+        _error =
+            response['message'] ?? 'Erreur lors du chargement des boutiques';
         print('❌ [STORE_PROVIDER] Erreur: $_error');
       }
     } catch (e) {
@@ -183,7 +186,7 @@ class StoreProvider with ChangeNotifier {
       print('🚫 [STORE_PROVIDER] Boutiques populaires déjà en cache');
       return;
     }
-    
+
     print('🔄 [STORE_PROVIDER] Début chargement boutiques populaires');
     _isLoadingPopular = true;
     notifyListeners();
@@ -198,7 +201,9 @@ class StoreProvider with ChangeNotifier {
             .toList();
 
         _popularStoresLoaded = true;
-        print('✅ [STORE_PROVIDER] Boutiques populaires chargées: ${_popularStores.length}');
+        print(
+          '✅ [STORE_PROVIDER] Boutiques populaires chargées: ${_popularStores.length}',
+        );
       } else {
         print('❌ [STORE_PROVIDER] Erreur populaires: ${response['message']}');
       }
@@ -217,7 +222,7 @@ class StoreProvider with ChangeNotifier {
       print('🚫 [STORE_PROVIDER] Boutiques vérifiées déjà en cache');
       return;
     }
-    
+
     _isLoadingVerified = true;
     notifyListeners();
 
@@ -233,7 +238,9 @@ class StoreProvider with ChangeNotifier {
             .toList();
 
         _verifiedStoresLoaded = true;
-        print('✅ [STORE_PROVIDER] Boutiques vérifiées chargées: ${_verifiedStores.length}');
+        print(
+          '✅ [STORE_PROVIDER] Boutiques vérifiées chargées: ${_verifiedStores.length}',
+        );
       } else {
         print('❌ [STORE_PROVIDER] Erreur vérifiées: ${response['message']}');
       }
@@ -252,7 +259,7 @@ class StoreProvider with ChangeNotifier {
       print('🚫 [STORE_PROVIDER] Boutiques officielles déjà en cache');
       return;
     }
-    
+
     _isLoadingOfficial = true;
     notifyListeners();
 
@@ -273,7 +280,9 @@ class StoreProvider with ChangeNotifier {
             .toList();
 
         _officialStoresLoaded = true;
-        print('✅ [STORE_PROVIDER] Boutiques officielles chargées: ${_officialStores.length}');
+        print(
+          '✅ [STORE_PROVIDER] Boutiques officielles chargées: ${_officialStores.length}',
+        );
       } else {
         print('❌ [STORE_PROVIDER] Erreur officielles: ${response['message']}');
       }
@@ -336,7 +345,9 @@ class StoreProvider with ChangeNotifier {
             .map((store) => StoreModel.fromJson(store))
             .toList();
 
-        print('✅ [STORE_PROVIDER] Recherche terminée: ${_searchResults.length} résultats');
+        print(
+          '✅ [STORE_PROVIDER] Recherche terminée: ${_searchResults.length} résultats',
+        );
       } else {
         _searchError = response['message'] ?? 'Erreur lors de la recherche';
         print('❌ [STORE_PROVIDER] Erreur recherche: $_searchError');
@@ -417,14 +428,16 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔄 [STORE_PROVIDER] Chargement carousel boutique');
+      print('🔄 [STORE_PROVIDER] Chargement carousel boutique officielle');
       final response = await _bannerService.getActiveBanners(
-        placement: 'boutique_carousel',
+        placement: 'carousel_boutique_officielle',
       );
 
       if (response['success']) {
         _storeCarouselBanners = response['banners'] ?? [];
-        print('✅ [STORE_PROVIDER] Carousel chargé: ${_storeCarouselBanners.length} images');
+        print(
+          '✅ [STORE_PROVIDER] Carousel chargé: ${_storeCarouselBanners.length} images',
+        );
       } else {
         print('❌ [STORE_PROVIDER] Erreur carousel: ${response['message']}');
         _storeCarouselBanners = [];
@@ -440,7 +453,8 @@ class StoreProvider with ChangeNotifier {
 
   /// Charger les meilleures offres des boutiques officielles
   Future<void> loadBestOffers({bool forceRefresh = false}) async {
-    if (!forceRefresh && (_isLoadingBestOffers || _bestOffersProducts.isNotEmpty)) {
+    if (!forceRefresh &&
+        (_isLoadingBestOffers || _bestOffersProducts.isNotEmpty)) {
       print('🚫 [STORE_PROVIDER] Meilleures offres déjà chargées');
       return;
     }
@@ -450,7 +464,9 @@ class StoreProvider with ChangeNotifier {
 
     try {
       print('🔄 [STORE_PROVIDER] Chargement meilleures offres');
-      final response = await _storeService.getOfficialStoresBestOffers(limit: 12);
+      final response = await _storeService.getOfficialStoresBestOffers(
+        limit: 12,
+      );
 
       if (response['success']) {
         final List<dynamic> productsData = response['products'] ?? [];
@@ -458,10 +474,16 @@ class StoreProvider with ChangeNotifier {
             .map((product) => ProductModel.fromJson(product))
             .toList();
         _bestOffersTotal = response['total'] ?? _bestOffersProducts.length;
-        _bestOffersHasMore = response['has_more'] ?? (_bestOffersTotal > _bestOffersProducts.length);
-        print('✅ [STORE_PROVIDER] Meilleures offres chargées: ${_bestOffersProducts.length}/${_bestOffersTotal} produits');
+        _bestOffersHasMore =
+            response['has_more'] ??
+            (_bestOffersTotal > _bestOffersProducts.length);
+        print(
+          '✅ [STORE_PROVIDER] Meilleures offres chargées: ${_bestOffersProducts.length}/${_bestOffersTotal} produits',
+        );
       } else {
-        print('❌ [STORE_PROVIDER] Erreur meilleures offres: ${response['message']}');
+        print(
+          '❌ [STORE_PROVIDER] Erreur meilleures offres: ${response['message']}',
+        );
         _bestOffersProducts = [];
         _bestOffersTotal = 0;
         _bestOffersHasMore = false;
@@ -477,7 +499,8 @@ class StoreProvider with ChangeNotifier {
 
   /// Charger les nouveautés des boutiques officielles
   Future<void> loadOfficialNewProducts({bool forceRefresh = false}) async {
-    if (!forceRefresh && (_isLoadingOfficialNew || _officialNewProducts.isNotEmpty)) {
+    if (!forceRefresh &&
+        (_isLoadingOfficialNew || _officialNewProducts.isNotEmpty)) {
       print('🚫 [STORE_PROVIDER] Nouveautés officielles déjà chargées');
       return;
     }
@@ -487,7 +510,9 @@ class StoreProvider with ChangeNotifier {
 
     try {
       print('🔄 [STORE_PROVIDER] Chargement nouveautés officielles');
-      final response = await _storeService.getOfficialStoresNewProducts(limit: 12);
+      final response = await _storeService.getOfficialStoresNewProducts(
+        limit: 12,
+      );
 
       if (response['success']) {
         final List<dynamic> productsData = response['products'] ?? [];
@@ -495,10 +520,16 @@ class StoreProvider with ChangeNotifier {
             .map((product) => ProductModel.fromJson(product))
             .toList();
         _officialNewTotal = response['total'] ?? _officialNewProducts.length;
-        _officialNewHasMore = response['has_more'] ?? (_officialNewTotal > _officialNewProducts.length);
-        print('✅ [STORE_PROVIDER] Nouveautés officielles chargées: ${_officialNewProducts.length}/${_officialNewTotal}');
+        _officialNewHasMore =
+            response['has_more'] ??
+            (_officialNewTotal > _officialNewProducts.length);
+        print(
+          '✅ [STORE_PROVIDER] Nouveautés officielles chargées: ${_officialNewProducts.length}/${_officialNewTotal}',
+        );
       } else {
-        print('❌ [STORE_PROVIDER] Erreur nouveautés officielles: ${response['message']}');
+        print(
+          '❌ [STORE_PROVIDER] Erreur nouveautés officielles: ${response['message']}',
+        );
         _officialNewProducts = [];
         _officialNewTotal = 0;
         _officialNewHasMore = false;
@@ -512,7 +543,7 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Charger les bannières publicitaires des boutiques
+  /// Charger les bannières publicitaires des boutiques (publicite_boutique_1 à 5)
   Future<void> loadStoreAds() async {
     if (_isLoadingAds || _storeAdsBanners.isNotEmpty) {
       print('🚫 [STORE_PROVIDER] Bannières pub déjà chargées');
@@ -523,20 +554,27 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔄 [STORE_PROVIDER] Chargement bannières pub boutique');
-      final response = await _bannerService.getActiveBanners(
-        placement: 'boutique_ads',
-      );
+      print('🔄 [STORE_PROVIDER] Chargement publicités boutique (1 à 5)');
 
-      if (response['success']) {
-        _storeAdsBanners = response['banners'] ?? [];
-        print('✅ [STORE_PROVIDER] Bannières pub chargées: ${_storeAdsBanners.length}');
-      } else {
-        print('❌ [STORE_PROVIDER] Erreur bannières pub: ${response['message']}');
-        _storeAdsBanners = [];
+      // Charger les 5 publicités boutique
+      List<BannerModel> allAds = [];
+      for (int i = 1; i <= 5; i++) {
+        final response = await _bannerService.getActiveBanners(
+          placement: 'publicite_boutique_$i',
+        );
+
+        if (response['success'] && response['banners'] != null) {
+          final banners = response['banners'] as List<BannerModel>;
+          allAds.addAll(banners);
+        }
       }
+
+      _storeAdsBanners = allAds;
+      print(
+        '✅ [STORE_PROVIDER] Publicités boutique chargées: ${_storeAdsBanners.length}',
+      );
     } catch (e) {
-      print('💥 [STORE_PROVIDER] Exception bannières pub: $e');
+      print('💥 [STORE_PROVIDER] Exception publicités boutique: $e');
       _storeAdsBanners = [];
     }
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../utils/constants.dart';
+import '../../config/api_config.dart';
 import '../../widgets/product_card.dart';
 import '../products/product_details_screen.dart';
 import 'wishlist_share_management_screen.dart';
@@ -202,9 +203,7 @@ class _WishlistDetailsScreenState extends State<WishlistDetailsScreen> {
   ) {
     // Convertir le Map en ProductModel pour utiliser ProductCard
     final product = _parseProductModel(productData);
-    final dynamic productId = product is Map
-        ? (product['id'] ?? product['product_id'])
-        : (product is dynamic && product.id != null ? product.id : null);
+    final productId = productData['id'] ?? productData['product_id'];
     final heroTag = 'wishlist_${item['id']}_${productId ?? ''}';
 
     return Stack(
@@ -216,10 +215,8 @@ class _WishlistDetailsScreenState extends State<WishlistDetailsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ProductDetailsScreen(
-                      product: product,
-                      heroTag: heroTag,
-                    ),
+                builder: (_) =>
+                    ProductDetailsScreen(product: product, heroTag: heroTag),
               ),
             );
           },
@@ -305,34 +302,45 @@ class _WishlistDetailsScreenState extends State<WishlistDetailsScreen> {
 
     setState(() => _isCreating = true);
 
-    final response = await provider.shareWishlist(
-      wishlistId: widget.wishlistId,
-      permission: 'view',
-      expiresInDays: 30,
-    );
+    final response = await provider.shareWishlist(widget.wishlistId);
 
     setState(() => _isCreating = false);
 
     if (response['success'] == true && mounted) {
-      final shareUrl = response['share_url'] as String;
+      final wishlist = response['wishlist'] as Map<String, dynamic>?;
+      final shareToken = wishlist?['share_token'] as String?;
+      final shareUrl = shareToken != null
+          ? '${ApiConfig.imageBaseUrl}/wishlists/shared/$shareToken'
+          : null;
 
-      if (result['type'] == 'link') {
-        // Copier le lien
-        await Clipboard.setData(ClipboardData(text: shareUrl));
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🔗 Lien copié dans le presse-papiers'),
-              backgroundColor: AppColors.success,
-            ),
+      if (shareUrl != null) {
+        if (result['type'] == 'link') {
+          // Copier le lien
+          await Clipboard.setData(ClipboardData(text: shareUrl));
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('🔗 Lien copié dans le presse-papiers'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        } else {
+          // Partager via Share dialog
+          Share.share(
+            'Découvrez ma liste de souhaits "${widget.wishlistName}" : $shareUrl',
+            subject: 'Ma liste de souhaits Kazaria',
           );
         }
       } else {
-        // Partager via Share dialog
-        Share.share(
-          'Découvrez ma liste de souhaits "${widget.wishlistName}" : $shareUrl',
-          subject: 'Ma liste de souhaits Kazaria',
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur lors de la génération du lien'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     }
   }
@@ -358,7 +366,7 @@ class _WishlistDetailsScreenState extends State<WishlistDetailsScreen> {
     );
 
     if (confirmed == true) {
-      final response = await provider.removeProduct(itemId, widget.wishlistId);
+      final response = await provider.removeProduct(widget.wishlistId, itemId);
 
       if (response['success'] == true && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,0 +1,24 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('carousel_slides', function (Blueprint $table) {
+            $table->string('placement')->default('carousel_principal')->after('button_text');
+            $table->boolean('show_on_desktop')->default(true)->after('is_active');
+            $table->boolean('show_on_mobile')->default(true)->after('show_on_desktop');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('carousel_slides', function (Blueprint $table) {
+            $table->dropColumn(['placement', 'show_on_desktop', 'show_on_mobile']);
+        });
+    }
+};

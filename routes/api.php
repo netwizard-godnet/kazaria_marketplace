@@ -8,11 +8,10 @@ use App\Http\Controllers\AuthController;
 // Routes d'authentification publiques
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-// Route verify-login-code déplacée vers web.php car elle utilise la session
+Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
-// Route de vérification d'email supprimée - utilise la route web
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
@@ -76,6 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/products/{productId}/reviews', [App\Http\Controllers\ReviewController::class, 'getProductReviews']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store']);
+    Route::get('/reviews/my-reviews', [App\Http\Controllers\ReviewController::class, 'getMyReviews']);
+    Route::get('/reviews/my-reviews-count', [App\Http\Controllers\ReviewController::class, 'getMyReviewsCount']);
 });
 Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::class, 'vote']);
 
@@ -145,5 +146,48 @@ Route::prefix('mobile')->group(function () {
     Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
     Route::get('/stores/{id}/products', [App\Http\Controllers\MobileController::class, 'getStoreProducts']);
     Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);
+});
+
+// Routes de comparaison de produits
+Route::prefix('comparison')->group(function () {
+    // Comparer des produits (sans sauvegarder)
+    Route::post('/compare', [App\Http\Controllers\ComparisonController::class, 'compare']);
+    
+    // Routes nécessitant authentification (ou session)
+    Route::post('/', [App\Http\Controllers\ComparisonController::class, 'create']);
+    Route::get('/', [App\Http\Controllers\ComparisonController::class, 'index']);
+    Route::get('/{id}', [App\Http\Controllers\ComparisonController::class, 'show']);
+    Route::post('/{id}/add-product', [App\Http\Controllers\ComparisonController::class, 'addProduct']);
+    Route::delete('/{id}/remove-product', [App\Http\Controllers\ComparisonController::class, 'removeProduct']);
+    Route::delete('/{id}', [App\Http\Controllers\ComparisonController::class, 'destroy']);
+});
+
+// Routes des wishlists (nécessitent authentification)
+Route::middleware('auth:sanctum')->prefix('wishlists')->group(function () {
+    Route::get('/', [App\Http\Controllers\WishlistController::class, 'index']);
+    Route::post('/', [App\Http\Controllers\WishlistController::class, 'store']);
+    Route::get('/{id}', [App\Http\Controllers\WishlistController::class, 'show']);
+    Route::put('/{id}', [App\Http\Controllers\WishlistController::class, 'update']);
+    Route::delete('/{id}', [App\Http\Controllers\WishlistController::class, 'destroy']);
+    Route::post('/{id}/products', [App\Http\Controllers\WishlistController::class, 'addProduct']);
+    Route::delete('/{id}/products/{productId}', [App\Http\Controllers\WishlistController::class, 'removeProduct']);
+});
+
+// Route publique pour voir une wishlist partagée
+Route::get('/wishlists/shared/{token}', [App\Http\Controllers\WishlistController::class, 'showByToken']);
+
+// Routes des alertes de prix (nécessitent authentification)
+Route::middleware('auth:sanctum')->prefix('price-alerts')->group(function () {
+    Route::get('/', [App\Http\Controllers\WishlistController::class, 'getPriceAlerts']);
+    Route::post('/', [App\Http\Controllers\WishlistController::class, 'createPriceAlert']);
+    Route::delete('/{id}', [App\Http\Controllers\WishlistController::class, 'deletePriceAlert']);
+});
+
+// Routes de l'historique des paiements et factures (nécessitent authentification)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/payments/history', [App\Http\Controllers\PaymentController::class, 'getPaymentHistory']);
+    Route::get('/payments/{id}', [App\Http\Controllers\PaymentController::class, 'getPaymentDetails']);
+    Route::get('/invoices/history', [App\Http\Controllers\PaymentController::class, 'getInvoiceHistory']);
+    Route::get('/invoices/{orderNumber}/download', [App\Http\Controllers\PaymentController::class, 'downloadInvoice']);
 });
 

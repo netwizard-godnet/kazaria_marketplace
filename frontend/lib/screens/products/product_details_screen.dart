@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../../models/product_model.dart';
+import '../../models/product_variation_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/product_provider.dart';
@@ -12,6 +13,7 @@ import '../../utils/helpers.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/share_button.dart';
+import '../../widgets/variation_selector_widget.dart';
 import '../../config/api_config.dart';
 import '../../services/recent_products_service.dart';
 import '../reviews/reviews_screen.dart';
@@ -44,6 +46,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   List<ProductModel> _similarProducts = [];
   bool _loadingSimilar = false;
   Map<String, String> _selectedAttributes = {}; // ✅ Attributs sélectionnés
+  
+  // ✅ Gestion des variations
+  ProductVariation? _selectedVariation;
+  double? _currentPrice; // Prix dynamique selon la variation
+  double? _currentOldPrice; // Ancien prix dynamique
+  int? _currentStock; // Stock dynamique
+  // String? _currentImage; // Image dynamique (TODO: utiliser pour changer l'image affichée)
 
   /// Construire l'URL complète de l'image
   String _buildImageUrl(String imagePath) {
@@ -114,6 +123,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       }
     });
   }
+
+  /// ✅ Gestion du changement de variation
+  void _onVariationChanged(ProductVariation? variation) {
+    setState(() {
+      _selectedVariation = variation;
+      if (variation != null) {
+        _currentPrice = variation.price;
+        _currentOldPrice = variation.oldPrice;
+        _currentStock = variation.stock;
+        // _currentImage = variation.image; // TODO: utiliser pour changer l'image affichée
+        
+        print('✅ [PRODUCT_DETAILS] Variation changée: ID=${variation.id}, Prix=${variation.price}, Stock=${variation.stock}');
+      } else {
+        // Remettre les valeurs du produit de base
+        _currentPrice = null;
+        _currentOldPrice = null;
+        _currentStock = null;
+        // _currentImage = null;
+        
+        print('ℹ️ [PRODUCT_DETAILS] Aucune variation sélectionnée');
+      }
+    });
+  }
+
+  /// ✅ Obtenir le prix affiché (variation ou produit de base)
+  double get _displayPrice => _currentPrice ?? widget.product.price;
+  
+  /// ✅ Obtenir l'ancien prix affiché
+  double? get _displayOldPrice => _currentOldPrice ?? widget.product.oldPrice;
+  
+  /// ✅ Obtenir le stock affiché
+  int get _displayStock => _currentStock ?? widget.product.stock;
+  
+  /// ✅ Vérifie si il y a une réduction
+  bool get _hasDiscount => _displayOldPrice != null && _displayOldPrice! > _displayPrice;
 
   @override
   void dispose() {
@@ -576,21 +620,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           ),
           const SizedBox(height: 16),
 
-          // Prix
+          // Prix (dynamique selon la variation sélectionnée)
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                Helpers.formatPrice(widget.product.price),
+                Helpers.formatPrice(_displayPrice),
                 style: AppTextStyles.h1.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (widget.product.hasDiscount) ...[
+              if (_hasDiscount) ...[
                 const SizedBox(width: 12),
                 Text(
-                  Helpers.formatPrice(widget.product.oldPrice!),
+                  Helpers.formatPrice(_displayOldPrice!),
                   style: AppTextStyles.body.copyWith(
                     decoration: TextDecoration.lineThrough,
                     color: AppColors.textLight,
@@ -602,7 +646,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           ),
 
           // Card économies réalisées
-          if (widget.product.hasDiscount)
+          if (_hasDiscount)
             Container(
               margin: const EdgeInsets.only(top: 12),
               padding: const EdgeInsets.all(12),
@@ -631,7 +675,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Vous économisez ${Helpers.formatPrice(widget.product.oldPrice! - widget.product.price)}',
+                      'Vous économisez ${Helpers.formatPrice(_displayOldPrice! - _displayPrice)}',
                       style: const TextStyle(
                         color: AppColors.success,
                         fontSize: 14,
@@ -645,8 +689,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
           const SizedBox(height: 16),
 
-          // ✅ Alerte de stock visuelle
+          // ✅ Alerte de stock visuelle (stock dynamique)
           _buildStockAlert(),
+
+          // ✅ WIDGET DE SÉLECTION DES VARIATIONS
+          if (widget.product.hasVariations)
+            VariationSelectorWidget(
+              product: widget.product,
+              onVariationChanged: _onVariationChanged,
+            ),
 
           // Marque et autres infos
           if (widget.product.brand != null) ...[
@@ -1105,9 +1156,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     );
   }
 
-  /// 🎯 Alerte de stock visuelle (banner)
+  /// 🎯 Alerte de stock visuelle (banner) - utilise le stock dynamique
   Widget _buildStockAlert() {
-    final stock = widget.product.stock;
+    final stock = _displayStock; // ✅ Utiliser le stock dynamique
     
     String message;
     Color bgColor;
@@ -1176,7 +1227,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   Widget _buildBottomBar(CartProvider cartProvider) {
     final isInCart = cartProvider.isInCart(widget.product.id);
     final quantityInCart = cartProvider.getProductQuantity(widget.product.id);
-    final stock = widget.product.stock;
+    final stock = _displayStock; // ✅ Utiliser le stock dynamique
     
     // ✅ Vérifier si on vient du panier (attributs pré-sélectionnés)
     final isFromCart = widget.selectedAttributes != null && widget.selectedAttributes!.isNotEmpty;
@@ -1290,6 +1341,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                             product: widget.product,
                             quantity: quantityToAdd,
                             attributes: _selectedAttributes,
+                            variationId: _selectedVariation?.id, // ✅ Passer la variation sélectionnée
                           );
 
                           // Si erreur, afficher un message

@@ -142,23 +142,7 @@ class AuthController extends Controller
      */
     public function verifyLoginCode(Request $request)
     {
-        // Vérifier que la session est disponible
-        try {
-            if (!$request->hasSession()) {
-                Log::error('Session store not set on request for verifyLoginCode');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
-                ], 500);
-            }
-        } catch (\Exception $e) {
-            Log::error('Erreur session verifyLoginCode: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
-            ], 500);
-        }
-
+        // Validation des données
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'code' => 'required|string|size:8',
@@ -171,6 +155,7 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Vérifier le code d'authentification
         $authCode = AuthCode::where('email', $request->email)
                            ->where('code', $request->code)
                            ->where('type', 'login')
@@ -185,6 +170,7 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Récupérer l'utilisateur
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             return response()->json([
@@ -194,8 +180,6 @@ class AuthController extends Controller
         }
 
         // Détecter si c'est une requête API (mobile) ou web
-        // Les routes web ont toujours accès aux sessions via le middleware 'web'
-        // Les routes API n'ont pas de sessions et utilisent des tokens
         $isApiRoute = $request->is('api/*');
         
         // Vérifier si c'est une vraie app mobile
@@ -205,7 +189,7 @@ class AuthController extends Controller
             || $request->header('X-Mobile-App') === 'true';
         
         // Pour les routes API mobiles, utiliser les tokens Sanctum (pas de session)
-        if ($isApiRoute && $isMobileApp) {
+        if ($isApiRoute || $isMobileApp) {
             try {
                 // Créer le token AVANT de marquer le code comme utilisé
                 $token = $user->createToken('mobile-app')->plainTextToken;
@@ -233,6 +217,15 @@ class AuthController extends Controller
         }
 
         // Pour les routes web, utiliser les sessions
+        // Vérifier que la session est disponible pour le web
+        if (!$request->hasSession()) {
+            Log::error('Session store not set on request for web verifyLoginCode');
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
+            ], 500);
+        }
+
         try {
             // Marquer le code comme utilisé
             $authCode->markAsUsed();

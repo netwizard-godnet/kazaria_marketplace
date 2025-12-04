@@ -162,7 +162,7 @@ Route::get('/authentification', function () {
 // Route web pour vérifier le code de connexion (avec session)
 Route::post('/verify-login-code', [App\Http\Controllers\AuthController::class, 'verifyLoginCode'])
     ->middleware('web')
-    ->name('verify-login-code');
+    ->name('web.verify-login-code');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])

@@ -483,7 +483,13 @@ class MobileController extends Controller
     public function getProductDetails($id, Request $request)
     {
         try {
-            $product = Product::with(['category', 'subcategory', 'store'])
+            $product = Product::with([
+                'category', 
+                'subcategory', 
+                'store',
+                'variations.attributeValues.attribute', // ✅ Charger les variations avec leurs attributs
+                'attributeValues.attribute', // ✅ Charger les attributs du produit
+            ])
                 ->findOrFail($id);
 
             // Produits similaires
@@ -518,6 +524,40 @@ class MobileController extends Controller
     public function getBanners(Request $request)
     {
         try {
+            // Si placement est fourni, utiliser carousel_slides
+            if ($request->has('placement')) {
+                $slides = CarouselSlide::where('is_active', true)
+                    ->where('show_on_mobile', true)
+                    ->where('placement', $request->placement)
+                    ->where(function ($query) {
+                        $query->whereNull('starts_at')
+                            ->orWhere('starts_at', '<=', now());
+                    })
+                    ->where(function ($query) {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>=', now());
+                    })
+                    ->orderBy('sort_order', 'asc')
+                    ->get()
+                    ->map(function ($slide) {
+                        return [
+                            'id' => $slide->id,
+                            'title' => $slide->title,
+                            'description' => $slide->description,
+                            'image' => $slide->image_url,
+                            'link' => $slide->link_url,
+                            'button_text' => $slide->button_text,
+                            'placement' => $slide->placement,
+                        ];
+                    });
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $slides,
+                ]);
+            }
+            
+            // Sinon, utiliser la table banners (ancien système)
             $query = Banner::where('is_active', true);
             
             // Filtrer par type si fourni
@@ -679,7 +719,9 @@ class MobileController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $products,
+                'products' => $products,
+                'total' => $products->count(),
+                'has_more' => false,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -713,7 +755,9 @@ class MobileController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $products,
+                'products' => $products,
+                'total' => $products->count(),
+                'has_more' => false,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -910,6 +954,62 @@ class MobileController extends Controller
             $data['attributes'] = $this->parseJsonField($product->attributes);
             $data['views'] = $product->views_count ?? 0;
             $data['created_at'] = $product->created_at ? $product->created_at->toISOString() : null;
+            
+            // ✅ Ajouter les attributs disponibles avec leurs valeurs
+            $attributeValues = $product->attributeValues()->with('attribute')->get();
+            $groupedAttributes = $attributeValues->groupBy('attribute.name');
+            $data['product_attributes'] = [];
+            
+            foreach ($groupedAttributes as $attributeName => $values) {
+                $attribute = $values->first()->attribute;
+                $data['product_attributes'][] = [
+                    'id' => $attribute->id,
+                    'name' => $attributeName,
+                    'slug' => $attribute->slug,
+                    'type' => $attribute->type ?? 'select',
+                    'values' => $values->map(function ($value) {
+                        return [
+                            'id' => $value->id,
+                            'value' => $value->value,
+                            'slug' => $value->slug,
+                        ];
+                    })->values()->toArray(),
+                ];
+            }
+            
+            // ✅ Ajouter les variations actives
+            $activeVariations = $product->activeVariations()->with('attributeValues.attribute')->get();
+            $data['variations'] = $activeVariations->map(function ($variation) {
+                $attributes = $variation->attributeValues->map(function ($attrValue) {
+                    return [
+                        'attribute_id' => $attrValue->attribute->id,
+                        'attribute_name' => $attrValue->attribute->name,
+                        'value_id' => $attrValue->id,
+                        'value' => $attrValue->value,
+                    ];
+                })->toArray();
+                
+                return [
+                    'id' => $variation->id,
+                    'sku' => $variation->sku,
+                    'price' => (float) $variation->price,
+                    'old_price' => $variation->old_price ? (float) $variation->old_price : null,
+                    'discount_percentage' => $variation->discount_percentage ? (float) $variation->discount_percentage : null,
+                    'stock' => (int) $variation->stock,
+                    'image' => $variation->image_url,
+                    'is_default' => $variation->is_default,
+                    'attributes' => $attributes,
+                ];
+            })->values()->toArray();
+            
+            // ✅ Indiquer si le produit a des variations
+            $data['has_variations'] = count($data['variations']) > 0;
+            
+            // ✅ Variation par défaut (si existe)
+            $defaultVariation = $product->defaultVariation()->first();
+            if ($defaultVariation) {
+                $data['default_variation_id'] = $defaultVariation->id;
+            }
         }
 
         return $data;

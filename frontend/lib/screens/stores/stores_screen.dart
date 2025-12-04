@@ -1112,20 +1112,25 @@ class _StoreAdsCarouselState extends State<_StoreAdsCarousel> {
         ),
         if (widget.banners.length > 1) ...[
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              widget.banners.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                height: 6,
-                width: _currentPage == index ? 20 : 8,
-                decoration: BoxDecoration(
-                  color: _currentPage == index
-                      ? AppColors.primary
-                      : AppColors.primary.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
+          Center(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  widget.banners.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 6,
+                    width: _currentPage == index ? 20 : 8,
+                    decoration: BoxDecoration(
+                      color: _currentPage == index
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -1325,19 +1330,24 @@ class _StoreCarouselWidgetState extends State<_StoreCarouselWidget> {
                 bottom: AppSizes.space4,
                 left: 0,
                 right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    widget.banners.length,
-                    (index) => Container(
-                      width: _currentPage == index ? 24 : 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
-                        color: _currentPage == index
-                            ? AppColors.white
-                            : AppColors.white.withValues(alpha: 0.5),
+                child: Center(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        widget.banners.length,
+                        (index) => Container(
+                          width: _currentPage == index ? 24 : 8,
+                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: _currentPage == index
+                                ? AppColors.white
+                                : AppColors.white.withValues(alpha: 0.5),
+                          ),
+                        ),
                       ),
                     ),
                   ),

@@ -5,6 +5,7 @@ import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../services/order_service.dart';
+import '../../services/api_service.dart';
 import '../../utils/constants.dart';
 import '../../config/api_config.dart';
 import 'edit_profile_screen.dart';
@@ -29,17 +30,20 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   final ImagePicker _picker = ImagePicker();
   final OrderService _orderService = OrderService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   int _ordersCount = 0;
   int _favoritesCount = 0;
-  int _pointsCount = 0;
+  int _reviewsCount = 0;
   bool _isLoadingStats = true;
+  List<Map<String, dynamic>> _recentActivities = [];
+  bool _isLoadingActivities = false;
 
   @override
   void initState() {
@@ -51,60 +55,68 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
     _animationController.forward();
-    
+
     // Charger les statistiques réelles
     _loadStats();
+    _loadRecentActivity();
   }
-  
+
   Future<void> _loadStats() async {
     if (!mounted) return;
-    
+
     setState(() => _isLoadingStats = true);
-    
+
     try {
       print('📊 [PROFILE] Chargement des statistiques...');
-      
+
       // Charger les commandes
       final ordersResponse = await _orderService.getMyOrders();
       print('📦 [PROFILE] Réponse API commandes:');
       print('   - Success: ${ordersResponse['success']}');
       print('   - Orders présent: ${ordersResponse['orders'] != null}');
-      
+
       if (ordersResponse['success'] && ordersResponse['orders'] != null) {
         final ordersList = ordersResponse['orders'] as List;
         _ordersCount = ordersList.length;
         print('✅ [PROFILE] Nombre de commandes: $_ordersCount');
-        
+
         // Log détaillé de chaque commande
         for (var order in ordersList) {
           if (order is Map) {
-            print('   📦 ${order['order_number']}: status=${order['status']}, payment=${order['payment_status']}');
+            print(
+              '   📦 ${order['order_number']}: status=${order['status']}, payment=${order['payment_status']}',
+            );
           }
         }
       } else {
-        print('⚠️ [PROFILE] Pas de commandes trouvées ou erreur: ${ordersResponse['message']}');
+        print(
+          '⚠️ [PROFILE] Pas de commandes trouvées ou erreur: ${ordersResponse['message']}',
+        );
         _ordersCount = 0;
       }
-      
+
       // Charger les favoris
-      final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+      final favoritesProvider = Provider.of<FavoritesProvider>(
+        context,
+        listen: false,
+      );
       await favoritesProvider.loadFavorites();
       _favoritesCount = favoritesProvider.favoritesCount;
       print('❤️ [PROFILE] Nombre de favoris: $_favoritesCount');
-      
-      // Calculer les points (exemple: 10 points par commande + 5 par favori)
-      _pointsCount = (_ordersCount * 10) + (_favoritesCount * 5);
-      print('⭐ [PROFILE] Points calculés: $_pointsCount');
-      
+
+      // Charger le nombre d'avis donnés par l'utilisateur
+      await _loadReviewsCount();
+      print('⭐ [PROFILE] Nombre d\'avis: $_reviewsCount');
+
       if (mounted) {
         setState(() => _isLoadingStats = false);
       }
-      
+
       print('✅ [PROFILE] Statistiques chargées avec succès');
     } catch (e) {
       print('❌ [PROFILE] Exception lors du chargement des stats: $e');
@@ -113,9 +125,85 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           _isLoadingStats = false;
           _ordersCount = 0;
           _favoritesCount = 0;
-          _pointsCount = 0;
+          _reviewsCount = 0;
         });
       }
+    }
+  }
+
+  /// Charger le nombre d'avis donnés par l'utilisateur
+  Future<void> _loadReviewsCount() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
+
+      if (user == null) {
+        _reviewsCount = 0;
+        return;
+      }
+
+      // Appeler l'API pour obtenir le nombre d'avis de l'utilisateur
+      final apiService = ApiService();
+      final response = await apiService.get(
+        ApiConfig.myReviewsCount,
+        requiresAuth: true,
+      );
+
+      if (response['success'] == true) {
+        _reviewsCount = response['count'] ?? 0;
+        print('⭐ [PROFILE] Nombre d\'avis chargés: $_reviewsCount');
+      } else {
+        _reviewsCount = 0;
+        print(
+          '⚠️ [PROFILE] Impossible de charger les avis: ${response['message']}',
+        );
+      }
+    } catch (e) {
+      print('❌ [PROFILE] Erreur chargement avis: $e');
+      _reviewsCount = 0;
+    }
+  }
+
+  /// Charger l'activité récente de l'utilisateur
+  Future<void> _loadRecentActivity() async {
+    if (!mounted) return;
+
+    setState(() => _isLoadingActivities = true);
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
+
+      if (user == null) {
+        _recentActivities = [];
+        setState(() => _isLoadingActivities = false);
+        return;
+      }
+
+      final apiService = ApiService();
+      final response = await apiService.get(
+        ApiConfig.recentActivity,
+        requiresAuth: true,
+      );
+
+      if (response['success'] == true) {
+        _recentActivities = List<Map<String, dynamic>>.from(
+          response['activities'] ?? [],
+        );
+        print('📊 [PROFILE] ${_recentActivities.length} activités chargées');
+      } else {
+        _recentActivities = [];
+        print(
+          '⚠️ [PROFILE] Impossible de charger les activités: ${response['message']}',
+        );
+      }
+    } catch (e) {
+      print('❌ [PROFILE] Erreur chargement activités: $e');
+      _recentActivities = [];
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingActivities = false);
     }
   }
 
@@ -136,10 +224,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
       if (image != null) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final response = await authProvider.updateProfilePhoto(File(image.path));
-        
+        final response = await authProvider.updateProfilePhoto(
+          File(image.path),
+        );
+
         if (!mounted) return;
-        
+
         if (response['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -160,7 +250,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(response['message'] ?? 'Erreur lors de la mise à jour'),
+              content: Text(
+                response['message'] ?? 'Erreur lors de la mise à jour',
+              ),
               backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -227,7 +319,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               child: ElevatedButton(
                 onPressed: () async {
                   Navigator.of(dialogContext).pop();
-                  final authProvider = Provider.of<AuthProvider>(parentContext, listen: false);
+                  final authProvider = Provider.of<AuthProvider>(
+                    parentContext,
+                    listen: false,
+                  );
                   await authProvider.logout();
                   if (mounted) {
                     Navigator.of(parentContext).pushAndRemoveUntil(
@@ -268,7 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     slivers: [
                       // AppBar moderne avec profil
                       _buildModernAppBar(user),
-                      
+
                       // Contenu
                       SliverToBoxAdapter(
                         child: Padding(
@@ -277,35 +372,40 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             children: [
                               // Stats Cards
                               _buildStatsSection(),
-                            
-                            const SizedBox(height: AppSizes.space6),
-                            
-                            // Bouton "Ma Boutique" pour les vendeurs
-                            _buildSellerStoreButton(context, user),
-                            
-                            // Menu Principal
-                            _buildMenuSection(context),
-                            
-                            const SizedBox(height: AppSizes.space6),
-                            
-                            // Paramètres
-                            _buildSettingsSection(context),
-                            
-                            const SizedBox(height: AppSizes.space6),
-                            
-                            // Bouton Déconnexion
-                            _buildLogoutButton(),
-                            
-                            const SizedBox(height: AppSizes.space8),
-                          ],
+
+                              const SizedBox(height: AppSizes.space6),
+
+                              // Bouton "Ma Boutique" pour les vendeurs
+                              _buildSellerStoreButton(context, user),
+
+                              // Activité récente
+                              _buildRecentActivitySection(),
+
+                              const SizedBox(height: AppSizes.space6),
+
+                              // Menu Principal
+                              _buildMenuSection(context),
+
+                              const SizedBox(height: AppSizes.space6),
+
+                              // Paramètres
+                              _buildSettingsSection(context),
+
+                              const SizedBox(height: AppSizes.space6),
+
+                              // Bouton Déconnexion
+                              _buildLogoutButton(),
+
+                              const SizedBox(height: AppSizes.space8),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
     );
   }
 
@@ -333,25 +433,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ),
               ),
             ),
-            
+
             // Pattern décoratif
             Positioned.fill(
-              child: CustomPaint(
-                painter: CirclePatternPainter(),
-              ),
+              child: CustomPaint(painter: CirclePatternPainter()),
             ),
-            
+
             // Contenu
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMedium),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingMedium,
+                ),
                 child: Row(
                   children: [
                     // Photo de profil
                     _buildProfilePhoto(user),
-                    
+
                     const SizedBox(width: AppSizes.space3),
-                    
+
                     // Informations utilisateur
                     Expanded(
                       child: Column(
@@ -367,9 +467,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          
+
                           const SizedBox(height: AppSizes.space1),
-                          
+
                           // Email
                           Text(
                             user.email,
@@ -378,9 +478,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          
+
                           const SizedBox(height: AppSizes.space3),
-                          
+
                           // Badge
                           _buildUserBadge(user),
                         ],
@@ -418,7 +518,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               radius: 30,
               backgroundColor: AppColors.grey200,
               backgroundImage: user.profilePicUrl != null
-                  ? NetworkImage('${ApiConfig.imageBaseUrl}/${user.profilePicUrl}')
+                  ? NetworkImage(
+                      '${ApiConfig.imageBaseUrl}/${user.profilePicUrl}',
+                    )
                   : null,
               child: user.profilePicUrl == null
                   ? Text(
@@ -431,7 +533,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
           ),
         ),
-        
+
         // Bouton Edit
         Positioned(
           bottom: 0,
@@ -466,10 +568,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       decoration: BoxDecoration(
         color: AppColors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(AppSizes.radius2XL),
-        border: Border.all(
-          color: AppColors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.white.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -515,8 +614,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         const SizedBox(width: AppSizes.space3),
         Expanded(
           child: _buildStatCard(
-            'Points',
-            _isLoadingStats ? '...' : '$_pointsCount',
+            'Avis',
+            _isLoadingStats ? '...' : '$_reviewsCount',
             Icons.stars,
             AppColors.warning,
           ),
@@ -525,17 +624,19 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.space4),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.white,
-            color.withOpacity(0.05),
-          ],
+          colors: [AppColors.white, color.withOpacity(0.05)],
         ),
         borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: AppShadows.shadowMD,
@@ -564,6 +665,234 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             style: AppTextStyles.labelSmall.copyWith(
               color: AppColors.textMuted,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Section Activité récente
+  Widget _buildRecentActivitySection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.space4),
+      padding: const EdgeInsets.all(AppSizes.space4),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: AppShadows.shadowMD,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.history, color: AppColors.primary, size: 20),
+                  const SizedBox(width: AppSizes.space2),
+                  Text(
+                    'Activité récente',
+                    style: AppTextStyles.h3.copyWith(color: AppColors.textDark),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: _isLoadingActivities
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, size: 20),
+                onPressed: _isLoadingActivities ? null : _loadRecentActivity,
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: AppSizes.space4),
+
+          // Liste des activités
+          if (_isLoadingActivities && _recentActivities.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSizes.space6),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_recentActivities.isEmpty)
+            _buildEmptyActivityState()
+          else
+            ..._recentActivities
+                .take(5)
+                .map((activity) => _buildActivityItem(activity))
+                .toList(),
+        ],
+      ),
+    );
+  }
+
+  /// Item d'activité
+  Widget _buildActivityItem(Map<String, dynamic> activity) {
+    final type = activity['type'] as String;
+    final title = activity['title'] as String;
+    final description = activity['description'] as String;
+    final date = activity['date'] as String;
+
+    IconData icon;
+    Color iconColor;
+    Color badgeColor;
+    String badgeLabel;
+
+    switch (type) {
+      case 'order':
+        icon = Icons.shopping_bag;
+        iconColor = AppColors.primary;
+        badgeColor = AppColors.primary;
+        badgeLabel = 'Commande';
+        break;
+      case 'favorite':
+        icon = Icons.favorite;
+        iconColor = AppColors.error;
+        badgeColor = AppColors.success;
+        badgeLabel = 'Favori';
+        break;
+      case 'cart':
+        icon = Icons.shopping_cart;
+        iconColor = AppColors.info;
+        badgeColor = AppColors.info;
+        badgeLabel = 'Panier';
+        break;
+      case 'view':
+        icon = Icons.visibility;
+        iconColor = AppColors.grey500;
+        badgeColor = AppColors.grey500;
+        badgeLabel = 'Consulté';
+        break;
+      case 'review':
+        icon = Icons.star;
+        iconColor = AppColors.warning;
+        badgeColor = AppColors.warning;
+        badgeLabel = 'Avis';
+        break;
+      default:
+        icon = Icons.circle;
+        iconColor = AppColors.grey500;
+        badgeColor = AppColors.grey500;
+        badgeLabel = type;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.space3),
+      padding: const EdgeInsets.all(AppSizes.space3),
+      decoration: BoxDecoration(
+        color: AppColors.grey50,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icône
+          Container(
+            padding: const EdgeInsets.all(AppSizes.space2),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
+
+          const SizedBox(width: AppSizes.space3),
+
+          // Contenu
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: AppSizes.space1),
+                Text(
+                  description,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textLight,
+                    fontSize: 13,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSizes.space2),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: AppColors.textLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      date,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: AppSizes.space2),
+
+          // Badge
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.space2,
+              vertical: AppSizes.space1,
+            ),
+            decoration: BoxDecoration(
+              color: badgeColor,
+              borderRadius: BorderRadius.circular(AppSizes.radiusMD),
+            ),
+            child: Text(
+              badgeLabel,
+              style: const TextStyle(
+                color: AppColors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// État vide pour les activités
+  Widget _buildEmptyActivityState() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.space6),
+      child: Column(
+        children: [
+          Icon(
+            Icons.history,
+            size: 64,
+            color: AppColors.textLight.withOpacity(0.3),
+          ),
+          const SizedBox(height: AppSizes.space3),
+          Text(
+            'Aucune activité récente',
+            style: AppTextStyles.h4.copyWith(color: AppColors.textLight),
+          ),
+          const SizedBox(height: AppSizes.space2),
+          Text(
+            'Commencez à explorer nos produits !',
+            style: AppTextStyles.body.copyWith(color: AppColors.textLight),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -797,9 +1126,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                 ],
               ),
-              
+
               const SizedBox(width: AppSizes.space4),
-              
+
               // Texte
               Expanded(
                 child: Column(
@@ -816,7 +1145,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ],
                 ),
               ),
-              
+
               // Flèche
               Icon(
                 Icons.chevron_right,
@@ -833,10 +1162,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget _buildDivider() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.space4),
-      child: Divider(
-        height: 1,
-        color: AppColors.grey200,
-      ),
+      child: Divider(height: 1, color: AppColors.grey200),
     );
   }
 
@@ -886,29 +1212,13 @@ class CirclePatternPainter extends CustomPainter {
       ..strokeWidth = 2;
 
     // Dessiner des cercles décoratifs
-    canvas.drawCircle(
-      Offset(size.width * 0.2, size.height * 0.3),
-      40,
-      paint,
-    );
-    
-    canvas.drawCircle(
-      Offset(size.width * 0.8, size.height * 0.2),
-      60,
-      paint,
-    );
-    
-    canvas.drawCircle(
-      Offset(size.width * 0.9, size.height * 0.7),
-      30,
-      paint,
-    );
-    
-    canvas.drawCircle(
-      Offset(size.width * 0.1, size.height * 0.8),
-      50,
-      paint,
-    );
+    canvas.drawCircle(Offset(size.width * 0.2, size.height * 0.3), 40, paint);
+
+    canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.2), 60, paint);
+
+    canvas.drawCircle(Offset(size.width * 0.9, size.height * 0.7), 30, paint);
+
+    canvas.drawCircle(Offset(size.width * 0.1, size.height * 0.8), 50, paint);
   }
 
   @override
@@ -926,12 +1236,12 @@ extension _ProfileScreenExtension on _ProfileScreenState {
     } else {
       print('🔍 [PROFILE] Aucun utilisateur connecté');
     }
-    
+
     // Ne rien afficher si pas d'utilisateur
     if (user == null) {
       return const SizedBox.shrink();
     }
-    
+
     // Si l'utilisateur n'est pas vendeur, afficher le bouton "Devenir Vendeur"
     if (!user.isSeller) {
       return Container(
@@ -957,9 +1267,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const SellerRegisterScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const SellerRegisterScreen()),
               );
             },
             borderRadius: BorderRadius.circular(AppSizes.radius2XL),
@@ -987,9 +1295,9 @@ extension _ProfileScreenExtension on _ProfileScreenState {
                       size: 32,
                     ),
                   ),
-                  
+
                   const SizedBox(width: AppSizes.space4),
-                  
+
                   // Texte
                   Expanded(
                     child: Column(
@@ -1012,7 +1320,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
                       ],
                     ),
                   ),
-                  
+
                   // Flèche avec effet
                   Container(
                     padding: const EdgeInsets.all(AppSizes.space2),
@@ -1033,7 +1341,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
         ),
       );
     }
-    
+
     // Si l'utilisateur est vendeur mais n'a pas de boutique, afficher le bouton "Créer ma boutique"
     if (user.isSeller && !user.hasStore) {
       return Container(
@@ -1059,9 +1367,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const SellerRegisterScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const SellerRegisterScreen()),
               );
             },
             borderRadius: BorderRadius.circular(AppSizes.radius2XL),
@@ -1089,9 +1395,9 @@ extension _ProfileScreenExtension on _ProfileScreenState {
                       size: 32,
                     ),
                   ),
-                  
+
                   const SizedBox(width: AppSizes.space4),
-                  
+
                   // Texte
                   Expanded(
                     child: Column(
@@ -1114,7 +1420,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
                       ],
                     ),
                   ),
-                  
+
                   // Flèche avec effet
                   Container(
                     padding: const EdgeInsets.all(AppSizes.space2),
@@ -1160,9 +1466,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const SellerDashboardScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const SellerDashboardScreen()),
             );
           },
           borderRadius: BorderRadius.circular(AppSizes.radius2XL),
@@ -1190,9 +1494,9 @@ extension _ProfileScreenExtension on _ProfileScreenState {
                     size: 32,
                   ),
                 ),
-                
+
                 const SizedBox(width: AppSizes.space4),
-                
+
                 // Texte
                 Expanded(
                   child: Column(
@@ -1215,7 +1519,7 @@ extension _ProfileScreenExtension on _ProfileScreenState {
                     ],
                   ),
                 ),
-                
+
                 // Flèche avec effet
                 Container(
                   padding: const EdgeInsets.all(AppSizes.space2),
