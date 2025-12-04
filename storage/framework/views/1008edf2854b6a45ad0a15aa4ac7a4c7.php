@@ -48,6 +48,69 @@ use Illuminate\Support\Str;
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Styles pour les boutons d'actions des commandes */
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid;
+            background: white;
+            transition: all 0.3s ease;
+            padding: 0;
+            margin-right: 0.5rem;
+            text-decoration: none;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .action-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .action-btn-danger {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        .action-btn-danger:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .action-btn-success {
+            border-color: #28a745;
+            color: #28a745;
+        }
+        .action-btn-success:hover {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .action-btn-primary {
+            border-color: #007bff;
+            color: #007bff;
+        }
+        .action-btn-primary:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .action-btn-orange {
+            border-color: var(--main-color);
+            background-color: var(--main-color);
+            color: white;
+        }
+        .action-btn-orange:hover {
+            background-color: #e03d1a;
+            border-color: #e03d1a;
+            color: white;
+        }
+
         /* Responsive pour mobile */
         @media (max-width: 768px) {
             .sidebar .nav-pills {
@@ -58,6 +121,16 @@ use Illuminate\Support\Str;
             
             .sidebar .nav-pills .nav-item {
                 flex: 0 0 auto;
+            }
+            
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                margin-right: 0.25rem;
+            }
+            
+            .action-btn i {
+                font-size: 1rem;
             }
         }
     </style>
@@ -1329,7 +1402,7 @@ use Illuminate\Support\Str;
                         
                         // Bouton d'annulation (seulement si statut = pending)
                         const cancelButton = order.status === 'pending' 
-                            ? `<button class="btn btn-sm btn-outline-danger me-1" onclick="cancelOrder('${order.order_number}')" title="Annuler la commande">
+                            ? `<button class="action-btn action-btn-danger" onclick="cancelOrder('${order.order_number}')" title="Annuler la commande">
                                     <i class="bi bi-x-circle"></i>
                                 </button>`
                             : '';
@@ -1340,16 +1413,18 @@ use Illuminate\Support\Str;
                             <td><span class="badge ${statusBadge.class}">${statusBadge.label}</span></td>
                             <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
                             <td>
-                                ${cancelButton}
-                                <button class="btn btn-sm btn-outline-success me-1" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
-                                    <i class="bi bi-truck"></i>
-                                </button>
-                                <a href="/order/invoice/${order.order_number}" class="btn btn-sm btn-outline-primary me-1" title="Voir la facture">
-                                    <i class="bi bi-file-earmark-text"></i>
-                                </a>
-                                <a href="/order/download/${order.order_number}" class="btn btn-sm orange-bg text-white" title="Télécharger PDF">
-                                    <i class="bi bi-download"></i>
-                                </a>
+                                <div class="d-flex align-items-center">
+                                    ${cancelButton}
+                                    <button class="action-btn action-btn-success" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
+                                        <i class="bi bi-truck"></i>
+                                    </button>
+                                    <a href="/order/invoice/${order.order_number}" class="action-btn action-btn-primary" title="Voir la facture">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
+                                    <a href="/order/download/${order.order_number}" class="action-btn action-btn-orange" title="Télécharger PDF">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </div>
                             </td>
                         `;
                         tbody.appendChild(row);
