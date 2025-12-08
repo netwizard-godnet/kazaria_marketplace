@@ -562,8 +562,8 @@ class ProfileController extends Controller
      */
     public function updatePhotoApi(Request $request)
     {
-        // Support à la fois session et token
-        $user = auth()->user() ?? $request->user();
+        // Authentification Sanctum (tokens)
+        $user = $request->user();
         
         if (!$user) {
             return response()->json([
@@ -653,6 +653,71 @@ class ProfileController extends Controller
     }
 
     /**
+     * Récupérer les tickets de support (API - Tokens)
+     */
+    public function getInboxApi(Request $request)
+    {
+        // Support à la fois session et token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        try {
+            $tickets = CrmTicket::forUser($user->id)
+                ->with(['messages' => function ($query) {
+                    $query->where('is_internal', false)
+                        ->orderBy('created_at')
+                        ->with('author:id,nom,prenoms');
+                }])
+                ->orderByDesc('updated_at')
+                ->get()
+                ->map(function ($ticket) {
+                    $latestMessage = $ticket->messages->where('is_internal', false)->sortByDesc('created_at')->first();
+                    
+                    return [
+                        'id' => $ticket->id,
+                        'ticket_number' => $ticket->ticket_number,
+                        'subject' => $ticket->subject,
+                        'description' => $ticket->description,
+                        'status' => $ticket->status,
+                        'priority' => $ticket->priority,
+                        'created_at' => $ticket->created_at?->format('Y-m-d H:i:s'),
+                        'updated_at' => $ticket->updated_at?->format('Y-m-d H:i:s'),
+                        'messages_count' => $ticket->messages->where('is_internal', false)->count(),
+                        'latest_message' => $latestMessage ? [
+                            'message' => $latestMessage->message,
+                            'created_at' => $latestMessage->created_at?->format('Y-m-d H:i:s'),
+                            'author' => $latestMessage->author ? [
+                                'nom' => $latestMessage->author->nom,
+                                'prenoms' => $latestMessage->author->prenoms,
+                            ] : null,
+                        ] : null,
+                        'has_unread' => false, // TODO: Implémenter la logique de lecture
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            return response()->json([
+                'success' => true,
+                'tickets' => $tickets,
+                'count' => count($tickets)
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur récupération tickets: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des messages'
+            ], 500);
+        }
+    }
+
+    /**
      * Activité récente (API - Tokens)
      */
     public function getRecentActivityApi(Request $request)
@@ -679,7 +744,7 @@ class ProfileController extends Controller
             ->take(5)
             ->get();
 
-        // Construire la liste des activités
+        // Construire la liste des activités avec les timestamps pour le tri
         $activities = [];
         
         // Ajouter les commandes récentes
@@ -689,25 +754,35 @@ class ProfileController extends Controller
                 'title' => 'Nouvelle commande',
                 'description' => "Commande #{$order->order_number} pour " . number_format($order->total, 0, ',', ' ') . " FCFA",
                 'date' => $order->created_at->diffForHumans(),
+                'timestamp' => $order->created_at->timestamp, // Pour le tri
                 'icon' => 'bag'
             ];
         }
         
         // Ajouter les favoris récents
         foreach ($recentFavorites as $favorite) {
+            if ($favorite->product) { // Ne pas inclure les favoris sans produit
             $activities[] = [
                 'type' => 'favorite',
                 'title' => 'Produit ajouté aux favoris',
                 'description' => $favorite->product->name ?? 'Produit inconnu',
                 'date' => $favorite->created_at->diffForHumans(),
+                    'timestamp' => $favorite->created_at->timestamp, // Pour le tri
                 'icon' => 'heart'
             ];
+            }
         }
         
-        // Trier par date (plus récent en premier)
+        // Trier par timestamp (plus récent en premier)
         usort($activities, function($a, $b) {
-            return $a['date'] <=> $b['date'];
+            return ($b['timestamp'] ?? 0) <=> ($a['timestamp'] ?? 0);
         });
+        
+        // Retirer le timestamp avant de retourner (pas nécessaire côté client)
+        $activities = array_map(function($activity) {
+            unset($activity['timestamp']);
+            return $activity;
+        }, $activities);
 
         return response()->json([
             'success' => true,

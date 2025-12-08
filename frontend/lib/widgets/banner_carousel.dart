@@ -122,16 +122,25 @@ class _BannerCarouselState extends State<BannerCarousel> {
           children: [
             // Background Image or Gradient
             if (banner.imageUrl != null)
-              CachedNetworkImage(
+              SizedBox(
+                width: double.infinity,
+                height: double.infinity,
+                child: CachedNetworkImage(
                 imageUrl: banner.imageUrl!,
-                fit: BoxFit.cover,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                 placeholder: (context, url) => Container(
+                    width: double.infinity,
+                    height: double.infinity,
                   color: AppColors.background,
                   child: const Center(
                     child: CircularProgressIndicator(),
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
+                    width: double.infinity,
+                    height: double.infinity,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -140,6 +149,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
                         AppColors.primary,
                         AppColors.primary.withOpacity(0.7),
                       ],
+                      ),
                     ),
                   ),
                 ),

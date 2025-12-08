@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/order_model.dart';
 import '../services/auth_service.dart';
 import '../services/order_service.dart';
+import '../services/api_service.dart';
+import '../config/api_config.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -172,6 +175,9 @@ class AuthProvider with ChangeNotifier {
           } catch (e) {
             print('⚠️ [AUTH_PROVIDER] Erreur lors du rafraîchissement: $e');
           }
+          
+          // Envoyer le token FCM pending s'il existe
+          await _sendPendingFcmToken();
         } else {
           print('⚠️ [AUTH_PROVIDER] Token manquant dans la réponse!');
         }
@@ -210,6 +216,41 @@ class AuthProvider with ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Envoyer le token FCM pending après connexion
+  Future<void> _sendPendingFcmToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pendingToken = prefs.getString('pending_fcm_token');
+      
+      if (pendingToken != null) {
+        print('📤 [AUTH_PROVIDER] Envoi du token FCM pending après connexion');
+        
+        final apiService = ApiService();
+        final response = await apiService.post(
+          '${ApiConfig.baseUrl}/notifications/register-token',
+          {
+            'token': pendingToken,
+            'platform': Platform.isAndroid ? 'android' : 'ios',
+            'device_name': Platform.isAndroid ? 'Android Device' : 'iOS Device',
+            'device_model': Platform.isAndroid
+                ? 'Android ${Platform.version}'
+                : 'iOS ${Platform.version}',
+          },
+          requiresAuth: true,
+        );
+        
+        if (response['success'] == true) {
+          print('✅ [AUTH_PROVIDER] Token FCM pending enregistré avec succès');
+          await prefs.remove('pending_fcm_token');
+        } else {
+          print('⚠️ [AUTH_PROVIDER] Erreur enregistrement token pending: ${response['message']}');
+        }
+      }
+    } catch (e) {
+      print('❌ [AUTH_PROVIDER] Erreur envoi token FCM pending: $e');
+    }
   }
 
   /// Mettre à jour le profil utilisateur
@@ -280,9 +321,45 @@ class AuthProvider with ChangeNotifier {
   /// Mettre à jour la photo de profil
   Future<Map<String, dynamic>> updateProfilePhoto(File photo) async {
     try {
-      return await _authService.updateProfilePhoto(photo);
+      final response = await _authService.updateProfilePhoto(photo);
+      
+      // Si l'upload réussit, mettre à jour l'utilisateur avec les données de la réponse
+      if (response['success']) {
+        // D'abord, essayer d'utiliser les données de la réponse si disponibles
+        if (response['user'] != null) {
+          _user = UserModel.fromJson(response['user']);
+          print('✅ [AUTH_PROVIDER] Photo de profil mise à jour depuis la réponse');
+          print('📸 [AUTH_PROVIDER] Nouvelle URL: ${_user?.profilePicUrl}');
+          notifyListeners();
+        } else {
+          // Sinon, recharger depuis l'API
+          final meResponse = await _authService.getMe();
+          if (meResponse['success'] && meResponse['user'] != null) {
+            _user = UserModel.fromJson(meResponse['user']);
+            print('✅ [AUTH_PROVIDER] Photo de profil mise à jour et utilisateur rechargé depuis /me');
+            print('📸 [AUTH_PROVIDER] Nouvelle URL: ${_user?.profilePicUrl}');
+            notifyListeners();
+          }
+        }
+      }
+      
+      return response;
     } catch (e) {
+      print('❌ [AUTH_PROVIDER] Erreur updateProfilePhoto: $e');
       return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Recharger les données utilisateur depuis le serveur
+  Future<void> loadUser() async {
+    try {
+      final response = await _authService.getMe();
+      if (response['success'] && response['user'] != null) {
+        _user = UserModel.fromJson(response['user']);
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ [AUTH_PROVIDER] Erreur loadUser: $e');
     }
   }
 

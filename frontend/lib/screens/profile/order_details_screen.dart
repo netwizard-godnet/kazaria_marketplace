@@ -67,9 +67,37 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
 
   Future<void> _loadOrderDetails() async {
     setState(() {
-      _isLoading = false;
-      _order = widget.order;
+      _isLoading = true;
+      _error = null;
     });
+
+    try {
+      // Charger les détails à jour depuis l'API
+      final response = await _orderService.getOrderDetails(widget.order.orderNumber);
+      
+      if (response['success'] == true && response['data'] != null) {
+        // Créer un nouveau modèle avec les données mises à jour
+        final updatedOrder = OrderModel.fromJson(response['data']);
+        setState(() {
+          _order = updatedOrder;
+      _isLoading = false;
+        });
+      } else {
+        // Si l'API échoue, utiliser les données initiales
+        setState(() {
+      _order = widget.order;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // En cas d'erreur, utiliser les données initiales
+      print('⚠️ [ORDER_DETAILS] Erreur lors du chargement: $e');
+      setState(() {
+        _order = widget.order;
+        _isLoading = false;
+      });
+    }
+    
     _animationController.forward();
   }
 
@@ -93,8 +121,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              // Recharger la page en retournant à la liste des commandes
-              Navigator.pop(context, true); // true = besoin de rafraîchir
+              // Recharger les détails de la commande depuis l'API
+              _loadOrderDetails();
             },
             tooltip: 'Rafraîchir',
           ),

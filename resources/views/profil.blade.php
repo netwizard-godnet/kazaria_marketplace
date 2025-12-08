@@ -1916,11 +1916,49 @@ use Illuminate\Support\Str;
             return badges[status] || { class: 'bg-secondary', label: status };
         }
 
+        // Obtenir ou créer un token pour les appels API
+        async function getOrCreateToken() {
+            let token = localStorage.getItem('auth_token');
+            
+            if (token) {
+                return token;
+            }
+            
+            // Si pas de token mais utilisateur connecté via session, créer un token
+            try {
+                const response = await fetch('/api/me', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'include' // Inclure les cookies de session
+                });
+                
+                console.log('📡 Réponse /api/me:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.user && data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                        localStorage.setItem('user_data', JSON.stringify(data.user));
+                        return data.token;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Impossible de créer un token:', error);
+            }
+            
+            return null;
+        }
+
         // Charger les favoris de l'utilisateur
         async function loadFavorites() {
             console.log('🔄 Chargement des favoris...');
             
-            const token = localStorage.getItem('auth_token');
+            // Essayer d'obtenir ou créer un token
+            let token = await getOrCreateToken();
             const sessionId = localStorage.getItem('guest_session_id');
             
             console.log('Token:', token ? '✅ Présent' : '❌ Absent');
@@ -1960,13 +1998,23 @@ use Illuminate\Support\Str;
 
                 console.log('📥 Réponse reçue:', response.status);
                 const data = await response.json();
-                console.log('📦 Données:', data);
+                console.log('📦 Données complètes:', JSON.stringify(data, null, 2));
+                console.log('📦 data.success:', data.success);
+                console.log('📦 data.favorites:', data.favorites);
+                console.log('📦 data.favorites length:', data.favorites ? data.favorites.length : 'null/undefined');
 
-                if (data.success && data.favorites && data.favorites.length > 0) {
+                if (data.success && data.favorites && Array.isArray(data.favorites) && data.favorites.length > 0) {
+                    console.log('✅ Affichage des favoris...');
                     favoritesContainer.innerHTML = '';
                     
-                    data.favorites.forEach(favorite => {
+                    data.favorites.forEach((favorite, index) => {
+                        console.log(`📦 Favori ${index}:`, favorite);
                         const product = favorite.product;
+                        
+                        if (!product) {
+                            console.warn(`⚠️ Favori ${index} n'a pas de produit associé:`, favorite);
+                            return; // Skip ce favori si pas de produit
+                        }
                         
                         // Préparer l'URL de l'image
                         let imageUrl = '/images/produit.jpg'; // Default
@@ -2038,8 +2086,16 @@ use Illuminate\Support\Str;
                         favoritesContainer.innerHTML += productCard;
                     });
                 } else {
+                    console.warn('⚠️ Aucun favori trouvé ou structure incorrecte');
+                    console.warn('data.success:', data.success);
+                    console.warn('data.favorites:', data.favorites);
+                    console.warn('data.favorites type:', typeof data.favorites);
+                    console.warn('data.favorites isArray:', Array.isArray(data.favorites));
+                    
                     favoritesContainer.innerHTML = '';
+                    if (noFavoritesMessage) {
                     noFavoritesMessage.style.display = 'block';
+                    }
                 }
             } catch (error) {
                 console.error('❌ Erreur lors du chargement des favoris:', error);

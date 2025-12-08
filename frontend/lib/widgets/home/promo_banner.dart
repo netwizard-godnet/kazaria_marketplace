@@ -55,7 +55,7 @@ class PromoBanner extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 200,
+        height: 250,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -302,7 +302,7 @@ class _HomepageAdsCarouselState extends State<_HomepageAdsCarousel> {
     }
 
     return Container(
-      height: 120,
+      height: 180,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -389,10 +389,17 @@ class _HomepageAdCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: ad.image.isNotEmpty
-              ? CachedNetworkImage(
+              ? SizedBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: CachedNetworkImage(
                   imageUrl: ad.image,
-                  fit: BoxFit.cover,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
                   placeholder: (context, url) => Container(
+                      width: double.infinity,
+                      height: double.infinity,
                     color: AppColors.grey100,
                     child: const Center(
                       child: CircularProgressIndicator(
@@ -404,14 +411,19 @@ class _HomepageAdCard extends StatelessWidget {
                     ),
                   ),
                   errorWidget: (context, url, error) => Container(
+                      width: double.infinity,
+                      height: double.infinity,
                     color: AppColors.grey100,
                     child: const Icon(
                       Icons.image_not_supported,
                       color: AppColors.grey500,
+                      ),
                     ),
                   ),
                 )
               : Container(
+                  width: double.infinity,
+                  height: double.infinity,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,

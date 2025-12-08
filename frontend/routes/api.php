@@ -24,8 +24,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePasswordApi']);
 });
 
-// Route pour la photo de profil (support session et token)
-Route::middleware(['web', 'auth'])->group(function () {
+// Route pour la photo de profil (API - Tokens Sanctum)
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
 });
 

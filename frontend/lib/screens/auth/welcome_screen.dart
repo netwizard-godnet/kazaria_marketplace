@@ -18,22 +18,12 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               const Spacer(),
               // Logo
-              Container(
+              SizedBox(
                 width: 120,
                 height: 120,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Text(
-                    'K',
-                    style: TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.white,
-                    ),
-                  ),
+                child: Image.asset(
+                  'assets/images/logoKaz.png',
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 24),
@@ -69,6 +59,7 @@ class WelcomeScreen extends StatelessWidget {
                   );
                 },
                 width: double.infinity,
+                color: const Color(0xFF1A73E8), // Bleu pour cette page uniquement
               ),
               const SizedBox(height: 16),
               CustomButton(
@@ -81,6 +72,7 @@ class WelcomeScreen extends StatelessWidget {
                 },
                 isOutlined: true,
                 width: double.infinity,
+                color: const Color(0xFF1A73E8), // Bleu pour cette page uniquement
               ),
               const SizedBox(height: 32),
             ],

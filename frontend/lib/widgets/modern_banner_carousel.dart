@@ -114,6 +114,7 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
     print('✅ [MODERN_BANNER_CAROUSEL] Affichage du carousel avec ${widget.banners.length} bannières');
     return Container(
       height: widget.height,
+      margin: const EdgeInsets.symmetric(horizontal: 0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppSizes.radius2XL),
         boxShadow: AppShadows.shadowXL,
@@ -159,11 +160,14 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
     print('🎨 [MODERN_BANNER_CAROUSEL] Construction bannière: title=${banner.title}, imageUrl=${banner.imageUrl}');
     
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         gradient: banner.gradient,
         color: banner.gradient == null ? Colors.grey[300] : null,
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
           // Image de fond (cliquable si pas de bouton)
           Positioned.fill(
@@ -173,9 +177,13 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
                   ? CachedNetworkImage(
                       imageUrl: _fixImageUrl(banner.imageUrl!),
                       fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
                       placeholder: (context, url) {
                         print('⏳ [MODERN_BANNER_CAROUSEL] Chargement image: $url');
                         return Container(
+                            width: double.infinity,
+                            height: double.infinity,
                           decoration: const BoxDecoration(
                             gradient: AppColors.primaryGradient,
                           ),
@@ -187,6 +195,8 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
                       errorWidget: (context, url, error) {
                         print('❌ [MODERN_BANNER_CAROUSEL] Erreur chargement image: $url, erreur: $error');
                         return Container(
+                            width: double.infinity,
+                            height: double.infinity,
                           decoration: const BoxDecoration(
                             gradient: AppColors.primaryGradient,
                           ),
@@ -204,6 +214,8 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
                       },
                     )
                   : Container(
+                      width: double.infinity,
+                      height: double.infinity,
                       decoration: const BoxDecoration(
                         gradient: AppColors.primaryGradient,
                       ),
@@ -244,6 +256,16 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
   }
 
   Widget _buildBannerContent(ModernBannerItem banner) {
+    // ✅ Ne rien afficher si aucun contenu n'est configuré
+    final hasContent = banner.badge != null || 
+                      banner.title != null || 
+                      banner.subtitle != null || 
+                      banner.buttonText != null;
+    
+    if (!hasContent) {
+      return const SizedBox.shrink();
+    }
+    
     return Column(
       crossAxisAlignment: banner.contentAlignment,
       mainAxisSize: MainAxisSize.min,

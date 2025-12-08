@@ -12,7 +12,12 @@ class ApiService {
   static const Duration _requestTimeout = Duration(seconds: 30);
 
   Future<String?> _getToken() async {
-    return await _storageService.getToken();
+    final token = await _storageService.getToken();
+    // Nettoyer le token (enlever les espaces et "Bearer " si présent)
+    if (token != null) {
+      return token.trim().replaceFirst(RegExp(r'^Bearer\s+'), '');
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>> get(String endpoint,
@@ -155,6 +160,7 @@ class ApiService {
       String? token;
       if (requiresAuth) {
         token = await _getToken();
+        print('🔐 [API_SERVICE] Token récupéré pour multipart: ${token != null ? "OUI (${token.substring(0, 10)}...)" : "NON"}');
         if (token == null) {
           return {'success': false, 'message': 'Non authentifié'};
         }
@@ -162,9 +168,12 @@ class ApiService {
 
       var request = http.MultipartRequest('POST', Uri.parse(endpoint));
       
-      // Ajouter les headers
-      request.headers.addAll(ApiConfig.headers(token: token));
-      request.headers.remove('Content-Type'); // Laisse http gérer le boundary
+      // Ajouter les headers manuellement (sans Content-Type pour laisser http gérer le boundary)
+      request.headers['Accept'] = 'application/json';
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+        print('🔐 [API_SERVICE] Authorization header ajouté: Bearer ${token.substring(0, 10)}...');
+      }
       
       // Ajouter les champs
       request.fields.addAll(fields);
@@ -172,12 +181,24 @@ class ApiService {
       // Ajouter les fichiers
       if (files != null) {
         for (var entry in files.entries) {
+          final file = File(entry.value);
+          if (await file.exists()) {
           request.files.add(await http.MultipartFile.fromPath(
             entry.key,
             entry.value,
           ));
+            print('📎 [API_SERVICE] Fichier ajouté: ${entry.key} = ${entry.value}');
+          } else {
+            print('❌ [API_SERVICE] Fichier introuvable: ${entry.value}');
+            return {'success': false, 'message': 'Fichier introuvable: ${entry.value}'};
+          }
         }
       }
+
+      print('📡 [API_SERVICE] POST Multipart à: $endpoint');
+      print('📡 [API_SERVICE] Headers: ${request.headers}');
+      print('📡 [API_SERVICE] Fields: ${request.fields}');
+      print('📡 [API_SERVICE] Files: ${request.files.length} fichier(s)');
 
       final streamedResponse = await request.send().timeout(
         _requestTimeout,
@@ -187,12 +208,16 @@ class ApiService {
       );
       final response = await http.Response.fromStream(streamedResponse);
       
+      print('📡 [API_SERVICE] Status code: ${response.statusCode}');
+      print('📡 [API_SERVICE] Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
+      
       return _handleResponse(response);
     } on TimeoutException catch (e) {
       return {'success': false, 'message': e.message ?? 'Délai d\'attente dépassé'};
     } on SocketException {
       return {'success': false, 'message': 'Pas de connexion internet'};
     } catch (e) {
+      print('❌ [API_SERVICE] Erreur postMultipart: $e');
       return {'success': false, 'message': 'Erreur de connexion: $e'};
     }
   }

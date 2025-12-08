@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../providers/favorites_provider.dart';
@@ -17,8 +18,9 @@ import 'addresses_screen.dart';
 import 'change_password_screen.dart';
 import 'payments_screen.dart';
 import 'notifications_screen.dart';
-import 'language_screen.dart';
+import 'inbox_screen.dart';
 import 'help_screen.dart';
+import 'recent_activity_screen.dart';
 import '../auth/login_screen.dart';
 import '../seller/seller_dashboard_screen.dart';
 import '../seller/seller_register_screen.dart';
@@ -66,6 +68,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     _loadRecentActivity();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recharger les favoris quand l'écran devient visible
+    final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
+    if (favoritesProvider.favoritesCount == 0 && !_isLoadingStats) {
+      // Si les favoris ne sont pas chargés, les charger
+      favoritesProvider.loadFavorites().then((_) {
+        if (mounted) {
+          setState(() {
+            _favoritesCount = favoritesProvider.favoritesCount;
+          });
+        }
+      });
+    }
+  }
+
   Future<void> _loadStats() async {
     if (!mounted) return;
 
@@ -108,6 +127,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       await favoritesProvider.loadFavorites();
       _favoritesCount = favoritesProvider.favoritesCount;
       print('❤️ [PROFILE] Nombre de favoris: $_favoritesCount');
+      
+      // Mettre à jour le state pour refléter le changement
+      if (mounted) {
+        setState(() {
+          _favoritesCount = favoritesProvider.favoritesCount;
+        });
+      }
 
       // Charger le nombre d'avis donnés par l'utilisateur
       await _loadReviewsCount();
@@ -186,16 +212,26 @@ class _ProfileScreenState extends State<ProfileScreen>
         requiresAuth: true,
       );
 
+      print('📊 [PROFILE] Réponse API activités: ${response['success']}');
+      print('📊 [PROFILE] Données reçues: ${response.keys}');
+
       if (response['success'] == true) {
-        _recentActivities = List<Map<String, dynamic>>.from(
-          response['activities'] ?? [],
-        );
-        print('📊 [PROFILE] ${_recentActivities.length} activités chargées');
+        final activitiesData = response['activities'] ?? [];
+        print('📊 [PROFILE] Nombre d\'activités reçues: ${activitiesData.length}');
+        
+        _recentActivities = List<Map<String, dynamic>>.from(activitiesData);
+        print('📊 [PROFILE] ${_recentActivities.length} activités chargées avec succès');
+        
+        // Log de chaque activité pour déboguer
+        for (var i = 0; i < _recentActivities.length; i++) {
+          print('📊 [PROFILE] Activité $i: ${_recentActivities[i]}');
+        }
       } else {
         _recentActivities = [];
         print(
           '⚠️ [PROFILE] Impossible de charger les activités: ${response['message']}',
         );
+        print('⚠️ [PROFILE] Réponse complète: $response');
       }
     } catch (e) {
       print('❌ [PROFILE] Erreur chargement activités: $e');
@@ -215,6 +251,30 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _pickAndUpdatePhoto() async {
     try {
+      // Vérifier que l'utilisateur est authentifié
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      if (!authProvider.isAuthenticated) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Vous devez être connecté pour modifier votre photo'),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+            ),
+          ),
+        );
+        return;
+      }
+
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 800,
@@ -223,7 +283,30 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
 
       if (image != null) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        // Afficher un indicateur de chargement
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text('Upload de la photo en cours...'),
+                ],
+              ),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+
         final response = await authProvider.updateProfilePhoto(
           File(image.path),
         );
@@ -231,6 +314,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (!mounted) return;
 
         if (response['success']) {
+          // Forcer le rebuild de l'écran pour afficher la nouvelle photo
+          if (mounted) {
+            setState(() {
+              // Le provider a déjà mis à jour l'utilisateur, on force juste le rebuild
+            });
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Row(
@@ -248,16 +338,29 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           );
         } else {
+          final errorMessage = response['message'] ?? 'Erreur lors de la mise à jour';
+          print('❌ [PROFILE] Erreur upload photo: $errorMessage');
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                response['message'] ?? 'Erreur lors de la mise à jour',
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
               backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusLG),
               ),
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -514,22 +617,54 @@ class _ProfileScreenState extends State<ProfileScreen>
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.white, width: 4),
             ),
-            child: CircleAvatar(
-              radius: 30,
-              backgroundColor: AppColors.grey200,
-              backgroundImage: user.profilePicUrl != null
-                  ? NetworkImage(
-                      '${ApiConfig.imageBaseUrl}/${user.profilePicUrl}',
-                    )
-                  : null,
-              child: user.profilePicUrl == null
-                  ? Text(
+            child: ClipOval(
+              child: user.profilePicUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: '${ApiConfig.imageBaseUrl}/${user.profilePicUrl}',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      cacheKey: 'profile_${user.id}_${user.profilePicUrl}_${DateTime.now().millisecondsSinceEpoch}',
+                      memCacheWidth: 120,
+                      memCacheHeight: 120,
+                      placeholder: (context, url) => Container(
+                        width: 60,
+                        height: 60,
+                        color: AppColors.grey200,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 60,
+                        height: 60,
+                        color: AppColors.grey200,
+                        child: Center(
+                          child: Text(
                       user.fullName.substring(0, 2).toUpperCase(),
                       style: AppTextStyles.headlineMedium.copyWith(
                         color: AppColors.primary,
                       ),
+                          ),
+                        ),
+                      ),
                     )
-                  : null,
+                  : Container(
+                      width: 60,
+                      height: 60,
+                      color: AppColors.grey200,
+                      child: Center(
+                        child: Text(
+                          user.fullName.substring(0, 2).toUpperCase(),
+                          style: AppTextStyles.headlineMedium.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),
@@ -604,11 +739,19 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         const SizedBox(width: AppSizes.space3),
         Expanded(
-          child: _buildStatCard(
+          child: Consumer<FavoritesProvider>(
+            builder: (context, favoritesProvider, child) {
+              // Utiliser le nombre depuis le provider si disponible, sinon utiliser la variable locale
+              final count = favoritesProvider.favoritesCount > 0 
+                  ? favoritesProvider.favoritesCount 
+                  : _favoritesCount;
+              return _buildStatCard(
             'Favoris',
-            _isLoadingStats ? '...' : '$_favoritesCount',
+                _isLoadingStats ? '...' : '$count',
             Icons.favorite,
             AppColors.error,
+              );
+            },
           ),
         ),
         const SizedBox(width: AppSizes.space3),
@@ -675,12 +818,25 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildRecentActivitySection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.space4),
-      padding: const EdgeInsets.all(AppSizes.space4),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: AppShadows.shadowMD,
       ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RecentActivityScreen(),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.space4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -698,23 +854,30 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ],
               ),
-              IconButton(
-                icon: _isLoadingActivities
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh, size: 20),
-                onPressed: _isLoadingActivities ? null : _loadRecentActivity,
+                    Row(
+                      children: [
+                        if (_recentActivities.isNotEmpty)
+                          Text(
+                            '${_recentActivities.length}',
+                            style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: AppColors.textLight,
+                        ),
+                      ],
               ),
             ],
           ),
 
           const SizedBox(height: AppSizes.space4),
 
-          // Liste des activités
+                // Liste des activités (aperçu)
           if (_isLoadingActivities && _recentActivities.isEmpty)
             const Center(
               child: Padding(
@@ -726,10 +889,27 @@ class _ProfileScreenState extends State<ProfileScreen>
             _buildEmptyActivityState()
           else
             ..._recentActivities
-                .take(5)
+                      .take(3)
                 .map((activity) => _buildActivityItem(activity))
                 .toList(),
-        ],
+                
+                // Bouton "Voir tout" si plus de 3 activités
+                if (_recentActivities.length > 3) ...[
+                  const SizedBox(height: AppSizes.space2),
+                  Center(
+                    child: Text(
+                      'Voir toutes les activités (${_recentActivities.length})',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1035,13 +1215,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           _buildDivider(),
           _buildModernMenuItem(
-            icon: Icons.language,
-            title: 'Langue',
-            subtitle: 'Français',
+            icon: Icons.inbox,
+            title: 'Boîte de réception',
+            subtitle: 'Messages de support',
             color: AppColors.primary,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const LanguageScreen()),
+              MaterialPageRoute(builder: (_) => const InboxScreen()),
             ),
           ),
           _buildDivider(),

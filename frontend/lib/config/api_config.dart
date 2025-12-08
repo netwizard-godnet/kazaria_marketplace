@@ -28,6 +28,7 @@ class ApiConfig {
   static const String changePassword = '$baseUrl/profile/change-password';
   static const String updatePhoto = '$baseUrl/profile/update-photo';
   static const String recentActivity = '$baseUrl/activity/recent';
+  static const String inbox = '$baseUrl/inbox';
   static const String checkSellerStatus = '$baseUrl/check-seller-status';
 
   // Endpoints panier
@@ -98,6 +99,7 @@ class ApiConfig {
   static const String mobileStores = '$baseUrl/mobile/stores';
   static const String mobileStoreDetails = '$baseUrl/mobile/stores';
   static const String mobileFlashSales = '$baseUrl/mobile/flash-sales';
+  static const String mobileBrands = '$baseUrl/mobile/brands';
 
   // Endpoints vendeur/boutique
   static const String sellerStats = '$baseUrl/store/stats';

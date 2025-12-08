@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/constants.dart';
-import '../../providers/store_provider.dart';
-import '../../models/store_model.dart';
-import '../../screens/store/store_details_screen.dart';
+import '../../models/brand_model.dart';
+import '../../services/brand_service.dart';
 import '../../config/api_config.dart';
+import '../../screens/products/brand_products_screen.dart';
 
-/// Section Boutiques Officielles - Grid de logos
+/// Section Marques en Collaboration - Grid de logos
 class BrandsSection extends StatefulWidget {
   const BrandsSection({super.key});
 
@@ -16,23 +15,62 @@ class BrandsSection extends StatefulWidget {
 }
 
 class _BrandsSectionState extends State<BrandsSection> {
+  final BrandService _brandService = BrandService();
+  List<BrandModel> _brands = [];
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    // Charger les boutiques officielles au démarrage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<StoreProvider>(context, listen: false).loadOfficialStores();
+    _loadBrands();
+  }
+
+  Future<void> _loadBrands() async {
+    setState(() {
+      _isLoading = true;
     });
+
+    try {
+      final response = await _brandService.getBrands();
+      
+      if (mounted && response['success'] == true) {
+        final brandsData = response['data'] as List?;
+        if (brandsData != null) {
+          setState(() {
+            _brands = brandsData
+                .map((b) => BrandModel.fromJson(b as Map<String, dynamic>))
+                .toList();
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _brands = [];
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _brands = [];
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ [BRANDS_SECTION] Erreur: $e');
+      if (mounted) {
+        setState(() {
+          _brands = [];
+          _isLoading = false;
+    });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<StoreProvider>(
-      builder: (context, storeProvider, _) {
-        final officialStores = storeProvider.officialStores;
-        
-        // Ne rien afficher si aucune boutique officielle
-        if (!storeProvider.isLoadingOfficial && officialStores.isEmpty) {
+    // Ne rien afficher si aucune marque
+    if (!_isLoading && _brands.isEmpty) {
           return const SizedBox.shrink();
         }
 
@@ -53,7 +91,7 @@ class _BrandsSectionState extends State<BrandsSection> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        Icons.verified,
+                    Icons.handshake,
                         color: AppColors.primary,
                         size: 20,
                       ),
@@ -64,7 +102,7 @@ class _BrandsSectionState extends State<BrandsSection> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '✓ Boutiques Officielles',
+                        'Marques en Collaboration',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -72,7 +110,7 @@ class _BrandsSectionState extends State<BrandsSection> {
                             ),
                           ),
                           Text(
-                            'Découvrez nos boutiques certifiées',
+                        'Découvrez nos partenaires',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.textMedium,
@@ -87,8 +125,8 @@ class _BrandsSectionState extends State<BrandsSection> {
               
               const SizedBox(height: 16),
               
-              // Grid de boutiques ou chargement
-              storeProvider.isLoadingOfficial
+          // Grid de marques ou chargement
+          _isLoading
                   ? const Center(
                       child: Padding(
                         padding: EdgeInsets.all(20),
@@ -106,56 +144,57 @@ class _BrandsSectionState extends State<BrandsSection> {
                           mainAxisSpacing: 12,
                           childAspectRatio: 1,
                         ),
-                        itemCount: officialStores.length > 8 ? 8 : officialStores.length,
+                    itemCount: _brands.length > 8 ? 8 : _brands.length,
                         itemBuilder: (context, index) {
-                          final store = officialStores[index];
-                          return _OfficialStoreCard(
-                            store: store,
-                          );
+                      final brand = _brands[index];
+                      return _BrandCard(brand: brand);
                         },
                       ),
                     ),
             ],
           ),
         );
-      },
-    );
   }
 }
 
-/// Card individuelle de boutique officielle
-class _OfficialStoreCard extends StatelessWidget {
-  final StoreModel store;
+/// Card individuelle de marque
+class _BrandCard extends StatelessWidget {
+  final BrandModel brand;
 
-  const _OfficialStoreCard({
-    required this.store,
+  const _BrandCard({
+    required this.brand,
   });
 
-  /// Obtenir l'URL complète du logo
-  String? _getLogoUrl() {
-    if (store.logoUrl != null && store.logoUrl!.isNotEmpty) {
-      // Si l'URL est déjà complète, la retourner telle quelle
-      if (store.logoUrl!.startsWith('http://') || store.logoUrl!.startsWith('https://')) {
-        return store.logoUrl;
+  /// Obtenir l'URL complète de l'image de la marque
+  String? _getImageUrl() {
+    // Priorité 1: Utiliser l'image (URL complète depuis le backend)
+    if (brand.image != null && brand.image!.isNotEmpty) {
+      // Si l'URL contient localhost, remplacer par 10.0.2.2 pour l'émulateur
+      String url = brand.image!;
+      if (url.contains('localhost') || url.contains('127.0.0.1')) {
+        url = url
+            .replaceAll('http://localhost', 'http://10.0.2.2')
+            .replaceAll('http://127.0.0.1', 'http://10.0.2.2')
+            .replaceAll('https://localhost', 'http://10.0.2.2')
+            .replaceAll('https://127.0.0.1', 'http://10.0.2.2');
       }
-      // Corriger les URLs mal formées (http: au lieu de http://)
-      if (store.logoUrl!.startsWith('http:') && !store.logoUrl!.startsWith('http://')) {
-        return store.logoUrl!.replaceFirst('http:', 'http://');
-      }
-      // Sinon, construire l'URL complète
-      return '${ApiConfig.imageBaseUrl}/${store.logoUrl}';
+      return url;
     }
     
-    // Vérifier le champ logo (sans Url)
-    if (store.logo != null && store.logo!.isNotEmpty) {
-      if (store.logo!.startsWith('http://') || store.logo!.startsWith('https://')) {
-        return store.logo;
+    // Priorité 2: Utiliser image_path pour construire l'URL
+    if (brand.imagePath != null && brand.imagePath!.isNotEmpty) {
+      if (brand.imagePath!.startsWith('http://') || brand.imagePath!.startsWith('https://')) {
+        return brand.imagePath;
       }
       // Corriger les URLs mal formées
-      if (store.logo!.startsWith('http:') && !store.logo!.startsWith('http://')) {
-        return store.logo!.replaceFirst('http:', 'http://');
+      if (brand.imagePath!.startsWith('http:') && !brand.imagePath!.startsWith('http://')) {
+        return brand.imagePath!.replaceFirst('http:', 'http://');
       }
-      return '${ApiConfig.imageBaseUrl}/${store.logo}';
+      // Construire l'URL complète
+      if (brand.imagePath!.startsWith('storage/') || brand.imagePath!.startsWith('images/')) {
+        return '${ApiConfig.imageBaseUrl}/${brand.imagePath}';
+      }
+      return '${ApiConfig.imageBaseUrl}/storage/${brand.imagePath}';
     }
     
     return null;
@@ -163,85 +202,85 @@ class _OfficialStoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logoUrl = _getLogoUrl();
+    final imageUrl = _getImageUrl();
     
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => StoreDetailsScreen(store: store),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.grey200,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          print('🖱️ [BRANDS] Clic détecté sur marque: ${brand.name}');
+          _handleBrandTap(context, brand);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.grey200,
+              width: 1,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo de la boutique
-            logoUrl != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: logoUrl,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => Container(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo de la marque
+              imageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
                       width: 50,
                       height: 50,
-                      decoration: BoxDecoration(
-                        color: AppColors.grey100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: AppColors.grey100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          ),
                         ),
                       ),
+                      errorWidget: (context, url, error) {
+                        print('❌ [BRANDS] Erreur chargement logo ${brand.name}: $imageUrl');
+                        return _buildFallbackIcon();
+                      },
                     ),
-                    errorWidget: (context, url, error) {
-                      print('❌ [BRANDS] Erreur chargement logo ${store.name}: $logoUrl');
-                      return _buildFallbackIcon();
-                    },
+                  )
+                : _buildFallbackIcon(),
+              
+              const SizedBox(height: 8),
+              
+              // Nom de la marque
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  brand.name,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
                   ),
-                )
-              : _buildFallbackIcon(),
-            
-            const SizedBox(height: 8),
-            
-            // Nom de la boutique
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                store.name,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -257,11 +296,46 @@ class _OfficialStoreCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Icon(
-        Icons.storefront,
+        Icons.branding_watermark,
         color: AppColors.primary,
         size: 28,
       ),
     );
+  }
+
+  /// Gérer le clic sur une marque - Ouvrir la page dédiée aux produits de la marque
+  void _handleBrandTap(BuildContext context, BrandModel brand) {
+    print('🔍 [BRANDS] _handleBrandTap appelé pour: ${brand.name}');
+    print('🔍 [BRANDS] linkUrl: ${brand.linkUrl}');
+    print('🔍 [BRANDS] name: ${brand.name}');
+    
+    if (brand.name.isEmpty) {
+      print('⚠️ [BRANDS] Marque sans nom, impossible d\'afficher les produits');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Marque sans nom'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    print('✅ [BRANDS] Navigation vers page produits pour marque: ${brand.name}');
+    
+    // Toujours naviguer vers la page dédiée aux produits de la marque
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BrandProductsScreen(
+          brandName: brand.name,
+          brandImageUrl: brand.image ?? brand.imagePath,
+        ),
+      ),
+    ).then((_) {
+      print('✅ [BRANDS] Retour de la page produits');
+    }).catchError((error) {
+      print('❌ [BRANDS] Erreur navigation: $error');
+    });
   }
 }
 

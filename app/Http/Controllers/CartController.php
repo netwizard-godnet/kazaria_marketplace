@@ -570,6 +570,25 @@ class CartController extends Controller
     }
 
     /**
+     * Obtenir l'identifiant utilisateur (détecte automatiquement API ou Web)
+     */
+    private function getIdentifier(Request $request)
+    {
+        // D'abord vérifier si c'est une requête API avec token
+        $token = $request->bearerToken();
+        if ($token) {
+            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if ($personalAccessToken) {
+                // API avec token - utiliser uniquement user_id
+                return ['user_id' => $personalAccessToken->tokenable->id, 'session_id' => null];
+            }
+        }
+        
+        // Sinon, utiliser la méthode web (sessions)
+        return $this->getUserOrSession($request);
+    }
+
+    /**
      * Ajouter/Retirer des favoris
      */
     public function toggleFavorite(Request $request)
@@ -578,23 +597,20 @@ class CartController extends Controller
             'product_id' => 'required|exists:products,id'
         ]);
 
-        $identifier = $this->getUserOrSession($request);
+        $identifier = $this->getIdentifier($request);
         
+        // Pour les utilisateurs authentifiés, chercher uniquement par user_id (peu importe la session)
+        // Pour les invités, chercher par session_id
+        if ($identifier['user_id']) {
         $favorite = Favorite::where('product_id', $request->product_id)
-            ->where(function($query) use ($identifier) {
-                if ($identifier['user_id'] && $identifier['session_id']) {
-                    // Utilisateur connecté avec session_id - chercher par les deux
-                    $query->where('user_id', $identifier['user_id'])
-                          ->where('session_id', $identifier['session_id']);
-                } elseif ($identifier['user_id']) {
-                    // Utilisateur connecté sans session_id - chercher par user_id seulement
-                    $query->where('user_id', $identifier['user_id']);
+                ->where('user_id', $identifier['user_id'])
+                ->first();
                 } else {
-                    // Utilisateur non connecté - chercher par session_id seulement
-                    $query->where('session_id', $identifier['session_id']);
-                }
-            })
+            $favorite = Favorite::where('product_id', $request->product_id)
+                ->where('session_id', $identifier['session_id'])
+                ->whereNull('user_id')
             ->first();
+        }
 
         if ($favorite) {
             // Retirer des favoris
@@ -603,16 +619,24 @@ class CartController extends Controller
             $message = 'Retiré des favoris';
         } else {
             // Ajouter aux favoris
+            // Pour les utilisateurs authentifiés, ne pas utiliser session_id
             Favorite::create([
                 'user_id' => $identifier['user_id'],
-                'session_id' => $identifier['session_id'],
+                'session_id' => $identifier['user_id'] ? null : $identifier['session_id'],
                 'product_id' => $request->product_id
             ]);
             $isFavorite = true;
             $message = 'Ajouté aux favoris';
         }
 
-        $favoritesCount = Favorite::getFavoritesCount($identifier['user_id'], $identifier['session_id']);
+        // Compter les favoris selon le type d'utilisateur
+        if ($identifier['user_id']) {
+            $favoritesCount = Favorite::where('user_id', $identifier['user_id'])->count();
+        } else {
+            $favoritesCount = Favorite::where('session_id', $identifier['session_id'])
+                ->whereNull('user_id')
+                ->count();
+        }
 
         return response()->json([
             'success' => true,
@@ -627,12 +651,90 @@ class CartController extends Controller
      */
     public function getFavorites(Request $request)
     {
-        $identifier = $this->getUserOrSession($request);
-        $favorites = Favorite::getFavorites($identifier['user_id'], $identifier['session_id']);
+        $identifier = $this->getIdentifier($request);
+        
+        // Pour les utilisateurs authentifiés, récupérer tous les favoris de l'utilisateur
+        // Pour les invités, récupérer uniquement ceux de la session
+        if ($identifier['user_id']) {
+            $favoritesQuery = Favorite::where('user_id', $identifier['user_id'])
+                ->with('product');
+        } else {
+            $favoritesQuery = Favorite::where('session_id', $identifier['session_id'])
+                ->whereNull('user_id')
+                ->with('product');
+        }
+        
+        $favorites = $favoritesQuery->get();
+        
+        // Filtrer les favoris qui ont un produit valide (non supprimé)
+        $validFavorites = $favorites->filter(function($favorite) {
+            return $favorite->product !== null;
+        });
+        
+        \Log::info('Favoris récupérés:', [
+            'total' => $favorites->count(),
+            'valides' => $validFavorites->count(),
+            'user_id' => $identifier['user_id'],
+            'session_id' => $identifier['session_id']
+        ]);
+        
+        // Format pour le web : tableau d'objets avec structure {product: {...}}
+        $favoritesForWeb = $validFavorites->map(function($favorite) {
+            $product = $favorite->product;
+            // Créer un tableau avec tous les attributs nécessaires
+            $productArray = [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'description' => $product->description,
+                'price' => (float) $product->price,
+                'old_price' => $product->old_price ? (float) $product->old_price : null,
+                'discount_percentage' => $product->discount_percentage,
+                'image' => $product->image,
+                'images' => $product->images,
+                'rating' => $product->rating ? (float) $product->rating : 0,
+                'reviews_count' => $product->reviews_count ?? 0,
+                'stock' => $product->stock,
+                'is_active' => $product->is_active,
+                'store_id' => $product->store_id,
+                'category_id' => $product->category_id,
+            ];
+            
+            return [
+                'id' => $favorite->id,
+                'product_id' => $favorite->product_id,
+                'product' => $productArray
+            ];
+        })->values()->toArray();
+        
+        \Log::info('Favoris formatés pour le web:', ['count' => count($favoritesForWeb)]);
+        
+        // Format pour le mobile : tableau direct de produits
+        $favoritesForMobile = $validFavorites->map(function($favorite) {
+            $product = $favorite->product;
+            // Utiliser toArray() si disponible, sinon créer manuellement
+            if (method_exists($product, 'toArray')) {
+                return $product->toArray();
+            }
+            // Fallback : créer le tableau manuellement
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'description' => $product->description,
+                'price' => (float) $product->price,
+                'old_price' => $product->old_price ? (float) $product->old_price : null,
+                'image' => $product->image,
+                'images' => $product->images,
+                'rating' => $product->rating ? (float) $product->rating : 0,
+                'reviews_count' => $product->reviews_count ?? 0,
+            ];
+        })->values()->toArray();
 
         return response()->json([
             'success' => true,
-            'favorites' => $favorites
+            'favorites' => $favoritesForWeb, // Format attendu par le web (avec structure favorite.product)
+            'data' => $favoritesForMobile // Format attendu par le mobile (produits directs)
         ]);
     }
 

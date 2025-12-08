@@ -13,26 +13,31 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
 
+// Route /me qui accepte à la fois tokens et sessions (pour compatibilité web/mobile)
+Route::middleware(['web', 'auth'])->get('/me', [AuthController::class, 'me']);
+
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all-devices', [AuthController::class, 'logoutAllDevices']);
-    Route::get('/me', [AuthController::class, 'me']);
     // Routes API pour le profil (utilisent des tokens)
     Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'updateApi']);
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePasswordApi']);
 });
 
-// Route pour la photo de profil (support session et token)
-Route::middleware(['web', 'auth'])->group(function () {
+// Route pour la photo de profil (API - Tokens Sanctum)
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
 });
 
 // Routes protégées par authentification (suite)
 // Route pour l'activité récente (support session et token)
-Route::middleware(['web', 'auth'])->group(function () {
-    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
-});
+Route::middleware(['web', 'auth'])->get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
+Route::middleware('auth:sanctum')->get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
+
+// Route pour la boîte de réception (support session et token)
+Route::middleware(['web', 'auth'])->get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
+Route::middleware('auth:sanctum')->get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Autres routes API avec tokens uniquement
@@ -147,6 +152,7 @@ Route::prefix('mobile')->group(function () {
     Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
     Route::get('/stores/{id}/products', [App\Http\Controllers\MobileController::class, 'getStoreProducts']);
     Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);
+    Route::get('/brands', [App\Http\Controllers\MobileController::class, 'getBrands']);
 });
 
 // Routes de comparaison de produits
@@ -190,5 +196,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments/{id}', [App\Http\Controllers\PaymentController::class, 'getPaymentDetails']);
     Route::get('/invoices/history', [App\Http\Controllers\PaymentController::class, 'getInvoiceHistory']);
     Route::get('/invoices/{orderNumber}/download', [App\Http\Controllers\PaymentController::class, 'downloadInvoice']);
+});
+
+// Routes pour les notifications Firebase (nécessitent authentification)
+Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
+    Route::post('/register-token', [App\Http\Controllers\Api\NotificationController::class, 'registerToken']);
+    Route::post('/unregister-token', [App\Http\Controllers\Api\NotificationController::class, 'unregisterToken']);
+    Route::get('/stats', [App\Http\Controllers\Api\NotificationController::class, 'getStats'])->middleware('admin'); // Pour admin seulement
 });
 

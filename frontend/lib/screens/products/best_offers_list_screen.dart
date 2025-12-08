@@ -98,7 +98,7 @@ class _BestOffersListScreenState extends State<BestOffersListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Meilleures offres'),
+        title: const Text('Meilleures offres - Boutiques officielles'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
         elevation: 0,

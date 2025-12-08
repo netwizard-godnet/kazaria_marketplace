@@ -242,9 +242,13 @@ class AuthController extends Controller
             // Forcer la sauvegarde de la session
             $request->session()->save();
 
+            // Créer aussi un token pour les appels API depuis le web
+            $token = $user->createToken('web-app')->plainTextToken;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Connexion réussie',
+                'token' => $token, // Token pour les appels API
                 'user' => array_merge(
                     $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
                     ['has_store' => $user->store()->exists()]
@@ -424,15 +428,42 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        // D'abord essayer avec le token (API mobile)
         $user = $request->user();
         
+        // Si pas d'utilisateur via token, essayer avec la session (web)
+        if (!$user && Auth::check()) {
+            $user = Auth::user();
+        }
+        
+        if (!$user) {
         return response()->json([
+                'success' => false,
+                'message' => 'Non authentifié'
+            ], 401);
+        }
+        
+        // Si l'utilisateur est connecté via session mais n'a pas de token, en créer un
+        $token = $request->bearerToken();
+        if (!$token && Auth::check()) {
+            // Créer un token pour les appels API depuis le web
+            $token = $user->createToken('web-app')->plainTextToken;
+        }
+        
+        $response = [
             'success' => true,
             'user' => array_merge(
                 $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
                 ['has_store' => $user->store()->exists()]
             )
-        ]);
+        ];
+        
+        // Inclure le token si créé
+        if ($token) {
+            $response['token'] = $token;
+        }
+        
+        return response()->json($response);
     }
 
     /**

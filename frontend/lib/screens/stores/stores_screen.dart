@@ -35,8 +35,12 @@ class _StoresScreenState extends State<StoresScreen>
     // Charger les données initiales
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final storeProvider = Provider.of<StoreProvider>(context, listen: false);
+      print('🔄 [STORES_SCREEN] Initialisation - Chargement des données');
       storeProvider.refreshAll();
-      storeProvider.loadStoreCarousel();
+      print('🔄 [STORES_SCREEN] Chargement du carousel boutique...');
+      storeProvider.loadStoreCarousel().then((_) {
+        print('✅ [STORES_SCREEN] Carousel chargé: ${storeProvider.storeCarouselBanners.length} bannières');
+      });
       storeProvider.loadBestOffers();
       storeProvider.loadOfficialNewProducts();
       storeProvider.loadStoreAds();
@@ -619,7 +623,12 @@ class _StoresScreenState extends State<StoresScreen>
 
   /// Construire le carousel des boutiques
   Widget _buildStoreCarousel(StoreProvider storeProvider) {
+    print('🎨 [STORES_SCREEN] _buildStoreCarousel appelé');
+    print('   - isLoadingCarousel: ${storeProvider.isLoadingCarousel}');
+    print('   - Nombre de bannières: ${storeProvider.storeCarouselBanners.length}');
+    
     if (storeProvider.isLoadingCarousel) {
+      print('⏳ [STORES_SCREEN] Carousel en cours de chargement...');
       return Container(
         height: 180,
         margin: const EdgeInsets.only(bottom: AppSizes.paddingMedium),
@@ -628,15 +637,40 @@ class _StoresScreenState extends State<StoresScreen>
     }
 
     if (storeProvider.storeCarouselBanners.isEmpty) {
-      return const SizedBox.shrink();
+      print('⚠️ [STORES_SCREEN] Aucune bannière de carousel disponible');
+      print('💡 [STORES_SCREEN] Vérifiez les logs du backend pour voir si les carousels sont trouvés');
+      // Afficher un message de débogage temporaire
+      return Container(
+        height: 100,
+        margin: const EdgeInsets.all(AppSizes.paddingMedium),
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.warningLight,
+          borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+          border: Border.all(color: AppColors.warning),
+        ),
+        child: const Center(
+          child: Text(
+            'Aucun carousel trouvé (ordres 8, 9, 10, 12)',
+            style: TextStyle(color: AppColors.warning),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
 
+    print('✅ [STORES_SCREEN] Affichage du carousel avec ${storeProvider.storeCarouselBanners.length} bannières');
     return _StoreCarouselWidget(banners: storeProvider.storeCarouselBanners);
   }
 
   /// Construire la section Meilleures offres
   Widget _buildBestOffersSection(StoreProvider storeProvider) {
+    print('🎨 [STORES_SCREEN] _buildBestOffersSection appelé');
+    print('   - isLoadingBestOffers: ${storeProvider.isLoadingBestOffers}');
+    print('   - Nombre de produits: ${storeProvider.bestOffersProducts.length}');
+    
     if (storeProvider.isLoadingBestOffers) {
+      print('⏳ [STORES_SCREEN] Meilleures offres en cours de chargement...');
       return Container(
         height: 280,
         margin: const EdgeInsets.only(bottom: AppSizes.paddingMedium),
@@ -645,8 +679,111 @@ class _StoresScreenState extends State<StoresScreen>
     }
 
     if (storeProvider.bestOffersProducts.isEmpty) {
-      return const SizedBox.shrink();
+      print('⚠️ [STORES_SCREEN] Aucune meilleure offre disponible');
+      // Afficher un message au lieu de cacher complètement la section
+      return Container(
+        margin: const EdgeInsets.only(
+          top: AppSizes.paddingMedium,
+          bottom: AppSizes.paddingMedium,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingMedium,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_offer,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: AppSizes.space2),
+                      Text(
+                        'Meilleures offres',
+                        style: AppTextStyles.h3.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // ✅ Afficher "Voir tout" s'il y a plusieurs produits (plus de 3)
+                  if (storeProvider.bestOffersProducts.length > 3)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BestOffersListScreen(),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Voir tout',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSizes.space4),
+            Container(
+              height: 150,
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingMedium,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.local_offer_outlined,
+                      size: 48,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(height: AppSizes.space2),
+                    Text(
+                      'Aucune meilleure offre disponible',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
+    
+    print('✅ [STORES_SCREEN] Affichage de ${storeProvider.bestOffersProducts.length} meilleures offres');
 
     return Container(
       margin: const EdgeInsets.only(
@@ -664,6 +801,14 @@ class _StoresScreenState extends State<StoresScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_offer,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: AppSizes.space2),
                 Text(
                   'Meilleures offres',
                   style: AppTextStyles.h3.copyWith(
@@ -671,7 +816,11 @@ class _StoresScreenState extends State<StoresScreen>
                     color: AppColors.textDark,
                   ),
                 ),
-                if (storeProvider.bestOffersHasMore)
+                  ],
+                ),
+                // ✅ Afficher "Voir tout" s'il y a plusieurs produits (plus de 2 produits affichés)
+                // Cela permet de voir tous les produits même s'il n'y en a que quelques-uns
+                if (storeProvider.bestOffersProducts.length > 2 || storeProvider.bestOffersHasMore)
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -685,7 +834,7 @@ class _StoresScreenState extends State<StoresScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Voir plus',
+                          'Voir tout',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,

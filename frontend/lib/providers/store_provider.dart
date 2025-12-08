@@ -430,20 +430,45 @@ class StoreProvider with ChangeNotifier {
     try {
       print('🔄 [STORE_PROVIDER] Chargement carousel boutique officielle');
       final response = await _bannerService.getActiveBanners(
-        placement: 'carousel_boutique_officielle',
+        placement: 'boutique',
       );
 
+      print('📡 [STORE_PROVIDER] Réponse API: ${response['success']}');
+      print('📡 [STORE_PROVIDER] Nombre de bannières reçues: ${(response['banners'] ?? []).length}');
+
       if (response['success']) {
-        _storeCarouselBanners = response['banners'] ?? [];
+        final allBanners = response['banners'] ?? [];
+        print('📊 [STORE_PROVIDER] Toutes les bannières reçues:');
+        for (var banner in allBanners) {
+          print('   - ID: ${banner.id}, Ordre: ${banner.priority}, Image: ${banner.image.isNotEmpty ? "OUI" : "NON"}');
+        }
+        
+        // ✅ Filtrer pour n'afficher que les ordres 8, 9, 10, 12
+        _storeCarouselBanners = allBanners.where((banner) {
+          final priority = banner.priority;
+          final matches = priority == 8 || priority == 9 || priority == 10 || priority == 12;
+          if (matches) {
+            print('✅ [STORE_PROVIDER] Bannière avec ordre $priority acceptée');
+          }
+          return matches;
+        }).toList();
+        
         print(
-          '✅ [STORE_PROVIDER] Carousel chargé: ${_storeCarouselBanners.length} images',
+          '✅ [STORE_PROVIDER] Carousel chargé: ${_storeCarouselBanners.length} images (filtrées sur ordres 8, 9, 10, 12)',
         );
+        if (_storeCarouselBanners.isNotEmpty) {
+          print('📊 [STORE_PROVIDER] Ordres trouvés: ${_storeCarouselBanners.map((b) => b.priority).join(", ")}');
+        } else {
+          print('⚠️ [STORE_PROVIDER] AUCUNE bannière avec les ordres 8, 9, 10, 12 trouvée!');
+          print('💡 [STORE_PROVIDER] Vérifiez que les carousels ont bien les ordres 8, 9, 10, 12 dans le dashboard admin');
+        }
       } else {
         print('❌ [STORE_PROVIDER] Erreur carousel: ${response['message']}');
         _storeCarouselBanners = [];
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('💥 [STORE_PROVIDER] Exception carousel: $e');
+      print('Stack trace: $stackTrace');
       _storeCarouselBanners = [];
     }
 
@@ -470,9 +495,21 @@ class StoreProvider with ChangeNotifier {
 
       if (response['success']) {
         final List<dynamic> productsData = response['products'] ?? [];
+        print('📊 [STORE_PROVIDER] Produits bruts reçus: ${productsData.length}');
+        
         _bestOffersProducts = productsData
-            .map((product) => ProductModel.fromJson(product))
+            .map((product) {
+              try {
+                return ProductModel.fromJson(product);
+              } catch (e) {
+                print('⚠️ [STORE_PROVIDER] Erreur parsing produit: $e');
+                print('   Produit JSON: $product');
+                return null;
+              }
+            })
+            .whereType<ProductModel>()
             .toList();
+            
         _bestOffersTotal = response['total'] ?? _bestOffersProducts.length;
         _bestOffersHasMore =
             response['has_more'] ??
@@ -480,6 +517,11 @@ class StoreProvider with ChangeNotifier {
         print(
           '✅ [STORE_PROVIDER] Meilleures offres chargées: ${_bestOffersProducts.length}/${_bestOffersTotal} produits',
         );
+        
+        if (_bestOffersProducts.isEmpty) {
+          print('⚠️ [STORE_PROVIDER] Aucun produit trouvé dans les meilleures offres');
+          print('💡 [STORE_PROVIDER] Vérifiez que des produits ont is_best_offer=true et old_price > price dans les boutiques officielles');
+        }
       } else {
         print(
           '❌ [STORE_PROVIDER] Erreur meilleures offres: ${response['message']}',

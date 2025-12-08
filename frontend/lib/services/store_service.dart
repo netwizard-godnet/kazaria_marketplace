@@ -311,26 +311,35 @@ class StoreService {
       ).replace(queryParameters: {'limit': limit.toString()});
 
       print('🔄 [STORE] Récupération meilleures offres boutiques officielles');
+      print('   - URL: $uri');
+      print('   - Limit: $limit');
 
       final response = await http.get(uri, headers: headers);
+      print('📥 [STORE] Réponse meilleures offres: ${response.statusCode}');
+      print('📥 [STORE] Body: ${response.body}');
+      
       final data = json.decode(response.body);
       final dataMap = _asMap(data);
 
-      print('📥 [STORE] Réponse meilleures offres: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         if (dataMap == null) {
+          print('❌ [STORE] Réponse invalide du serveur');
           return {
             'success': false,
             'message': 'Réponse invalide du serveur',
             'products': [],
           };
         }
+        final products = dataMap['products'] ?? dataMap['data'] ?? [];
+        print('✅ [STORE] ${products.length} meilleures offres récupérées');
         return {
           'success': true,
-          'products': dataMap['products'] ?? dataMap['data'] ?? [],
+          'products': products,
+          'total': dataMap['total'] ?? products.length,
+          'has_more': dataMap['has_more'] ?? false,
         };
       } else {
+        print('❌ [STORE] Erreur API: ${dataMap?['message'] ?? 'Erreur inconnue'}');
         return {
           'success': false,
           'message': _extractErrorMessage(
@@ -340,8 +349,9 @@ class StoreService {
           'products': [],
         };
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('💥 [STORE] Exception meilleures offres: $e');
+      print('Stack trace: $stackTrace');
       return {'success': false, 'message': e.toString(), 'products': []};
     }
   }

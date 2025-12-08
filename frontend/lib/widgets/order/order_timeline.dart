@@ -42,7 +42,19 @@ class OrderTimeline extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           
-          // Timeline steps
+          // Si la commande est annulée, afficher uniquement l'étape d'annulation
+          if (order.status == 'cancelled') ...[
+            _buildTimelineStep(
+              icon: Icons.cancel,
+              title: 'Commande annulée',
+              date: order.createdAt,
+              isCompleted: true,
+              isCancelled: true,
+              isFirst: true,
+              isLast: true,
+            ),
+          ] else ...[
+            // Timeline steps normales
           _buildTimelineStep(
             icon: Icons.check_circle,
             title: 'Commande confirmée',
@@ -80,6 +92,7 @@ class OrderTimeline extends StatelessWidget {
             isCompleted: order.status == 'delivered',
             isLast: true,
           ),
+          ],
         ],
       ),
     );
@@ -93,8 +106,9 @@ class OrderTimeline extends StatelessWidget {
     required bool isCompleted,
     bool isFirst = false,
     bool isLast = false,
+    bool isCancelled = false,
   }) {
-    final bool isCurrent = isCompleted && !_isNextStepCompleted(title);
+    final bool isCurrent = isCompleted && !_isNextStepCompleted(title) && !isCancelled;
     
     return IntrinsicHeight(
       child: Row(
@@ -110,9 +124,11 @@ class OrderTimeline extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: isCompleted 
+                      color: isCancelled
+                          ? AppColors.error
+                          : (isCompleted 
                           ? AppColors.success 
-                          : AppColors.grey300,
+                              : AppColors.grey300),
                     ),
                   ),
                 
@@ -122,19 +138,25 @@ class OrderTimeline extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isCompleted 
+                    color: isCancelled
+                        ? AppColors.error
+                        : (isCompleted 
                         ? (isCurrent ? AppColors.primary : AppColors.success)
-                        : AppColors.grey200,
+                            : AppColors.grey200),
                     border: Border.all(
-                      color: isCompleted 
+                      color: isCancelled
+                          ? AppColors.error
+                          : (isCompleted 
                           ? (isCurrent ? AppColors.primary : AppColors.success)
-                          : AppColors.grey300,
+                              : AppColors.grey300),
                       width: 2,
                     ),
                   ),
                   child: Icon(
                     icon,
-                    color: isCompleted ? AppColors.white : AppColors.grey400,
+                    color: isCancelled 
+                        ? AppColors.white 
+                        : (isCompleted ? AppColors.white : AppColors.grey400),
                     size: 20,
                   ),
                 ),
@@ -144,9 +166,11 @@ class OrderTimeline extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: isCompleted 
+                      color: isCancelled
+                          ? AppColors.error
+                          : (isCompleted 
                           ? AppColors.success 
-                          : AppColors.grey300,
+                              : AppColors.grey300),
                     ),
                   ),
               ],
@@ -165,12 +189,14 @@ class OrderTimeline extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: isCurrent 
+                      fontWeight: isCancelled || isCurrent 
                           ? FontWeight.bold 
                           : (isCompleted ? FontWeight.w600 : FontWeight.normal),
-                      color: isCompleted 
+                      color: isCancelled
+                          ? AppColors.error
+                          : (isCompleted 
                           ? (isCurrent ? AppColors.primary : AppColors.textDark)
-                          : AppColors.textMedium,
+                              : AppColors.textMedium),
                     ),
                   ),
                   
@@ -194,8 +220,8 @@ class OrderTimeline extends StatelessWidget {
                     ),
                   ],
                   
-                  // Badge "En cours" si c'est l'étape actuelle
-                  if (isCurrent) ...[
+                  // Badge "En cours" si c'est l'étape actuelle (sauf si annulée)
+                  if (isCurrent && !isCancelled) ...[
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(

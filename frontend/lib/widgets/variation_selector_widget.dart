@@ -30,12 +30,17 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
   void initState() {
     super.initState();
     
+    // ✅ Différer l'appel de onVariationChanged après la phase de build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
     // Si une variation initiale est fournie, la sélectionner
     if (widget.initialVariation != null) {
       _currentVariation = widget.initialVariation;
       for (var attr in widget.initialVariation!.attributes) {
         _selectedAttributes[attr.attributeId] = attr.valueId;
       }
+        widget.onVariationChanged(_currentVariation);
     } 
     // Sinon, sélectionner la variation par défaut si elle existe
     else if (widget.product.defaultVariationId != null && widget.product.variations != null) {
@@ -49,11 +54,14 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
       }
       widget.onVariationChanged(_currentVariation);
     }
+    });
   }
 
   void _onAttributeValueSelected(int attributeId, int valueId) {
+    print('🖱️ [VARIATION_SELECTOR] Clic sur attribut $attributeId, valeur $valueId');
     setState(() {
       _selectedAttributes[attributeId] = valueId;
+      print('   📊 Attributs sélectionnés après clic: $_selectedAttributes');
       _findMatchingVariation();
     });
   }
@@ -65,51 +73,141 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
       return;
     }
 
-    // Trouver la variation qui correspond à la sélection
-    final matchingVariation = widget.product.variations!.firstWhere(
+    // ✅ NOUVELLE LOGIQUE : Trouver la meilleure variation correspondante
+    // 1. Si tous les attributs sont sélectionnés, chercher une correspondance exacte
+    // 2. Sinon, chercher une variation qui correspond aux attributs sélectionnés
+    //    (même si elle n'a pas tous les attributs)
+    
+    final allAttributesSelected = widget.product.productAttributes != null &&
+        _selectedAttributes.length == widget.product.productAttributes!.length;
+    
+    ProductVariation? matchingVariation;
+    
+    if (allAttributesSelected) {
+      // Tous les attributs sont sélectionnés, trouver la variation exacte
+      try {
+        matchingVariation = widget.product.variations!.firstWhere(
       (variation) => variation.matchesSelection(_selectedAttributes),
-      orElse: () => widget.product.variations!.first,
-    );
+        );
+      } catch (e) {
+        // Aucune variation exacte trouvée, chercher la meilleure correspondance partielle
+        matchingVariation = _findBestPartialMatch();
+      }
+    } else {
+      // Pas tous les attributs sont sélectionnés, trouver la meilleure correspondance
+      matchingVariation = _findBestPartialMatch();
+    }
 
-    if (_currentVariation?.id != matchingVariation.id) {
+    if (matchingVariation != null && _currentVariation?.id != matchingVariation.id) {
       _currentVariation = matchingVariation;
       widget.onVariationChanged(_currentVariation);
-      print('✅ [VARIATION_SELECTOR] Variation sélectionnée: ${matchingVariation.id} - ${matchingVariation.attributesDescription}');
+      print('✅ [VARIATION_SELECTOR] Variation sélectionnée: ${matchingVariation.id} - Prix: ${matchingVariation.price} - Stock: ${matchingVariation.stock}');
+      print('   📊 Attributs sélectionnés: $_selectedAttributes');
+      print('   📊 Attributs de la variation: ${matchingVariation.attributes.map((a) => '${a.attributeName}=${a.value}').join(', ')}');
     }
+  }
+  
+  /// Trouve la meilleure variation correspondant aux attributs sélectionnés
+  ProductVariation? _findBestPartialMatch() {
+    if (widget.product.variations == null || widget.product.variations!.isEmpty) {
+      return null;
+    }
+    
+    // Si aucun attribut n'est sélectionné, retourner la variation par défaut ou la première
+    if (_selectedAttributes.isEmpty) {
+      return widget.product.variations!.firstWhere(
+        (v) => v.isDefault,
+        orElse: () => widget.product.variations!.first,
+      );
+    }
+    
+    // Trouver la variation qui correspond au maximum d'attributs sélectionnés
+    ProductVariation? bestMatch;
+    int maxMatches = 0;
+    
+    for (var variation in widget.product.variations!) {
+      int matchCount = 0;
+      bool allSelectedMatch = true;
+
+      // Compter combien d'attributs sélectionnés correspondent à cette variation
+      for (var entry in _selectedAttributes.entries) {
+        final hasMatch = variation.attributes.any(
+          (attr) => attr.attributeId == entry.key && attr.valueId == entry.value,
+        );
+        
+        if (hasMatch) {
+          matchCount++;
+        } else {
+          // Si la variation a cet attribut mais avec une valeur différente, ce n'est pas un match
+          final hasThisAttribute = variation.attributes.any(
+            (attr) => attr.attributeId == entry.key,
+          );
+          if (hasThisAttribute) {
+            allSelectedMatch = false;
+            break;
+          }
+          // Si la variation n'a pas cet attribut, on considère que c'est OK (attribut optionnel)
+        }
+      }
+      
+      // Si tous les attributs sélectionnés correspondent (ou la variation n'a pas ces attributs)
+      if (allSelectedMatch && matchCount >= maxMatches) {
+        maxMatches = matchCount;
+        bestMatch = variation;
+      }
+    }
+    
+    // Si on a trouvé un match, le retourner
+    if (bestMatch != null) {
+      return bestMatch;
+    }
+    
+    // Sinon, retourner la première variation disponible
+    return widget.product.variations!.firstWhere(
+      (variation) => variation.isInStock,
+      orElse: () => widget.product.variations!.first,
+    );
   }
 
   /// Vérifie si une valeur d'attribut est disponible (a du stock dans au moins une variation)
   bool _isValueAvailable(int attributeId, int valueId) {
-    if (widget.product.variations == null) return true;
+    if (widget.product.variations == null || widget.product.variations!.isEmpty) {
+      return true; // Si pas de variations, toutes les valeurs sont disponibles
+    }
 
-    // Créer une sélection temporaire avec cette valeur
-    final tempSelection = Map<int, int>.from(_selectedAttributes);
-    tempSelection[attributeId] = valueId;
-
-    // Vérifier s'il existe une variation en stock avec cette combinaison
-    return widget.product.variations!.any((variation) {
-      if (!variation.isInStock) return false;
-      
-      // La variation doit avoir cette valeur d'attribut
-      final hasThisValue = variation.attributes.any(
+    // ✅ NOUVELLE LOGIQUE : Permettre la sélection si :
+    // 1. La valeur existe dans au moins une variation (même partielle)
+    // 2. OU si aucune variation n'a cet attribut, permettre quand même la sélection
+    //    (pour les produits où certaines variations n'ont pas tous les attributs)
+    
+    // Vérifier d'abord si au moins une variation a cette valeur
+    final hasExactMatch = widget.product.variations!.any((variation) {
+      return variation.attributes.any(
         (attr) => attr.attributeId == attributeId && attr.valueId == valueId,
       );
-      
-      if (!hasThisValue) return false;
-
-      // Vérifier que la variation correspond aussi aux autres sélections
-      for (var entry in tempSelection.entries) {
-        if (entry.key == attributeId) continue; // Skip l'attribut en cours
-        
-        final hasOtherAttr = variation.attributes.any(
-          (attr) => attr.attributeId == entry.key && attr.valueId == entry.value,
-        );
-        
-        if (!hasOtherAttr) return false;
-      }
-
-      return true;
     });
+    
+    if (hasExactMatch) {
+      return true;
+    }
+    
+    // Si aucune variation n'a cette valeur exacte, vérifier si au moins une variation
+    // n'a pas cet attribut du tout (ce qui signifie que l'attribut est optionnel pour cette variation)
+    final hasVariationWithoutThisAttribute = widget.product.variations!.any((variation) {
+      // La variation n'a pas cet attribut du tout
+      return !variation.attributes.any((attr) => attr.attributeId == attributeId);
+    });
+    
+    // Si au moins une variation n'a pas cet attribut, permettre la sélection
+    // (cela permet de gérer les cas où certaines variations n'ont pas tous les attributs)
+    if (hasVariationWithoutThisAttribute) {
+      print('   ⚠️ Aucune variation n\'a l\'attribut $attributeId, mais certaines variations n\'ont pas cet attribut - Permettre la sélection');
+      return true;
+    }
+    
+    // Sinon, la valeur n'est pas disponible
+    print('   ❌ Aucune variation trouvée pour attribut $attributeId=$valueId');
+    return false;
   }
 
   @override
@@ -118,7 +216,18 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
     if (!widget.product.hasVariations || 
         widget.product.productAttributes == null || 
         widget.product.productAttributes!.isEmpty) {
+      print('⚠️ [VARIATION_SELECTOR] Pas de variations ou attributs: hasVariations=${widget.product.hasVariations}, productAttributes=${widget.product.productAttributes?.length ?? 0}');
       return const SizedBox.shrink();
+    }
+    
+    // Log pour déboguer
+    print('✅ [VARIATION_SELECTOR] Build - Attributs: ${widget.product.productAttributes!.length}, Variations: ${widget.product.variations?.length ?? 0}');
+    for (var attr in widget.product.productAttributes!) {
+      print('   📊 Attribut ${attr.id} (${attr.name}): ${attr.values.length} valeurs');
+      for (var val in attr.values) {
+        final isAvailable = _isValueAvailable(attr.id, val.id);
+        print('      - ${val.value} (ID: ${val.id}) - Disponible: $isAvailable');
+      }
     }
 
     return Card(
@@ -196,8 +305,13 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
               isSelected: isSelected,
               isAvailable: isAvailable,
               onTap: isAvailable
-                  ? () => _onAttributeValueSelected(attribute.id, value.id)
-                  : null,
+                  ? () {
+                      print('🖱️ [VARIATION_SELECTOR] Clic détecté sur ${attribute.name}: ${value.value}');
+                      _onAttributeValueSelected(attribute.id, value.id);
+                    }
+                  : () {
+                      print('⚠️ [VARIATION_SELECTOR] Valeur non disponible: ${attribute.name}: ${value.value}');
+                    },
             );
           }).toList(),
         ),
@@ -211,8 +325,11 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
     required bool isAvailable,
     VoidCallback? onTap,
   }) {
-    return GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
       onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMD),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -240,6 +357,7 @@ class _VariationSelectorWidgetState extends State<VariationSelectorWidget> {
                     ? AppColors.textDark
                     : AppColors.textLight,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
           ),
         ),
       ),

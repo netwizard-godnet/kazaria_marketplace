@@ -20,34 +20,47 @@ class BannerService {
       }
       final uri = Uri.parse('${ApiConfig.mobileBanners}$queryParam');
 
-      print(
-        '🎨 [BANNERS] Récupération des bannières${type != null ? " type: $type" : ""}',
-      );
+      print('🎨 [BANNERS] Récupération des bannières');
+      print('   - URL: $uri');
+      print('   - Type: $type');
+      print('   - Placement: $placement');
 
       final response = await http.get(uri);
+      print('📡 [BANNERS] Status code: ${response.statusCode}');
+      print('📡 [BANNERS] Response body: ${response.body}');
+      
       final data = json.decode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final List<BannerModel> banners = [];
+        final rawData = data['data'] ?? [];
+        print('📊 [BANNERS] Nombre de bannières brutes reçues: ${rawData.length}');
 
-        for (var bannerJson in data['data'] ?? []) {
+        for (var bannerJson in rawData) {
           try {
-            banners.add(BannerModel.fromJson(bannerJson));
-          } catch (e) {
-            print('⚠️ Erreur parsing bannière: $e');
+            final banner = BannerModel.fromJson(bannerJson);
+            banners.add(banner);
+            print('   ✅ Bannière parsée: ID=${banner.id}, Ordre=${banner.priority}, Image=${banner.image.isNotEmpty ? "OUI" : "NON"}');
+          } catch (e, stackTrace) {
+            print('⚠️ [BANNERS] Erreur parsing bannière: $e');
+            print('Stack trace: $stackTrace');
+            print('   JSON: $bannerJson');
           }
         }
 
+        print('✅ [BANNERS] Total bannières parsées: ${banners.length}');
         return {'success': true, 'banners': banners};
       } else {
+        print('❌ [BANNERS] Erreur API: ${data['message'] ?? 'Erreur inconnue'}');
         return {
           'success': false,
           'message': data['message'] ?? 'Erreur',
           'banners': <BannerModel>[],
         };
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('💥 [BANNERS] Exception: $e');
+      print('Stack trace: $stackTrace');
       return {
         'success': false,
         'message': e.toString(),

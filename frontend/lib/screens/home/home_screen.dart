@@ -1004,15 +1004,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (banners.isEmpty) {
                           return const SizedBox.shrink();
                         }
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.space4,
-                          ),
-                          child: ModernBannerCarousel(
-                            height: 220,
-                            banners: banners,
-                            autoPlayInterval: const Duration(seconds: 8),
-                          ),
+                        return ModernBannerCarousel(
+                          height: 220,
+                          banners: banners,
+                          autoPlayInterval: const Duration(seconds: 8),
                         );
                       },
                     ),
@@ -1179,26 +1174,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (productProvider.banners.isNotEmpty) {
       for (var banner in productProvider.banners) {
+        print('🔍 [HOME] Vérification bannière: ${banner.title}, type: ${banner.type}, image: ${banner.image}');
+        
         // ✅ Ne pas ajouter de bannière sans image
         if (banner.image.isEmpty || banner.image == 'null') {
-          print('⚠️ [HOME] Bannière sans image ignorée: ${banner.title}');
+          print('⚠️ [HOME] Bannière sans image ignorée: ${banner.title} (type: ${banner.type})');
           continue;
         }
 
-        // Utiliser button_text si disponible (pour les slides du carousel), sinon utiliser actionType
-        final buttonText =
-            banner.buttonText ?? _getBannerButtonText(banner.actionType);
+        // ✅ Ne pas générer de buttonText automatiquement si aucun n'est configuré
+        // Seulement utiliser buttonText si explicitement configuré depuis l'admin
+        String? finalButtonText;
+        if (banner.buttonText != null && banner.buttonText!.isNotEmpty) {
+          finalButtonText = banner.buttonText;
+        } else if (banner.actionType != 'none' && banner.actionType.isNotEmpty) {
+          // Seulement générer un texte de bouton si une action est configurée
+          finalButtonText = _getBannerButtonText(banner.actionType);
+        }
 
         print(
-          '✅ [HOME] Ajout bannière: ${banner.title}, image: ${banner.image}',
+          '✅ [HOME] Ajout bannière: title="${banner.title}", description="${banner.description}", buttonText="$finalButtonText", type: ${banner.type}',
         );
 
         items.add(
           ModernBannerItem(
             imageUrl: banner.image, // URL complète depuis l'API
-            title: banner.title,
-            subtitle: banner.description ?? '',
-            buttonText: buttonText,
+            // ✅ N'afficher le titre que s'il est configuré depuis l'admin (non vide)
+            title: banner.title.isNotEmpty ? banner.title : null,
+            // ✅ N'afficher le sous-titre que s'il est configuré depuis l'admin (non vide)
+            subtitle: (banner.description != null && banner.description!.isNotEmpty) ? banner.description : null,
+            // ✅ N'afficher le bouton que s'il est configuré depuis l'admin (non vide)
+            buttonText: finalButtonText,
             contentAlignment: CrossAxisAlignment.start,
             onTap: () => _handleBannerTap(banner),
           ),

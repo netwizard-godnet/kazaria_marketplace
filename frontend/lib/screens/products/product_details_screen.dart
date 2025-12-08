@@ -54,6 +54,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   int? _currentStock; // Stock dynamique
   // String? _currentImage; // Image dynamique (TODO: utiliser pour changer l'image affichée)
 
+  // ✅ Produit complet chargé depuis l'API (avec variations)
+  ProductModel? _fullProduct;
+  bool _isLoadingFullProduct = false;
+
   /// Construire l'URL complète de l'image
   String _buildImageUrl(String imagePath) {
     if (imagePath.isEmpty) return '';
@@ -98,7 +102,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     // ✅ Attendre que le widget soit construit avant de charger les données Provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadSimilarProducts();
+            // ✅ Charger les détails complets du produit (avec variations)
+            // Les produits similaires sont déjà inclus dans la réponse de getProductDetails
+            _loadFullProductDetails();
         // Charger les favoris pour avoir le bon état
         try {
           Provider.of<FavoritesProvider>(
@@ -110,6 +116,93 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         }
       }
     });
+  }
+  
+  /// ✅ Charger les détails complets du produit depuis l'API (avec variations)
+  Future<void> _loadFullProductDetails() async {
+    setState(() {
+      _isLoadingFullProduct = true;
+    });
+
+    try {
+      final productService = ProductService();
+      final response = await productService.getProductDetails(widget.product.id);
+
+      if (mounted && response['success'] == true) {
+        final productData = response['data']?['product'];
+        final similarProductsData = response['data']?['similar_products'] as List?;
+        
+        if (productData != null) {
+          setState(() {
+            _fullProduct = ProductModel.fromJson(productData as Map<String, dynamic>);
+            _isLoadingFullProduct = false;
+            
+            print('✅ [PRODUCT_DETAILS] Produit complet chargé');
+            print('   📊 hasVariations: ${_fullProduct!.hasVariations}');
+            print('   📊 variations count: ${_fullProduct!.variations?.length ?? 0}');
+            print('   📊 productAttributes count: ${_fullProduct!.productAttributes?.length ?? 0}');
+            
+            // Log détaillé des attributs et variations
+            if (_fullProduct!.productAttributes != null) {
+              for (var attr in _fullProduct!.productAttributes!) {
+                print('   📋 Attribut ${attr.id} (${attr.name}): ${attr.values.length} valeurs');
+                for (var val in attr.values) {
+                  print('      - ${val.value} (ID: ${val.id})');
+                }
+              }
+            }
+            
+            if (_fullProduct!.variations != null) {
+              for (var variation in _fullProduct!.variations!) {
+                print('   🔄 Variation ${variation.id}: Prix=${variation.price}, Stock=${variation.stock}');
+                for (var attr in variation.attributes) {
+                  print('      - ${attr.attributeName}: ${attr.value} (attrId: ${attr.attributeId}, valueId: ${attr.valueId})');
+                }
+              }
+            }
+            
+            // ✅ Charger les produits similaires depuis la même réponse
+            if (similarProductsData != null && similarProductsData.isNotEmpty) {
+              _similarProducts = similarProductsData
+                  .map((p) => ProductModel.fromJson(p as Map<String, dynamic>))
+                  .take(6)
+                  .toList();
+              _loadingSimilar = false;
+              print('✅ [SIMILAR] ${_similarProducts.length} produits similaires chargés depuis getProductDetails');
+            }
+            
+            // ✅ Sélectionner la variation par défaut si elle existe
+            if (_fullProduct!.hasVariations && 
+                _fullProduct!.defaultVariationId != null && 
+                _fullProduct!.variations != null) {
+              final defaultVar = _fullProduct!.variations!.firstWhere(
+                (v) => v.id == _fullProduct!.defaultVariationId,
+                orElse: () => _fullProduct!.variations!.first,
+              );
+              _onVariationChanged(defaultVar);
+            }
+          });
+        } else {
+          setState(() {
+            _isLoadingFullProduct = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingFullProduct = false;
+          });
+          print('❌ [PRODUCT_DETAILS] Erreur API: ${response['message']}');
+        }
+      }
+    } catch (e) {
+      print('❌ [PRODUCT_DETAILS] Exception lors du chargement: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingFullProduct = false;
+        });
+      }
+    }
   }
 
   void _addToRecentProducts() {
@@ -126,6 +219,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
   /// ✅ Gestion du changement de variation
   void _onVariationChanged(ProductVariation? variation) {
+    // ✅ Utiliser addPostFrameCallback pour éviter setState() pendant le build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
     setState(() {
       _selectedVariation = variation;
       if (variation != null) {
@@ -144,17 +240,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         
         print('ℹ️ [PRODUCT_DETAILS] Aucune variation sélectionnée');
       }
+      });
     });
   }
 
   /// ✅ Obtenir le prix affiché (variation ou produit de base)
-  double get _displayPrice => _currentPrice ?? widget.product.price;
+  double get _displayPrice {
+    final product = _fullProduct ?? widget.product;
+    return _currentPrice ?? product.price;
+  }
   
   /// ✅ Obtenir l'ancien prix affiché
-  double? get _displayOldPrice => _currentOldPrice ?? widget.product.oldPrice;
+  double? get _displayOldPrice {
+    final product = _fullProduct ?? widget.product;
+    return _currentOldPrice ?? product.oldPrice;
+  }
   
   /// ✅ Obtenir le stock affiché
-  int get _displayStock => _currentStock ?? widget.product.stock;
+  int get _displayStock {
+    final product = _fullProduct ?? widget.product;
+    return _currentStock ?? product.stock;
+  }
   
   /// ✅ Vérifie si il y a une réduction
   bool get _hasDiscount => _displayOldPrice != null && _displayOldPrice! > _displayPrice;
@@ -166,69 +272,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     super.dispose();
   }
 
-  Future<void> _loadSimilarProducts() async {
-    setState(() {
-      _loadingSimilar = true;
-    });
-
-    try {
-      // ✅ Utiliser l'endpoint dédié avec algorithme de similarité intelligent
-      final productService = ProductService();
-
-      final response = await productService.getSimilarProducts(
-        widget.product.id,
-      );
-
-      if (mounted && response['success'] == true) {
-        final productsData = response['products'] as List?;
-
-        if (productsData != null && productsData.isNotEmpty) {
-          setState(() {
-            // ✅ Conversion directe (le backend a déjà filtré les produits)
-            _similarProducts = productsData
-                .map((p) => ProductModel.fromJson(p as Map<String, dynamic>))
-                .take(6) // Limiter à 6 pour l'affichage
-                .toList();
-            _loadingSimilar = false;
-
-            print(
-              '✅ [SIMILAR] ${_similarProducts.length} produits similaires chargés',
-            );
-            print(
-              '   📊 Algorithme backend: même catégorie, même marque, prix similaire, meilleurs notés',
-            );
-          });
-        } else {
-          // ⚠️ Aucun produit similaire trouvé
-          if (mounted) {
-            setState(() {
-              _similarProducts = [];
-              _loadingSimilar = false;
-            });
-            print('⚠️ [SIMILAR] Aucun produit similaire trouvé');
-          }
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _loadingSimilar = false;
-          });
-          print('❌ [SIMILAR] Erreur API: ${response['message']}');
-        }
-      }
-    } catch (e) {
-      print('❌ [SIMILAR] Exception: $e');
-      if (mounted) {
-        setState(() {
-          _loadingSimilar = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    final images = widget.product.images ?? [widget.product.image ?? ''];
+    // ✅ Utiliser le produit complet chargé depuis l'API si disponible, sinon le produit initial
+    final product = _fullProduct ?? widget.product;
+    final images = product.images ?? [product.image ?? ''];
     final cartProvider = Provider.of<CartProvider>(context);
 
     return Scaffold(
@@ -254,7 +303,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                   const Text('  >  ', style: AppTextStyles.caption),
                   Expanded(
                     child: Text(
-                      widget.product.category?.name ?? 'Produit',
+                        product.category?.name ?? 'Produit',
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.textDark,
                         fontWeight: FontWeight.w600,
@@ -266,7 +315,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                   const Text('  >  ', style: AppTextStyles.caption),
                   Expanded(
                     child: Text(
-                      widget.product.name,
+                      product.name,
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.textDark,
                       ),
@@ -281,7 +330,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
           // Contenu
           SliverToBoxAdapter(
-            child: Column(
+            child: _isLoadingFullProduct
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Informations principales
@@ -310,6 +366,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Widget _buildSliverAppBar(List<String> images) {
+    // ✅ Utiliser le produit complet chargé depuis l'API si disponible
+    final product = _fullProduct ?? widget.product;
+    
     return SliverAppBar(
       expandedHeight: 350,
       pinned: true,
@@ -330,11 +389,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         // Bouton partage
         ShareButton(
           type: 'product',
-          id: widget.product.id,
-          name: widget.product.name,
-          storeName: widget.product.store?.name,
-          slug: widget.product.slug,
-          description: widget.product.description,
+          id: product.id,
+          name: product.name,
+          storeName: product.store?.name,
+          slug: product.slug,
+          description: product.description,
           isCompact: true,
         ),
       ],
@@ -352,7 +411,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               },
               itemBuilder: (context, index) {
                 return Hero(
-                  tag: widget.heroTag ?? 'product_${widget.product.id}',
+                  tag: widget.heroTag ?? 'product_${product.id}',
                   child: GestureDetector(
                     onTap: () {
                       // Ouvrir la galerie plein écran avec zoom
@@ -414,7 +473,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
             ),
 
             // Badge VEDETTE en haut à gauche
-            if (widget.product.isFeatured)
+            if (product.isFeatured)
               Positioned(
                 top: 120,
                 left: 0,
@@ -459,9 +518,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               ),
 
             // Badge NOUVEAU en haut à gauche (sous VEDETTE)
-            if (widget.product.isNew)
+            if (product.isNew)
               Positioned(
-                top: widget.product.isFeatured ? 170 : 120,
+                top: product.isFeatured ? 170 : 120,
                 left: 0,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -502,7 +561,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               ),
 
             // Badge RÉDUCTION en haut à droite
-            if (widget.product.hasDiscount)
+            if (product.hasDiscount)
               Positioned(
                 top: 120,
                 right: 0,
@@ -526,7 +585,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                     ],
                   ),
                   child: Text(
-                    '-${widget.product.discountPercentage?.toInt()}%',
+                    '-${product.discountPercentage?.toInt()}%',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -573,13 +632,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Widget _buildMainInfo() {
+    // ✅ Utiliser le produit complet chargé depuis l'API si disponible
+    final product = _fullProduct ?? widget.product;
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Nom du produit
-          Text(widget.product.name, style: AppTextStyles.h2),
+          Text(product.name, style: AppTextStyles.h2),
           const SizedBox(height: 8),
 
           // Note et avis
@@ -588,14 +650,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ReviewsScreen(productId: widget.product.id),
+                  builder: (_) => ReviewsScreen(productId: product.id),
                 ),
               );
             },
             child: Row(
               children: [
                 RatingBarIndicator(
-                  rating: widget.product.rating,
+                  rating: product.rating,
                   itemBuilder: (context, index) =>
                       const Icon(Icons.star, color: AppColors.warning),
                   itemCount: 5,
@@ -604,7 +666,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${widget.product.rating} (${widget.product.reviewsCount} avis)',
+                  '${product.rating} (${product.reviewsCount} avis)',
                   style: AppTextStyles.body.copyWith(
                     color: AppColors.textLight,
                   ),
@@ -693,25 +755,25 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           _buildStockAlert(),
 
           // ✅ WIDGET DE SÉLECTION DES VARIATIONS
-          if (widget.product.hasVariations)
+          if (product.hasVariations)
             VariationSelectorWidget(
-              product: widget.product,
+              product: product,
               onVariationChanged: _onVariationChanged,
             ),
 
           // Marque et autres infos
-          if (widget.product.brand != null) ...[
+          if (product.brand != null) ...[
             const SizedBox(height: 16),
-            _buildInfoRow('Marque', widget.product.brand!),
+            _buildInfoRow('Marque', product.brand!),
           ],
-          if (widget.product.model != null)
-            _buildInfoRow('Modèle', widget.product.model!),
-          if (widget.product.warranty != null)
-            _buildInfoRow('Garantie', widget.product.warranty!),
+          if (product.model != null)
+            _buildInfoRow('Modèle', product.model!),
+          if (product.warranty != null)
+            _buildInfoRow('Garantie', product.warranty!),
 
           // ✅ Options disponibles (Attributs)
-          if (widget.product.attributes != null &&
-              widget.product.attributes!.isNotEmpty) ...[
+          if (product.attributes != null &&
+              product.attributes!.isNotEmpty) ...[
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
@@ -769,7 +831,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  widget.product.description ??
+                  (_fullProduct ?? widget.product).description ??
                       'Aucune description disponible.',
                   style: AppTextStyles.body,
                 ),
@@ -787,7 +849,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '${widget.product.reviewsCount} avis',
+                      '${(_fullProduct ?? widget.product).reviewsCount} avis',
                       style: AppTextStyles.h3,
                     ),
                     const SizedBox(height: 8),
@@ -797,7 +859,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                ReviewsScreen(productId: widget.product.id),
+                                ReviewsScreen(productId: (_fullProduct ?? widget.product).id),
                           ),
                         );
                       },
@@ -813,16 +875,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.product.brand != null)
-                      _buildDetailRow('Marque', widget.product.brand!),
-                    if (widget.product.model != null)
-                      _buildDetailRow('Modèle', widget.product.model!),
-                    _buildDetailRow('Stock', '${widget.product.stock}'),
-                    if (widget.product.warranty != null)
-                      _buildDetailRow('Garantie', widget.product.warranty!),
+                    if ((_fullProduct ?? widget.product).brand != null)
+                      _buildDetailRow('Marque', (_fullProduct ?? widget.product).brand!),
+                    if ((_fullProduct ?? widget.product).model != null)
+                      _buildDetailRow('Modèle', (_fullProduct ?? widget.product).model!),
+                    _buildDetailRow('Stock', '${(_fullProduct ?? widget.product).stock}'),
+                    if ((_fullProduct ?? widget.product).warranty != null)
+                      _buildDetailRow('Garantie', (_fullProduct ?? widget.product).warranty!),
                     _buildDetailRow(
                       'Catégorie',
-                      widget.product.category?.name ?? 'N/A',
+                      (_fullProduct ?? widget.product).category?.name ?? 'N/A',
                     ),
                   ],
                 ),
@@ -855,7 +917,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
   /// ✅ Afficher les attributs du produit (RAM, Stockage, Couleur, etc.)
   Widget _buildProductAttributes() {
-    final attributes = widget.product.attributes;
+    final product = _fullProduct ?? widget.product;
+    final attributes = product.attributes;
     if (attributes == null || attributes.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -1093,13 +1156,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               TextButton(
                 onPressed: () {
                   // Naviguer vers tous les produits de la même catégorie
-                  if (widget.product.category != null) {
+                  final product = _fullProduct ?? widget.product;
+                  if (product.category != null) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => ProductsListScreen(
-                          title: widget.product.category!.name,
-                          category: widget.product.categoryId.toString(),
+                          title: product.category!.name,
+                          category: product.categoryId.toString(),
                           icon: Icons.category,
                         ),
                       ),
@@ -1225,8 +1289,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   }
 
   Widget _buildBottomBar(CartProvider cartProvider) {
-    final isInCart = cartProvider.isInCart(widget.product.id);
-    final quantityInCart = cartProvider.getProductQuantity(widget.product.id);
+    final product = _fullProduct ?? widget.product;
+    final isInCart = cartProvider.isInCart(product.id);
+    final quantityInCart = cartProvider.getProductQuantity(product.id);
     final stock = _displayStock; // ✅ Utiliser le stock dynamique
     
     // ✅ Vérifier si on vient du panier (attributs pré-sélectionnés)
@@ -1338,7 +1403,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
                           // ✅ Ajouter au panier (mise à jour optimiste - retourne immédiatement)
                           final response = await cartProvider.addToCart(
-                            product: widget.product,
+                            product: product,
                             quantity: quantityToAdd,
                             attributes: _selectedAttributes,
                             variationId: _selectedVariation?.id, // ✅ Passer la variation sélectionnée

@@ -456,6 +456,17 @@
                             console.log('✅ Authentification réussie', data);
                             console.log('Session ID:', data.session_id);
                             
+                            // Stocker le token dans localStorage pour les appels API
+                            if (data.token) {
+                                localStorage.setItem('auth_token', data.token);
+                                console.log('✅ Token stocké dans localStorage');
+                            }
+                            
+                            // Stocker les données utilisateur
+                            if (data.user) {
+                                localStorage.setItem('user_data', JSON.stringify(data.user));
+                            }
+                            
                             // Vérifier immédiatement si on peut accéder à une route protégée
                             // pour confirmer que la session fonctionne
                             fetch('{{ route("accueil") }}', {

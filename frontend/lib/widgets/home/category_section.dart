@@ -70,6 +70,106 @@ class _CategoryCard extends StatelessWidget {
 
   const _CategoryCard({required this.category});
 
+  /// Corriger et construire l'URL d'image (même logique que CategoriesScreen)
+  String _fixImageUrl(String imagePath) {
+    // Si c'est déjà une URL complète, adapter pour l'émulateur Android si nécessaire
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      // Si l'URL contient localhost ou 127.0.0.1, remplacer par 10.0.2.2 pour l'émulateur
+      if (imagePath.contains('localhost') || imagePath.contains('127.0.0.1')) {
+        return imagePath
+            .replaceAll('http://localhost', 'http://10.0.2.2')
+            .replaceAll('http://127.0.0.1', 'http://10.0.2.2')
+            .replaceAll('https://localhost', 'http://10.0.2.2')
+            .replaceAll('https://127.0.0.1', 'http://10.0.2.2');
+      }
+      return imagePath;
+    }
+    
+    // Corriger les URLs malformées
+    if (imagePath.startsWith('http:') && !imagePath.startsWith('http://')) {
+      return imagePath.replaceFirst('http:', 'http://');
+    }
+    
+    if (imagePath.startsWith('https:') && !imagePath.startsWith('https://')) {
+      return imagePath.replaceFirst('https:', 'https://');
+    }
+    
+    // Si le chemin commence déjà par storage/ ou images/, l'utiliser tel quel
+    if (imagePath.startsWith('storage/') || imagePath.startsWith('images/')) {
+      return '${ApiConfig.imageBaseUrl}/$imagePath';
+    }
+    
+    // Sinon, essayer avec storage/ par défaut
+    return '${ApiConfig.imageBaseUrl}/storage/$imagePath';
+  }
+
+  /// Construire l'image de la catégorie (image ou icon)
+  Widget _buildCategoryImage() {
+    // Priorité 1: Utiliser l'image si disponible
+    if (category.image != null && category.image!.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: _fixImageUrl(category.image!),
+        height: 80,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          color: AppColors.background,
+          child: const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) {
+          print('❌ [CATEGORY_SECTION] Erreur image: $url');
+          // Si l'image échoue, essayer l'icône
+          return _buildIconFallback();
+        },
+      );
+    }
+    
+    // Priorité 2: Utiliser l'icône si disponible
+    if (category.icon != null && category.icon!.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: _fixImageUrl(category.icon!),
+        height: 80,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          color: AppColors.background,
+          child: const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) {
+          print('❌ [CATEGORY_SECTION] Erreur icon: $url');
+          return _buildIconFallback();
+        },
+      );
+    }
+    
+    // Fallback: Icône par défaut
+    return _buildIconFallback();
+  }
+  
+  /// Widget de fallback avec icône par défaut
+  Widget _buildIconFallback() {
+    return Container(
+      height: 80,
+      width: double.infinity,
+      color: AppColors.primary.withOpacity(0.1),
+      child: const Icon(
+        Icons.category,
+        color: AppColors.primary,
+        size: 40,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -102,28 +202,7 @@ class _CategoryCard extends StatelessWidget {
                 topLeft: Radius.circular(AppSizes.radiusMedium),
                 topRight: Radius.circular(AppSizes.radiusMedium),
               ),
-              child: CachedNetworkImage(
-                imageUrl: category.image != null 
-                    ? '${ApiConfig.imageBaseUrl}/${category.image}'
-                    : '${ApiConfig.imageBaseUrl}/images/categories/default.jpg',
-                height: 80,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: AppColors.background,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppColors.primary.withOpacity(0.1),
-                  child: const Icon(
-                    Icons.category,
-                    color: AppColors.primary,
-                    size: 40,
-                  ),
-                ),
-              ),
+              child: _buildCategoryImage(),
             ),
             Expanded(
               child: Padding(

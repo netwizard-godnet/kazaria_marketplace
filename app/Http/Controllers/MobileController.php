@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Store;
 use App\Models\Banner;
 use App\Models\CarouselSlide;
+use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -102,62 +103,101 @@ class MobileController extends Controller
             // Bannières pour le carousel principal de la page d'accueil
             // 1. Slides du carousel principal (CarouselSlide)
             $carouselSlides = CarouselSlide::where('is_active', true)
+                ->where('show_on_mobile', true)
+                ->where('placement', 'carousel_principal')
+                ->where(function ($query) {
+                    $query->whereNull('starts_at')
+                        ->orWhere('starts_at', '<=', now());
+                })
+                ->where(function ($query) {
+                    $query->whereNull('ends_at')
+                        ->orWhere('ends_at', '>=', now());
+                })
                 ->orderBy('sort_order', 'asc')
                 ->get()
                 ->map(function ($slide) {
                     // Utiliser l'accessor du modèle qui gère correctement les URLs
                     return [
                         'id' => $slide->id,
-                        'title' => $slide->title ?? '',
-                        'description' => $slide->description ?? '',
+                        'title' => !empty($slide->title) ? $slide->title : null,
+                        'description' => !empty($slide->description) ? $slide->description : null,
                         'image' => $slide->image_url,
                         'link' => $slide->link_url ?? null,
-                        'button_text' => $slide->button_text ?? null,
+                        'button_text' => !empty($slide->button_text) ? $slide->button_text : null,
                         'type' => 'carousel',
+                        'action_type' => $slide->link_url ? 'url' : 'none',
+                        'action_data' => $slide->link_url ? ['url' => $slide->link_url] : null,
                     ];
                 });
 
             // 2. Première bannière d'accueil
+            // Récupérer même si show_on_mobile est false (pour forcer l'affichage)
             $homepageBanner1 = Banner::where('banner_type', 'homepage_banner_1')
                 ->where('is_active', true)
-                ->where('show_on_mobile', true)
                 ->first();
+            
+            if (!$homepageBanner1) {
+                // Essayer sans le filtre is_active aussi
+                $homepageBanner1 = Banner::where('banner_type', 'homepage_banner_1')->first();
+            }
+            
+            \Log::info('📊 [MOBILE] homepage_banner_1 trouvée: ' . ($homepageBanner1 ? 'OUI (ID: ' . $homepageBanner1->id . ', show_on_mobile: ' . ($homepageBanner1->show_on_mobile ? 'true' : 'false') . ')' : 'NON'));
             
             // 3. Deuxième bannière d'accueil
             $homepageBanner2 = Banner::where('banner_type', 'homepage_banner_2')
                 ->where('is_active', true)
                 ->where('show_on_mobile', true)
                 ->first();
+            
+            \Log::info('📊 [MOBILE] homepage_banner_2 trouvée: ' . ($homepageBanner2 ? 'OUI (ID: ' . $homepageBanner2->id . ')' : 'NON'));
 
             // Combiner toutes les bannières dans l'ordre :
             // 1. Slides du carousel principal
             // 2. Première bannière d'accueil
             // 3. Deuxième bannière d'accueil
             $banners = collect($carouselSlides);
+            
+            \Log::info('📊 [MOBILE] Carousel slides: ' . $carouselSlides->count());
 
             if ($homepageBanner1) {
+                // Utiliser l'accessor image_url du modèle Banner
+                $banner1Image = $homepageBanner1->image_url ?? $this->getBannerImageUrl($homepageBanner1->image_path);
+                \Log::info('📊 [MOBILE] Ajout homepage_banner_1 - ID: ' . $homepageBanner1->id . ', Image: ' . ($banner1Image ?? 'NULL'));
                 $banners->push([
                     'id' => $homepageBanner1->id,
-                    'title' => $homepageBanner1->title ?? '',
-                    'description' => $homepageBanner1->subtitle ?? '',
-                    'image' => $this->getBannerImageUrl($homepageBanner1->image_path),
+                    'title' => !empty($homepageBanner1->title) ? $homepageBanner1->title : null,
+                    'description' => !empty($homepageBanner1->subtitle) ? $homepageBanner1->subtitle : null,
+                    'image' => $banner1Image,
                     'link' => $homepageBanner1->link_url ?? null,
                     'button_text' => null,
                     'type' => 'homepage_banner_1',
+                    'action_type' => $homepageBanner1->link_url ? 'url' : 'none',
+                    'action_data' => $homepageBanner1->link_url ? ['url' => $homepageBanner1->link_url] : null,
                 ]);
+            } else {
+                \Log::warning('⚠️ [MOBILE] homepage_banner_1 non trouvée ou inactive');
             }
 
             if ($homepageBanner2) {
+                // Utiliser l'accessor image_url du modèle Banner
+                $banner2Image = $homepageBanner2->image_url ?? $this->getBannerImageUrl($homepageBanner2->image_path);
+                \Log::info('📊 [MOBILE] Ajout homepage_banner_2 - ID: ' . $homepageBanner2->id . ', Image: ' . ($banner2Image ?? 'NULL'));
                 $banners->push([
                     'id' => $homepageBanner2->id,
-                    'title' => $homepageBanner2->title ?? '',
-                    'description' => $homepageBanner2->subtitle ?? '',
-                    'image' => $this->getBannerImageUrl($homepageBanner2->image_path),
+                    'title' => !empty($homepageBanner2->title) ? $homepageBanner2->title : null,
+                    'description' => !empty($homepageBanner2->subtitle) ? $homepageBanner2->subtitle : null,
+                    'image' => $banner2Image,
                     'link' => $homepageBanner2->link_url ?? null,
                     'button_text' => null,
                     'type' => 'homepage_banner_2',
+                    'action_type' => $homepageBanner2->link_url ? 'url' : 'none',
+                    'action_data' => $homepageBanner2->link_url ? ['url' => $homepageBanner2->link_url] : null,
                 ]);
+            } else {
+                \Log::warning('⚠️ [MOBILE] homepage_banner_2 non trouvée ou inactive');
             }
+            
+            \Log::info('📊 [MOBILE] Total bannières après ajout: ' . $banners->count());
 
             // Publicités de la page d'accueil (publicite_1 à publicite_5)
             $homepageAds = [];
@@ -439,6 +479,37 @@ class MobileController extends Controller
                     ->whereRaw('old_price > price');
             }
 
+            // ✅ Filtrer les meilleures offres des boutiques officielles uniquement
+            if ($request->has('official_stores_best_offers') && $request->official_stores_best_offers == '1') {
+                \Log::info('🔍 [MOBILE] Filtrage: Meilleures offres boutiques officielles uniquement');
+                $query->whereHas('store', function ($q) {
+                    $q->where('status', 'active')
+                      ->where('is_official', true);
+                })
+                ->where(function($q) {
+                    // Produit en promo si old_price est renseigné et différent de price
+                    $q->where(function($subQ) {
+                        $subQ->whereNotNull('old_price')
+                             ->whereColumn('old_price', '>', 'price');
+                    })
+                    // OU si discount_percentage est renseigné et supérieur à 0
+                    ->orWhere(function($subQ) {
+                        $subQ->whereNotNull('discount_percentage')
+                             ->where('discount_percentage', '>', 0);
+                    })
+                    // OU si is_best_offer est true (pour compatibilité)
+                    ->orWhere('is_best_offer', true);
+                });
+            }
+
+            // ✅ Filtrer uniquement les boutiques officielles
+            if ($request->has('official_only') && $request->official_only == '1') {
+                $query->whereHas('store', function ($q) {
+                    $q->where('status', 'active')
+                      ->where('is_official', true);
+                });
+            }
+
             // Tri
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
@@ -449,6 +520,9 @@ class MobileController extends Controller
                 $query->orderBy('name', $sortOrder);
             } elseif ($sortBy === 'rating') {
                 $query->orderBy('rating', $sortOrder);
+            } elseif ($sortBy === 'discount_percentage') {
+                // ✅ Tri par pourcentage de réduction (pour les meilleures offres)
+                $query->orderByRaw('((old_price - price) / old_price * 100) DESC');
             } else {
                 $query->orderBy('created_at', $sortOrder);
             }
@@ -524,11 +598,64 @@ class MobileController extends Controller
     public function getBanners(Request $request)
     {
         try {
-            // Si placement est fourni, utiliser carousel_slides
+            // Si placement est fourni
             if ($request->has('placement')) {
-                $slides = CarouselSlide::where('is_active', true)
+                $placement = $request->placement;
+                \Log::info("📊 [MOBILE] Récupération bannières pour placement: $placement");
+                
+                // ✅ Pour 'boutique', utiliser la table banners au lieu de carousel_slides
+                if ($placement === 'boutique') {
+                    \Log::info("🔍 [MOBILE] Récupération depuis table banners pour placement: boutique");
+                    $query = Banner::where('is_active', true)
+                        ->where('show_on_mobile', true)
+                        ->where('placement', 'boutique')
+                        ->where(function ($query) {
+                            $query->whereNull('starts_at')
+                                ->orWhere('starts_at', '<=', now());
+                        })
+                        ->where(function ($query) {
+                            $query->whereNull('ends_at')
+                                ->orWhere('ends_at', '>=', now());
+                        });
+                    
+                    // ✅ Filtrer par ordres spécifiques (8, 9, 10, 12)
+                    \Log::info("🔍 [MOBILE] Filtrage carousel boutique par ordres: 8, 9, 10, 12");
+                    $query->whereIn('sort_order', [8, 9, 10, 12]);
+                    
+                    $allBanners = $query->orderBy('sort_order', 'asc')->get();
+                    \Log::info("📊 [MOBILE] Nombre de bannières trouvées: " . $allBanners->count());
+                    
+                    foreach ($allBanners as $banner) {
+                        \Log::info("   - Banner ID: {$banner->id}, Type: {$banner->banner_type}, Ordre: {$banner->sort_order}, Image: " . ($banner->image_url ?? 'NULL'));
+                    }
+                    
+                    $slides = $allBanners->map(function ($banner) {
+                        return [
+                            'id' => $banner->id,
+                            'title' => !empty($banner->title) ? $banner->title : null,
+                            'description' => !empty($banner->subtitle) ? $banner->subtitle : null,
+                            'image' => $banner->image_url,
+                            'link' => $banner->link_url,
+                            'button_text' => null,
+                            'placement' => $banner->placement,
+                            'sort_order' => $banner->sort_order,
+                            'type' => $banner->banner_type,
+                            'action_type' => $banner->link_url ? 'url' : 'none',
+                            'action_data' => $banner->link_url ? ['url' => $banner->link_url] : null,
+                        ];
+                    });
+
+                    \Log::info("✅ [MOBILE] Retour de " . $slides->count() . " bannières pour placement: boutique");
+                    return response()->json([
+                        'success' => true,
+                        'data' => $slides,
+                    ]);
+                }
+                
+                // Pour les autres placements, utiliser carousel_slides
+                $query = CarouselSlide::where('is_active', true)
                     ->where('show_on_mobile', true)
-                    ->where('placement', $request->placement)
+                    ->where('placement', $placement)
                     ->where(function ($query) {
                         $query->whereNull('starts_at')
                             ->orWhere('starts_at', '<=', now());
@@ -536,21 +663,31 @@ class MobileController extends Controller
                     ->where(function ($query) {
                         $query->whereNull('ends_at')
                             ->orWhere('ends_at', '>=', now());
-                    })
-                    ->orderBy('sort_order', 'asc')
-                    ->get()
-                    ->map(function ($slide) {
-                        return [
-                            'id' => $slide->id,
-                            'title' => $slide->title,
-                            'description' => $slide->description,
-                            'image' => $slide->image_url,
-                            'link' => $slide->link_url,
-                            'button_text' => $slide->button_text,
-                            'placement' => $slide->placement,
-                        ];
                     });
+                
+                $allSlides = $query->orderBy('sort_order', 'asc')->get();
+                \Log::info("📊 [MOBILE] Nombre de slides trouvés: " . $allSlides->count());
+                
+                foreach ($allSlides as $slide) {
+                    \Log::info("   - Slide ID: {$slide->id}, Ordre: {$slide->sort_order}, Image: " . ($slide->image_url ?? 'NULL'));
+                }
+                
+                $slides = $allSlides->map(function ($slide) {
+                    return [
+                        'id' => $slide->id,
+                        'title' => !empty($slide->title) ? $slide->title : null,
+                        'description' => !empty($slide->description) ? $slide->description : null,
+                        'image' => $slide->image_url,
+                        'link' => $slide->link_url,
+                        'button_text' => !empty($slide->button_text) ? $slide->button_text : null,
+                        'placement' => $slide->placement,
+                        'sort_order' => $slide->sort_order,
+                        'action_type' => $slide->link_url ? 'url' : 'none',
+                        'action_data' => $slide->link_url ? ['url' => $slide->link_url] : null,
+                    ];
+                });
 
+                \Log::info("✅ [MOBILE] Retour de " . $slides->count() . " slides pour placement: $placement");
                 return response()->json([
                     'success' => true,
                     'data' => $slides,
@@ -700,30 +837,50 @@ class MobileController extends Controller
     public function getBestOffersStores(Request $request)
     {
         try {
-            // Produits avec meilleures offres des boutiques officielles
+            \Log::info('📊 [MOBILE] Récupération meilleures offres boutiques officielles');
+            
+            // ✅ Utiliser la même logique que sur le web : produits en promo des boutiques officielles
             $products = Product::active()
                 ->whereHas('store', function ($query) {
                     $query->where('status', 'active')
                         ->where('is_official', true);
                 })
-                ->where('is_best_offer', true)
-                ->whereNotNull('old_price')
-                ->whereRaw('old_price > price')
+                ->where(function($q) {
+                    // Produit en promo si old_price est renseigné et différent de price
+                    $q->where(function($subQ) {
+                        $subQ->whereNotNull('old_price')
+                             ->whereColumn('old_price', '>', 'price');
+                    })
+                    // OU si discount_percentage est renseigné et supérieur à 0
+                    ->orWhere(function($subQ) {
+                        $subQ->whereNotNull('discount_percentage')
+                             ->where('discount_percentage', '>', 0);
+                    })
+                    // OU si is_best_offer est true (pour compatibilité)
+                    ->orWhere('is_best_offer', true);
+                })
+                ->inStock()
                 ->with(['category', 'store'])
                 ->orderByRaw('((old_price - price) / old_price * 100) DESC')
+                ->orderBy('created_at', 'desc')
                 ->take(20)
-                ->get()
-                ->map(function ($product) {
-                    return $this->formatProduct($product);
-                });
+                ->get();
+            
+            \Log::info("📊 [MOBILE] Nombre de produits trouvés: " . $products->count());
+            
+            $formattedProducts = $products->map(function ($product) {
+                return $this->formatProduct($product);
+            });
 
+            \Log::info("✅ [MOBILE] Retour de " . $formattedProducts->count() . " meilleures offres");
             return response()->json([
                 'success' => true,
-                'products' => $products,
-                'total' => $products->count(),
+                'products' => $formattedProducts,
+                'total' => $formattedProducts->count(),
                 'has_more' => false,
             ]);
         } catch (\Exception $e) {
+            \Log::error('❌ [MOBILE] Erreur meilleures offres: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors du chargement des meilleures offres: ' . $e->getMessage(),
@@ -927,8 +1084,8 @@ class MobileController extends Controller
             'stock' => (int) $product->stock,
             'rating' => $product->rating ? (float) $product->rating : 0,
             'reviews_count' => $product->reviews_count ?? 0,
-            'image' => $product->image ? asset('storage/' . $product->image) : null,
-            'images' => $this->parseJsonField($product->images),
+            'image' => $this->formatImageUrl($product->image),
+            'images' => $this->formatImagesArray($product->images),
             'category' => $product->category ? [
                 'id' => $product->category->id,
                 'name' => $product->category->name,
@@ -1087,6 +1244,38 @@ class MobileController extends Controller
     }
 
     /**
+     * Récupérer les marques en collaboration pour mobile
+     */
+    public function getBrands(Request $request)
+    {
+        try {
+            $brands = Brand::active()
+                ->ordered()
+                ->get()
+                ->map(function ($brand) {
+                    return [
+                        'id' => $brand->id,
+                        'name' => $brand->name,
+                        'image' => $brand->image_url,
+                        'image_path' => $brand->image_path,
+                        'link_url' => $brand->link_url,
+                        'sort_order' => $brand->sort_order ?? 0,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $brands->values()->all(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des marques: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Helper pour obtenir l'URL correcte d'une image de bannière
      * Gère les cas où l'image est dans public/images/ ou storage/
      */
@@ -1103,6 +1292,62 @@ class MobileController extends Controller
 
         // Sinon, c'est dans le storage (via lien symbolique)
         return asset('storage/' . ltrim($imagePath, '/'));
+    }
+    
+    /**
+     * Formater l'URL d'une image de produit
+     * Gère les différents formats de chemins
+     */
+    private function formatImageUrl(?string $imagePath): ?string
+    {
+        if (!$imagePath) {
+            return null;
+        }
+        
+        // Si c'est déjà une URL complète, la retourner telle quelle
+        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
+            return $imagePath;
+        }
+        
+        // Si le chemin commence par "storage/", ne pas le dupliquer
+        if (strpos($imagePath, 'storage/') === 0) {
+            return asset($imagePath);
+        }
+        
+        // Si le chemin commence par "images/", utiliser directement
+        if (strpos($imagePath, 'images/') === 0) {
+            return asset($imagePath);
+        }
+        
+        // Sinon, ajouter "storage/" devant
+        return asset('storage/' . ltrim($imagePath, '/'));
+    }
+    
+    /**
+     * Formater un tableau d'images
+     */
+    private function formatImagesArray($images): array
+    {
+        if (empty($images)) {
+            return [];
+        }
+        
+        // Si c'est déjà un tableau, formater chaque image
+        if (is_array($images)) {
+            return array_map(function($image) {
+                return $this->formatImageUrl($image);
+            }, array_filter($images));
+        }
+        
+        // Si c'est une chaîne JSON, la parser
+        $decoded = json_decode($images, true);
+        if (is_array($decoded)) {
+            return array_map(function($image) {
+                return $this->formatImageUrl($image);
+            }, array_filter($decoded));
+        }
+        
+        return [];
     }
 }
 

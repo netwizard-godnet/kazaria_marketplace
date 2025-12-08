@@ -74,13 +74,21 @@ class BannerModel {
       finalActionData = {'url': json['link']};
     }
     
+    // ✅ Parser title et description - accepter null si vide ou non configuré
+    final titleValue = json['title'];
+    final String title = (titleValue != null && titleValue.toString().trim().isNotEmpty) 
+        ? titleValue.toString().trim() 
+        : '';
+    
+    final descriptionValue = json['subtitle'] ?? json['description'];
+    final String? description = (descriptionValue != null && descriptionValue.toString().trim().isNotEmpty) 
+        ? descriptionValue.toString().trim() 
+        : null;
+    
     return BannerModel(
       id: json['id'] is int ? json['id'] : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
-      title: json['title'] ?? '',
-      description:
-          json['subtitle'] ??
-          json['description'] ??
-          '', // ✅ Support subtitle depuis l'API
+      title: title,
+      description: description, // ✅ Peut être null si non configuré
       image: imageUrl, // ✅ URL complète depuis l'API
       type: bannerType,
       actionType: actionType,

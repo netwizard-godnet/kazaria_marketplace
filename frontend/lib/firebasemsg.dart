@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 import 'services/local_notification_service.dart';
 import 'config/api_config.dart';
 
@@ -11,13 +12,21 @@ class FirebaseMsg {
   final LocalNotificationService _localNotificationService =
       LocalNotificationService();
 
-  initFCM() async {
+  initFCM({BuildContext? context}) async {
     try {
       // Initialiser les notifications locales
       await _localNotificationService.initialize();
 
-      // Demander la permission Firebase
-      await msgService.requestPermission();
+      // Vérifier l'état actuel de la permission
+      final settings = await msgService.getNotificationSettings();
+      
+      // Si la permission n'est pas encore accordée, le dialog sera affiché par MainScreen
+      // On ne demande pas directement la permission ici pour laisser le dialog personnalisé s'afficher
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        print('✅ [FIREBASE] Permission déjà accordée');
+      } else {
+        print('ℹ️ [FIREBASE] Permission pas encore accordée, le dialog sera affiché');
+      }
 
       // Obtenir le token FCM
       var token = await msgService.getToken();
