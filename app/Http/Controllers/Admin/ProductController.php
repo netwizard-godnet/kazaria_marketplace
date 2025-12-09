@@ -35,6 +35,11 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
+        // Filtre par tendance
+        if ($request->filled('trending')) {
+            $query->where('is_trending', $request->trending === 'yes');
+        }
+
         $products = $query->latest()->paginate(15)->withQueryString();
 
         return view('admin.products.index', compact('products'));
@@ -75,6 +80,7 @@ class ProductController extends Controller
             'store_id' => 'nullable|exists:stores,id',
             'status' => 'required|in:pending,approved,rejected',
             'is_active' => 'boolean',
+            'is_trending' => 'boolean',
             'brand' => 'nullable|string|max:100',
             'model' => 'nullable|string|max:100',
             'warranty' => 'nullable|string|max:100',
@@ -109,6 +115,7 @@ class ProductController extends Controller
         }
         
         $data['is_active'] = $request->has('is_active');
+        $data['is_trending'] = $request->has('is_trending');
         
         // Gestion des prix : convertir prix normal et prix promo en price, old_price et discount
         $normalPrice = $request->price;
@@ -376,6 +383,13 @@ class ProductController extends Controller
         return redirect()->back()->with('success', "Produit {$status} avec succès.");
     }
 
+    public function toggleTrending(Product $product)
+    {
+        $product->update(['is_trending' => !$product->is_trending]);
+        $status = $product->is_trending ? 'marqué comme tendance' : 'retiré des tendances';
+        return redirect()->back()->with('success', "Produit {$status} avec succès.");
+    }
+
     public function edit(Product $product)
     {
         $product->load([
@@ -436,6 +450,7 @@ class ProductController extends Controller
             'store_id' => 'nullable|exists:stores,id',
             'status' => 'required|in:pending,approved,rejected',
             'is_active' => 'boolean',
+            'is_trending' => 'boolean',
             'brand' => 'nullable|string|max:100',
             'model' => 'nullable|string|max:100',
             'warranty' => 'nullable|string|max:100',
@@ -533,6 +548,7 @@ class ProductController extends Controller
 
         // Statut et actif
         $data['is_active'] = $request->has('is_active');
+        $data['is_trending'] = $request->has('is_trending');
         $data['status'] = $request->status ?? 'pending';
 
         // Créer le produit

@@ -1,14 +1,14 @@
-@extends('admin.layouts.app')
 
-@section('title', 'Gestion des Produits')
 
-@section('content')
+<?php $__env->startSection('title', 'Gestion des Produits'); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="page-inner">
     <div class="page-header">
         <h4 class="page-title">Gestion des Produits</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
-                <a href="{{ route('admin.dashboard') }}">
+                <a href="<?php echo e(route('admin.dashboard')); ?>">
                     <i class="flaticon-home"></i>
                 </a>
             </li>
@@ -21,23 +21,25 @@
         </ul>
     </div>
 
-    @if(session('success'))
+    <?php if(session('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
+            <?php echo e(session('success')); ?>
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
-    @endif
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php echo e(session('error')); ?>
+
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    <?php endif; ?>
 
     <div class="row">
         <div class="col-12">
@@ -46,27 +48,28 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h3 class="card-title">Gestion des Produits</h3>
                         <div class="d-flex">
-                            <a href="{{ route('admin.products.create') }}" class="btn btn-success mr-2 text-nowrap" style="">
+                            <a href="<?php echo e(route('admin.products.create')); ?>" class="btn btn-success mr-2 text-nowrap" style="">
                                 <i class="fas fa-plus"></i> Ajouter un produit
                             </a>
-                            <input type="text" class="form-control mr-2" placeholder="Rechercher un produit..." id="searchInput" value="{{ request('search') }}">
+                            <input type="text" class="form-control mr-2" placeholder="Rechercher un produit..." id="searchInput" value="<?php echo e(request('search')); ?>">
                             <select class="form-control mr-2" id="statusFilter" onchange="filterByStatus()">
                                 <option value="">Tous les statuts</option>
-                                <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actifs</option>
-                                <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactifs</option>
+                                <option value="active" <?php echo e(request('status') === 'active' ? 'selected' : ''); ?>>Actifs</option>
+                                <option value="inactive" <?php echo e(request('status') === 'inactive' ? 'selected' : ''); ?>>Inactifs</option>
                             </select>
                             <select class="form-control mr-2" id="categoryFilter" onchange="filterByCategory()">
                                 <option value="">Toutes les catégories</option>
-                                @foreach(\App\Models\Category::all() as $category)
-                                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
+                                <?php $__currentLoopData = \App\Models\Category::all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($category->id); ?>" <?php echo e(request('category') == $category->id ? 'selected' : ''); ?>>
+                                        <?php echo e($category->name); ?>
+
                                     </option>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
                             <select class="form-control mr-2" id="trendingFilter" onchange="filterByTrending()" title="Filtrer par statut tendance">
                                 <option value="">Tous les produits</option>
-                                <option value="yes" {{ request('trending') === 'yes' ? 'selected' : '' }}>🔥 Produits tendance</option>
-                                <option value="no" {{ request('trending') === 'no' ? 'selected' : '' }}>Non tendance</option>
+                                <option value="yes" <?php echo e(request('trending') === 'yes' ? 'selected' : ''); ?>>🔥 Produits tendance</option>
+                                <option value="no" <?php echo e(request('trending') === 'no' ? 'selected' : ''); ?>>Non tendance</option>
                             </select>
                             <button class="btn btn-primary" onclick="searchProducts()">
                                 <i class="fas fa-search"></i>
@@ -91,80 +94,83 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($products as $product)
+                                <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <tr>
-                                    <td>{{ $product->id }}</td>
+                                    <td><?php echo e($product->id); ?></td>
                                     <td>
-                                        @if($product->first_image_url)
-                                            <img src="{{ $product->first_image_url }}" alt="{{ $product->name }}" class="product-image">
-                                        @else
+                                        <?php if($product->first_image_url): ?>
+                                            <img src="<?php echo e($product->first_image_url); ?>" alt="<?php echo e($product->name); ?>" class="product-image">
+                                        <?php else: ?>
                                             <div class="product-image-placeholder">
                                                 <i class="fas fa-box text-muted"></i>
                                             </div>
-                                        @endif
+                                        <?php endif; ?>
                                     </td>
-                                    <td>{{ Str::limit($product->name, 30) }}</td>
-                                    <td>{{ number_format($product->price, 0, ',', ' ') }} FCFA</td>
+                                    <td><?php echo e(Str::limit($product->name, 30)); ?></td>
+                                    <td><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</td>
                                     <td>
-                                        <span class="badge badge-{{ $product->stock > 0 ? 'success' : 'danger' }}">
-                                            {{ $product->stock }}
+                                        <span class="badge badge-<?php echo e($product->stock > 0 ? 'success' : 'danger'); ?>">
+                                            <?php echo e($product->stock); ?>
+
                                         </span>
                                     </td>
-                                    <td>{{ $product->category->name ?? 'N/A' }}</td>
+                                    <td><?php echo e($product->category->name ?? 'N/A'); ?></td>
                                     <td>
-                                        <span class="badge badge-{{ $product->is_active ? 'success' : 'danger' }}">
-                                            {{ $product->is_active ? 'Actif' : 'Inactif' }}
+                                        <span class="badge badge-<?php echo e($product->is_active ? 'success' : 'danger'); ?>">
+                                            <?php echo e($product->is_active ? 'Actif' : 'Inactif'); ?>
+
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge badge-{{ $product->is_trending ? 'warning' : 'secondary' }}">
-                                            {{ $product->is_trending ? 'Oui' : 'Non' }}
+                                        <span class="badge badge-<?php echo e($product->is_trending ? 'warning' : 'secondary'); ?>">
+                                            <?php echo e($product->is_trending ? 'Oui' : 'Non'); ?>
+
                                         </span>
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <!-- Bouton Voir -->
-                                            <a href="{{ route('admin.products.show', $product) }}" class="btn btn-info btn-sm" title="Voir">
+                                            <a href="<?php echo e(route('admin.products.show', $product)); ?>" class="btn btn-info btn-sm" title="Voir">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             
                                             <!-- Bouton Modifier -->
-                                            <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-warning btn-sm" title="Modifier">
+                                            <a href="<?php echo e(route('admin.products.edit', $product)); ?>" class="btn btn-warning btn-sm" title="Modifier">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             
                                             <!-- Bouton Toggle Status -->
-                                            <form action="{{ route('admin.products.toggle-status', $product) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @if($product->is_active)
+                                            <form action="<?php echo e(route('admin.products.toggle-status', $product)); ?>" method="POST" class="d-inline">
+                                                <?php echo csrf_field(); ?>
+                                                <?php if($product->is_active): ?>
                                                     <button type="submit" class="btn btn-secondary btn-sm" title="Désactiver" onclick="return confirm('Êtes-vous sûr de vouloir désactiver ce produit ?')">
                                                         <i class="fas fa-ban"></i>
                                                     </button>
-                                                @else
+                                                <?php else: ?>
                                                     <button type="submit" class="btn btn-success btn-sm" title="Activer" onclick="return confirm('Êtes-vous sûr de vouloir activer ce produit ?')">
                                                         <i class="fas fa-check"></i>
                                                     </button>
-                                                @endif
+                                                <?php endif; ?>
                                             </form>
                                             
                                             <!-- Bouton Toggle Trending -->
-                                            <form action="{{ route('admin.products.toggle-trending', $product) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @if($product->is_trending)
+                                            <form action="<?php echo e(route('admin.products.toggle-trending', $product)); ?>" method="POST" class="d-inline">
+                                                <?php echo csrf_field(); ?>
+                                                <?php if($product->is_trending): ?>
                                                     <button type="submit" class="btn btn-warning btn-sm" title="Retirer des tendances" onclick="return confirm('Retirer ce produit des tendances ?')">
                                                         <i class="fas fa-fire"></i>
                                                     </button>
-                                                @else
+                                                <?php else: ?>
                                                     <button type="submit" class="btn btn-outline-warning btn-sm" title="Marquer comme tendance" onclick="return confirm('Marquer ce produit comme tendance ?')">
                                                         <i class="fas fa-fire"></i>
                                                     </button>
-                                                @endif
+                                                <?php endif; ?>
                                             </form>
                                             
                                             <!-- Bouton Supprimer -->
-                                            <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
+                                            <form action="<?php echo e(route('admin.products.destroy', $product)); ?>" method="POST" class="d-inline">
+                                                <?php echo csrf_field(); ?>
+                                                <?php echo method_field('DELETE'); ?>
                                                 <button type="submit" class="btn btn-danger btn-sm" title="Supprimer" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
@@ -172,34 +178,35 @@
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <tr>
                                     <td colspan="9" class="text-center">Aucun produit trouvé</td>
                                 </tr>
-                                @endforelse
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
 
                     <!-- Pagination -->
-                    @if($products->hasPages())
+                    <?php if($products->hasPages()): ?>
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <div class="text-muted">
-                            Affichage de {{ $products->firstItem() }} à {{ $products->lastItem() }} sur {{ $products->total() }} produits
+                            Affichage de <?php echo e($products->firstItem()); ?> à <?php echo e($products->lastItem()); ?> sur <?php echo e($products->total()); ?> produits
                         </div>
                         <div class="pagination-wrapper">
-                            {{ $products->appends(request()->query())->links('pagination.bootstrap-4') }}
+                            <?php echo e($products->appends(request()->query())->links('pagination.bootstrap-4')); ?>
+
                         </div>
                     </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
 /* Styles pour les images de produits */
 .product-image {
@@ -329,9 +336,9 @@
     background-color: rgba(0,0,0,.075);
 }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value;
@@ -339,7 +346,7 @@ function searchProducts() {
     const category = document.getElementById('categoryFilter').value;
     const trending = document.getElementById('trendingFilter').value;
 
-    let url = `{{ route('admin.products.index') }}?`;
+    let url = `<?php echo e(route('admin.products.index')); ?>?`;
     const params = new URLSearchParams();
 
     if (searchTerm.trim()) {
@@ -371,7 +378,7 @@ function filterByStatus() {
     const category = document.getElementById('categoryFilter').value;
     const trending = document.getElementById('trendingFilter').value;
 
-    let url = `{{ route('admin.products.index') }}?`;
+    let url = `<?php echo e(route('admin.products.index')); ?>?`;
     const params = new URLSearchParams();
 
     if (search.trim()) {
@@ -396,7 +403,7 @@ function filterByCategory() {
     const status = document.getElementById('statusFilter').value;
     const trending = document.getElementById('trendingFilter').value;
 
-    let url = `{{ route('admin.products.index') }}?`;
+    let url = `<?php echo e(route('admin.products.index')); ?>?`;
     const params = new URLSearchParams();
 
     if (search.trim()) {
@@ -421,7 +428,7 @@ function filterByTrending() {
     const status = document.getElementById('statusFilter').value;
     const category = document.getElementById('categoryFilter').value;
 
-    let url = `{{ route('admin.products.index') }}?`;
+    let url = `<?php echo e(route('admin.products.index')); ?>?`;
     const params = new URLSearchParams();
 
     if (search.trim()) {
@@ -505,4 +512,6 @@ function deleteProduct(productId) {
 }
 
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/admin/products/index.blade.php ENDPATH**/ ?>

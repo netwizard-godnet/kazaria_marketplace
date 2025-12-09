@@ -1,15 +1,15 @@
-@extends('admin.layouts.app')
-@section('title', 'Ajouter un produit')
-@section('content')
+
+<?php $__env->startSection('title', 'Ajouter un produit'); ?>
+<?php $__env->startSection('content'); ?>
 <div class="page-inner">
     <div class="page-header">
         <h4 class="page-title">Ajouter un produit</h4>
         <ul class="breadcrumbs">
             <li class="nav-home">
-                <a href="{{ route('admin.dashboard') }}"><i class="flaticon-home"></i></a>
+                <a href="<?php echo e(route('admin.dashboard')); ?>"><i class="flaticon-home"></i></a>
             </li>
             <li class="separator"><i class="flaticon-right-arrow"></i></li>
-            <li class="nav-item"><a href="{{ route('admin.products.index') }}">Produits</a></li>
+            <li class="nav-item"><a href="<?php echo e(route('admin.products.index')); ?>">Produits</a></li>
             <li class="separator"><i class="flaticon-right-arrow"></i></li>
             <li class="nav-item"><span>Ajouter</span></li>
         </ul>
@@ -22,25 +22,53 @@
                     <h4 class="card-title">Informations du produit</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
-                        @csrf
+                    <form method="POST" action="<?php echo e(route('admin.products.store')); ?>" enctype="multipart/form-data">
+                        <?php echo csrf_field(); ?>
                         
                         <!-- Nom du produit -->
                         <div class="form-group">
                             <label for="name">Nom du produit <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name') }}" required autofocus>
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <input type="text" class="form-control <?php $__errorArgs = ['name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="name" name="name" value="<?php echo e(old('name')); ?>" required autofocus>
+                            <?php $__errorArgs = ['name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <!-- Description -->
                         <div class="form-group">
                             <label for="description">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="4" required>{{ old('description') }}</textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <textarea class="form-control <?php $__errorArgs = ['description'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="description" name="description" rows="4" required><?php echo e(old('description')); ?></textarea>
+                            <?php $__errorArgs = ['description'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <!-- Prix et Stock -->
@@ -48,39 +76,95 @@
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="price">Prix normal (FCFA) <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" min="0" step="0.01" required>
-                                    @error('price')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="number" class="form-control <?php $__errorArgs = ['price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="price" name="price" value="<?php echo e(old('price')); ?>" min="0" step="0.01" required>
+                                    <?php $__errorArgs = ['price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="promo_price">Prix promo (FCFA)</label>
-                                    <input type="number" class="form-control @error('promo_price') is-invalid @enderror" id="promo_price" name="promo_price" value="{{ old('promo_price') }}" min="0" step="0.01" placeholder="Sera calculé automatiquement">
-                                    @error('promo_price')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="number" class="form-control <?php $__errorArgs = ['promo_price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="promo_price" name="promo_price" value="<?php echo e(old('promo_price')); ?>" min="0" step="0.01" placeholder="Sera calculé automatiquement">
+                                    <?php $__errorArgs = ['promo_price'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                     <small class="text-muted">Synchronisé avec la réduction</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="discount_percentage">Réduction (%)</label>
-                                    <input type="number" class="form-control @error('discount_percentage') is-invalid @enderror" id="discount_percentage" name="discount_percentage" value="{{ old('discount_percentage') }}" min="0" max="100" step="0.01" placeholder="Ex: 10">
-                                    @error('discount_percentage')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="number" class="form-control <?php $__errorArgs = ['discount_percentage'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="discount_percentage" name="discount_percentage" value="<?php echo e(old('discount_percentage')); ?>" min="0" max="100" step="0.01" placeholder="Ex: 10">
+                                    <?php $__errorArgs = ['discount_percentage'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                     <small class="text-muted">Calcule automatiquement le prix promo</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="stock">Stock <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('stock') is-invalid @enderror" id="stock" name="stock" value="{{ old('stock', 0) }}" min="0" required>
-                                    @error('stock')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="number" class="form-control <?php $__errorArgs = ['stock'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="stock" name="stock" value="<?php echo e(old('stock', 0)); ?>" min="0" required>
+                                    <?php $__errorArgs = ['stock'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                         </div>
@@ -90,28 +174,57 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="category_id">Catégorie <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('category_id') is-invalid @enderror" id="category_id" name="category_id" required>
+                                    <select class="form-control <?php $__errorArgs = ['category_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="category_id" name="category_id" required>
                                         <option value="">Sélectionner une catégorie</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                                {{ $category->name }}
+                                        <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($category->id); ?>" <?php echo e(old('category_id') == $category->id ? 'selected' : ''); ?>>
+                                                <?php echo e($category->name); ?>
+
                                             </option>
-                                        @endforeach
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
-                                    @error('category_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <?php $__errorArgs = ['category_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="subcategory_id">Sous-catégorie</label>
-                                    <select class="form-control @error('subcategory_id') is-invalid @enderror" id="subcategory_id" name="subcategory_id">
+                                    <select class="form-control <?php $__errorArgs = ['subcategory_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="subcategory_id" name="subcategory_id">
                                         <option value="">Sélectionner d'abord une catégorie</option>
                                     </select>
-                                    @error('subcategory_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <?php $__errorArgs = ['subcategory_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                         </div>
@@ -121,17 +234,31 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label for="store_id">Boutique / Vendeur (optionnel)</label>
-                                    <select class="form-control @error('store_id') is-invalid @enderror" id="store_id" name="store_id">
+                                    <select class="form-control <?php $__errorArgs = ['store_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="store_id" name="store_id">
                                         <option value="">Aucune boutique (produit global Kazaria)</option>
-                                        @foreach($stores as $store)
-                                            <option value="{{ $store->id }}" {{ old('store_id') == $store->id ? 'selected' : '' }}>
-                                                {{ $store->name }} @if($store->user) - {{ $store->user->nom }} {{ $store->user->prenoms }} @endif
+                                        <?php $__currentLoopData = $stores; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $store): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($store->id); ?>" <?php echo e(old('store_id') == $store->id ? 'selected' : ''); ?>>
+                                                <?php echo e($store->name); ?> <?php if($store->user): ?> - <?php echo e($store->user->nom); ?> <?php echo e($store->user->prenoms); ?> <?php endif; ?>
                                             </option>
-                                        @endforeach
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
-                                    @error('store_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <?php $__errorArgs = ['store_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                     <small class="text-muted">Lier ce produit à une boutique pour qu'il apparaisse dans les produits du vendeur. Si laissé vide, le produit sera un produit global Kazaria.</small>
                                 </div>
                             </div>
@@ -142,21 +269,35 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="status">Statut <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status" required>
-                                        <option value="pending" {{ old('status', 'pending') == 'pending' ? 'selected' : '' }}>En attente</option>
-                                        <option value="approved" {{ old('status') == 'approved' ? 'selected' : '' }}>Approuvé</option>
-                                        <option value="rejected" {{ old('status') == 'rejected' ? 'selected' : '' }}>Rejeté</option>
+                                    <select class="form-control <?php $__errorArgs = ['status'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="status" name="status" required>
+                                        <option value="pending" <?php echo e(old('status', 'pending') == 'pending' ? 'selected' : ''); ?>>En attente</option>
+                                        <option value="approved" <?php echo e(old('status') == 'approved' ? 'selected' : ''); ?>>Approuvé</option>
+                                        <option value="rejected" <?php echo e(old('status') == 'rejected' ? 'selected' : ''); ?>>Rejeté</option>
                                     </select>
-                                    @error('status')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <?php $__errorArgs = ['status'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>&nbsp;</label>
                                     <div class="form-check mt-2">
-                                        <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" <?php echo e(old('is_active', true) ? 'checked' : ''); ?>>
                                         <label class="form-check-label" for="is_active">
                                             Produit actif
                                         </label>
@@ -166,7 +307,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="is_trending" id="is_trending" value="1" {{ old('is_trending') ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="checkbox" name="is_trending" id="is_trending" value="1" <?php echo e(old('is_trending') ? 'checked' : ''); ?>>
                                         <label class="form-check-label" for="is_trending">
                                             Produit tendance
                                         </label>
@@ -181,28 +322,70 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="brand">Marque</label>
-                                    <input type="text" class="form-control @error('brand') is-invalid @enderror" id="brand" name="brand" value="{{ old('brand') }}">
-                                    @error('brand')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="text" class="form-control <?php $__errorArgs = ['brand'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="brand" name="brand" value="<?php echo e(old('brand')); ?>">
+                                    <?php $__errorArgs = ['brand'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="model">Modèle</label>
-                                    <input type="text" class="form-control @error('model') is-invalid @enderror" id="model" name="model" value="{{ old('model') }}">
-                                    @error('model')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="text" class="form-control <?php $__errorArgs = ['model'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="model" name="model" value="<?php echo e(old('model')); ?>">
+                                    <?php $__errorArgs = ['model'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="warranty">Garantie</label>
-                                    <input type="text" class="form-control @error('warranty') is-invalid @enderror" id="warranty" name="warranty" value="{{ old('warranty') }}" placeholder="Ex: 1 an, 2 ans">
-                                    @error('warranty')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <input type="text" class="form-control <?php $__errorArgs = ['warranty'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="warranty" name="warranty" value="<?php echo e(old('warranty')); ?>" placeholder="Ex: 1 an, 2 ans">
+                                    <?php $__errorArgs = ['warranty'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                                 </div>
                             </div>
                         </div>
@@ -210,38 +393,94 @@
                         <!-- Tags -->
                         <div class="form-group">
                             <label for="tags">Tags (séparés par des virgules)</label>
-                            <input type="text" class="form-control @error('tags') is-invalid @enderror" id="tags" name="tags" value="{{ old('tags') }}" placeholder="Ex: nouveau, promo, tendance">
-                            @error('tags')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <input type="text" class="form-control <?php $__errorArgs = ['tags'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="tags" name="tags" value="<?php echo e(old('tags')); ?>" placeholder="Ex: nouveau, promo, tendance">
+                            <?php $__errorArgs = ['tags'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="text-muted">Les tags seront stockés séparément</small>
                         </div>
 
                         <!-- SEO -->
                         <div class="form-group">
                             <label for="meta_description">Meta Description (SEO)</label>
-                            <textarea class="form-control @error('meta_description') is-invalid @enderror" id="meta_description" name="meta_description" rows="2" maxlength="500">{{ old('meta_description') }}</textarea>
-                            @error('meta_description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <textarea class="form-control <?php $__errorArgs = ['meta_description'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="meta_description" name="meta_description" rows="2" maxlength="500"><?php echo e(old('meta_description')); ?></textarea>
+                            <?php $__errorArgs = ['meta_description'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="text-muted">Maximum 500 caractères</small>
                         </div>
 
                         <div class="form-group">
                             <label for="meta_keywords">Meta Keywords (SEO)</label>
-                            <input type="text" class="form-control @error('meta_keywords') is-invalid @enderror" id="meta_keywords" name="meta_keywords" value="{{ old('meta_keywords') }}" placeholder="Ex: produit, qualité, prix">
-                            @error('meta_keywords')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <input type="text" class="form-control <?php $__errorArgs = ['meta_keywords'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" id="meta_keywords" name="meta_keywords" value="<?php echo e(old('meta_keywords')); ?>" placeholder="Ex: produit, qualité, prix">
+                            <?php $__errorArgs = ['meta_keywords'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                         </div>
 
                         <!-- Section Images -->
                         <div class="form-group">
                             <label>Images du produit <span class="text-danger">*</span></label>
-                            <input type="file" name="images[]" id="images" class="form-control @error('images.*') is-invalid @enderror" multiple accept="image/*">
-                            @error('images.*')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <input type="file" name="images[]" id="images" class="form-control <?php $__errorArgs = ['images.*'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>" multiple accept="image/*">
+                            <?php $__errorArgs = ['images.*'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                <div class="invalid-feedback"><?php echo e($message); ?></div>
+                            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             <small class="text-muted">Vous pouvez sélectionner plusieurs images. Formats acceptés: JPG, PNG, GIF. Taille max: 5MB par image.</small>
                             
                             <!-- Aperçu des images -->
@@ -251,60 +490,62 @@
                         </div>
 
                         <!-- Section Attributs -->
-                        @if($attributes && $attributes->count() > 0)
+                        <?php if($attributes && $attributes->count() > 0): ?>
                         <div class="form-group">
                             <label>Attributs du produit</label>
                             <div class="row">
-                                @foreach($attributes as $attribute)
+                                <?php $__currentLoopData = $attributes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attribute): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <div class="col-md-6 mb-3">
                                     <div class="card">
                                         <div class="card-header">
-                                            <h6 class="mb-0">{{ $attribute->name }}</h6>
-                                            <small class="text-muted">{{ ucfirst($attribute->type) }}</small>
+                                            <h6 class="mb-0"><?php echo e($attribute->name); ?></h6>
+                                            <small class="text-muted"><?php echo e(ucfirst($attribute->type)); ?></small>
                                         </div>
                                         <div class="card-body">
-                                            @if($attribute->type === 'radio')
-                                                @foreach($attribute->attributeValues as $value)
+                                            <?php if($attribute->type === 'radio'): ?>
+                                                <?php $__currentLoopData = $attribute->attributeValues; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <div class="form-check">
                                                     <input class="form-check-input" 
                                                            type="radio" 
-                                                           name="attributes[{{ $attribute->id }}]" 
-                                                           value="{{ $value->id }}" 
-                                                           id="attr_{{ $attribute->id }}_{{ $value->id }}">
-                                                    <label class="form-check-label" for="attr_{{ $attribute->id }}_{{ $value->id }}">
-                                                        {{ $value->value }}
+                                                           name="attributes[<?php echo e($attribute->id); ?>]" 
+                                                           value="<?php echo e($value->id); ?>" 
+                                                           id="attr_<?php echo e($attribute->id); ?>_<?php echo e($value->id); ?>">
+                                                    <label class="form-check-label" for="attr_<?php echo e($attribute->id); ?>_<?php echo e($value->id); ?>">
+                                                        <?php echo e($value->value); ?>
+
                                                     </label>
                                                 </div>
-                                                @endforeach
-                                            @else
-                                                @foreach($attribute->attributeValues as $value)
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            <?php else: ?>
+                                                <?php $__currentLoopData = $attribute->attributeValues; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <div class="form-check">
                                                     <input class="form-check-input" 
                                                            type="checkbox" 
-                                                           name="attributes[{{ $attribute->id }}][]" 
-                                                           value="{{ $value->id }}" 
-                                                           id="attr_{{ $attribute->id }}_{{ $value->id }}">
-                                                    <label class="form-check-label" for="attr_{{ $attribute->id }}_{{ $value->id }}">
-                                                        {{ $value->value }}
+                                                           name="attributes[<?php echo e($attribute->id); ?>][]" 
+                                                           value="<?php echo e($value->id); ?>" 
+                                                           id="attr_<?php echo e($attribute->id); ?>_<?php echo e($value->id); ?>">
+                                                    <label class="form-check-label" for="attr_<?php echo e($attribute->id); ?>_<?php echo e($value->id); ?>">
+                                                        <?php echo e($value->value); ?>
+
                                                     </label>
                                                 </div>
-                                                @endforeach
-                                            @endif
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
                         </div>
-                        @else
+                        <?php else: ?>
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            Aucun attribut disponible. <a href="{{ route('admin.attributes.index') }}">Gérer les attributs</a> pour pouvoir les assigner aux produits.
+                            Aucun attribut disponible. <a href="<?php echo e(route('admin.attributes.index')); ?>">Gérer les attributs</a> pour pouvoir les assigner aux produits.
                         </div>
-                        @endif
+                        <?php endif; ?>
 
                         <!-- Section Variations de produits (avec prix différents selon les attributs) -->
-                        @if($attributes && $attributes->count() > 0)
+                        <?php if($attributes && $attributes->count() > 0): ?>
                         <div class="form-group mt-4" id="variations-section">
                             <div class="card">
                                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -338,12 +579,12 @@
                                 </div>
                             </div>
                         </div>
-                        @endif
+                        <?php endif; ?>
 
                         <!-- Boutons -->
                         <div class="card-action">
                             <button type="submit" class="btn btn-primary">Enregistrer</button>
-                            <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">Annuler</a>
+                            <a href="<?php echo e(route('admin.products.index')); ?>" class="btn btn-secondary">Annuler</a>
                         </div>
                     </form>
                 </div>
@@ -351,9 +592,9 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 // Charger les sous-catégories lors de la sélection d'une catégorie
 document.addEventListener('DOMContentLoaded', function() {
@@ -789,4 +1030,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 })();
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views/admin/products/create.blade.php ENDPATH**/ ?>
