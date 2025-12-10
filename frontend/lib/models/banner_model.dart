@@ -62,16 +62,20 @@ class BannerModel {
                         json['banner_type'] ?? 
                         'carousel';
     
-    // ✅ Parser actionType avec gestion de link
+    // ✅ Parser actionType avec gestion de link et link_url
     String actionType = json['action_type'] ?? 'none';
-    if (actionType == 'none' && json['link'] != null) {
+    if (actionType == 'none' && (json['link'] != null || json['link_url'] != null)) {
       actionType = 'url';
     }
     
-    // ✅ Parser actionData avec gestion du link
+    // ✅ Parser actionData avec gestion du link et link_url
     Map<String, dynamic>? finalActionData = actionData;
-    if (finalActionData == null && json['link'] != null) {
+    if (finalActionData == null) {
+      if (json['link'] != null) {
       finalActionData = {'url': json['link']};
+      } else if (json['link_url'] != null) {
+        finalActionData = {'url': json['link_url']};
+      }
     }
     
     // ✅ Parser title et description - accepter null si vide ou non configuré

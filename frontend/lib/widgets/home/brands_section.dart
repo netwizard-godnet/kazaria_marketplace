@@ -75,8 +75,14 @@ class _BrandsSectionState extends State<BrandsSection> {
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
+          margin: const EdgeInsets.only(bottom: AppSizes.space4),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // En-tête
@@ -103,18 +109,11 @@ class _BrandsSectionState extends State<BrandsSection> {
                         children: [
                           Text(
                         'Marques en Collaboration',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textDark,
-                            ),
+                            style: AppTextStyles.sectionTitle,
                           ),
                           Text(
                         'Découvrez nos partenaires',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMedium,
-                            ),
+                            style: AppTextStyles.sectionSubtitle,
                           ),
                         ],
                       ),
@@ -153,6 +152,7 @@ class _BrandsSectionState extends State<BrandsSection> {
                     ),
             ],
           ),
+          ),
         );
   }
 }
@@ -169,16 +169,8 @@ class _BrandCard extends StatelessWidget {
   String? _getImageUrl() {
     // Priorité 1: Utiliser l'image (URL complète depuis le backend)
     if (brand.image != null && brand.image!.isNotEmpty) {
-      // Si l'URL contient localhost, remplacer par 10.0.2.2 pour l'émulateur
-      String url = brand.image!;
-      if (url.contains('localhost') || url.contains('127.0.0.1')) {
-        url = url
-            .replaceAll('http://localhost', 'http://10.0.2.2')
-            .replaceAll('http://127.0.0.1', 'http://10.0.2.2')
-            .replaceAll('https://localhost', 'http://10.0.2.2')
-            .replaceAll('https://127.0.0.1', 'http://10.0.2.2');
-      }
-      return url;
+      // Utiliser la fonction utilitaire qui gère localhost automatiquement
+      return ImageUrlHelper.fixImageUrl(brand.image!);
     }
     
     // Priorité 2: Utiliser image_path pour construire l'URL

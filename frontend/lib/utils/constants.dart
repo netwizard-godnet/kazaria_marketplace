@@ -227,6 +227,23 @@ class AppTextStyles {
   static const TextStyle h3 = displaySmall;
   static const TextStyle h4 = headlineMedium;
   static const TextStyle body = bodyLarge;
+  
+  // ✅ Style uniforme pour les titres de sections sur la page d'accueil
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textDark,
+    letterSpacing: -0.2,
+    height: 1.3,
+  );
+  
+  // ✅ Style pour les sous-titres de sections
+  static const TextStyle sectionSubtitle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textMedium,
+    height: 1.4,
+  );
 }
 
 class AppSizes {
@@ -385,15 +402,22 @@ class AppAnimations {
 /// ✅ Utilitaire pour corriger les URLs d'images
 class ImageUrlHelper {
   /// Corriger et construire l'URL d'image
-  /// Remplace 127.0.0.1/localhost par 10.0.2.2 pour l'émulateur Android
+  /// Remplace 127.0.0.1/localhost par l'IP configurée dans ApiConfig
   static String fixImageUrl(String imagePath) {
+    // Extraire l'IP et le port depuis ApiConfig.imageBaseUrl
+    final imageBaseUrl = ApiConfig.imageBaseUrl;
+    final uri = Uri.parse(imageBaseUrl);
+    final host = uri.host; // Ex: '192.168.1.152' ou '10.0.2.2'
+    
     // Si l'URL est déjà complète
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      // ✅ CORRECTION : Remplacer 127.0.0.1 ou localhost par 10.0.2.2 pour l'émulateur Android
+      // ✅ CORRECTION : Remplacer 127.0.0.1 ou localhost par l'IP configurée
       if (imagePath.contains('127.0.0.1') || imagePath.contains('localhost')) {
         return imagePath
-            .replaceAll('127.0.0.1', '10.0.2.2')
-            .replaceAll('localhost', '10.0.2.2');
+            .replaceAll('http://127.0.0.1', 'http://$host')
+            .replaceAll('https://127.0.0.1', 'http://$host')
+            .replaceAll('http://localhost', 'http://$host')
+            .replaceAll('https://localhost', 'http://$host');
       }
       return imagePath;
     }

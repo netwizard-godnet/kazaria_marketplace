@@ -1016,17 +1016,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // Boutiques officielles en priorité
                     const BrandsSection(),
-
-                    const SizedBox(height: AppSizes.space3),
+                    _buildSectionSeparator(),
 
                     // Boutons d'accès rapide aux promotions (affichés uniquement si activés côté backend)
                     if (_hasActivePromotions(productProvider.promotions)) ...[
                       PromoButtons(promotions: productProvider.promotions),
-                      const SizedBox(height: AppSizes.space3),
+                      _buildSectionSeparator(),
                     ],
 
                     // Catégories
                     CategorySection(categories: productProvider.categories),
+                    _buildSectionSeparator(),
 
                     // Pour vous
                     ProductSection(
@@ -1038,6 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           productProvider.personalizedLoading &&
                           productProvider.forYouProducts.isEmpty,
                     ),
+                    _buildSectionSeparator(),
 
                     // Recommandé
                     ProductSection(
@@ -1049,8 +1050,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           productProvider.personalizedLoading &&
                           productProvider.recommendedProducts.isEmpty,
                     ),
-
-                    if (productProvider.recentProducts.isNotEmpty)
+                    if (productProvider.recentProducts.isNotEmpty) ...[
+                      _buildSectionSeparator(),
                       RecentProductsSection(
                         products: productProvider.recentProducts,
                         onViewAll: () {
@@ -1062,9 +1063,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
+                    ],
+                    _buildSectionSeparator(),
 
                     // 🔥 NOUVEAU : Deals du Jour avec compte à rebours
                     const DealsOfDaySection(),
+                    _buildSectionSeparator(),
 
                     // Nouveautés
                     ProductSection(
@@ -1076,9 +1080,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           productProvider.isLoading &&
                           productProvider.newProducts.isEmpty,
                     ),
+                    _buildSectionSeparator(),
 
                     // 🏆 NOUVEAU : Section Top Ventes
                     const TopSalesSection(),
+                    _buildSectionSeparator(),
 
                     // Meilleures offres
                     ProductSection(
@@ -1090,6 +1096,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           productProvider.isLoading &&
                           productProvider.bestOffers.isEmpty,
                     ),
+                    _buildSectionSeparator(),
 
                     // 🎨 Bannière publicitaire / Publicités de la page d'accueil
                     if (productProvider.homepageAds.isNotEmpty)
@@ -1115,6 +1122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
+                    _buildSectionSeparator(),
 
                     // Tendance
                     ProductSection(
@@ -1126,8 +1134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           productProvider.isLoading &&
                           productProvider.trendingProducts.isEmpty,
                     ),
-
-                    const SizedBox(height: 24),
+                    _buildSectionSeparator(),
 
                     // Sections dynamiques par catégorie
                     const CategoryProductsSection(),
@@ -1282,6 +1289,23 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return 'Découvrir';
     }
+  }
+
+  /// Construire un séparateur entre les sections
+  Widget _buildSectionSeparator() {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(vertical: AppSizes.space2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.grey200.withOpacity(0.3),
+            AppColors.grey200.withOpacity(0.1),
+            AppColors.grey200.withOpacity(0.3),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Gérer le tap sur une bannière

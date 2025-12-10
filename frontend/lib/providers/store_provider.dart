@@ -585,10 +585,10 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Charger les bannières publicitaires des boutiques (publicite_boutique_1 à 5)
-  Future<void> loadStoreAds() async {
-    if (_isLoadingAds || _storeAdsBanners.isNotEmpty) {
-      print('🚫 [STORE_PROVIDER] Bannières pub déjà chargées');
+  /// Charger les bannières publicitaires des boutiques (boutique_pub_1 à boutique_pub_5)
+  Future<void> loadStoreAds({bool forceRefresh = false}) async {
+    if (!forceRefresh && (_isLoadingAds || _storeAdsBanners.isNotEmpty)) {
+      print('🚫 [STORE_PROVIDER] Bannières pub déjà chargées (${_storeAdsBanners.length} bannières)');
       return;
     }
 
@@ -596,27 +596,33 @@ class StoreProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      print('🔄 [STORE_PROVIDER] Chargement publicités boutique (1 à 5)');
+      print('🔄 [STORE_PROVIDER] Chargement publicités boutique (boutique_pub_1 à boutique_pub_5)');
 
-      // Charger les 5 publicités boutique
-      List<BannerModel> allAds = [];
-      for (int i = 1; i <= 5; i++) {
-        final response = await _bannerService.getActiveBanners(
-          placement: 'publicite_boutique_$i',
-        );
+      final response = await _bannerService.getBoutiquePubBanners();
+      
+      print('📡 [STORE_PROVIDER] Réponse API: ${response['success']}');
+      print('📡 [STORE_PROVIDER] Message: ${response['message'] ?? 'N/A'}');
+      print('📡 [STORE_PROVIDER] Nombre de bannières reçues: ${(response['banners'] as List?)?.length ?? 0}');
 
         if (response['success'] && response['banners'] != null) {
-          final banners = response['banners'] as List<BannerModel>;
-          allAds.addAll(banners);
-        }
+        final banners = response['banners'] as List;
+        print('📊 [STORE_PROVIDER] Détails des bannières reçues:');
+        for (var i = 0; i < banners.length; i++) {
+          final banner = banners[i];
+          print('   - Bannière ${i + 1}: ID=${banner.id}, Type=${banner.type}, Image=${banner.image.isNotEmpty ? "OUI" : "NON"}');
       }
 
-      _storeAdsBanners = allAds;
+        _storeAdsBanners = banners.cast<BannerModel>();
       print(
         '✅ [STORE_PROVIDER] Publicités boutique chargées: ${_storeAdsBanners.length}',
       );
-    } catch (e) {
+      } else {
+        print('⚠️ [STORE_PROVIDER] Erreur chargement publicités boutique: ${response['message'] ?? 'Erreur inconnue'}');
+        _storeAdsBanners = [];
+      }
+    } catch (e, stackTrace) {
       print('💥 [STORE_PROVIDER] Exception publicités boutique: $e');
+      print('Stack trace: $stackTrace');
       _storeAdsBanners = [];
     }
 

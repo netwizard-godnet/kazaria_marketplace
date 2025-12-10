@@ -160,36 +160,54 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Bouton Google
                 SizedBox(
                   height: 50,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Implémenter la connexion Google
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Connexion Google bientôt disponible'),
-                          backgroundColor: AppColors.info,
+                  child: Consumer<AuthProvider>(
+                    builder: (context, authProvider, _) {
+                      return OutlinedButton.icon(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : () async {
+                                final response = await authProvider.signInWithGoogle();
+                                if (!mounted) return;
+
+                                if (response['success']) {
+                                  Navigator.pushReplacementNamed(context, '/');
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(response['message'] ?? 'Erreur de connexion Google'),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              },
+                        icon: authProvider.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(
+                                Icons.g_mobiledata_rounded,
+                                size: 28,
+                                color: Colors.red,
+                              ),
+                        label: const Text(
+                          'Continuer avec Google',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.grey, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       );
                     },
-                    icon: const Icon(
-                      Icons.g_mobiledata_rounded,
-                      size: 28,
-                      color: Colors.red,
-                    ),
-                    label: const Text(
-                      'Continuer avec Google',
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.grey, width: 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                   ),
                 ),
 
@@ -198,38 +216,57 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Bouton Facebook
                 SizedBox(
                   height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Implémenter la connexion Facebook
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Connexion Facebook bientôt disponible',
+                  child: Consumer<AuthProvider>(
+                    builder: (context, authProvider, _) {
+                      return ElevatedButton.icon(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : () async {
+                                final response = await authProvider.signInWithFacebook();
+                                if (!mounted) return;
+
+                                if (response['success']) {
+                                  Navigator.pushReplacementNamed(context, '/');
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(response['message'] ?? 'Erreur de connexion Facebook'),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              },
+                        icon: authProvider.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.facebook,
+                                size: 24,
+                                color: Colors.white,
+                              ),
+                        label: const Text(
+                          'Continuer avec Facebook',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
                           ),
-                          backgroundColor: AppColors.info,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1877F2),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       );
                     },
-                    icon: const Icon(
-                      Icons.facebook,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Continuer avec Facebook',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1877F2),
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
                   ),
                 ),
 

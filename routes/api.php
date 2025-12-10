@@ -13,6 +13,10 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
 
+// Routes d'authentification sociale pour mobile
+Route::post('/auth/social/{provider}', [App\Http\Controllers\Auth\SocialAuthController::class, 'mobileAuth'])
+    ->whereIn('provider', ['google', 'facebook']);
+
 // Route /me qui accepte à la fois tokens et sessions (pour compatibilité web/mobile)
 Route::middleware(['web', 'auth'])->get('/me', [AuthController::class, 'me']);
 
@@ -149,6 +153,7 @@ Route::prefix('mobile')->group(function () {
     Route::get('/stores/popular', [App\Http\Controllers\MobileController::class, 'getPopularStores']);
     Route::get('/stores/best-offers', [App\Http\Controllers\MobileController::class, 'getBestOffersStores']);
     Route::get('/stores/new-products', [App\Http\Controllers\MobileController::class, 'getNewProductsStores']);
+    Route::get('/stores/boutique-pub-banners', [App\Http\Controllers\MobileController::class, 'getBoutiquePubBanners']);
     Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
     Route::get('/stores/{id}/products', [App\Http\Controllers\MobileController::class, 'getStoreProducts']);
     Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);

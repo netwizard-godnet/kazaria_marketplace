@@ -43,7 +43,7 @@ class ProductSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     title,
-                    style: AppTextStyles.h3,
+                    style: AppTextStyles.sectionTitle,
                   ),
                 ],
               ),
@@ -71,17 +71,23 @@ class ProductSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // En-tête avec titre et bouton "Voir tout"
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingMedium,
-            ),
-            child: Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.space4),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // En-tête avec titre et bouton "Voir tout"
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingMedium,
+              ),
+              child: Row(
               children: [
                 Icon(icon, color: AppColors.primary),
                 const SizedBox(width: 8),
@@ -147,6 +153,7 @@ class ProductSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

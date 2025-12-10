@@ -59,8 +59,43 @@ class _CartItemCardState extends State<CartItemCard> {
     return Dismissible(
         key: Key('cart_${widget.item.id}'),
         direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: AppColors.error,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Icon(
+                Icons.delete_outline,
+                color: Colors.white,
+                size: 32,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Supprimer',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
         confirmDismiss: (direction) async {
-          // Afficher une confirmation
+          // Optionnel : Afficher une confirmation rapide
+          // Pour une suppression immédiate, retourner true directement
+          // Pour une confirmation, décommenter le code ci-dessous
+          
+          // Suppression immédiate sans confirmation
+          return true;
+          
+          // OU avec confirmation (décommenter pour activer) :
+          /*
           final result = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -82,41 +117,11 @@ class _CartItemCardState extends State<CartItemCard> {
             ),
           );
           return result ?? false;
+          */
         },
         onDismissed: (direction) {
           widget.onRemove();
         },
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.error.withOpacity(0.7),
-                AppColors.error,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-                size: 32,
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Supprimer',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
         child: Card(
           elevation: 2,
           margin: const EdgeInsets.symmetric(vertical: 6),

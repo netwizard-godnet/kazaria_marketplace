@@ -22,6 +22,7 @@ class ApiConfig {
       '$baseUrl/resend-verification-code';
   static const String logout = '$baseUrl/logout';
   static const String me = '$baseUrl/me';
+  static String socialAuth(String provider) => '$baseUrl/auth/social/$provider';
 
   // Endpoints profil
   static const String profileUpdate = '$baseUrl/profile/update';

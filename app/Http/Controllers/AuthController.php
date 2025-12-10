@@ -297,7 +297,9 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Email de réinitialisation envoyé'
+            'message' => 'Email de réinitialisation envoyé',
+            'token' => $resetToken, // ✅ Retourner le token pour l'app mobile
+            'email' => $user->email, // ✅ Retourner l'email pour faciliter la réinitialisation
         ]);
     }
 

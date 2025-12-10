@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import '../../providers/store_provider.dart';
 import '../../utils/constants.dart';
@@ -129,7 +130,7 @@ class _StoresScreenState extends State<StoresScreen>
             await storeProvider.loadStoreCarousel();
             await storeProvider.loadBestOffers(forceRefresh: true);
             await storeProvider.loadOfficialNewProducts(forceRefresh: true);
-            await storeProvider.loadStoreAds();
+            await storeProvider.loadStoreAds(forceRefresh: true);
           },
           child: ListView.builder(
             padding: const EdgeInsets.only(bottom: AppSizes.paddingMedium),
@@ -959,7 +960,12 @@ class _StoresScreenState extends State<StoresScreen>
 
   /// Construire la section des bannières publicitaires
   Widget _buildStoreAdsSection(StoreProvider storeProvider) {
+    print('🎨 [STORES_SCREEN] _buildStoreAdsSection appelé');
+    print('   - isLoadingAds: ${storeProvider.isLoadingAds}');
+    print('   - Nombre de bannières: ${storeProvider.storeAdsBanners.length}');
+    
     if (storeProvider.isLoadingAds) {
+      print('⏳ [STORES_SCREEN] Bannières pub en cours de chargement...');
       return Container(
         height: 150,
         margin: const EdgeInsets.only(bottom: AppSizes.paddingMedium),
@@ -968,7 +974,34 @@ class _StoresScreenState extends State<StoresScreen>
     }
 
     if (storeProvider.storeAdsBanners.isEmpty) {
-      return const SizedBox.shrink();
+      print('⚠️ [STORES_SCREEN] Aucune bannière pub trouvée');
+      // Temporairement afficher un message de debug
+      return Container(
+        margin: const EdgeInsets.all(AppSizes.paddingMedium),
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+          border: Border.all(color: AppColors.warning),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.info_outline, color: AppColors.warning),
+            const SizedBox(height: AppSizes.space2),
+            Text(
+              'Aucune bannière publicitaire boutique trouvée',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.warning),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.space1),
+            Text(
+              'Vérifiez que les bannières sont actives et "Afficher sur mobile" est activé',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
     }
 
     return Padding(
@@ -1297,8 +1330,37 @@ class _StoreAdCard extends StatelessWidget {
   const _StoreAdCard({required this.banner, required this.imageUrl});
 
   void _handleTap() {
-    // TODO: implémenter les actions selon actionType/actionData
-    // Exemple: ouvrir une URL ou naviguer vers un produit.
+    print('🖱️ [STORE_AD] Clic sur bannière: ${banner.id}');
+    print('   - actionType: ${banner.actionType}');
+    print('   - actionData: ${banner.actionData}');
+    
+    if (banner.actionType == 'url' && banner.actionData != null) {
+      final url = banner.actionData!['url'];
+      if (url != null && url.toString().isNotEmpty) {
+        print('🔗 [STORE_AD] Ouverture URL: $url');
+        _openUrl(url.toString());
+        return;
+      }
+    }
+    
+    // Si pas d'action configurée, ne rien faire
+    print('⚠️ [STORE_AD] Aucune action configurée pour cette bannière');
+  }
+
+  Future<void> _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      
+      // Vérifier si c'est une URL externe (http/https)
+      if (uri.scheme == 'http' || uri.scheme == 'https') {
+        // Ouvrir dans le navigateur externe
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        print('⚠️ [STORE_AD] URL non valide: $url');
+      }
+    } catch (e) {
+      print('❌ [STORE_AD] Erreur ouverture URL: $e');
+    }
   }
 
   @override

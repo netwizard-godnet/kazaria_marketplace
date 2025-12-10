@@ -21,32 +21,38 @@ class CategorySection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.paddingMedium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Catégories',
-                style: AppTextStyles.h3,
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const CategoriesScreen(),
-                    ),
-                  );
-                },
-                child: const Text('Voir tout'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.space4),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Catégories',
+                  style: AppTextStyles.sectionTitle,
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CategoriesScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Voir tout'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
           SizedBox(
             height: 120,
             child: ListView.builder(
@@ -60,6 +66,7 @@ class CategorySection extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -72,26 +79,18 @@ class _CategoryCard extends StatelessWidget {
 
   /// Corriger et construire l'URL d'image (même logique que CategoriesScreen)
   String _fixImageUrl(String imagePath) {
-    // Si c'est déjà une URL complète, adapter pour l'émulateur Android si nécessaire
+    // Si c'est déjà une URL complète, utiliser fixImageUrl pour remplacer localhost
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      // Si l'URL contient localhost ou 127.0.0.1, remplacer par 10.0.2.2 pour l'émulateur
-      if (imagePath.contains('localhost') || imagePath.contains('127.0.0.1')) {
-        return imagePath
-            .replaceAll('http://localhost', 'http://10.0.2.2')
-            .replaceAll('http://127.0.0.1', 'http://10.0.2.2')
-            .replaceAll('https://localhost', 'http://10.0.2.2')
-            .replaceAll('https://127.0.0.1', 'http://10.0.2.2');
-      }
-      return imagePath;
+      return ImageUrlHelper.fixImageUrl(imagePath);
     }
     
     // Corriger les URLs malformées
     if (imagePath.startsWith('http:') && !imagePath.startsWith('http://')) {
-      return imagePath.replaceFirst('http:', 'http://');
+      imagePath = imagePath.replaceFirst('http:', 'http://');
     }
     
     if (imagePath.startsWith('https:') && !imagePath.startsWith('https://')) {
-      return imagePath.replaceFirst('https:', 'https://');
+      imagePath = imagePath.replaceFirst('https:', 'https://');
     }
     
     // Si le chemin commence déjà par storage/ ou images/, l'utiliser tel quel
@@ -111,7 +110,7 @@ class _CategoryCard extends StatelessWidget {
         imageUrl: _fixImageUrl(category.image!),
         height: 80,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         placeholder: (context, url) => Container(
           color: AppColors.background,
           child: const Center(
@@ -135,7 +134,7 @@ class _CategoryCard extends StatelessWidget {
         imageUrl: _fixImageUrl(category.icon!),
         height: 80,
         width: double.infinity,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         placeholder: (context, url) => Container(
           color: AppColors.background,
           child: const Center(

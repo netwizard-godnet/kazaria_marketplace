@@ -25,96 +25,96 @@ class TopSalesSection extends StatelessWidget {
         }
 
         return Container(
-          margin: const EdgeInsets.only(top: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // En-tête
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.warning, Colors.orange.shade700],
+          margin: const EdgeInsets.only(bottom: AppSizes.space4),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // En-tête
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.warning, Colors.orange.shade700],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        child: const Icon(
+                          Icons.local_fire_department,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.local_fire_department,
-                        color: Colors.white,
-                        size: 20,
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '🏆 Top Ventes',
+                              style: AppTextStyles.sectionTitle,
+                            ),
+                            Text(
+                              'Les plus populaires cette semaine',
+                              style: AppTextStyles.sectionSubtitle,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '🏆 Top Ventes',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textDark,
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductsListScreen(
+                                title: 'Top Ventes',
+                                category: 'best_offers',
+                                icon: Icons.local_fire_department,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Les plus populaires cette semaine',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMedium,
-                            ),
-                          ),
-                        ],
+                          );
+                        },
+                        child: const Text('Voir tout'),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProductsListScreen(
-                              title: 'Top Ventes',
-                              category: 'best_offers',
-                              icon: Icons.local_fire_department,
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Voir tout'),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Grid 2 colonnes
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                    ],
                   ),
-                  itemCount: topProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = topProducts[index];
-                    return _TopSaleProductCard(
-                      product: product,
-                      rank: index + 1,
-                    );
-                  },
                 ),
-              ),
-            ],
+                
+                const SizedBox(height: 12),
+                
+                // Grid 2 colonnes
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: topProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = topProducts[index];
+                      return _TopSaleProductCard(
+                        product: product,
+                        rank: index + 1,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

@@ -130,4 +130,56 @@ class BannerService {
       print('⚠️ Erreur tracking click: $e');
     }
   }
+
+  /// Récupérer les bannières publicitaires boutique (boutique_pub_1 à boutique_pub_5)
+  Future<Map<String, dynamic>> getBoutiquePubBanners() async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/mobile/stores/boutique-pub-banners');
+      
+      print('🎨 [BANNERS] Récupération des bannières publicitaires boutique');
+      print('   - URL: $uri');
+
+      final response = await http.get(uri);
+      print('📡 [BANNERS] Status code: ${response.statusCode}');
+      print('📡 [BANNERS] Response body: ${response.body}');
+      
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final List<BannerModel> banners = [];
+        final rawData = data['data'] ?? [];
+        print('📊 [BANNERS] Nombre de bannières pub boutique reçues: ${rawData.length}');
+
+        for (var bannerJson in rawData) {
+          try {
+            final banner = BannerModel.fromJson(bannerJson);
+            banners.add(banner);
+            print('   ✅ Bannière pub parsée: ID=${banner.id}, Type=${banner.type}, Image=${banner.image.isNotEmpty ? "OUI" : "NON"}');
+          } catch (e, stackTrace) {
+            print('⚠️ [BANNERS] Erreur parsing bannière pub: $e');
+            print('Stack trace: $stackTrace');
+            print('   JSON: $bannerJson');
+          }
+        }
+
+        print('✅ [BANNERS] Total bannières pub parsées: ${banners.length}');
+        return {'success': true, 'banners': banners};
+      } else {
+        print('❌ [BANNERS] Erreur API: ${data['message'] ?? 'Erreur inconnue'}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Erreur',
+          'banners': <BannerModel>[],
+        };
+      }
+    } catch (e, stackTrace) {
+      print('💥 [BANNERS] Exception: $e');
+      print('Stack trace: $stackTrace');
+      return {
+        'success': false,
+        'message': e.toString(),
+        'banners': <BannerModel>[],
+      };
+    }
+  }
 }

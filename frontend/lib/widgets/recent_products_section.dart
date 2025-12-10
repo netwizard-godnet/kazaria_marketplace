@@ -23,8 +23,14 @@ class RecentProductsSection extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.all(AppSizes.paddingMedium),
-      child: Column(
+      margin: const EdgeInsets.only(bottom: AppSizes.space4),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingMedium),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // En-tête
@@ -35,7 +41,7 @@ class RecentProductsSection extends StatelessWidget {
                 children: [
                   Icon(Icons.history, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
-                  const Text('Produits récemment vus', style: AppTextStyles.h3),
+                  const Text('Produits récemment vus', style: AppTextStyles.sectionTitle),
                 ],
               ),
               if (onViewAll != null)
@@ -60,6 +66,7 @@ class RecentProductsSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

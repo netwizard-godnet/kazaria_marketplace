@@ -394,7 +394,7 @@ class _HomepageAdCard extends StatelessWidget {
                   height: double.infinity,
                   child: CachedNetworkImage(
                   imageUrl: ad.image,
-                    fit: BoxFit.cover,
+                  fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
                   placeholder: (context, url) => Container(

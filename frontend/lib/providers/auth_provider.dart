@@ -4,12 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/order_model.dart';
 import '../services/auth_service.dart';
+import '../services/social_auth_service.dart';
 import '../services/order_service.dart';
 import '../services/api_service.dart';
 import '../config/api_config.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final SocialAuthService _socialAuthService = SocialAuthService();
 
   UserModel? _user;
   bool _isAuthenticated = false;
@@ -454,6 +456,72 @@ class AuthProvider with ChangeNotifier {
       return response;
     } catch (e) {
       print('💥 [AUTH] Exception réinitialisation: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Connexion avec Google
+  Future<Map<String, dynamic>> signInWithGoogle() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      print('🔄 [AUTH_PROVIDER] Début connexion Google');
+      final response = await _socialAuthService.signInWithGoogle();
+
+      if (response['success']) {
+        if (response['user'] != null) {
+          _user = UserModel.fromJson(response['user']);
+        }
+        _isAuthenticated = true;
+        print('✅ [AUTH_PROVIDER] Connexion Google réussie');
+      } else {
+        _error = response['message'];
+        print('❌ [AUTH_PROVIDER] Erreur Google: ${response['message']}');
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      print('💥 [AUTH_PROVIDER] Exception Google: $e');
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Connexion avec Facebook
+  Future<Map<String, dynamic>> signInWithFacebook() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      print('🔄 [AUTH_PROVIDER] Début connexion Facebook');
+      final response = await _socialAuthService.signInWithFacebook();
+
+      if (response['success']) {
+        if (response['user'] != null) {
+          _user = UserModel.fromJson(response['user']);
+        }
+        _isAuthenticated = true;
+        print('✅ [AUTH_PROVIDER] Connexion Facebook réussie');
+      } else {
+        _error = response['message'];
+        print('❌ [AUTH_PROVIDER] Erreur Facebook: ${response['message']}');
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      print('💥 [AUTH_PROVIDER] Exception Facebook: $e');
       return {'success': false, 'message': e.toString()};
     }
   }

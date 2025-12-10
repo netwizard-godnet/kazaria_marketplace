@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -200,6 +203,110 @@ class SocialAuthController extends Controller
         $fullPath = public_path($path);
         if (is_file($fullPath)) {
             @unlink($fullPath);
+        }
+    }
+
+    /**
+     * Authentification sociale pour mobile (retourne un token JSON)
+     */
+    public function mobileAuth(Request $request, string $provider): JsonResponse
+    {
+        $this->ensureProviderSupported($provider);
+
+        $validator = \Validator::make($request->all(), [
+            'access_token' => 'required|string',
+            'id' => 'required|string',
+            'email' => 'required|email',
+            'name' => 'required|string',
+            'avatar' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $socialId = $request->input('id');
+            $email = $request->input('email');
+            $name = $request->input('name');
+            $avatar = $request->input('avatar');
+
+            // Vérifier si l'utilisateur existe déjà
+            $user = User::where('provider_name', $provider)
+                ->where('provider_id', $socialId)
+                ->first();
+
+            if (!$user) {
+                $user = User::where('email', $email)->first();
+            }
+
+            $shouldFetchAvatar = !$user || empty($user->profile_pic_url);
+            $avatarPath = $shouldFetchAvatar && $avatar
+                ? $this->downloadAvatar($avatar, $provider, $socialId)
+                : null;
+
+            $userData = [
+                'provider_name' => $provider,
+                'provider_id' => $socialId,
+                'provider_token' => $request->input('access_token'),
+                'email_verified_at' => now(),
+                'is_verified' => true,
+            ];
+
+            if ($avatarPath) {
+                $userData['profile_pic_url'] = $avatarPath;
+            }
+
+            if (!$user) {
+                [$lastName, $firstName] = $this->splitName($name);
+
+                $user = User::create(array_merge($userData, [
+                    'nom' => $lastName,
+                    'prenoms' => $firstName,
+                    'email' => $email,
+                    'telephone' => null,
+                    'password' => Str::password(32),
+                    'statut' => 'actif',
+                    'termes_condition' => true,
+                    'newsletter' => false,
+                    'profile_pic_url' => $avatarPath,
+                ]));
+            } else {
+                $user->update($userData);
+            }
+
+            // Créer un token Sanctum pour l'app mobile
+            $token = $user->createToken('mobile-app')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Connexion réussie',
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'nom' => $user->nom,
+                    'prenoms' => $user->prenoms,
+                    'email' => $user->email,
+                    'telephone' => $user->telephone,
+                    'profile_pic_url' => $user->profile_pic_url,
+                    'is_seller' => $user->isSeller(),
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('Social mobile auth failed', [
+                'provider' => $provider,
+                'message' => $th->getMessage(),
+                'trace' => $th->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => "Erreur lors de la connexion {$provider}: " . $th->getMessage(),
+            ], 500);
         }
     }
 }

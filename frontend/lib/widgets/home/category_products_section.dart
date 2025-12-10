@@ -92,7 +92,13 @@ class _CategoryProductsSectionState extends State<CategoryProductsSection> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.space4),
-      child: Column(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // En-tête de la section
@@ -122,18 +128,11 @@ class _CategoryProductsSectionState extends State<CategoryProductsSection> {
                       children: [
                         Text(
                           categoryName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
-                          ),
+                          style: AppTextStyles.sectionTitle,
                         ),
                         Text(
                           '${products.length} produits',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textMedium,
-                          ),
+                          style: AppTextStyles.sectionSubtitle,
                         ),
                       ],
                     ),
@@ -210,6 +209,7 @@ class _CategoryProductsSectionState extends State<CategoryProductsSection> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

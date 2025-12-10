@@ -727,6 +727,64 @@ class MobileController extends Controller
     }
 
     /**
+     * Récupérer les bannières publicitaires boutique (boutique_pub_1 à boutique_pub_5)
+     */
+    public function getBoutiquePubBanners(Request $request)
+    {
+        try {
+            \Log::info('📊 [MOBILE] Récupération bannières publicitaires boutique');
+            
+            $bannerTypes = ['boutique_pub_1', 'boutique_pub_2', 'boutique_pub_3', 'boutique_pub_4', 'boutique_pub_5'];
+            
+            $banners = Banner::whereIn('banner_type', $bannerTypes)
+                ->where('is_active', true)
+                ->where('show_on_mobile', true)
+                ->where(function ($query) {
+                    $query->whereNull('starts_at')
+                        ->orWhere('starts_at', '<=', now());
+                })
+                ->where(function ($query) {
+                    $query->whereNull('ends_at')
+                        ->orWhere('ends_at', '>=', now());
+                })
+                ->orderByRaw("FIELD(banner_type, 'boutique_pub_1', 'boutique_pub_2', 'boutique_pub_3', 'boutique_pub_4', 'boutique_pub_5')")
+                ->get()
+                ->map(function ($banner) {
+                    return [
+                        'id' => $banner->id,
+                        'title' => $banner->title,
+                        'image' => $this->getBannerImageUrl($banner->image_path), // ✅ Utiliser formatImageUrl pour gérer localhost
+                        'link' => $banner->link_url, // ✅ Utiliser 'link' pour compatibilité avec BannerModel
+                        'link_url' => $banner->link_url,
+                        'type' => $banner->banner_type,
+                        'banner_type' => $banner->banner_type,
+                        'sort_order' => $banner->sort_order ?? 0,
+                        'action_type' => $banner->link_url ? 'url' : 'none',
+                        'action_data' => $banner->link_url ? ['url' => $banner->link_url] : null,
+                    ];
+                });
+            
+            \Log::info("✅ [MOBILE] Retour de " . $banners->count() . " bannières publicitaires boutique");
+            
+            // Log détaillé de chaque bannière
+            foreach ($banners as $banner) {
+                \Log::info("   - Banner ID: {$banner['id']}, Type: {$banner['banner_type']}, Image: " . ($banner['image'] ?? 'NULL') . ", Link: " . ($banner['link'] ?? 'NULL'));
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $banners->values()->all(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('❌ [MOBILE] Erreur bannières pub boutique: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des bannières publicitaires: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Récupérer les boutiques pour mobile
      */
     public function getStores(Request $request)

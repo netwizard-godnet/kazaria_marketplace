@@ -76,12 +76,14 @@ class _DealsOfDaySectionState extends State<DealsOfDaySection> {
 
   Widget _buildLoadingState() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSizes.space4),
+      margin: const EdgeInsets.only(bottom: AppSizes.space4),
       decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(0),
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.accent.withOpacity(0.05),
+            AppColors.primary.withOpacity(0.05),
+            AppColors.accent.withOpacity(0.02),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -120,9 +122,8 @@ class _DealsOfDaySectionState extends State<DealsOfDaySection> {
                     children: [
                       Text(
                         'Deals du Jour',
-                        style: AppTextStyles.h3.copyWith(
+                        style: AppTextStyles.sectionTitle.copyWith(
                           color: AppColors.white,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -178,12 +179,14 @@ class _DealsOfDaySectionState extends State<DealsOfDaySection> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSizes.space4),
+      margin: const EdgeInsets.only(bottom: AppSizes.space4),
       decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(0),
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.accent.withOpacity(0.05),
+            AppColors.primary.withOpacity(0.05),
+            AppColors.accent.withOpacity(0.02),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -223,9 +226,8 @@ class _DealsOfDaySectionState extends State<DealsOfDaySection> {
                     children: [
                       Text(
                         'Deals du Jour',
-                        style: AppTextStyles.h3.copyWith(
+                        style: AppTextStyles.sectionTitle.copyWith(
                           color: AppColors.white,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 2),

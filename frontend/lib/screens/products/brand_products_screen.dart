@@ -296,25 +296,16 @@ class _BrandProductsScreenState extends State<BrandProductsScreen> {
 
   /// Obtenir l'URL complète de l'image de la marque
   String _getBrandImageUrl(String imagePath) {
-    // Si l'URL contient localhost, remplacer par 10.0.2.2 pour l'émulateur
-    String url = imagePath;
-    if (url.contains('localhost') || url.contains('127.0.0.1')) {
-      url = url
-          .replaceAll('http://localhost', 'http://10.0.2.2')
-          .replaceAll('http://127.0.0.1', 'http://10.0.2.2')
-          .replaceAll('https://localhost', 'http://10.0.2.2')
-          .replaceAll('https://127.0.0.1', 'http://10.0.2.2');
+    // Si c'est déjà une URL complète, utiliser fixImageUrl pour remplacer localhost
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return ImageUrlHelper.fixImageUrl(imagePath);
     }
     
     // Si ce n'est pas une URL complète, construire l'URL
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      if (url.startsWith('storage/') || url.startsWith('images/')) {
-        return '${ApiConfig.imageBaseUrl}/$url';
-      }
-      return '${ApiConfig.imageBaseUrl}/storage/$url';
+    if (imagePath.startsWith('storage/') || imagePath.startsWith('images/')) {
+      return '${ApiConfig.imageBaseUrl}/$imagePath';
     }
-    
-    return url;
+    return '${ApiConfig.imageBaseUrl}/storage/$imagePath';
   }
 }
 

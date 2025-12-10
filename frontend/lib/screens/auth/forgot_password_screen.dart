@@ -4,6 +4,7 @@ import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import 'reset_password_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -42,13 +43,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!mounted) return;
 
     if (response['success']) {
+      // Récupérer le token et l'email depuis la réponse
+      final token = response['token'];
+      final email = response['email'] ?? _emailController.text.trim();
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Un lien de réinitialisation a été envoyé à votre email'),
+        SnackBar(
+          content: const Text('Un code de réinitialisation a été envoyé à votre email'),
           backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 3),
         ),
       );
-      Navigator.pop(context);
+      
+      // Naviguer vers l'écran de réinitialisation avec le token et l'email
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResetPasswordScreen(
+              token: token,
+              email: email,
+            ),
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

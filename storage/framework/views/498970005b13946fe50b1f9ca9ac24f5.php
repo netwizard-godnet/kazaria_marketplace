@@ -2100,7 +2100,7 @@ use Illuminate\Support\Str;
                     
                     favoritesContainer.innerHTML = '';
                     if (noFavoritesMessage) {
-                        noFavoritesMessage.style.display = 'block';
+                    noFavoritesMessage.style.display = 'block';
                     }
                 }
             } catch (error) {
