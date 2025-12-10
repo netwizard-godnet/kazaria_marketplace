@@ -15,6 +15,14 @@ class SettingController extends Controller
         if (!Setting::where('key', 'min_order_quantity')->exists()) {
             $this->createDefaultSettings();
         }
+        
+        // S'assurer que les paramètres de landing page existent
+        if (!Setting::where('key', 'landing_page_enabled')->exists()) {
+            Setting::set('landing_page_enabled', '0', 'boolean', 'maintenance', 'Activer la landing page', false);
+        }
+        if (!Setting::where('key', 'landing_page_launch_date')->exists()) {
+            Setting::set('landing_page_launch_date', '', 'string', 'maintenance', 'Date de lancement (format: Y-m-d H:i:s)', false);
+        }
 
         // S'assurer que les médias par défaut existent dans storage/public
         $this->ensureDefaultMedia();
