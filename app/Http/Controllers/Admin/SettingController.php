@@ -158,9 +158,15 @@ class SettingController extends Controller
                 $description = $existing ? $existing->description : null;
                 
                 // Déterminer le type selon la clé
-                $type = 'string';
+                $type = $existing ? $existing->type : 'string';
                 if ($key === 'landing_page_enabled' || $key === 'maintenance_mode') {
                     $type = 'boolean';
+                    // S'assurer que la valeur est bien "0" ou "1" pour les booléens
+                    if ($value === '0' || $value === 0 || $value === false) {
+                        $value = '0';
+                    } elseif ($value === '1' || $value === 1 || $value === true) {
+                        $value = '1';
+                    }
                 } elseif ($key === 'min_order_quantity' || $key === 'free_shipping_threshold' || $key === 'shipping_cost') {
                     $type = 'integer';
                 }

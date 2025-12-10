@@ -17,13 +17,26 @@ class LandingPageMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         // Vérifier si la landing page est activée (depuis les settings admin ou config)
-        $landingPageEnabled = \App\Models\Setting::get('landing_page_enabled', false);
-        if (!$landingPageEnabled) {
+        $setting = \App\Models\Setting::where('key', 'landing_page_enabled')->first();
+        
+        if ($setting) {
+            // Si le setting existe, utiliser sa valeur convertie correctement selon le type
+            // Convertir "0" en false et "1" en true
+            $value = $setting->value;
+            if ($value === '0' || $value === 0 || $value === false || $value === 'false') {
+                $landingPageEnabled = false;
+            } elseif ($value === '1' || $value === 1 || $value === true || $value === 'true') {
+                $landingPageEnabled = true;
+            } else {
+                $landingPageEnabled = (bool) $value;
+            }
+        } else {
             // Fallback sur la config si le setting n'existe pas encore
             $landingPageEnabled = config('app.landing_page_enabled', false);
         }
         
-        if ($landingPageEnabled) {
+        // Ne rediriger que si la landing page est explicitement activée (true)
+        if ($landingPageEnabled === true) {
             // Routes exclues de la redirection vers la landing page
             $excludedPaths = [
                 'landing', // La route de la landing page elle-même
