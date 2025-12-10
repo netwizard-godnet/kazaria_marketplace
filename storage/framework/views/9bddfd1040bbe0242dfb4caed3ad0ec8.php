@@ -354,9 +354,143 @@
                 transform: translate(-20px, 20px) rotate(240deg);
             }
         }
+        
+        /* Animations de Noël */
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: white;
+            font-size: 1.5rem;
+            opacity: 0.8;
+            animation: snowfall linear infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        @keyframes snowfall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0.2;
+            }
+        }
+        
+        .star {
+            position: absolute;
+            color: #FFD700;
+            font-size: 1.2rem;
+            animation: twinkle 2s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+        
+        .christmas-light {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: blink 1.5s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        @keyframes blink {
+            0%, 100% {
+                opacity: 0.3;
+                box-shadow: 0 0 5px currentColor;
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 15px currentColor, 0 0 25px currentColor;
+            }
+        }
+        
+        .light-red { background-color: #ff0000; color: #ff0000; }
+        .light-green { background-color: #00ff00; color: #00ff00; }
+        .light-blue { background-color: #0066ff; color: #0066ff; }
+        .light-yellow { background-color: #ffff00; color: #ffff00; }
+        .light-purple { background-color: #ff00ff; color: #ff00ff; }
+        
+        .garland {
+            position: absolute;
+            width: 100%;
+            height: 40px;
+            top: 0;
+            left: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                #ff0000 0px,
+                #ff0000 20px,
+                #00ff00 20px,
+                #00ff00 40px,
+                #0066ff 40px,
+                #0066ff 60px,
+                #ffff00 60px,
+                #ffff00 80px
+            );
+            opacity: 0.6;
+            z-index: 1;
+            animation: garlandMove 3s linear infinite;
+        }
+        
+        @keyframes garlandMove {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 80px 0;
+            }
+        }
+        
+        .santa-hat {
+            position: absolute;
+            font-size: 3rem;
+            animation: bounce 3s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0) rotate(-5deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(5deg);
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Guirlande de Noël en haut -->
+    <div class="garland"></div>
+    
+    <!-- Flocons de neige -->
+    <div id="snowflakes-container"></div>
+    
+    <!-- Étoiles scintillantes -->
+    <div id="stars-container"></div>
+    
+    <!-- Lumières de Noël -->
+    <div id="lights-container"></div>
+    
+    <!-- Chapeau de Père Noël -->
+    <div class="santa-hat" style="top: 10%; right: 5%;">🎅</div>
+    <div class="santa-hat" style="top: 15%; left: 8%; animation-delay: 1s;">🎄</div>
+    
     <div class="floating-shapes">
         <div class="shape"></div>
         <div class="shape"></div>
@@ -441,10 +575,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Compte à rebours de 24 heures
+        // Compte à rebours avec date fixe
         function startCountdown() {
-            // Date cible : maintenant + 24 heures
+            // Date cible depuis le serveur (timestamp en millisecondes)
+            <?php if(isset($targetTimestamp)): ?>
+            const targetDate = <?php echo e($targetTimestamp); ?>;
+            <?php else: ?>
+            // Par défaut : maintenant + 24 heures si pas de date configurée
             const targetDate = new Date().getTime() + (24 * 60 * 60 * 1000);
+            <?php endif; ?>
             
             function updateCountdown() {
                 const now = new Date().getTime();
@@ -476,6 +615,58 @@
         
         // Démarrer le compte à rebours au chargement de la page
         document.addEventListener('DOMContentLoaded', startCountdown);
+        
+        // Créer les animations de Noël
+        function createSnowflakes() {
+            const container = document.getElementById('snowflakes-container');
+            const snowflakes = ['❄', '❅', '❆', '✻', '✼'];
+            
+            for (let i = 0; i < 30; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(snowflake);
+            }
+        }
+        
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            
+            for (let i = 0; i < 15; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.textContent = '⭐';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                star.style.animationDuration = (Math.random() * 1 + 1.5) + 's';
+                container.appendChild(star);
+            }
+        }
+        
+        function createLights() {
+            const container = document.getElementById('lights-container');
+            const colors = ['light-red', 'light-green', 'light-blue', 'light-yellow', 'light-purple'];
+            
+            for (let i = 0; i < 20; i++) {
+                const light = document.createElement('div');
+                light.className = 'christmas-light ' + colors[Math.floor(Math.random() * colors.length)];
+                light.style.left = Math.random() * 100 + '%';
+                light.style.top = Math.random() * 100 + '%';
+                light.style.animationDelay = Math.random() * 1.5 + 's';
+                container.appendChild(light);
+            }
+        }
+        
+        // Initialiser les animations de Noël
+        document.addEventListener('DOMContentLoaded', function() {
+            createSnowflakes();
+            createStars();
+            createLights();
+        });
         
         // Gestion du formulaire de newsletter
         document.getElementById('newsletterForm').addEventListener('submit', async function(e) {
