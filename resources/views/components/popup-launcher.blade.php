@@ -3,7 +3,7 @@
 <div class="modal fade popup-launcher-modal z-index-9x" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
-            <button type="button" class="btn-close ms-auto me-3 mt-3" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            <button type="button" class="btn-close popup-close-btn" data-bs-dismiss="modal" aria-label="Fermer"></button>
             <div class="modal-body p-0" data-popup-body>
                 <div class="row g-0 position-relative" data-popup-row>
                     <div class="popup-launcher-image-wrapper d-none" data-popup-image-wrapper>
@@ -32,6 +32,7 @@
         border-radius: 0;
         height: 500px;
         overflow: hidden;
+        position: relative;
     }
 
     .popup-launcher-modal .modal-body {
@@ -154,6 +155,24 @@
     .popup-launcher-modal .popup-cta-btn:hover {
         background-color: #d93e1f !important;
         color: white !important;
+    }
+
+    .popup-launcher-modal .popup-close-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 10;
+        margin: 0;
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        opacity: 0.8;
+        transition: opacity 0.2s ease;
+    }
+
+    .popup-launcher-modal .popup-close-btn:hover {
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 1);
     }
 
     @media (max-width: 768px) {
