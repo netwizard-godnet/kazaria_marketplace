@@ -36,7 +36,17 @@ Route::get('/landing', function () {
         ];
     }
     
-    return view('landing', compact('settings'));
+    // Calculer la date de lancement pour le compte à rebours
+    $launchDate = config('app.landing_page_launch_date');
+    if ($launchDate) {
+        // Utiliser la date configurée
+        $targetTimestamp = \Carbon\Carbon::parse($launchDate)->timestamp * 1000;
+    } else {
+        // Par défaut : maintenant + 24 heures
+        $targetTimestamp = (now()->addHours(24)->timestamp) * 1000;
+    }
+    
+    return view('landing', compact('settings', 'targetTimestamp'));
 })->name('landing');
 
 // Routes principales (SESSION)
