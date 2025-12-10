@@ -37,11 +37,21 @@ Route::get('/landing', function () {
     }
     
     // Calculer la date de lancement pour le compte à rebours
-    // Priorité : Setting admin > Config .env > Par défaut (24h)
-    $launchDate = \App\Models\Setting::get('landing_page_launch_date', null);
+    // Priorité : Setting admin > Config .env > Par défaut (24h fixe stocké en session)
+    $launchDate = null;
+    
+    // Essayer d'abord depuis les settings admin
+    $setting = \App\Models\Setting::where('key', 'landing_page_launch_date')->first();
+    if ($setting && !empty(trim($setting->value))) {
+        $launchDate = trim($setting->value);
+    }
+    
+    // Fallback sur la config si le setting n'existe pas ou est vide
     if (!$launchDate || empty($launchDate)) {
-        // Fallback sur la config si le setting n'existe pas
-        $launchDate = config('app.landing_page_launch_date', null);
+        $configDate = config('app.landing_page_launch_date', null);
+        if ($configDate && !empty(trim($configDate))) {
+            $launchDate = trim($configDate);
+        }
     }
     
     if ($launchDate && !empty($launchDate)) {
@@ -49,12 +59,21 @@ Route::get('/landing', function () {
             // Utiliser la date configurée
             $targetTimestamp = \Carbon\Carbon::parse($launchDate)->timestamp * 1000;
         } catch (\Exception $e) {
-            // Si la date est invalide, utiliser la valeur par défaut
-            $targetTimestamp = (now()->addHours(24)->timestamp) * 1000;
+            // Si la date est invalide, utiliser une date fixe par défaut (24h à partir de maintenant, stockée en session)
+            if (!session()->has('landing_page_default_launch_date')) {
+                session(['landing_page_default_launch_date' => now()->addHours(24)->format('Y-m-d H:i:s')]);
+            }
+            $defaultDate = session('landing_page_default_launch_date');
+            $targetTimestamp = \Carbon\Carbon::parse($defaultDate)->timestamp * 1000;
         }
     } else {
-        // Par défaut : maintenant + 24 heures
-        $targetTimestamp = (now()->addHours(24)->timestamp) * 1000;
+        // Par défaut : utiliser une date fixe stockée en session (24h à partir de la première visite)
+        // Cette date sera la même pour toutes les actualisations de la page
+        if (!session()->has('landing_page_default_launch_date')) {
+            session(['landing_page_default_launch_date' => now()->addHours(24)->format('Y-m-d H:i:s')]);
+        }
+        $defaultDate = session('landing_page_default_launch_date');
+        $targetTimestamp = \Carbon\Carbon::parse($defaultDate)->timestamp * 1000;
     }
     
     return view('landing', compact('settings', 'targetTimestamp'));
