@@ -35,7 +35,17 @@ class LandingPageMiddleware
             $landingPageEnabled = config('app.landing_page_enabled', false);
         }
         
-        // Ne rediriger que si la landing page est explicitement activée (true)
+        // Si la landing page est désactivée, bloquer l'accès à la route /landing
+        if ($landingPageEnabled === false) {
+            // Si l'utilisateur essaie d'accéder à /landing, rediriger vers la page d'accueil
+            if ($request->routeIs('landing') || $request->is('landing')) {
+                return redirect('/');
+            }
+            // Sinon, laisser passer (pas de redirection vers la landing page)
+            return $next($request);
+        }
+        
+        // Si la landing page est activée, rediriger toutes les routes vers /landing sauf les routes exclues
         if ($landingPageEnabled === true) {
             // Routes exclues de la redirection vers la landing page
             $excludedPaths = [
