@@ -33,12 +33,15 @@
         height: 500px;
         overflow: hidden;
         position: relative;
+        padding: 0 !important;
     }
 
     .popup-launcher-modal .modal-body {
         height: 100%;
         overflow-y: scroll!important;
         overflow-x: hidden!important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
     .popup-launcher-modal .popup-launcher-image-wrapper {
@@ -106,6 +109,11 @@
         height: 100%;
     }
 
+    .popup-launcher-modal [data-popup-row] {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
     .popup-launcher-modal .layout-top-bottom {
         height: 100%;
     }
@@ -159,13 +167,13 @@
 
     .popup-launcher-modal .popup-close-btn {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
+        top: 0;
+        right: 0;
         z-index: 10;
         margin: 0;
         padding: 0.5rem;
         background-color: rgba(255, 255, 255, 0.8);
-        border-radius: 50%;
+        border-radius: 0 0 0 50%;
         opacity: 0.8;
         transition: opacity 0.2s ease;
     }
