@@ -133,6 +133,7 @@ use Illuminate\Support\Facades\Storage;
                                 'email_notifications',
                                 'push_notifications',
                                 'maintenance_mode',
+                                'landing_page_enabled',
                             ];
                         @endphp
                         @if($isGeneral)
@@ -171,6 +172,8 @@ use Illuminate\Support\Facades\Storage;
                                 // Maintenance
                                 'maintenance_mode' => 'Mode maintenance',
                                 'maintenance_message' => 'Message de maintenance',
+                                'landing_page_enabled' => 'Activer la landing page',
+                                'landing_page_launch_date' => 'Date de lancement (Y-m-d H:i:s)',
                                 // Paiement (CinetPay)
                                 'cinetpay_api_key' => 'Clé API CinetPay',
                                 'cinetpay_site_id' => 'ID du site CinetPay',
@@ -239,6 +242,14 @@ use Illuminate\Support\Facades\Storage;
                                         <label class="form-check-label" for="setting_{{ $setting->key }}_0">Non</label>
                                         </div>
                                     </div>
+                            @elseif($setting->key === 'landing_page_launch_date')
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       id="setting_{{ $setting->key }}" 
+                                       name="settings[{{ $setting->key }}]" 
+                                       value="{{ $setting->value ? \Carbon\Carbon::parse($setting->value)->format('Y-m-d\TH:i') : '' }}"
+                                       placeholder="2025-12-31 23:59:59">
+                                <small class="text-muted">Format: Y-m-d H:i:s (ex: 2025-12-31 23:59:59)</small>
                             @elseif($setting->type === 'integer' || $setting->type === 'float')
                                 <input type="number" 
                                        class="form-control" 
@@ -300,6 +311,7 @@ use Illuminate\Support\Facades\Storage;
                                 'email_notifications',
                                 'push_notifications',
                                 'maintenance_mode',
+                                'landing_page_enabled',
                             ];
                         @endphp
                         @foreach($groupSettings as $setting)
@@ -335,6 +347,8 @@ use Illuminate\Support\Facades\Storage;
                                 // Maintenance
                                 'maintenance_mode' => 'Mode maintenance',
                                 'maintenance_message' => 'Message de maintenance',
+                                'landing_page_enabled' => 'Activer la landing page',
+                                'landing_page_launch_date' => 'Date de lancement (Y-m-d H:i:s)',
                                 // Paiement (CinetPay)
                                 'cinetpay_api_key' => 'Clé API CinetPay',
                                 'cinetpay_site_id' => 'ID du site CinetPay',
@@ -383,6 +397,14 @@ use Illuminate\Support\Facades\Storage;
                                         <label class="form-check-label" for="setting_{{ $setting->key }}_0">Non</label>
                                         </div>
                                     </div>
+                            @elseif($setting->key === 'landing_page_launch_date')
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       id="setting_{{ $setting->key }}" 
+                                       name="settings[{{ $setting->key }}]" 
+                                       value="{{ $setting->value ? \Carbon\Carbon::parse($setting->value)->format('Y-m-d\TH:i') : '' }}"
+                                       placeholder="2025-12-31 23:59:59">
+                                <small class="text-muted">Format: Y-m-d H:i:s (ex: 2025-12-31 23:59:59)</small>
                             @elseif($setting->type === 'integer' || $setting->type === 'float')
                                 <input type="number" 
                                        class="form-control" 

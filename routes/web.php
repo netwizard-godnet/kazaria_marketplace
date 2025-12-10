@@ -37,10 +37,21 @@ Route::get('/landing', function () {
     }
     
     // Calculer la date de lancement pour le compte à rebours
-    $launchDate = config('app.landing_page_launch_date');
-    if ($launchDate) {
-        // Utiliser la date configurée
-        $targetTimestamp = \Carbon\Carbon::parse($launchDate)->timestamp * 1000;
+    // Priorité : Setting admin > Config .env > Par défaut (24h)
+    $launchDate = \App\Models\Setting::get('landing_page_launch_date', null);
+    if (!$launchDate || empty($launchDate)) {
+        // Fallback sur la config si le setting n'existe pas
+        $launchDate = config('app.landing_page_launch_date', null);
+    }
+    
+    if ($launchDate && !empty($launchDate)) {
+        try {
+            // Utiliser la date configurée
+            $targetTimestamp = \Carbon\Carbon::parse($launchDate)->timestamp * 1000;
+        } catch (\Exception $e) {
+            // Si la date est invalide, utiliser la valeur par défaut
+            $targetTimestamp = (now()->addHours(24)->timestamp) * 1000;
+        }
     } else {
         // Par défaut : maintenant + 24 heures
         $targetTimestamp = (now()->addHours(24)->timestamp) * 1000;

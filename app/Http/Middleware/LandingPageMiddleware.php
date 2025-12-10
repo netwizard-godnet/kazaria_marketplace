@@ -16,8 +16,14 @@ class LandingPageMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Vérifier si la landing page est activée
-        if (config('app.landing_page_enabled', false)) {
+        // Vérifier si la landing page est activée (depuis les settings admin ou config)
+        $landingPageEnabled = \App\Models\Setting::get('landing_page_enabled', false);
+        if (!$landingPageEnabled) {
+            // Fallback sur la config si le setting n'existe pas encore
+            $landingPageEnabled = config('app.landing_page_enabled', false);
+        }
+        
+        if ($landingPageEnabled) {
             // Routes exclues de la redirection vers la landing page
             $excludedPaths = [
                 'landing', // La route de la landing page elle-même

@@ -48,6 +48,12 @@ class SettingController extends Controller
             'deals_max_discount' => 'deals',
             'deals_categories' => 'deals',
             'deals_subcategories' => 'deals',
+            
+            // Maintenance
+            'maintenance_mode' => 'maintenance',
+            'maintenance_message' => 'maintenance',
+            'landing_page_enabled' => 'maintenance',
+            'landing_page_launch_date' => 'maintenance',
         ];
 
         // Ordre d'affichage par groupe
@@ -117,6 +123,16 @@ class SettingController extends Controller
                 }
             }
             
+            // Convertir datetime-local en format Y-m-d H:i:s pour landing_page_launch_date
+            if ($key === 'landing_page_launch_date' && $value) {
+                try {
+                    // Le format datetime-local est Y-m-d\TH:i, on le convertit en Y-m-d H:i:s
+                    $value = \Carbon\Carbon::parse($value)->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    // Si la conversion échoue, garder la valeur telle quelle
+                }
+            }
+            
             // Traiter la valeur seulement si elle n'est pas null
             if ($value !== null) {
                 // Déterminer si le paramètre doit être public
@@ -130,10 +146,18 @@ class SettingController extends Controller
                 
                 // Récupérer le groupe et la description existants si le setting existe déjà
                 $existing = Setting::where('key', $key)->first();
-                $group = $existing ? $existing->group : ($key === 'contact_email' || $key === 'contact_phone' || $key === 'contact_address' ? 'contact' : 'general');
+                $group = $existing ? $existing->group : ($key === 'contact_email' || $key === 'contact_phone' || $key === 'contact_address' ? 'contact' : ($key === 'landing_page_enabled' || $key === 'maintenance_mode' ? 'maintenance' : 'general'));
                 $description = $existing ? $existing->description : null;
                 
-                Setting::set($key, $value, 'string', $group, $description, $isPublic);
+                // Déterminer le type selon la clé
+                $type = 'string';
+                if ($key === 'landing_page_enabled' || $key === 'maintenance_mode') {
+                    $type = 'boolean';
+                } elseif ($key === 'min_order_quantity' || $key === 'free_shipping_threshold' || $key === 'shipping_cost') {
+                    $type = 'integer';
+                }
+                
+                Setting::set($key, $value, $type, $group, $description, $isPublic);
                 
                 // Synchroniser contact_phone avec site_phone
                 if ($key === 'contact_phone') {
@@ -269,6 +293,10 @@ class SettingController extends Controller
             // Maintenance
             ['key' => 'maintenance_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'maintenance', 'description' => 'Mode maintenance', 'is_public' => false],
             ['key' => 'maintenance_message', 'value' => 'Site en maintenance', 'type' => 'string', 'group' => 'maintenance', 'description' => 'Message de maintenance', 'is_public' => false],
+            
+            // Landing Page
+            ['key' => 'landing_page_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'maintenance', 'description' => 'Activer la landing page', 'is_public' => false],
+            ['key' => 'landing_page_launch_date', 'value' => '', 'type' => 'string', 'group' => 'maintenance', 'description' => 'Date de lancement (format: Y-m-d H:i:s)', 'is_public' => false],
         ];
 
         foreach ($defaultSettings as $setting) {

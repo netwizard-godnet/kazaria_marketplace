@@ -374,6 +374,7 @@
         <!-- SECTION TOP CATEGORIES END -->
 
         <!-- SECTION TELEPHONES & TABLETTES -->
+        @if(isset($isPhoneCategoryActive) && $isPhoneCategoryActive && $phoneProducts->count() > 0)
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
                 <h5 class="mb-0 me-4">Téléphones et tablettes</h5>
@@ -389,9 +390,11 @@
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="multi-carousel-dots text-center mt-2"></div>
         </section>
+        @endif
         <!-- SECTION TELEPHONES & TABLETTES END -->
 
         <!-- SECTION TV et Electronique -->
+        @if(isset($isTvCategoryActive) && $isTvCategoryActive && $tvProducts->count() > 0)
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
                 <h5 class="mb-0 me-4">TV et Electronique</h5>
@@ -407,9 +410,11 @@
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="multi-carousel-dots text-center mt-2"></div>
         </section>
+        @endif
         <!-- SECTION TV et Electronique END -->
 
         <!-- SECTION Electroménager -->
+        @if(isset($isElectroCategoryActive) && $isElectroCategoryActive && $electroProducts->count() > 0)
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
                 <h5 class="mb-0 me-4">Electroménager</h5>
@@ -425,9 +430,11 @@
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="multi-carousel-dots text-center mt-2"></div>
         </section>
+        @endif
         <!-- SECTION Electroménager END -->
 
         <!-- SECTION Ordinateurs et accessoires -->
+        @if(isset($isComputerCategoryActive) && $isComputerCategoryActive && $computerProducts->count() > 0)
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
                 <h5 class="mb-0 me-4">Ordinateurs et accessoires</h5>
@@ -443,6 +450,7 @@
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="multi-carousel-dots text-center mt-2"></div>
         </section>
+        @endif
         <!-- SECTION Ordinateurs et accessoires END -->
 
         <!-- SECTION AFFICHES -->

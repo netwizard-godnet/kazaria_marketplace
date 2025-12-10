@@ -472,6 +472,122 @@
                 transform: translateY(-20px) rotate(5deg);
             }
         }
+        
+        /* Animations CAN Football - Positionnées à droite */
+        .can-container {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 200px;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+        
+        .football {
+            position: absolute;
+            font-size: 2rem;
+            animation: footballMove 4s linear infinite;
+            opacity: 0.7;
+        }
+        
+        @keyframes footballMove {
+            0% {
+                transform: translateY(-50px) rotate(0deg);
+                right: 20px;
+            }
+            50% {
+                transform: translateY(50vh) rotate(180deg);
+                right: 50px;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                right: 20px;
+            }
+        }
+        
+        .trophy {
+            position: absolute;
+            font-size: 2.5rem;
+            animation: trophyFloat 5s ease-in-out infinite;
+            right: 30px;
+            top: 20%;
+        }
+        
+        @keyframes trophyFloat {
+            0%, 100% {
+                transform: translateY(0) rotate(-10deg);
+            }
+            50% {
+                transform: translateY(-30px) rotate(10deg);
+            }
+        }
+        
+        .confetti-can {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #FFD700;
+            animation: confettiFall 3s linear infinite;
+            right: 0;
+        }
+        
+        .confetti-can:nth-child(odd) {
+            background-color: #FF6B35;
+        }
+        
+        .confetti-can:nth-child(3n) {
+            background-color: #004E89;
+        }
+        
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-10px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        .flag-wave {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: flagWave 2s ease-in-out infinite;
+            right: 40px;
+        }
+        
+        @keyframes flagWave {
+            0%, 100% {
+                transform: rotate(-15deg);
+            }
+            50% {
+                transform: rotate(15deg);
+            }
+        }
+        
+        /* Positionner les animations de Noël à gauche */
+        #snowflakes-container .snowflake {
+            left: auto !important;
+            right: auto !important;
+        }
+        
+        #stars-container .star {
+            left: auto !important;
+            right: auto !important;
+        }
+        
+        #lights-container .christmas-light {
+            left: auto !important;
+            right: auto !important;
+        }
+        
+        .santa-hat {
+            left: auto !important;
+            right: auto !important;
+        }
     </style>
 </head>
 <body>
@@ -487,9 +603,22 @@
     <!-- Lumières de Noël -->
     <div id="lights-container"></div>
     
-    <!-- Chapeau de Père Noël -->
-    <div class="santa-hat" style="top: 10%; right: 5%;">🎅</div>
-    <div class="santa-hat" style="top: 15%; left: 8%; animation-delay: 1s;">🎄</div>
+    <!-- Animations de Noël à gauche -->
+    <div style="position: fixed; left: 0; top: 0; width: 200px; height: 100vh; pointer-events: none; z-index: 2; overflow: hidden;">
+        <div class="santa-hat" style="top: 10%; left: 5%;">🎅</div>
+        <div class="santa-hat" style="top: 15%; left: 8%; animation-delay: 1s;">🎄</div>
+    </div>
+    
+    <!-- Animations CAN Football à droite -->
+    <div class="can-container">
+        <div class="trophy">🏆</div>
+        <div class="flag-wave" style="top: 30%; animation-delay: 0.5s;">🇨🇮</div>
+        <div class="flag-wave" style="top: 40%; animation-delay: 1s;">🇸🇳</div>
+        <div class="flag-wave" style="top: 50%; animation-delay: 1.5s;">🇪🇬</div>
+        <div class="flag-wave" style="top: 60%; animation-delay: 2s;">🇲🇦</div>
+        <div id="footballs-container"></div>
+        <div id="confetti-can-container"></div>
+    </div>
     
     <div class="floating-shapes">
         <div class="shape"></div>
@@ -625,7 +754,8 @@
                 const snowflake = document.createElement('div');
                 snowflake.className = 'snowflake';
                 snowflake.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
-                snowflake.style.left = Math.random() * 100 + '%';
+                // Positionner à gauche (0-30% de la largeur)
+                snowflake.style.left = Math.random() * 30 + '%';
                 snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
                 snowflake.style.animationDelay = Math.random() * 2 + 's';
                 container.appendChild(snowflake);
@@ -639,7 +769,8 @@
                 const star = document.createElement('div');
                 star.className = 'star';
                 star.textContent = '⭐';
-                star.style.left = Math.random() * 100 + '%';
+                // Positionner à gauche (0-30% de la largeur)
+                star.style.left = Math.random() * 30 + '%';
                 star.style.top = Math.random() * 100 + '%';
                 star.style.animationDelay = Math.random() * 2 + 's';
                 star.style.animationDuration = (Math.random() * 1 + 1.5) + 's';
@@ -654,18 +785,24 @@
             for (let i = 0; i < 20; i++) {
                 const light = document.createElement('div');
                 light.className = 'christmas-light ' + colors[Math.floor(Math.random() * colors.length)];
-                light.style.left = Math.random() * 100 + '%';
+                // Positionner à gauche (0-30% de la largeur)
+                light.style.left = Math.random() * 30 + '%';
                 light.style.top = Math.random() * 100 + '%';
                 light.style.animationDelay = Math.random() * 1.5 + 's';
                 container.appendChild(light);
             }
         }
         
-        // Initialiser les animations de Noël
+        // Initialiser toutes les animations
         document.addEventListener('DOMContentLoaded', function() {
+            // Animations de Noël à gauche
             createSnowflakes();
             createStars();
             createLights();
+            
+            // Animations CAN Football à droite
+            createFootballs();
+            createConfettiCAN();
         });
         
         // Gestion du formulaire de newsletter
