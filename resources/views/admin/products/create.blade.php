@@ -163,6 +163,17 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_trending" id="is_trending" value="1" {{ old('is_trending') ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="is_trending">
+                                            Produit tendance
+                                        </label>
+                                        <small class="form-text text-muted d-block">Les produits tendance apparaissent dans la section "Tendance" de la page d'accueil</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Marque, Modèle, Garantie -->

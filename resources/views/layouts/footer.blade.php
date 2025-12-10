@@ -987,6 +987,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialiser les carousels
         document.querySelectorAll("[data-multi-carousel]").forEach(el => {
+            // Vérifier qu'il y a des éléments avant d'initialiser
+            const track = el.querySelector(".multi-carousel-track");
+            const items = track ? Array.from(track.querySelectorAll(".multi-carousel-item")) : [];
+            
+            // Si pas d'éléments, ne pas créer d'instance (évite les warnings inutiles)
+            if (!track || !items || items.length === 0) {
+                return; // Passer au suivant sans créer d'instance
+            }
+            
             const options = {
             slidesToShow: parseInt(el.dataset.slidesToShow || 4),
             slidesToScroll: parseInt(el.dataset.slidesToScroll || 1),

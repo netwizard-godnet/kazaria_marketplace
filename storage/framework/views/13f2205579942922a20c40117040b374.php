@@ -15,8 +15,8 @@
             </div>
         </div>
     </div>
-    <button id="kazarAIOpen" class="btn btn-lg orange-bg text-white rounded-circle shadow kazar-ai-fab">
-        <i class="bi bi-robot"></i>
+    <button id="kazarAIOpen" class="btn btn-lg orange-bg text-white rounded-circle shadow kazar-ai-fab" style="padding: 0; display: flex; align-items: center; justify-content: center;">
+        <img src="<?php echo e(asset('images/ai-robot-icon.png')); ?>" alt="KAZAR I.A" style="width: 40px; height: 40px; object-fit: contain;">
     </button>
 </div>
 
@@ -328,9 +328,51 @@ document.addEventListener('DOMContentLoaded', function(){
 .kazar-ai-wrap { left:20px; bottom:30px; z-index:9999999999!important; }
 .kazar-ai-chat { width: 350px; }
 .kazar-ai-thread { height: 350px; overflow:auto; }
-.kazar-ai-fab { width:60px; height:60px; animation: kazarPulse 2.4s infinite; transform-origin:center; }
-.kazar-ai-fab.active { animation: none; }
-.kazar-ai-fab:hover { animation: kazarBounce 0.8s; }
+.kazar-ai-fab { 
+    width:60px; 
+    height:60px; 
+    animation: kazarFloat 3s ease-in-out infinite, kazarPulse 2.4s infinite; 
+    transform-origin:center; 
+    border: none; 
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+.kazar-ai-fab::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: kazarPulse 2.4s infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+.kazar-ai-fab img { 
+    pointer-events: none; 
+    animation: kazarRotate 4s ease-in-out infinite;
+    transition: transform 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+.kazar-ai-fab.active { 
+    animation: none; 
+}
+.kazar-ai-fab.active::before {
+    animation: none;
+}
+.kazar-ai-fab.active img {
+    animation: none;
+}
+.kazar-ai-fab:hover { 
+    animation: kazarBounce 0.6s ease, kazarPulse 2.4s infinite;
+}
+.kazar-ai-fab:hover img {
+    animation: kazarRotate 0.3s ease-in-out infinite alternate;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
 .kazar-ai-bubble {
     display: inline-block;
     max-width: 90%;
@@ -343,15 +385,52 @@ document.addEventListener('DOMContentLoaded', function(){
 .kazar-ai-bubble.ai a.btn { display: inline-block; margin-top: 8px; }
 .kazar-ai-item { background:#f8f9fa; border:1px solid #e9ecef; border-radius:8px; padding:6px 8px; margin-bottom:6px; }
 
-@keyframes kazarPulse {
-  0% { box-shadow: 0 0 0 0 rgba(255,140,0,.6); }
-  70% { box-shadow: 0 0 0 20px rgba(255,140,0,0); }
-  100% { box-shadow: 0 0 0 0 rgba(255,140,0,0); }
+@keyframes kazarFloat {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(-10px); 
+  }
 }
+
+@keyframes kazarPulse {
+  0% { 
+    box-shadow: 0 0 0 0 rgba(255,140,0,.7), 0 0 0 0 rgba(255,140,0,.4);
+  }
+  50% { 
+    box-shadow: 0 0 0 10px rgba(255,140,0,0), 0 0 0 5px rgba(255,140,0,.2);
+  }
+  100% { 
+    box-shadow: 0 0 0 20px rgba(255,140,0,0), 0 0 0 10px rgba(255,140,0,0);
+  }
+}
+
 @keyframes kazarBounce {
-  0%,100% { transform: translateY(0); }
-  30% { transform: translateY(-4px); }
-  60% { transform: translateY(0); }
+  0%, 100% { 
+    transform: translateY(0) scale(1);
+  }
+  25% { 
+    transform: translateY(-8px) scale(1.05);
+  }
+  50% { 
+    transform: translateY(-4px) scale(1.1);
+  }
+  75% { 
+    transform: translateY(-6px) scale(1.05);
+  }
+}
+
+@keyframes kazarRotate {
+  0%, 100% { 
+    transform: rotate(0deg);
+  }
+  25% { 
+    transform: rotate(-5deg);
+  }
+  75% { 
+    transform: rotate(5deg);
+  }
 }
 
 @media (max-width: 576px) {

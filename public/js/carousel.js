@@ -34,8 +34,12 @@
         this.currentIndex = 0;
         this.isTransitioning = false;
         this.timer = null;
+        this.resizeTimer = null;
+        this.safetyTimeout = null;
         this.setupAttempts = 0;
         this.maxSetupAttempts = 10;
+        this.transitionEndHandler = null;
+        this.isDestroyed = false;
 
         // Attendre que le DOM soit complètement chargé avant de setup
         if (document.readyState === 'loading') {
@@ -51,15 +55,20 @@
             }, 0);
         }
         
-        window.addEventListener("resize", () => {
+        // Stocker la référence du handler pour pouvoir le retirer
+        this.resizeHandler = () => {
+            if (this.isDestroyed) return;
             // Réinitialiser le compteur à chaque resize pour permettre de nouvelles tentatives
             this.setupAttempts = 0;
             // Utiliser un debounce pour éviter trop d'appels
             clearTimeout(this.resizeTimer);
             this.resizeTimer = setTimeout(() => {
-                this.setup();
+                if (!this.isDestroyed) {
+                    this.setup();
+                }
             }, 100);
-        });
+        };
+        window.addEventListener("resize", this.resizeHandler);
         
         if (this.options.autoplay) {
             // Démarrer l'autoplay après le setup
@@ -84,12 +93,17 @@
         }
 
         setup() {
-        this.slidesToShow = this.getSlidesToShow();
+            if (this.isDestroyed) return;
+            
+            // Réinitialiser l'état de transition pour éviter les blocages
+            this.isTransitioning = false;
+            
+            this.slidesToShow = this.getSlidesToShow();
 
-        // Vérifier qu'il y a des éléments essentiels
-        if (!this.track || !this.items || this.items.length === 0) {
-            return;
-        }
+            // Vérifier qu'il y a des éléments essentiels
+            if (!this.track || !this.items || this.items.length === 0) {
+                return;
+            }
 
         // Vérifier que le container a une largeur
         if (!this.container || this.container.offsetWidth === 0) {
@@ -160,91 +174,252 @@
             }
         });
 
-        // Reset position au début des éléments originaux (après les clones de début)
-        this.currentIndex = clonesBefore.length;
-        this.updatePosition(false);
+            // Reset position au début des éléments originaux (après les clones de début)
+            this.currentIndex = clonesBefore.length;
+            this.updatePosition(false);
 
-        // Dots
-        this.updateDots();
+            // Réattacher les événements après le setup (au cas où les éléments ont été recréés)
+            this.attachEvents();
+            
+            // Redémarrer l'autoplay si nécessaire
+            if (this.options.autoplay && !this.timer) {
+                this.startAutoplay();
+            }
+
+            // Dots
+            this.updateDots();
+        }
+        
+        destroy() {
+            this.isDestroyed = true;
+            this.stopAutoplay();
+            this.detachEvents();
+            if (this.resizeHandler) {
+                window.removeEventListener("resize", this.resizeHandler);
+            }
+            if (this.resizeTimer) {
+                clearTimeout(this.resizeTimer);
+            }
+            if (this.safetyTimeout) {
+                clearTimeout(this.safetyTimeout);
+                this.safetyTimeout = null;
+            }
+            if (this.transitionEndHandler && this.track) {
+                this.track.removeEventListener("transitionend", this.transitionEndHandler);
+            }
         }
 
         attachEvents() {
-        if (this.nextBtn) this.nextBtn.addEventListener("click", () => this.next());
-        if (this.prevBtn) this.prevBtn.addEventListener("click", () => this.prev());
+            // Retirer les anciens événements s'ils existent
+            this.detachEvents();
+            
+            // Stocker les handlers pour pouvoir les retirer plus tard
+            this.nextHandler = () => {
+                if (!this.isDestroyed) this.next();
+            };
+            this.prevHandler = () => {
+                if (!this.isDestroyed) this.prev();
+            };
+            this.mouseEnterHandler = () => {
+                if (!this.isDestroyed) this.stopAutoplay();
+            };
+            this.mouseLeaveHandler = () => {
+                if (!this.isDestroyed) this.startAutoplay();
+            };
+            
+            if (this.nextBtn) this.nextBtn.addEventListener("click", this.nextHandler);
+            if (this.prevBtn) this.prevBtn.addEventListener("click", this.prevHandler);
 
-        if (this.options.pauseOnHover && this.options.autoplay) {
-            this.container.addEventListener("mouseenter", () => this.stopAutoplay());
-            this.container.addEventListener("mouseleave", () => this.startAutoplay());
+            if (this.options.pauseOnHover && this.options.autoplay) {
+                this.container.addEventListener("mouseenter", this.mouseEnterHandler);
+                this.container.addEventListener("mouseleave", this.mouseLeaveHandler);
+            }
         }
+        
+        detachEvents() {
+            if (this.nextBtn && this.nextHandler) {
+                this.nextBtn.removeEventListener("click", this.nextHandler);
+            }
+            if (this.prevBtn && this.prevHandler) {
+                this.prevBtn.removeEventListener("click", this.prevHandler);
+            }
+            if (this.container && this.mouseEnterHandler) {
+                this.container.removeEventListener("mouseenter", this.mouseEnterHandler);
+            }
+            if (this.container && this.mouseLeaveHandler) {
+                this.container.removeEventListener("mouseleave", this.mouseLeaveHandler);
+            }
         }
 
         updatePosition(animate = true) {
-        if (!this.track || !this.allItems || this.allItems.length === 0) {
-            return;
-        }
-        
-        const firstItem = this.allItems[0];
-        if (!firstItem) {
-            return;
-        }
-        
-        // Vérifier que l'élément a une largeur calculée
-        let itemWidth = firstItem.offsetWidth || 0;
-        
-        // Si la largeur n'est pas disponible, essayer de la calculer depuis le container
-        if (itemWidth === 0 && this.container && this.container.offsetWidth > 0) {
-            const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
-            itemWidth = (this.container.offsetWidth / actualSlidesToShow) - this.options.gap;
-        }
-        
-        // Si toujours 0, utiliser une valeur par défaut pour éviter les erreurs
-        if (itemWidth === 0) {
-            itemWidth = 200; // Largeur par défaut
-        }
-        
-        this.track.style.transition = animate ? "transform 0.5s" : "none";
-        const offset = -(this.currentIndex * (itemWidth + this.options.gap));
-        this.track.style.transform = `translateX(${offset}px)`;
+            if (!this.track || !this.allItems || this.allItems.length === 0) {
+                return;
+            }
+            
+            const firstItem = this.allItems[0];
+            if (!firstItem) {
+                return;
+            }
+            
+            // Vérifier que l'élément a une largeur calculée
+            let itemWidth = firstItem.offsetWidth || 0;
+            
+            // Si la largeur n'est pas disponible, essayer de la calculer depuis le container
+            if (itemWidth === 0 && this.container && this.container.offsetWidth > 0) {
+                const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
+                itemWidth = (this.container.offsetWidth / actualSlidesToShow) - this.options.gap;
+            }
+            
+            // Si toujours 0, utiliser une valeur par défaut pour éviter les erreurs
+            if (itemWidth === 0) {
+                itemWidth = 200; // Largeur par défaut
+            }
+            
+            const offset = -(this.currentIndex * (itemWidth + this.options.gap));
+            
+            // Pour les resets sans animation (boucle infinie), utiliser requestAnimationFrame
+            // pour s'assurer que la transition est bien désactivée avant le changement
+            if (!animate) {
+                // Désactiver la transition immédiatement
+                this.track.style.transition = "none";
+                // Utiliser requestAnimationFrame pour s'assurer que le navigateur a appliqué
+                // la désactivation de la transition avant de changer la position
+                requestAnimationFrame(() => {
+                    if (!this.isDestroyed && this.track) {
+                        this.track.style.transform = `translateX(${offset}px)`;
+                    }
+                });
+            } else {
+                // Pour les animations normales, activer la transition puis changer la position
+                this.track.style.transition = "transform 0.5s ease";
+                // Utiliser requestAnimationFrame pour s'assurer que la transition est activée
+                // avant de changer la position
+                requestAnimationFrame(() => {
+                    if (!this.isDestroyed && this.track) {
+                        this.track.style.transform = `translateX(${offset}px)`;
+                    }
+                });
+            }
         }
 
         next() {
-        if (this.isTransitioning || !this.items || this.items.length === 0) return;
-        this.isTransitioning = true;
-        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
-        const clonesNeeded = Math.max(actualSlidesToShow, 1);
-        
-        this.currentIndex += this.options.slidesToScroll;
-        this.updatePosition(true);
-
-        this.track.addEventListener("transitionend", () => {
-            // Si on dépasse la fin (après les clones de fin), revenir au début des vrais éléments
-            if (this.currentIndex >= this.items.length + clonesNeeded) {
-                this.currentIndex = clonesNeeded;
-                this.updatePosition(false);
+            if (this.isDestroyed || this.isTransitioning || !this.items || this.items.length === 0) return;
+            
+            // Retirer l'ancien handler s'il existe
+            if (this.transitionEndHandler && this.track) {
+                this.track.removeEventListener("transitionend", this.transitionEndHandler);
             }
-            this.isTransitioning = false;
-            this.updateActiveDot();
-        }, { once: true });
+            
+            this.isTransitioning = true;
+            const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
+            const clonesNeeded = Math.max(actualSlidesToShow, 1);
+            
+            this.currentIndex += this.options.slidesToScroll;
+            this.updatePosition(true);
+
+            // Créer un nouveau handler et le stocker
+            this.transitionEndHandler = () => {
+                if (this.isDestroyed) return;
+                
+                // Si on dépasse la fin (après les clones de fin), revenir au début des vrais éléments
+                if (this.currentIndex >= this.items.length + clonesNeeded) {
+                    this.currentIndex = clonesNeeded;
+                    this.updatePosition(false); // Reset sans animation
+                    // Réinitialiser immédiatement car updatePosition(false) ne déclenche pas transitionend
+                    this.isTransitioning = false;
+                    this.updateActiveDot();
+                    this.transitionEndHandler = null;
+                    return;
+                }
+                this.isTransitioning = false;
+                this.updateActiveDot();
+                this.transitionEndHandler = null;
+            };
+            
+            // Stocker le timeout pour pouvoir le nettoyer si nécessaire
+            this.safetyTimeout = setTimeout(() => {
+                if (this.isTransitioning && !this.isDestroyed && this.transitionEndHandler) {
+                    // Si le timeout se déclenche, cela signifie que transitionend ne s'est pas déclenché
+                    // Réinitialiser l'état et exécuter le handler
+                    this.isTransitioning = false;
+                    this.transitionEndHandler();
+                }
+            }, 600); // Légèrement plus long que la transition CSS (500ms)
+            
+            // Wrapper le handler pour nettoyer le timeout
+            const wrappedHandler = () => {
+                if (this.safetyTimeout) {
+                    clearTimeout(this.safetyTimeout);
+                    this.safetyTimeout = null;
+                }
+                if (this.transitionEndHandler) {
+                    this.transitionEndHandler();
+                }
+            };
+            
+            this.track.addEventListener("transitionend", wrappedHandler, { once: true });
         }
 
         prev() {
-        if (this.isTransitioning || !this.items || this.items.length === 0) return;
-        this.isTransitioning = true;
-        const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
-        const clonesNeeded = Math.max(actualSlidesToShow, 1);
-        
-        this.currentIndex -= this.options.slidesToScroll;
-        this.updatePosition(true);
-
-        this.track.addEventListener("transitionend", () => {
-            // Si on dépasse le début (avant les clones de début), aller à la fin des vrais éléments
-            if (this.currentIndex < clonesNeeded) {
-                this.currentIndex = this.items.length + clonesNeeded - 1;
-                this.updatePosition(false);
+            if (this.isDestroyed || this.isTransitioning || !this.items || this.items.length === 0) return;
+            
+            // Retirer l'ancien handler s'il existe
+            if (this.transitionEndHandler && this.track) {
+                this.track.removeEventListener("transitionend", this.transitionEndHandler);
             }
-            this.isTransitioning = false;
-            this.updateActiveDot();
-        }, { once: true });
+            
+            this.isTransitioning = true;
+            const actualSlidesToShow = Math.min(this.slidesToShow, this.items.length);
+            const clonesNeeded = Math.max(actualSlidesToShow, 1);
+            
+            this.currentIndex -= this.options.slidesToScroll;
+            this.updatePosition(true);
+
+            // Créer un nouveau handler et le stocker
+            this.transitionEndHandler = () => {
+                if (this.isDestroyed) return;
+                
+                // Si on dépasse le début (avant les clones de début), aller à la fin des vrais éléments
+                if (this.currentIndex < clonesNeeded) {
+                    this.currentIndex = this.items.length + clonesNeeded - 1;
+                    this.updatePosition(false); // Reset sans animation
+                    // Réinitialiser immédiatement car updatePosition(false) ne déclenche pas transitionend
+                    this.isTransitioning = false;
+                    this.updateActiveDot();
+                    this.transitionEndHandler = null;
+                    return;
+                }
+                this.isTransitioning = false;
+                this.updateActiveDot();
+                this.transitionEndHandler = null;
+            };
+            
+            // Stocker le timeout pour pouvoir le nettoyer si nécessaire
+            // Nettoyer l'ancien timeout s'il existe
+            if (this.safetyTimeout) {
+                clearTimeout(this.safetyTimeout);
+            }
+            this.safetyTimeout = setTimeout(() => {
+                if (this.isTransitioning && !this.isDestroyed && this.transitionEndHandler) {
+                    // Si le timeout se déclenche, cela signifie que transitionend ne s'est pas déclenché
+                    // Réinitialiser l'état et exécuter le handler
+                    this.isTransitioning = false;
+                    this.transitionEndHandler();
+                }
+            }, 600); // Légèrement plus long que la transition CSS (500ms)
+            
+            // Wrapper le handler pour nettoyer le timeout
+            const wrappedHandler = () => {
+                if (this.safetyTimeout) {
+                    clearTimeout(this.safetyTimeout);
+                    this.safetyTimeout = null;
+                }
+                if (this.transitionEndHandler) {
+                    this.transitionEndHandler();
+                }
+            };
+            
+            this.track.addEventListener("transitionend", wrappedHandler, { once: true });
         }
 
         updateDots() {
@@ -275,8 +450,15 @@
         }
 
         startAutoplay() {
-        this.stopAutoplay();
-        this.timer = setInterval(() => this.next(), this.options.autoplaySpeed);
+            if (this.isDestroyed || !this.options.autoplay) return;
+            this.stopAutoplay();
+            this.timer = setInterval(() => {
+                if (!this.isDestroyed && this.items && this.items.length > 0) {
+                    this.next();
+                } else {
+                    this.stopAutoplay();
+                }
+            }, this.options.autoplaySpeed);
         }
 
         stopAutoplay() {

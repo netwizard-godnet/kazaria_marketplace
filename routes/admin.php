@@ -67,6 +67,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
             Route::post('/{product}/approve', [ProductController::class, 'approve'])->name('approve');
             Route::post('/{product}/reject', [ProductController::class, 'reject'])->name('reject');
             Route::post('/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggle-status');
+            Route::post('/{product}/toggle-trending', [ProductController::class, 'toggleTrending'])->name('toggle-trending');
         });
 
         // Route paramétrée après pour ne pas matcher "create"

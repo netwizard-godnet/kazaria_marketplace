@@ -477,6 +477,16 @@ unset($__errorArgs, $__bag); ?>
                             </div>
                         </div>
 
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_trending" id="is_trending" value="1" <?php echo e(old('is_trending', $product->is_trending) ? 'checked' : ''); ?>>
+                                <label class="form-check-label" for="is_trending">
+                                    Produit tendance
+                                </label>
+                                <small class="form-text text-muted">Les produits tendance apparaissent dans la section "Tendance" de la page d'accueil</small>
+                            </div>
+                        </div>
+
                         <!-- Section Images -->
                         <div class="form-group">
                             <label>Images du produit</label>

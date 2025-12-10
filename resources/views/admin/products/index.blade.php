@@ -63,6 +63,11 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <select class="form-control mr-2" id="trendingFilter" onchange="filterByTrending()" title="Filtrer par statut tendance">
+                                <option value="">Tous les produits</option>
+                                <option value="yes" {{ request('trending') === 'yes' ? 'selected' : '' }}>🔥 Produits tendance</option>
+                                <option value="no" {{ request('trending') === 'no' ? 'selected' : '' }}>Non tendance</option>
+                            </select>
                             <button class="btn btn-primary" onclick="searchProducts()">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -81,6 +86,7 @@
                                     <th>Stock</th>
                                     <th>Catégorie</th>
                                     <th>Statut</th>
+                                    <th>Tendance</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -111,6 +117,11 @@
                                         </span>
                                     </td>
                                     <td>
+                                        <span class="badge badge-{{ $product->is_trending ? 'warning' : 'secondary' }}">
+                                            {{ $product->is_trending ? 'Oui' : 'Non' }}
+                                        </span>
+                                    </td>
+                                    <td>
                                         <div class="btn-group" role="group">
                                             <!-- Bouton Voir -->
                                             <a href="{{ route('admin.products.show', $product) }}" class="btn btn-info btn-sm" title="Voir">
@@ -136,6 +147,20 @@
                                                 @endif
                                             </form>
                                             
+                                            <!-- Bouton Toggle Trending -->
+                                            <form action="{{ route('admin.products.toggle-trending', $product) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @if($product->is_trending)
+                                                    <button type="submit" class="btn btn-warning btn-sm" title="Retirer des tendances" onclick="return confirm('Retirer ce produit des tendances ?')">
+                                                        <i class="fas fa-fire"></i>
+                                                    </button>
+                                                @else
+                                                    <button type="submit" class="btn btn-outline-warning btn-sm" title="Marquer comme tendance" onclick="return confirm('Marquer ce produit comme tendance ?')">
+                                                        <i class="fas fa-fire"></i>
+                                                    </button>
+                                                @endif
+                                            </form>
+                                            
                                             <!-- Bouton Supprimer -->
                                             <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="d-inline">
                                                 @csrf
@@ -149,7 +174,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="8" class="text-center">Aucun produit trouvé</td>
+                                    <td colspan="9" class="text-center">Aucun produit trouvé</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -312,6 +337,7 @@ function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value;
     const status = document.getElementById('statusFilter').value;
     const category = document.getElementById('categoryFilter').value;
+    const trending = document.getElementById('trendingFilter').value;
 
     let url = `{{ route('admin.products.index') }}?`;
     const params = new URLSearchParams();
@@ -324,6 +350,9 @@ function searchProducts() {
     }
     if (category) {
         params.append('category', category);
+    }
+    if (trending) {
+        params.append('trending', trending);
     }
 
     window.location.href = url + params.toString();
@@ -340,6 +369,7 @@ function filterByStatus() {
     const status = document.getElementById('statusFilter').value;
     const search = document.getElementById('searchInput').value;
     const category = document.getElementById('categoryFilter').value;
+    const trending = document.getElementById('trendingFilter').value;
 
     let url = `{{ route('admin.products.index') }}?`;
     const params = new URLSearchParams();
@@ -352,6 +382,9 @@ function filterByStatus() {
     }
     if (category) {
         params.append('category', category);
+    }
+    if (trending) {
+        params.append('trending', trending);
     }
 
     window.location.href = url + params.toString();
@@ -361,6 +394,7 @@ function filterByCategory() {
     const category = document.getElementById('categoryFilter').value;
     const search = document.getElementById('searchInput').value;
     const status = document.getElementById('statusFilter').value;
+    const trending = document.getElementById('trendingFilter').value;
 
     let url = `{{ route('admin.products.index') }}?`;
     const params = new URLSearchParams();
@@ -373,6 +407,34 @@ function filterByCategory() {
     }
     if (category) {
         params.append('category', category);
+    }
+    if (trending) {
+        params.append('trending', trending);
+    }
+
+    window.location.href = url + params.toString();
+}
+
+function filterByTrending() {
+    const trending = document.getElementById('trendingFilter').value;
+    const search = document.getElementById('searchInput').value;
+    const status = document.getElementById('statusFilter').value;
+    const category = document.getElementById('categoryFilter').value;
+
+    let url = `{{ route('admin.products.index') }}?`;
+    const params = new URLSearchParams();
+
+    if (search.trim()) {
+        params.append('search', search);
+    }
+    if (status) {
+        params.append('status', status);
+    }
+    if (category) {
+        params.append('category', category);
+    }
+    if (trending) {
+        params.append('trending', trending);
     }
 
     window.location.href = url + params.toString();

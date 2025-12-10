@@ -116,8 +116,8 @@
                         <div class="d-flex align-items-center justify-content-start flex-column flex-sm-row">
                             <i class="fa-solid fa-rocket fa-2x me-3 orange-color"></i>
                             <div class="vstack gap-2">
-                                <p class="fs-7 fw-bold mb-0">Livraison Gratuite</p>
-                                <span class="fs-8 text-secondary d-none d-sm-block">Livraison gratuite pour tout achat de 100.000F ou plus</span>
+                                <p class="fs-7 fw-bold mb-0">Livraison Rapide</p>
+                                <span class="fs-8 text-secondary d-none d-sm-block">Commandez et faites vous livrer en 24H</span>
                             </div>
                         </div>
                     </div>
@@ -515,6 +515,7 @@
         <!-- SECTION Download our app end -->
 
         <!-- SECTION Tendance -->
+        @if($trendingProducts->count() > 0)
         <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
             <div class="bg-light d-flex align-items-center justify-content-between mb-4 border-bottom p-2">
                 <h5 class="mb-0">Tendance</h5>
@@ -530,6 +531,7 @@
             <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
             <div class="multi-carousel-dots text-center mt-2"></div>
         </section>
+        @endif
         <!-- SECTION Tendance END -->
 
         <!-- SECTION Suggestions basées sur l'historique (hors chat box) -->
@@ -735,6 +737,12 @@
     <script>
         // Countdown pour les deals du jour
         (function() {
+            // Vérifier que document est disponible
+            if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+                console.error('Document ou addEventListener non disponible pour le countdown');
+                return;
+            }
+            
             const endTime = {{ $countdownEndTime }}; // Temps de fin en millisecondes
             
             function updateCountdown() {
@@ -780,30 +788,41 @@
     <script>
         // Nettoyer l'URL si on vient d'une connexion (sans recharger)
         (function() {
+            if (typeof window === 'undefined' || typeof document === 'undefined') {
+                return;
+            }
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('login')) {
                 // Nettoyer l'URL en retirant le paramètre login sans recharger
                 const cleanUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, cleanUrl);
+                const pageTitle = document.title || '';
+                window.history.replaceState({}, pageTitle, cleanUrl);
             }
         })();
     </script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Attendre que MultiCarousel soit disponible
-        function waitForMultiCarousel(callback) {
-            if (typeof MultiCarousel !== 'undefined') {
-                callback();
-            } else {
-                setTimeout(() => waitForMultiCarousel(callback), 100);
-            }
+    (function() {
+        // Vérifier que document est disponible
+        if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+            console.error('Document ou addEventListener non disponible');
+            return;
         }
         
+    document.addEventListener('DOMContentLoaded', function() {
+            // Attendre que MultiCarousel soit disponible
+            function waitForMultiCarousel(callback) {
+                if (typeof MultiCarousel !== 'undefined') {
+                    callback();
+                } else {
+                    setTimeout(() => waitForMultiCarousel(callback), 100);
+                }
+            }
+            
         // Charger les suggestions basées sur l'historique de vues
-        waitForMultiCarousel(() => {
-            loadAISuggestions();
-        });
+            waitForMultiCarousel(() => {
+        loadAISuggestions();
+            });
         
         function loadAISuggestions() {
             fetch('/api/ai/suggestions', {
@@ -854,11 +873,11 @@
             // Attendre un peu pour que le DOM soit mis à jour
             setTimeout(() => {
                 if (typeof MultiCarousel !== 'undefined') {
-                    // Supprimer l'ancienne instance si elle existe
-                    if (section.multiCarouselInstance) {
-                        // Nettoyer l'ancienne instance si nécessaire
-                        delete section.multiCarouselInstance;
+                    // Nettoyer l'ancienne instance si elle existe
+                    if (section.multiCarouselInstance && typeof section.multiCarouselInstance.destroy === 'function') {
+                        section.multiCarouselInstance.destroy();
                     }
+                    section.multiCarouselInstance = null;
                     
                     // Créer une nouvelle instance de MultiCarousel
                     const options = {
@@ -921,7 +940,7 @@
                                 ` : `
                                     <span class="fs-7 text-danger fw-bold text-nowrap">${formatPrice(price)}</span>
                                 `}
-                            </div>
+                                </div>
                             <p class="fs-7 my-2 orange-color product-name-truncate" title="${productName}">${productName}</p>
                             <div class="hstack gap-1 mb-2">
                                 ${generateStars(product.rating || 0)}
@@ -959,5 +978,6 @@
             }).format(price) + ' FCFA';
         }
     });
+    })();
     </script>
 @endsection

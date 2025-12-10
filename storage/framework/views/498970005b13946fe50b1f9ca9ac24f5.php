@@ -1428,16 +1428,16 @@ use Illuminate\Support\Str;
                             <td><strong>${new Intl.NumberFormat('fr-FR').format(order.total)} FCFA</strong></td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    ${cancelButton}
+                                ${cancelButton}
                                     <button class="action-btn action-btn-success" onclick="trackOrder('${order.order_number}')" title="Suivre la commande">
-                                        <i class="bi bi-truck"></i>
-                                    </button>
+                                    <i class="bi bi-truck"></i>
+                                </button>
                                     <a href="/order/invoice/${order.order_number}" class="action-btn action-btn-primary" title="Voir la facture">
-                                        <i class="bi bi-file-earmark-text"></i>
-                                    </a>
+                                    <i class="bi bi-file-earmark-text"></i>
+                                </a>
                                     <a href="/order/download/${order.order_number}" class="action-btn action-btn-orange" title="Télécharger PDF">
-                                        <i class="bi bi-download"></i>
-                                    </a>
+                                    <i class="bi bi-download"></i>
+                                </a>
                                 </div>
                             </td>
                         `;
@@ -1776,7 +1776,7 @@ use Illuminate\Support\Str;
                         <div class="order-info-card">
                             <div class="card-icon orange">
                                 <i class="bi bi-receipt fs-4"></i>
-                            </div>
+                    </div>
                             <h6 class="fw-bold mb-3" style="color: #333;">Informations de commande</h6>
                             <div class="info-item">
                                 <span class="info-label"><i class="bi bi-hash me-1"></i>Numéro:</span>
@@ -1842,9 +1842,9 @@ use Illuminate\Support\Str;
                         <div class="d-flex align-items-center mb-3">
                             <div class="card-icon orange me-3" style="margin-bottom: 0;">
                                 <i class="bi bi-clipboard-check fs-5"></i>
-                            </div>
+                    </div>
                             <h6 class="fw-bold mb-0" style="color: #333;">Suivi de livraison</h6>
-                        </div>
+                            </div>
                         
                         <!-- Barre de progression -->
                         <div class="progress-bar-modern">
@@ -1856,10 +1856,10 @@ use Illuminate\Support\Str;
                             <div class="timeline-step ${isValidationComplete ? 'completed' : activeStep === 1 ? 'active' : ''}">
                                 <div class="timeline-icon">
                                     ${isValidationComplete ? '<i class="bi bi-check"></i>' : activeStep === 1 ? '<i class="bi bi-clock"></i>' : ''}
-                                </div>
+                            </div>
                                 <div class="timeline-content">
                                     <h6>En cours de validation</h6>
-                                </div>
+                        </div>
                             </div>
                             
                             <div class="timeline-step ${isDelivered ? 'completed' : activeStep === 2 ? 'active' : ''}">

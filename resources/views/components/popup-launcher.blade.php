@@ -183,6 +183,13 @@
 
 @push('scripts')
 <script>
+(function() {
+    // Vérifier que document est disponible
+    if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+        console.error('[Popups] Document ou addEventListener non disponible');
+        return;
+    }
+    
 document.addEventListener('DOMContentLoaded', function() {
     const root = document.getElementById('popup-launcher-root');
     const modalElement = document.getElementById('popupLauncherModal');
@@ -439,6 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.info('[Popups] filtrée par fréquence/limite', popup.slug);
             }
         }, delay * 1000);
+    });
     });
 })();
 </script>
