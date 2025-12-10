@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.redirect' => \App\Http\Middleware\RedirectIfNotAdmin::class,
             'force.session' => \App\Http\Middleware\ForceSessionSave::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'landing.page' => \App\Http\Middleware\LandingPageMiddleware::class,
         ]);
         
         // Remplacer le middleware CSRF par défaut par notre version personnalisée
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Appliquer les middlewares web globalement
         $middleware->web(append: [
             \App\Http\Middleware\SeoMiddleware::class,
+            \App\Http\Middleware\LandingPageMiddleware::class,
         ]);
         
         // NE PAS appliquer ForceSessionSave car il modifie la session

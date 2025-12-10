@@ -86,7 +86,7 @@ class SettingController extends Controller
     {
         $request->validate([
             'settings' => 'required|array',
-            'settings.*' => 'nullable|string',
+            'settings.*' => 'nullable',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,ico|max:1024',
         ], [
@@ -103,6 +103,21 @@ class SettingController extends Controller
 
         // Traiter les paramètres
         foreach ($request->settings as $key => $value) {
+            // Gérer les sélecteurs multiples (deals_categories et deals_subcategories)
+            // Ces champs envoient des tableaux qu'il faut convertir en chaînes séparées par des virgules
+            if (in_array($key, ['deals_categories', 'deals_subcategories'])) {
+                if (is_array($value)) {
+                    // Filtrer les valeurs vides et convertir en chaîne séparée par des virgules
+                    $value = implode(',', array_filter($value, function($v) {
+                        return !empty(trim($v));
+                    }));
+                } else {
+                    // Si ce n'est pas un tableau, traiter comme une chaîne vide
+                    $value = '';
+                }
+            }
+            
+            // Traiter la valeur seulement si elle n'est pas null
             if ($value !== null) {
                 // Déterminer si le paramètre doit être public
                 $isPublic = in_array($key, [

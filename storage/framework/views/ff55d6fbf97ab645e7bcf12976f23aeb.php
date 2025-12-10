@@ -207,7 +207,7 @@ use Illuminate\Support\Facades\Storage;
                             </label>
                             
                             <?php if($setting->key === 'deals_categories'): ?>
-                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>]" multiple>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple>
                                     <option value="">Toutes les catégories</option>
                                     <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($category->id); ?>" <?php echo e(in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
@@ -218,7 +218,7 @@ use Illuminate\Support\Facades\Storage;
                                 </select>
                                 <small class="text-muted">Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)</small>
                             <?php elseif($setting->key === 'deals_subcategories'): ?>
-                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>]" multiple>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple>
                                     <option value="">Toutes les sous-catégories</option>
                                     <?php $__currentLoopData = \App\Models\Subcategory::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($subcategory->id); ?>" <?php echo e(in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>

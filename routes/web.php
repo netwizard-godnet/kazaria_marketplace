@@ -8,6 +8,37 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\NewsletterController;
 
+// Route de landing page (doit être avant les autres routes pour être accessible)
+Route::get('/landing', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'landing',
+        'KAZARIA - Bientôt disponible',
+        'KAZARIA arrive bientôt ! Une nouvelle marketplace en ligne pour tous vos besoins en Côte d\'Ivoire.',
+        'KAZARIA, marketplace, Côte d\'Ivoire, e-commerce, bientôt disponible'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
+    
+    // Récupérer les paramètres du site
+    $settings = [];
+    try {
+        $settingsModel = \App\Models\Setting::where('is_public', true)->get();
+        foreach ($settingsModel as $setting) {
+            $settings[$setting->key] = $setting->value;
+        }
+    } catch (\Exception $e) {
+        // Si la table n'existe pas encore, utiliser des valeurs par défaut
+        $settings = [
+            'site_name' => 'KAZARIA',
+            'site_description' => 'Votre marketplace en ligne en Côte d\'Ivoire'
+        ];
+    }
+    
+    return view('landing', compact('settings'));
+})->name('landing');
+
 // Routes principales (SESSION)
 Route::get('/', [HomeController::class, 'index'])->name('accueil');
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');

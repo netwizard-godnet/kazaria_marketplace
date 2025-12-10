@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Landing Page Mode
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, all routes will redirect to the landing page except
+    | excluded paths (admin, API, assets, etc.). Set LANDING_PAGE_ENABLED=true
+    | in your ".env" file to enable.
+    |
+    */
+
+    'landing_page_enabled' => env('LANDING_PAGE_ENABLED', false),
+
 ];

@@ -214,6 +214,7 @@
       'View' => 'Illuminate\\Support\\Facades\\View',
       'Vite' => 'Illuminate\\Support\\Facades\\Vite',
     ),
+    'landing_page_enabled' => true,
   ),
   'auth' => 
   array (

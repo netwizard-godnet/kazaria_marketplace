@@ -203,7 +203,7 @@ use Illuminate\Support\Facades\Storage;
                             </label>
                             
                             @if($setting->key === 'deals_categories')
-                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}]" multiple>
+                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
                                     <option value="">Toutes les catégories</option>
                                     @foreach(\App\Models\Category::active()->get() as $category)
                                         <option value="{{ $category->id }}" {{ in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
@@ -213,7 +213,7 @@ use Illuminate\Support\Facades\Storage;
                                 </select>
                                 <small class="text-muted">Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)</small>
                             @elseif($setting->key === 'deals_subcategories')
-                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}]" multiple>
+                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
                                     <option value="">Toutes les sous-catégories</option>
                                     @foreach(\App\Models\Subcategory::active()->get() as $subcategory)
                                         <option value="{{ $subcategory->id }}" {{ in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
