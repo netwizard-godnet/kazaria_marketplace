@@ -170,7 +170,7 @@ use Illuminate\Support\Facades\Storage;
                                 // Page d'accueil
                                 'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
                                 'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
-                                'homepage_category_sections' => 'Sections de catégories de produits sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',
@@ -205,7 +205,7 @@ use Illuminate\Support\Facades\Storage;
                             };
                         @endphp
                         <div class="form-group mb-3 {{ $isGeneral ? 'col-md-6' : '' }}">
-                            <label for="setting_{{ $setting->key }}" class="form-label">
+                            <label for="setting_{{ $setting->key }}" class="form-label" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;">
                                 {{ $label }}
                                 @if($setting->is_public)
                                     <span class="badge badge-success badge-sm">Public</span>
@@ -405,7 +405,7 @@ use Illuminate\Support\Facades\Storage;
                                 // Page d'accueil
                                 'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
                                 'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
-                                'homepage_category_sections' => 'Sections de catégories de produits sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',

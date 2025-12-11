@@ -33,7 +33,7 @@ class SettingController extends Controller
         }
         if (!Setting::where('key', 'homepage_category_sections')->exists()) {
             // Par défaut, utiliser les 4 catégories existantes (IDs séparés par des virgules)
-            Setting::set('homepage_category_sections', '', 'string', 'homepage', 'Catégories à afficher comme sections de produits sur la page d\'accueil (IDs séparés par des virgules)', false);
+            Setting::set('homepage_category_sections', '', 'string', 'homepage', 'Sections de produits sur la page d\'accueil', false);
         }
 
         // S'assurer que les médias par défaut existent dans storage/public
@@ -334,7 +334,7 @@ class SettingController extends Controller
             // Page d'accueil
             ['key' => 'homepage_categories', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
             ['key' => 'homepage_subcategories', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Sous-catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
-            ['key' => 'homepage_category_sections', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Catégories à afficher comme sections de produits sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
+            ['key' => 'homepage_category_sections', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Sections de produits sur la page d\'accueil', 'is_public' => false],
         ];
 
         foreach ($defaultSettings as $setting) {
