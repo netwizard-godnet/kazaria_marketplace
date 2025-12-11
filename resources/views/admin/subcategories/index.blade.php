@@ -73,28 +73,22 @@
                     <!-- Messages -->
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ session('error') }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
                     @if(session('warning'))
                         <div class="alert alert-warning alert-dismissible fade show" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>{{ session('warning') }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
@@ -322,5 +316,59 @@
 .table-hover tbody tr:hover {
     background-color: rgba(0,0,0,.075);
 }
+
+/* Styles pour les alertes */
+.alert {
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+}
+
+.alert .btn-close {
+    padding: 0.5rem 0.75rem;
+}
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier et afficher les messages de session
+    const alerts = document.querySelectorAll('.alert');
+    
+    alerts.forEach(function(alert) {
+        // S'assurer que l'alerte est visible
+        alert.style.display = 'block';
+        alert.style.opacity = '1';
+        
+        // Gérer la fermeture pour Bootstrap 4 et 5
+        const closeButton = alert.querySelector('.btn-close, .close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert.style.transition = 'opacity 0.15s linear';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 150);
+            });
+        }
+    });
+    
+    // Auto-fermer les alertes après 5 secondes
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            if (alert && alert.parentNode) {
+                alert.style.transition = 'opacity 0.15s linear';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    if (alert && alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 150);
+            }
+        }, 5000);
+    });
+});
+</script>
 @endpush
