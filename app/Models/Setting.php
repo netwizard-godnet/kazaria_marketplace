@@ -60,6 +60,13 @@ class Setting extends Model
     {
         switch ($type) {
             case 'boolean':
+                // Convertir correctement les valeurs booléennes (gérer "0", "1", "false", "true", etc.)
+                if ($value === '0' || $value === 0 || $value === false || $value === 'false') {
+                    return false;
+                }
+                if ($value === '1' || $value === 1 || $value === true || $value === 'true') {
+                    return true;
+                }
                 return (bool) $value;
             case 'integer':
                 return (int) $value;

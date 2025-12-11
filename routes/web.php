@@ -9,6 +9,77 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\NewsletterController;
 
+// Route de landing page (doit être avant les autres routes pour être accessible)
+Route::get('/landing', function () {
+    $seoData = \App\Http\Controllers\SeoController::getStaticPageSeo(
+        'landing',
+        'KAZARIA - Bientôt disponible',
+        'KAZARIA arrive bientôt ! Une nouvelle marketplace en ligne pour tous vos besoins en Côte d\'Ivoire.',
+        'KAZARIA, marketplace, Côte d\'Ivoire, e-commerce, bientôt disponible'
+    );
+    foreach ($seoData as $key => $value) {
+        $seoKey = 'seo' . ucfirst($key);
+        view()->share($seoKey, $value);
+    }
+    
+    // Récupérer les paramètres du site
+    $settings = [];
+    try {
+        $settingsModel = \App\Models\Setting::where('is_public', true)->get();
+        foreach ($settingsModel as $setting) {
+            $settings[$setting->key] = $setting->value;
+        }
+    } catch (\Exception $e) {
+        // Si la table n'existe pas encore, utiliser des valeurs par défaut
+        $settings = [
+            'site_name' => 'KAZARIA',
+            'site_description' => 'Votre marketplace en ligne en Côte d\'Ivoire'
+        ];
+    }
+    
+    // Calculer la date de lancement pour le compte à rebours
+    // Priorité : Setting admin > Config .env > Par défaut (24h fixe stocké en session)
+    $launchDate = null;
+    
+    // Essayer d'abord depuis les settings admin
+    $setting = \App\Models\Setting::where('key', 'landing_page_launch_date')->first();
+    if ($setting && !empty(trim($setting->value))) {
+        $launchDate = trim($setting->value);
+    }
+    
+    // Fallback sur la config si le setting n'existe pas ou est vide
+    if (!$launchDate || empty($launchDate)) {
+        $configDate = config('app.landing_page_launch_date', null);
+        if ($configDate && !empty(trim($configDate))) {
+            $launchDate = trim($configDate);
+        }
+    }
+    
+    if ($launchDate && !empty($launchDate)) {
+        try {
+            // Utiliser la date configurée
+            $targetTimestamp = \Carbon\Carbon::parse($launchDate)->timestamp * 1000;
+        } catch (\Exception $e) {
+            // Si la date est invalide, utiliser une date fixe par défaut (24h à partir de maintenant, stockée en session)
+            if (!session()->has('landing_page_default_launch_date')) {
+                session(['landing_page_default_launch_date' => now()->addHours(24)->format('Y-m-d H:i:s')]);
+            }
+            $defaultDate = session('landing_page_default_launch_date');
+            $targetTimestamp = \Carbon\Carbon::parse($defaultDate)->timestamp * 1000;
+        }
+    } else {
+        // Par défaut : utiliser une date fixe stockée en session (24h à partir de la première visite)
+        // Cette date sera la même pour toutes les actualisations de la page
+        if (!session()->has('landing_page_default_launch_date')) {
+            session(['landing_page_default_launch_date' => now()->addHours(24)->format('Y-m-d H:i:s')]);
+        }
+        $defaultDate = session('landing_page_default_launch_date');
+        $targetTimestamp = \Carbon\Carbon::parse($defaultDate)->timestamp * 1000;
+    }
+    
+    return view('landing', compact('settings', 'targetTimestamp'));
+})->name('landing');
+
 // Routes principales (SESSION)
 Route::get('/', [HomeController::class, 'index'])->name('accueil');
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');

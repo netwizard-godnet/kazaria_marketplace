@@ -15,6 +15,14 @@ class SettingController extends Controller
         if (!Setting::where('key', 'min_order_quantity')->exists()) {
             $this->createDefaultSettings();
         }
+        
+        // S'assurer que les paramètres de landing page existent
+        if (!Setting::where('key', 'landing_page_enabled')->exists()) {
+            Setting::set('landing_page_enabled', '0', 'boolean', 'maintenance', 'Activer la landing page', false);
+        }
+        if (!Setting::where('key', 'landing_page_launch_date')->exists()) {
+            Setting::set('landing_page_launch_date', '', 'string', 'maintenance', 'Date de lancement (format: Y-m-d H:i:s)', false);
+        }
 
         // S'assurer que les médias par défaut existent dans storage/public
         $this->ensureDefaultMedia();
@@ -48,6 +56,12 @@ class SettingController extends Controller
             'deals_max_discount' => 'deals',
             'deals_categories' => 'deals',
             'deals_subcategories' => 'deals',
+            
+            // Maintenance
+            'maintenance_mode' => 'maintenance',
+            'maintenance_message' => 'maintenance',
+            'landing_page_enabled' => 'maintenance',
+            'landing_page_launch_date' => 'maintenance',
         ];
 
         // Ordre d'affichage par groupe
@@ -86,7 +100,7 @@ class SettingController extends Controller
     {
         $request->validate([
             'settings' => 'required|array',
-            'settings.*' => 'nullable|string',
+            'settings.*' => 'nullable',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'favicon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,ico|max:1024',
         ], [
@@ -103,6 +117,31 @@ class SettingController extends Controller
 
         // Traiter les paramètres
         foreach ($request->settings as $key => $value) {
+            // Gérer les sélecteurs multiples (deals_categories et deals_subcategories)
+            // Ces champs envoient des tableaux qu'il faut convertir en chaînes séparées par des virgules
+            if (in_array($key, ['deals_categories', 'deals_subcategories'])) {
+                if (is_array($value)) {
+                    // Filtrer les valeurs vides et convertir en chaîne séparée par des virgules
+                    $value = implode(',', array_filter($value, function($v) {
+                        return !empty(trim($v));
+                    }));
+                } else {
+                    // Si ce n'est pas un tableau, traiter comme une chaîne vide
+                    $value = '';
+                }
+            }
+            
+            // Convertir datetime-local en format Y-m-d H:i:s pour landing_page_launch_date
+            if ($key === 'landing_page_launch_date' && $value) {
+                try {
+                    // Le format datetime-local est Y-m-d\TH:i, on le convertit en Y-m-d H:i:s
+                    $value = \Carbon\Carbon::parse($value)->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    // Si la conversion échoue, garder la valeur telle quelle
+                }
+            }
+            
+            // Traiter la valeur seulement si elle n'est pas null
             if ($value !== null) {
                 // Déterminer si le paramètre doit être public
                 $isPublic = in_array($key, [
@@ -115,10 +154,24 @@ class SettingController extends Controller
                 
                 // Récupérer le groupe et la description existants si le setting existe déjà
                 $existing = Setting::where('key', $key)->first();
-                $group = $existing ? $existing->group : ($key === 'contact_email' || $key === 'contact_phone' || $key === 'contact_address' ? 'contact' : 'general');
+                $group = $existing ? $existing->group : ($key === 'contact_email' || $key === 'contact_phone' || $key === 'contact_address' ? 'contact' : ($key === 'landing_page_enabled' || $key === 'maintenance_mode' ? 'maintenance' : 'general'));
                 $description = $existing ? $existing->description : null;
                 
-                Setting::set($key, $value, 'string', $group, $description, $isPublic);
+                // Déterminer le type selon la clé
+                $type = $existing ? $existing->type : 'string';
+                if ($key === 'landing_page_enabled' || $key === 'maintenance_mode') {
+                    $type = 'boolean';
+                    // S'assurer que la valeur est bien "0" ou "1" pour les booléens
+                    if ($value === '0' || $value === 0 || $value === false) {
+                        $value = '0';
+                    } elseif ($value === '1' || $value === 1 || $value === true) {
+                        $value = '1';
+                    }
+                } elseif ($key === 'min_order_quantity' || $key === 'free_shipping_threshold' || $key === 'shipping_cost') {
+                    $type = 'integer';
+                }
+                
+                Setting::set($key, $value, $type, $group, $description, $isPublic);
                 
                 // Synchroniser contact_phone avec site_phone
                 if ($key === 'contact_phone') {
@@ -254,6 +307,10 @@ class SettingController extends Controller
             // Maintenance
             ['key' => 'maintenance_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'maintenance', 'description' => 'Mode maintenance', 'is_public' => false],
             ['key' => 'maintenance_message', 'value' => 'Site en maintenance', 'type' => 'string', 'group' => 'maintenance', 'description' => 'Message de maintenance', 'is_public' => false],
+            
+            // Landing Page
+            ['key' => 'landing_page_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'maintenance', 'description' => 'Activer la landing page', 'is_public' => false],
+            ['key' => 'landing_page_launch_date', 'value' => '', 'type' => 'string', 'group' => 'maintenance', 'description' => 'Date de lancement (format: Y-m-d H:i:s)', 'is_public' => false],
         ];
 
         foreach ($defaultSettings as $setting) {

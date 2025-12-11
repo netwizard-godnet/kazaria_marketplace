@@ -136,6 +136,7 @@ use Illuminate\Support\Facades\Storage;
                                 'email_notifications',
                                 'push_notifications',
                                 'maintenance_mode',
+                                'landing_page_enabled',
                             ];
                         ?>
                         <?php if($isGeneral): ?>
@@ -174,6 +175,8 @@ use Illuminate\Support\Facades\Storage;
                                 // Maintenance
                                 'maintenance_mode' => 'Mode maintenance',
                                 'maintenance_message' => 'Message de maintenance',
+                                'landing_page_enabled' => 'Activer la landing page',
+                                'landing_page_launch_date' => 'Date de lancement (Y-m-d H:i:s)',
                                 // Paiement (CinetPay)
                                 'cinetpay_api_key' => 'Clé API CinetPay',
                                 'cinetpay_site_id' => 'ID du site CinetPay',
@@ -207,7 +210,7 @@ use Illuminate\Support\Facades\Storage;
                             </label>
                             
                             <?php if($setting->key === 'deals_categories'): ?>
-                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>]" multiple>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple>
                                     <option value="">Toutes les catégories</option>
                                     <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($category->id); ?>" <?php echo e(in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
@@ -218,7 +221,7 @@ use Illuminate\Support\Facades\Storage;
                                 </select>
                                 <small class="text-muted">Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)</small>
                             <?php elseif($setting->key === 'deals_subcategories'): ?>
-                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>]" multiple>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple>
                                     <option value="">Toutes les sous-catégories</option>
                                     <?php $__currentLoopData = \App\Models\Subcategory::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($subcategory->id); ?>" <?php echo e(in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
@@ -245,6 +248,14 @@ use Illuminate\Support\Facades\Storage;
                                         <label class="form-check-label" for="setting_<?php echo e($setting->key); ?>_0">Non</label>
                                         </div>
                                     </div>
+                            <?php elseif($setting->key === 'landing_page_launch_date'): ?>
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       id="setting_<?php echo e($setting->key); ?>" 
+                                       name="settings[<?php echo e($setting->key); ?>]" 
+                                       value="<?php echo e($setting->value ? \Carbon\Carbon::parse($setting->value)->format('Y-m-d\TH:i') : ''); ?>"
+                                       placeholder="2025-12-31 23:59:59">
+                                <small class="text-muted">Format: Y-m-d H:i:s (ex: 2025-12-31 23:59:59)</small>
                             <?php elseif($setting->type === 'integer' || $setting->type === 'float'): ?>
                                 <input type="number" 
                                        class="form-control" 
@@ -307,6 +318,7 @@ use Illuminate\Support\Facades\Storage;
                                 'email_notifications',
                                 'push_notifications',
                                 'maintenance_mode',
+                                'landing_page_enabled',
                             ];
                         ?>
                         <?php $__currentLoopData = $groupSettings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $setting): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -342,6 +354,8 @@ use Illuminate\Support\Facades\Storage;
                                 // Maintenance
                                 'maintenance_mode' => 'Mode maintenance',
                                 'maintenance_message' => 'Message de maintenance',
+                                'landing_page_enabled' => 'Activer la landing page',
+                                'landing_page_launch_date' => 'Date de lancement (Y-m-d H:i:s)',
                                 // Paiement (CinetPay)
                                 'cinetpay_api_key' => 'Clé API CinetPay',
                                 'cinetpay_site_id' => 'ID du site CinetPay',
@@ -391,6 +405,14 @@ use Illuminate\Support\Facades\Storage;
                                         <label class="form-check-label" for="setting_<?php echo e($setting->key); ?>_0">Non</label>
                                         </div>
                                     </div>
+                            <?php elseif($setting->key === 'landing_page_launch_date'): ?>
+                                <input type="datetime-local" 
+                                       class="form-control" 
+                                       id="setting_<?php echo e($setting->key); ?>" 
+                                       name="settings[<?php echo e($setting->key); ?>]" 
+                                       value="<?php echo e($setting->value ? \Carbon\Carbon::parse($setting->value)->format('Y-m-d\TH:i') : ''); ?>"
+                                       placeholder="2025-12-31 23:59:59">
+                                <small class="text-muted">Format: Y-m-d H:i:s (ex: 2025-12-31 23:59:59)</small>
                             <?php elseif($setting->type === 'integer' || $setting->type === 'float'): ?>
                                 <input type="number" 
                                        class="form-control" 

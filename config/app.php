@@ -123,4 +123,30 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Landing Page Mode
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, all routes will redirect to the landing page except
+    | excluded paths (admin, API, assets, etc.). Set LANDING_PAGE_ENABLED=true
+    | in your ".env" file to enable.
+    |
+    */
+
+    'landing_page_enabled' => env('LANDING_PAGE_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Landing Page Launch Date
+    |--------------------------------------------------------------------------
+    |
+    | The launch date for the landing page countdown. Format: Y-m-d H:i:s
+    | Example: 2024-12-31 23:59:59
+    | If not set, defaults to 24 hours from now.
+    |
+    */
+
+    'landing_page_launch_date' => env('LANDING_PAGE_LAUNCH_DATE', null),
+
 ];

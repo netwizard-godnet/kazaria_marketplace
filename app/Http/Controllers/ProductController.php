@@ -105,6 +105,11 @@ class ProductController extends Controller
     {
         $category = Category::where('slug', $slug)->firstOrFail();
         
+        // Vérifier si la catégorie est active, sinon retourner 404
+        if (!$category->is_active) {
+            abort(404);
+        }
+        
         // Métadonnées SEO
         $seoData = \App\Http\Controllers\SeoController::getCategorySeo($category);
         foreach ($seoData as $key => $value) {

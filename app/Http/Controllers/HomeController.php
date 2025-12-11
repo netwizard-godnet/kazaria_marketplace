@@ -176,38 +176,66 @@ class HomeController extends Controller
             ->take(16)
             ->get();
         
-        // Récupérer les produits par catégorie
-        $phoneProducts = Product::active()
-            ->whereHas('category', function($query) {
-                $query->where('slug', 'telephones-et-tablettes');
-            })
-            ->inStock()
-            ->take(12)
-            ->get();
+        // Récupérer les produits par catégorie (uniquement si les catégories sont actives)
+        $phoneCategory = Category::where('slug', 'telephones-et-tablettes')->first();
+        $phoneProducts = collect();
+        $isPhoneCategoryActive = false;
+        if ($phoneCategory && $phoneCategory->is_active) {
+            $isPhoneCategoryActive = true;
+            $phoneProducts = Product::active()
+                ->whereHas('category', function($query) {
+                    $query->where('slug', 'telephones-et-tablettes')
+                          ->where('is_active', true);
+                })
+                ->inStock()
+                ->take(12)
+                ->get();
+        }
             
-        $tvProducts = Product::active()
-            ->whereHas('category', function($query) {
-                $query->where('slug', 'tv-et-electronique');
-            })
-            ->inStock()
-            ->take(12)
-            ->get();
+        $tvCategory = Category::where('slug', 'tv-et-electronique')->first();
+        $tvProducts = collect();
+        $isTvCategoryActive = false;
+        if ($tvCategory && $tvCategory->is_active) {
+            $isTvCategoryActive = true;
+            $tvProducts = Product::active()
+                ->whereHas('category', function($query) {
+                    $query->where('slug', 'tv-et-electronique')
+                          ->where('is_active', true);
+                })
+                ->inStock()
+                ->take(12)
+                ->get();
+        }
             
-        $electroProducts = Product::active()
-            ->whereHas('category', function($query) {
-                $query->where('slug', 'electromenager');
-            })
-            ->inStock()
-            ->take(12)
-            ->get();
+        $electroCategory = Category::where('slug', 'electromenager')->first();
+        $electroProducts = collect();
+        $isElectroCategoryActive = false;
+        if ($electroCategory && $electroCategory->is_active) {
+            $isElectroCategoryActive = true;
+            $electroProducts = Product::active()
+                ->whereHas('category', function($query) {
+                    $query->where('slug', 'electromenager')
+                          ->where('is_active', true);
+                })
+                ->inStock()
+                ->take(12)
+                ->get();
+        }
             
-        $computerProducts = Product::active()
-            ->whereHas('category', function($query) {
-                $query->where('slug', 'ordinateurs-et-accessoires');
-            })
-            ->inStock()
-            ->take(12)
-            ->get();
+        $computerCategory = Category::where('slug', 'ordinateurs-et-accessoires')->first();
+        $computerProducts = collect();
+        $isComputerCategoryActive = false;
+        if ($computerCategory && $computerCategory->is_active) {
+            $isComputerCategoryActive = true;
+            $computerProducts = Product::active()
+                ->whereHas('category', function($query) {
+                    $query->where('slug', 'ordinateurs-et-accessoires')
+                          ->where('is_active', true);
+                })
+                ->inStock()
+                ->take(12)
+                ->get();
+        }
         
         // Récupérer les produits tendance
         $trendingProducts = Product::active()
@@ -231,7 +259,11 @@ class HomeController extends Controller
             'computerProducts',
             'trendingProducts',
             'countdownEndTime',
-            'topBrands'
+            'topBrands',
+            'isPhoneCategoryActive',
+            'isTvCategoryActive',
+            'isElectroCategoryActive',
+            'isComputerCategoryActive'
         ));
     }
 }
