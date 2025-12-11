@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Subcategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class SubcategoryController extends Controller
@@ -53,6 +54,14 @@ class SubcategoryController extends Controller
      */
     public function store(Request $request)
     {
+        // Log pour déboguer
+        \Log::info('Store subcategory - Request data', [
+            'has_file' => $request->hasFile('image'),
+            'file_valid' => $request->hasFile('image') ? $request->file('image')->isValid() : false,
+            'file_size' => $request->hasFile('image') ? $request->file('image')->getSize() : null,
+            'file_mime' => $request->hasFile('image') ? $request->file('image')->getMimeType() : null,
+        ]);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -69,8 +78,71 @@ class SubcategoryController extends Controller
         $subcategory = Subcategory::create($data);
 
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('subcategories', 'public');
-            $subcategory->update(['image' => $imagePath]);
+            try {
+                $file = $request->file('image');
+                
+                // Vérifier que le fichier est valide
+                if (!$file->isValid()) {
+                    \Log::error('Fichier image invalide', [
+                        'subcategory_id' => $subcategory->id,
+                        'error' => $file->getError(),
+                        'error_message' => $file->getErrorMessage()
+                    ]);
+                } else {
+                    // S'assurer que le dossier existe
+                    $subcategoriesDir = storage_path('app/public/subcategories');
+                    if (!file_exists($subcategoriesDir)) {
+                        File::makeDirectory($subcategoriesDir, 0755, true);
+                        \Log::info('Dossier subcategories créé', ['path' => $subcategoriesDir]);
+                    }
+                    
+                    $imagePath = $file->store('subcategories', 'public');
+                    
+                    if ($imagePath) {
+                        $subcategory->update(['image' => $imagePath]);
+                        
+                        // Vérifier que le fichier existe après enregistrement
+                        $fileExists = Storage::disk('public')->exists($imagePath);
+                        
+                        \Log::info('Image sous-catégorie enregistrée', [
+                            'subcategory_id' => $subcategory->id,
+                            'image_path' => $imagePath,
+                            'file_exists' => $fileExists,
+                            'full_path' => Storage::disk('public')->path($imagePath)
+                        ]);
+                        
+                        if (!$fileExists) {
+                            \Log::error('Le fichier n\'existe pas après enregistrement', [
+                                'subcategory_id' => $subcategory->id,
+                                'image_path' => $imagePath
+                            ]);
+                        }
+                    } else {
+                        \Log::error('Échec de l\'enregistrement - store() retourne null', [
+                            'subcategory_id' => $subcategory->id
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Erreur lors de l\'enregistrement de l\'image', [
+                    'subcategory_id' => $subcategory->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+        } else {
+            \Log::info('Aucun fichier image dans la requête', [
+                'subcategory_id' => $subcategory->id,
+                'all_files' => $request->allFiles()
+            ]);
+        }
+
+        // Vérifier si l'image a été enregistrée
+        $subcategory->refresh();
+        if ($request->hasFile('image') && !$subcategory->image) {
+            return redirect()->back()
+                ->withInput()
+                ->with('warning', 'La sous-catégorie a été créée mais l\'image n\'a pas pu être enregistrée. Veuillez vérifier les logs et réessayer.');
         }
 
         return redirect()->route('admin.subcategories.index')
@@ -116,11 +188,71 @@ class SubcategoryController extends Controller
         $subcategory->update($data);
 
         if ($request->hasFile('image')) {
-            if ($subcategory->image) {
-                Storage::disk('public')->delete($subcategory->image);
+            try {
+                $file = $request->file('image');
+                
+                // Vérifier que le fichier est valide
+                if (!$file->isValid()) {
+                    \Log::error('Fichier image invalide lors de la mise à jour', [
+                        'subcategory_id' => $subcategory->id,
+                        'error' => $file->getError(),
+                        'error_message' => $file->getErrorMessage()
+                    ]);
+                } else {
+                    // S'assurer que le dossier existe
+                    $subcategoriesDir = storage_path('app/public/subcategories');
+                    if (!file_exists($subcategoriesDir)) {
+                        File::makeDirectory($subcategoriesDir, 0755, true);
+                        \Log::info('Dossier subcategories créé', ['path' => $subcategoriesDir]);
+                    }
+                    
+                    // Supprimer l'ancienne image si elle existe
+                    if ($subcategory->image && Storage::disk('public')->exists($subcategory->image)) {
+                        Storage::disk('public')->delete($subcategory->image);
+                    }
+                    
+                    $imagePath = $file->store('subcategories', 'public');
+                    
+                    if ($imagePath) {
+                        $subcategory->update(['image' => $imagePath]);
+                        
+                        // Vérifier que le fichier existe après enregistrement
+                        $fileExists = Storage::disk('public')->exists($imagePath);
+                        
+                        \Log::info('Image sous-catégorie mise à jour', [
+                            'subcategory_id' => $subcategory->id,
+                            'image_path' => $imagePath,
+                            'file_exists' => $fileExists,
+                            'full_path' => Storage::disk('public')->path($imagePath)
+                        ]);
+                        
+                        if (!$fileExists) {
+                            \Log::error('Le fichier n\'existe pas après mise à jour', [
+                                'subcategory_id' => $subcategory->id,
+                                'image_path' => $imagePath
+                            ]);
+                        }
+                    } else {
+                        \Log::error('Échec de la mise à jour - store() retourne null', [
+                            'subcategory_id' => $subcategory->id
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Erreur lors de la mise à jour de l\'image', [
+                    'subcategory_id' => $subcategory->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
-            $imagePath = $request->file('image')->store('subcategories', 'public');
-            $subcategory->update(['image' => $imagePath]);
+        }
+
+        // Vérifier si l'image a été enregistrée
+        $subcategory->refresh();
+        if ($request->hasFile('image') && !$subcategory->image) {
+            return redirect()->back()
+                ->withInput()
+                ->with('warning', 'La sous-catégorie a été mise à jour mais l\'image n\'a pas pu être enregistrée. Veuillez vérifier les logs et réessayer.');
         }
 
         return redirect()->route('admin.subcategories.index')
