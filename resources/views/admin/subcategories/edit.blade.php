@@ -105,9 +105,9 @@
 
                         <div class="form-group">
                             <label for="image">Image</label>
-                            @if($subcategory->image)
+                            @if($subcategory->image && $subcategory->image_url)
                                 <div class="mb-2">
-                                    <img src="{{ asset('storage/' . $subcategory->image) }}" alt="{{ $subcategory->name }}" 
+                                    <img src="{{ $subcategory->image_url }}" alt="{{ $subcategory->name }}" 
                                          class="img-thumbnail" style="max-width: 200px;">
                                     <p class="text-muted small">Image actuelle</p>
                                 </div>

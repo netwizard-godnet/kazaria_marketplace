@@ -108,9 +108,10 @@
                                 <tr>
                                     <td>{{ $subcategory->id }}</td>
                                     <td>
-                                        @if($subcategory->image)
-                                            <img src="{{ asset('storage/' . $subcategory->image) }}" alt="{{ $subcategory->name }}" 
-                                                 class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                        @if($subcategory->image && $subcategory->image_url)
+                                            <img src="{{ $subcategory->image_url }}" alt="{{ $subcategory->name }}" 
+                                                 class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"
+                                                 onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'bg-light d-flex align-items-center justify-content-center\' style=\'width: 50px; height: 50px; border-radius: 4px;\'><i class=\'fas fa-image text-muted\'></i></div>';">
                                         @else
                                             <div class="bg-light d-flex align-items-center justify-content-center" 
                                                  style="width: 50px; height: 50px; border-radius: 4px;">

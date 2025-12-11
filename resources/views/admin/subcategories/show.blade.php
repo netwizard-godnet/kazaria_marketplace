@@ -58,8 +58,8 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            @if($subcategory->image)
-                                <img src="{{ asset('storage/' . $subcategory->image) }}" alt="{{ $subcategory->name }}" 
+                            @if($subcategory->image && $subcategory->image_url)
+                                <img src="{{ $subcategory->image_url }}" alt="{{ $subcategory->name }}" 
                                      class="img-fluid rounded">
                             @else
                                 <div class="bg-light d-flex align-items-center justify-content-center rounded" 
