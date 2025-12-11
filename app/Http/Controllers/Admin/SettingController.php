@@ -31,6 +31,10 @@ class SettingController extends Controller
         if (!Setting::where('key', 'homepage_subcategories')->exists()) {
             Setting::set('homepage_subcategories', '', 'string', 'homepage', 'Sous-catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', false);
         }
+        if (!Setting::where('key', 'homepage_category_sections')->exists()) {
+            // Par défaut, utiliser les 4 catégories existantes (IDs séparés par des virgules)
+            Setting::set('homepage_category_sections', '', 'string', 'homepage', 'Catégories à afficher comme sections de produits sur la page d\'accueil (IDs séparés par des virgules)', false);
+        }
 
         // S'assurer que les médias par défaut existent dans storage/public
         $this->ensureDefaultMedia();
@@ -68,6 +72,7 @@ class SettingController extends Controller
             // Page d'accueil
             'homepage_categories' => 'homepage',
             'homepage_subcategories' => 'homepage',
+            'homepage_category_sections' => 'homepage',
             
             // Maintenance
             'maintenance_mode' => 'maintenance',
@@ -84,7 +89,7 @@ class SettingController extends Controller
             // Toujours afficher les paramètres Deals ensemble et dans cet ordre
             'deals' => ['deals_countdown_duration', 'deals_min_discount', 'deals_max_discount', 'deals_categories', 'deals_subcategories'],
             // Page d'accueil
-            'homepage' => ['homepage_categories', 'homepage_subcategories'],
+            'homepage' => ['homepage_categories', 'homepage_subcategories', 'homepage_category_sections'],
         ];
 
         // Construire les groupes pour la vue
@@ -131,9 +136,9 @@ class SettingController extends Controller
 
         // Traiter les paramètres
         foreach ($request->settings as $key => $value) {
-            // Gérer les sélecteurs multiples (deals_categories, deals_subcategories, homepage_categories, homepage_subcategories)
+            // Gérer les sélecteurs multiples (deals_categories, deals_subcategories, homepage_categories, homepage_subcategories, homepage_category_sections)
             // Ces champs envoient des tableaux qu'il faut convertir en chaînes séparées par des virgules
-            if (in_array($key, ['deals_categories', 'deals_subcategories', 'homepage_categories', 'homepage_subcategories'])) {
+            if (in_array($key, ['deals_categories', 'deals_subcategories', 'homepage_categories', 'homepage_subcategories', 'homepage_category_sections'])) {
                 if (is_array($value)) {
                     // Filtrer les valeurs vides et convertir en chaîne séparée par des virgules
                     $value = implode(',', array_filter($value, function($v) {
@@ -329,6 +334,7 @@ class SettingController extends Controller
             // Page d'accueil
             ['key' => 'homepage_categories', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
             ['key' => 'homepage_subcategories', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Sous-catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
+            ['key' => 'homepage_category_sections', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Catégories à afficher comme sections de produits sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
         ];
 
         foreach ($defaultSettings as $setting) {

@@ -170,6 +170,7 @@ use Illuminate\Support\Facades\Storage;
                                 // Page d'accueil
                                 'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
                                 'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de catégories de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',
@@ -226,6 +227,18 @@ use Illuminate\Support\Facades\Storage;
                                     @else
                                         Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)
                                     @endif
+                                </small>
+                            @elseif($setting->key === 'homepage_category_sections')
+                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
+                                    <option value="">Aucune section (masquer toutes les sections)</option>
+                                    @foreach(\App\Models\Category::active()->ordered()->get() as $category)
+                                        <option value="{{ $category->id }}" {{ in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">
+                                    Sélectionnez les catégories à afficher comme sections de produits sur la page d'accueil. L'ordre de sélection détermine l'ordre d'affichage. Si aucune sélection, les 4 catégories par défaut seront affichées (Téléphones, TV, Electroménager, Ordinateurs).
                                 </small>
                             @elseif($setting->key === 'deals_subcategories' || $setting->key === 'homepage_subcategories')
                                 <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
@@ -360,6 +373,7 @@ use Illuminate\Support\Facades\Storage;
                                 // Page d'accueil
                                 'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
                                 'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de catégories de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',

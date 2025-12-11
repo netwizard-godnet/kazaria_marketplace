@@ -237,65 +237,69 @@ class HomeController extends Controller
             ->take(16)
             ->get();
         
-        // Récupérer les produits par catégorie (uniquement si les catégories sont actives)
-        $phoneCategory = Category::where('slug', 'telephones-et-tablettes')->first();
-        $phoneProducts = collect();
-        $isPhoneCategoryActive = false;
-        if ($phoneCategory && $phoneCategory->is_active) {
-            $isPhoneCategoryActive = true;
-            $phoneProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'telephones-et-tablettes')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
+        // Récupérer les sections de catégories configurées pour la page d'accueil
+        $homepageCategorySections = \App\Helpers\SettingHelper::get('homepage_category_sections', '');
+        $categorySections = collect();
+        
+        if (!empty($homepageCategorySections)) {
+            // Si des catégories sont configurées, les utiliser
+            $categoryIds = array_map('trim', explode(',', $homepageCategorySections));
+            $configuredCategories = Category::active()
+                ->whereIn('id', $categoryIds)
                 ->get();
-        }
             
-        $tvCategory = Category::where('slug', 'tv-et-electronique')->first();
-        $tvProducts = collect();
-        $isTvCategoryActive = false;
-        if ($tvCategory && $tvCategory->is_active) {
-            $isTvCategoryActive = true;
-            $tvProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'tv-et-electronique')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
-        }
+            // Préserver l'ordre de configuration
+            foreach ($categoryIds as $categoryId) {
+                $category = $configuredCategories->firstWhere('id', $categoryId);
+                if ($category) {
+                    $products = Product::active()
+                        ->whereHas('category', function($query) use ($category) {
+                            $query->where('id', $category->id)
+                                  ->where('is_active', true);
+                        })
+                        ->inStock()
+                        ->take(12)
+                        ->get();
+                    
+                    if ($products->count() > 0) {
+                        $categorySections->push([
+                            'category' => $category,
+                            'products' => $products,
+                            'is_active' => true
+                        ]);
+                    }
+                }
+            }
+        } else {
+            // Par défaut, utiliser les 4 catégories existantes (rétrocompatibilité)
+            $defaultSlugs = [
+                'telephones-et-tablettes',
+                'tv-et-electronique',
+                'electromenager',
+                'ordinateurs-et-accessoires'
+            ];
             
-        $electroCategory = Category::where('slug', 'electromenager')->first();
-        $electroProducts = collect();
-        $isElectroCategoryActive = false;
-        if ($electroCategory && $electroCategory->is_active) {
-            $isElectroCategoryActive = true;
-            $electroProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'electromenager')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
-        }
-            
-        $computerCategory = Category::where('slug', 'ordinateurs-et-accessoires')->first();
-        $computerProducts = collect();
-        $isComputerCategoryActive = false;
-        if ($computerCategory && $computerCategory->is_active) {
-            $isComputerCategoryActive = true;
-            $computerProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'ordinateurs-et-accessoires')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
+            foreach ($defaultSlugs as $slug) {
+                $category = Category::where('slug', $slug)->first();
+                if ($category && $category->is_active) {
+                    $products = Product::active()
+                        ->whereHas('category', function($query) use ($category) {
+                            $query->where('id', $category->id)
+                                  ->where('is_active', true);
+                        })
+                        ->inStock()
+                        ->take(12)
+                        ->get();
+                    
+                    if ($products->count() > 0) {
+                        $categorySections->push([
+                            'category' => $category,
+                            'products' => $products,
+                            'is_active' => true
+                        ]);
+                    }
+                }
+            }
         }
         
         // Récupérer les produits tendance
@@ -314,17 +318,10 @@ class HomeController extends Controller
         return view('accueil', compact(
             'categories',
             'dealsProducts',
-            'phoneProducts',
-            'tvProducts',
-            'electroProducts',
-            'computerProducts',
+            'categorySections',
             'trendingProducts',
             'countdownEndTime',
-            'topBrands',
-            'isPhoneCategoryActive',
-            'isTvCategoryActive',
-            'isElectroCategoryActive',
-            'isComputerCategoryActive'
+            'topBrands'
         ));
     }
 }

@@ -373,85 +373,29 @@
         </section>
         <!-- SECTION TOP CATEGORIES END -->
 
-        <!-- SECTION TELEPHONES & TABLETTES -->
-        @if(isset($isPhoneCategoryActive) && $isPhoneCategoryActive && $phoneProducts->count() > 0)
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Téléphones et tablettes</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                @foreach ($phoneProducts as $product)
-                <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
-                </div>
-                @endforeach
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
+        <!-- SECTIONS DE CATÉGORIES DE PRODUITS (Dynamiques) -->
+        @if(isset($categorySections) && $categorySections->count() > 0)
+            @foreach($categorySections as $section)
+                @if($section['is_active'] && $section['products']->count() > 0)
+                <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
+                    <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
+                        <h5 class="mb-0 me-4">{{ $section['category']->name }}</h5>
+                    </div>
+                    <div class="multi-carousel-track d-flex">
+                        @foreach ($section['products'] as $product)
+                        <div class="multi-carousel-item px-2">
+                            @include('components.product-card', ['product' => $product])
+                        </div>
+                        @endforeach
+                    </div>
+                    <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
+                    <div class="multi-carousel-dots text-center mt-2"></div>
+                </section>
+                @endif
+            @endforeach
         @endif
-        <!-- SECTION TELEPHONES & TABLETTES END -->
-
-        <!-- SECTION TV et Electronique -->
-        @if(isset($isTvCategoryActive) && $isTvCategoryActive && $tvProducts->count() > 0)
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">TV et Electronique</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                @foreach ($tvProducts as $product)
-                <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
-                </div>
-                @endforeach
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
-        @endif
-        <!-- SECTION TV et Electronique END -->
-
-        <!-- SECTION Electroménager -->
-        @if(isset($isElectroCategoryActive) && $isElectroCategoryActive && $electroProducts->count() > 0)
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Electroménager</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                @foreach ($electroProducts as $product)
-                <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
-                </div>
-                @endforeach
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
-        @endif
-        <!-- SECTION Electroménager END -->
-
-        <!-- SECTION Ordinateurs et accessoires -->
-        @if(isset($isComputerCategoryActive) && $isComputerCategoryActive && $computerProducts->count() > 0)
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Ordinateurs et accessoires</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                @foreach ($computerProducts as $product)
-                <div class="multi-carousel-item px-2">
-                    @include('components.product-card', ['product' => $product])
-                </div>
-                @endforeach
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
-        @endif
-        <!-- SECTION Ordinateurs et accessoires END -->
+        <!-- SECTIONS DE CATÉGORIES DE PRODUITS END -->
 
         <!-- SECTION AFFICHES -->
         <section class="py-5">
