@@ -1,5 +1,6 @@
 # Définition de la plateforme minimale iOS
-platform :ios, '14.0'
+# Firebase Core nécessite iOS 15.0 minimum
+platform :ios, '15.0'
 
 # Désactive les statistiques CocoaPods (accélère les builds)
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -47,8 +48,17 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
 
     # Correction de compatibilité Xcode 15 / iOS 17
+    # Firebase Core nécessite iOS 15.0 minimum
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      
+      # Désactiver la signature de code pour le simulateur en mode Debug
+      # Cela évite les erreurs CodeSign lors du développement local
+      if config.name == 'Debug'
+        config.build_settings['CODE_SIGN_IDENTITY'] = '-'
+        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      end
     end
   end
 end
