@@ -107,7 +107,7 @@
                             <label for="image">Image</label>
                             @if($subcategory->image)
                                 <div class="mb-2">
-                                    <img src="{{ Storage::url($subcategory->image) }}" alt="{{ $subcategory->name }}" 
+                                    <img src="{{ asset('storage/' . $subcategory->image) }}" alt="{{ $subcategory->name }}" 
                                          class="img-thumbnail" style="max-width: 200px;">
                                     <p class="text-muted small">Image actuelle</p>
                                 </div>

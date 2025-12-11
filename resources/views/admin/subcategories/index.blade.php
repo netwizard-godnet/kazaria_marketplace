@@ -109,11 +109,11 @@
                                     <td>{{ $subcategory->id }}</td>
                                     <td>
                                         @if($subcategory->image)
-                                            <img src="{{ Storage::url($subcategory->image) }}" alt="{{ $subcategory->name }}" 
-                                                 class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <img src="{{ asset('storage/' . $subcategory->image) }}" alt="{{ $subcategory->name }}" 
+                                                 class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                                         @else
                                             <div class="bg-light d-flex align-items-center justify-content-center" 
-                                                 style="width: 50px; height: 50px;">
+                                                 style="width: 50px; height: 50px; border-radius: 4px;">
                                                 <i class="fas fa-image text-muted"></i>
                                             </div>
                                         @endif
@@ -164,12 +164,153 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-center">
-                        {{ $subcategories->links() }}
+                    @if($subcategories->hasPages())
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Affichage de {{ $subcategories->firstItem() }} à {{ $subcategories->lastItem() }} sur {{ $subcategories->total() }} sous-catégories
+                        </div>
+                        <div class="pagination-wrapper">
+                            {{ $subcategories->appends(request()->query())->links('pagination.bootstrap-4') }}
+                        </div>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+/* Styles pour la pagination */
+.pagination-wrapper {
+    margin-top: 0;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.pagination .page-link {
+    color: #007bff;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    color: #0056b3;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive pour la pagination */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center !important;
+    }
+    
+    .pagination-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+        min-width: 35px;
+    }
+}
+
+/* Amélioration du tableau */
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Amélioration des boutons d'action */
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Amélioration des badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.badge-success {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Amélioration du tableau */
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,.02);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+</style>
+@endpush
