@@ -33,23 +33,39 @@
                     <h4 class="card-title">Informations de la Sous-catégorie</h4>
                 </div>
                 <div class="card-body">
+                    <?php if(session('success')): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i><?php echo e(session('success')); ?>
+
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if(session('warning')): ?>
                         <div class="alert alert-warning alert-dismissible fade show" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i><?php echo e(session('warning')); ?>
 
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
 
                     <?php if(session('error')): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <?php echo e(session('error')); ?>
+                            <i class="fas fa-exclamation-circle me-2"></i><?php echo e(session('error')); ?>
 
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if($errors->any()): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Veuillez corriger les erreurs suivantes :
+                            <ul class="mb-0 mt-2">
+                                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <li><?php echo e($error); ?></li>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
 
@@ -219,5 +235,48 @@ unset($__errorArgs, $__bag); ?>
     </div>
 </div>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier et afficher les messages de session
+    const alerts = document.querySelectorAll('.alert');
+    
+    alerts.forEach(function(alert) {
+        // S'assurer que l'alerte est visible
+        alert.style.display = 'block';
+        alert.style.opacity = '1';
+        
+        // Gérer la fermeture pour Bootstrap 4 et 5
+        const closeButton = alert.querySelector('.btn-close, .close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert.style.transition = 'opacity 0.15s linear';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 150);
+            });
+        }
+    });
+    
+    // Auto-fermer les alertes après 5 secondes
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            if (alert && alert.parentNode) {
+                alert.style.transition = 'opacity 0.15s linear';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    if (alert && alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 150);
+            }
+        }, 5000);
+    });
+});
+</script>
+<?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\admin\subcategories\create.blade.php ENDPATH**/ ?>
