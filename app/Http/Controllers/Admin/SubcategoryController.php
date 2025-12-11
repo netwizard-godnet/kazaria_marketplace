@@ -33,7 +33,7 @@ class SubcategoryController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
         
-        $subcategories = $query->orderBy('name')->paginate(15)->appends($request->query());
+        $subcategories = $query->orderBy('name')->paginate(15)->appends($request->except('page'));
         $categories = Category::active()->ordered()->get();
         
         return view('admin.subcategories.index', compact('subcategories', 'categories'));
@@ -62,7 +62,7 @@ class SubcategoryController extends Controller
             'order' => 'nullable|integer|min:0',
         ]);
 
-        $data = $request->all();
+        $data = $request->only(['name', 'category_id', 'description', 'order']);
         $data['is_active'] = $request->has('is_active');
         $data['slug'] = Str::slug($request->name);
 
@@ -109,7 +109,7 @@ class SubcategoryController extends Controller
             'order' => 'nullable|integer|min:0',
         ]);
 
-        $data = $request->all();
+        $data = $request->only(['name', 'category_id', 'description', 'order']);
         $data['is_active'] = $request->has('is_active');
         $data['slug'] = Str::slug($request->name);
 

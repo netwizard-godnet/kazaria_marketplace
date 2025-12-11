@@ -100,7 +100,11 @@
                     <div class="row text-center">
                         <div class="col-6">
                             <h3 class="text-primary">{{ $category->subcategories->count() }}</h3>
-                            <p class="text-muted">Sous-catégories</p>
+                            <p class="text-muted mb-1">Sous-catégories</p>
+                            <small class="text-muted">
+                                <span class="badge badge-success">{{ $category->subcategories->where('is_active', true)->count() }} visibles</span>
+                                <span class="badge badge-danger">{{ $category->subcategories->where('is_active', false)->count() }} masquées</span>
+                            </small>
                         </div>
                         <div class="col-6">
                             <h3 class="text-success">{{ $category->products()->count() }}</h3>
@@ -113,15 +117,63 @@
             @if($category->subcategories->count() > 0)
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">Sous-catégories</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">Sous-catégories</h4>
+                        <a href="{{ route('admin.subcategories.index', ['category' => $category->id]) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-cog"></i> Gérer
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    @foreach($category->subcategories as $subcategory)
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span>{{ $subcategory->name }}</span>
-                            <span class="badge badge-info">{{ $subcategory->products()->count() }} produits</span>
+                    @foreach($category->subcategories->orderBy('order')->orderBy('name') as $subcategory)
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center">
+                                    <span class="font-weight-bold mr-2">{{ $subcategory->name }}</span>
+                                    <span class="badge badge-{{ $subcategory->is_active ? 'success' : 'danger' }} badge-sm">
+                                        {{ $subcategory->is_active ? 'Visible' : 'Masquée' }}
+                                    </span>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-box"></i> {{ $subcategory->products()->count() }} produits
+                                    @if($subcategory->order)
+                                        • Ordre: {{ $subcategory->order }}
+                                    @endif
+                                </small>
+                            </div>
+                            <div class="ml-2">
+                                <form action="{{ route('admin.subcategories.toggle-status', $subcategory) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" 
+                                            class="btn btn-sm btn-{{ $subcategory->is_active ? 'warning' : 'success' }}" 
+                                            title="{{ $subcategory->is_active ? 'Masquer' : 'Afficher' }}"
+                                            onclick="return confirm('{{ $subcategory->is_active ? 'Masquer' : 'Afficher' }} cette sous-catégorie sur le site ?')">
+                                        <i class="fas fa-{{ $subcategory->is_active ? 'eye-slash' : 'eye' }}"></i>
+                                    </button>
+                                </form>
+                                <a href="{{ route('admin.subcategories.edit', $subcategory) }}" class="btn btn-sm btn-info" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
                         </div>
                     @endforeach
+                    <div class="mt-3 text-center">
+                        <a href="{{ route('admin.subcategories.create') }}?category={{ $category->id }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus"></i> Ajouter une sous-catégorie
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @else
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Sous-catégories</h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted mb-3">Aucune sous-catégorie pour cette catégorie.</p>
+                    <a href="{{ route('admin.subcategories.create') }}?category={{ $category->id }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Ajouter une sous-catégorie
+                    </a>
                 </div>
             </div>
             @endif
@@ -184,6 +236,20 @@
 
 .btn-group .btn:active {
     transform: translateY(0);
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.border {
+    border-color: #e3e6f0 !important;
+}
+
+.border:hover {
+    border-color: #007bff !important;
+    background-color: #f8f9fa;
 }
 </style>
 @endpush

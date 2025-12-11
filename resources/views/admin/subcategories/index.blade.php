@@ -122,7 +122,8 @@
                                     <td>{{ $subcategory->category->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge badge-{{ $subcategory->is_active ? 'success' : 'danger' }}">
-                                            {{ $subcategory->is_active ? 'Active' : 'Inactive' }}
+                                            <i class="fas fa-{{ $subcategory->is_active ? 'eye' : 'eye-slash' }}"></i>
+                                            {{ $subcategory->is_active ? 'Visible' : 'Masquée' }}
                                         </span>
                                     </td>
                                     <td>{{ $subcategory->order ?? 0 }}</td>
@@ -136,9 +137,10 @@
                                             </a>
                                             <form action="{{ route('admin.subcategories.toggle-status', $subcategory) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-{{ $subcategory->is_active ? 'secondary' : 'success' }} btn-sm" 
-                                                        onclick="return confirm('{{ $subcategory->is_active ? 'Désactiver' : 'Activer' }} cette sous-catégorie ?')">
-                                                    <i class="fas fa-{{ $subcategory->is_active ? 'pause' : 'play' }}"></i>
+                                                <button type="submit" class="btn btn-{{ $subcategory->is_active ? 'warning' : 'success' }} btn-sm" 
+                                                        title="{{ $subcategory->is_active ? 'Masquer sur le site' : 'Afficher sur le site' }}"
+                                                        onclick="return confirm('{{ $subcategory->is_active ? 'Masquer' : 'Afficher' }} cette sous-catégorie sur le site ?')">
+                                                    <i class="fas fa-{{ $subcategory->is_active ? 'eye-slash' : 'eye' }}"></i>
                                                 </button>
                                             </form>
                                             <form action="{{ route('admin.subcategories.destroy', $subcategory) }}" method="POST" class="d-inline">

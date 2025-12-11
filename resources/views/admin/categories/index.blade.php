@@ -125,7 +125,8 @@
                                             <div class="flex-grow-1">
                                                 <h5 class="mb-0">{{ $category->name }}</h5>
                                                 <small class="text-muted">
-                                                    {{ $category->subcategories->count() }} sous-catégories • 
+                                                    {{ $category->subcategories->count() }} sous-catégories
+                                                    ({{ $category->subcategories->where('is_active', true)->count() }} visibles) • 
                                                     {{ $category->products->count() }} produits
                                                 </small>
                                                 <div class="mt-1">
@@ -145,10 +146,19 @@
                                         
                                         @if($category->subcategories->count() > 0)
                                             <div class="mb-3">
-                                                <h6 class="text-muted small">Sous-catégories :</h6>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <h6 class="text-muted small mb-0">Sous-catégories :</h6>
+                                                    <small class="text-muted">
+                                                        <span class="badge badge-success badge-sm">{{ $category->subcategories->where('is_active', true)->count() }} visibles</span>
+                                                        <span class="badge badge-danger badge-sm">{{ $category->subcategories->where('is_active', false)->count() }} masquées</span>
+                                                    </small>
+                                                </div>
                                                 <div class="d-flex flex-wrap">
-                                                    @foreach($category->subcategories->take(3) as $subcategory)
-                                                        <span class="badge badge-secondary mr-1 mb-1 small">{{ $subcategory->name }}</span>
+                                                    @foreach($category->subcategories->orderBy('order')->orderBy('name')->take(3) as $subcategory)
+                                                        <span class="badge badge-{{ $subcategory->is_active ? 'success' : 'secondary' }} mr-1 mb-1 small" title="{{ $subcategory->is_active ? 'Visible sur le site' : 'Masquée sur le site' }}">
+                                                            {{ $subcategory->name }}
+                                                            <i class="fas fa-{{ $subcategory->is_active ? 'eye' : 'eye-slash' }} ml-1"></i>
+                                                        </span>
                                                     @endforeach
                                                     @if($category->subcategories->count() > 3)
                                                         <span class="badge badge-light mr-1 mb-1 small">+{{ $category->subcategories->count() - 3 }}</span>
@@ -382,6 +392,11 @@
     font-size: 0.75rem;
     padding: 0.375rem 0.75rem;
     border-radius: 0.375rem;
+}
+
+.badge-sm {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
 }
 
 /* Responsive pour les boutons */

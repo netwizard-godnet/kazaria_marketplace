@@ -23,6 +23,14 @@ class SettingController extends Controller
         if (!Setting::where('key', 'landing_page_launch_date')->exists()) {
             Setting::set('landing_page_launch_date', '', 'string', 'maintenance', 'Date de lancement (format: Y-m-d H:i:s)', false);
         }
+        
+        // S'assurer que les paramètres de la page d'accueil existent
+        if (!Setting::where('key', 'homepage_categories')->exists()) {
+            Setting::set('homepage_categories', '', 'string', 'homepage', 'Catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', false);
+        }
+        if (!Setting::where('key', 'homepage_subcategories')->exists()) {
+            Setting::set('homepage_subcategories', '', 'string', 'homepage', 'Sous-catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', false);
+        }
 
         // S'assurer que les médias par défaut existent dans storage/public
         $this->ensureDefaultMedia();
@@ -57,6 +65,10 @@ class SettingController extends Controller
             'deals_categories' => 'deals',
             'deals_subcategories' => 'deals',
             
+            // Page d'accueil
+            'homepage_categories' => 'homepage',
+            'homepage_subcategories' => 'homepage',
+            
             // Maintenance
             'maintenance_mode' => 'maintenance',
             'maintenance_message' => 'maintenance',
@@ -71,6 +83,8 @@ class SettingController extends Controller
             'ecommerce' => ['currency', 'currency_symbol', 'min_order_quantity', 'shipping_cost', 'free_shipping_threshold'],
             // Toujours afficher les paramètres Deals ensemble et dans cet ordre
             'deals' => ['deals_countdown_duration', 'deals_min_discount', 'deals_max_discount', 'deals_categories', 'deals_subcategories'],
+            // Page d'accueil
+            'homepage' => ['homepage_categories', 'homepage_subcategories'],
         ];
 
         // Construire les groupes pour la vue
@@ -117,9 +131,9 @@ class SettingController extends Controller
 
         // Traiter les paramètres
         foreach ($request->settings as $key => $value) {
-            // Gérer les sélecteurs multiples (deals_categories et deals_subcategories)
+            // Gérer les sélecteurs multiples (deals_categories, deals_subcategories, homepage_categories, homepage_subcategories)
             // Ces champs envoient des tableaux qu'il faut convertir en chaînes séparées par des virgules
-            if (in_array($key, ['deals_categories', 'deals_subcategories'])) {
+            if (in_array($key, ['deals_categories', 'deals_subcategories', 'homepage_categories', 'homepage_subcategories'])) {
                 if (is_array($value)) {
                     // Filtrer les valeurs vides et convertir en chaîne séparée par des virgules
                     $value = implode(',', array_filter($value, function($v) {
@@ -311,6 +325,10 @@ class SettingController extends Controller
             // Landing Page
             ['key' => 'landing_page_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'maintenance', 'description' => 'Activer la landing page', 'is_public' => false],
             ['key' => 'landing_page_launch_date', 'value' => '', 'type' => 'string', 'group' => 'maintenance', 'description' => 'Date de lancement (format: Y-m-d H:i:s)', 'is_public' => false],
+            
+            // Page d'accueil
+            ['key' => 'homepage_categories', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
+            ['key' => 'homepage_subcategories', 'value' => '', 'type' => 'string', 'group' => 'homepage', 'description' => 'Sous-catégories à afficher sur la page d\'accueil (IDs séparés par des virgules)', 'is_public' => false],
         ];
 
         foreach ($defaultSettings as $setting) {

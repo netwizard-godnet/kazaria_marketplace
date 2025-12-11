@@ -53,7 +53,7 @@ class OrderController extends Controller
             });
         }
 
-        $orders = $query->paginate(15)->appends($request->query());
+        $orders = $query->paginate(15)->appends($request->except('page'));
         $currentStatus = $request->status;
         $currentPaymentStatus = $request->payment_status;
 

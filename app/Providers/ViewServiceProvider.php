@@ -25,7 +25,9 @@ class ViewServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             $allCategories = Category::active()
                 ->ordered()
-                ->with('subcategories')
+                ->with(['subcategories' => function($query) {
+                    $query->where('is_active', true)->orderBy('order')->orderBy('name');
+                }])
                 ->get();
             
             $view->with('allCategories', $allCategories);

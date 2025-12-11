@@ -259,11 +259,11 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::get('/', [\App\Http\Controllers\Admin\SubcategoryController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\Admin\SubcategoryController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Admin\SubcategoryController::class, 'store'])->name('store');
-        Route::get('/{subcategory}', [\App\Http\Controllers\Admin\SubcategoryController::class, 'show'])->name('show');
         Route::get('/{subcategory}/edit', [\App\Http\Controllers\Admin\SubcategoryController::class, 'edit'])->name('edit');
         Route::put('/{subcategory}', [\App\Http\Controllers\Admin\SubcategoryController::class, 'update'])->name('update');
         Route::delete('/{subcategory}', [\App\Http\Controllers\Admin\SubcategoryController::class, 'destroy'])->name('destroy');
         Route::post('/{subcategory}/toggle-status', [\App\Http\Controllers\Admin\SubcategoryController::class, 'toggleStatus'])->name('toggle-status');
+        Route::get('/{subcategory}', [\App\Http\Controllers\Admin\SubcategoryController::class, 'show'])->name('show');
     });
     
     // Attributes

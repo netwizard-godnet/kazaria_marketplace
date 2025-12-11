@@ -65,7 +65,9 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
-        $category->load(['subcategories', 'products' => function($query) {
+        $category->load(['subcategories' => function($query) {
+            $query->orderBy('order')->orderBy('name');
+        }, 'products' => function($query) {
             $query->latest()->take(10);
         }]);
         return view('admin.categories.show', compact('category'));
