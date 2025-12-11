@@ -58,7 +58,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-4">
-                            @if($subcategory->image && $subcategory->image_url)
+                            @if($subcategory->image)
                                 <img src="{{ $subcategory->image_url }}" alt="{{ $subcategory->name }}" 
                                      class="img-fluid rounded">
                             @else
