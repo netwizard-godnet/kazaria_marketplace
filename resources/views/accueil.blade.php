@@ -364,7 +364,6 @@
                         </div>
                         <div class="py-3 border-top">
                             <p class="fs-6 my-0 orange-color text-center fw-bold">{{ $item['name'] }}</p>
-                            <small class="text-muted text-center d-block">{{ $item['type'] === 'category' ? 'Catégorie' : 'Sous-catégorie' }}</small>
                         </div>
                     </a>
                 </div>
