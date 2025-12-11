@@ -229,16 +229,48 @@ use Illuminate\Support\Facades\Storage;
                                     @endif
                                 </small>
                             @elseif($setting->key === 'homepage_category_sections')
-                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
+                                @php
+                                    // Parser les valeurs existantes pour déterminer ce qui est sélectionné
+                                    $selectedValues = [];
+                                    if ($setting->value) {
+                                        $items = array_map('trim', explode(',', $setting->value));
+                                        foreach ($items as $item) {
+                                            if (str_starts_with($item, 'category:') || str_starts_with($item, 'subcategory:')) {
+                                                $selectedValues[] = $item;
+                                            } elseif (is_numeric($item)) {
+                                                // Rétrocompatibilité: ancien format
+                                                $selectedValues[] = 'category:' . $item;
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple size="10">
                                     <option value="">Aucune section (masquer toutes les sections)</option>
-                                    @foreach(\App\Models\Category::active()->ordered()->get() as $category)
-                                        <option value="{{ $category->id }}" {{ in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
-                                            {{ $category->name }}
-                                        </option>
-                                    @endforeach
+                                    <optgroup label="Catégories">
+                                        @foreach(\App\Models\Category::active()->ordered()->get() as $category)
+                                            @php
+                                                $value = 'category:' . $category->id;
+                                                $isSelected = in_array($value, $selectedValues) || in_array($category->id, $selectedValues);
+                                            @endphp
+                                            <option value="{{ $value }}" {{ $isSelected ? 'selected' : '' }}>
+                                                📁 {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                    <optgroup label="Sous-catégories">
+                                        @foreach(\App\Models\Subcategory::active()->with('category')->ordered()->get() as $subcategory)
+                                            @php
+                                                $value = 'subcategory:' . $subcategory->id;
+                                                $isSelected = in_array($value, $selectedValues);
+                                            @endphp
+                                            <option value="{{ $value }}" {{ $isSelected ? 'selected' : '' }}>
+                                                📂 {{ $subcategory->category->name ?? 'N/A' }} > {{ $subcategory->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
                                 </select>
                                 <small class="text-muted">
-                                    Sélectionnez les catégories à afficher comme sections de produits sur la page d'accueil. L'ordre de sélection détermine l'ordre d'affichage. Si aucune sélection, les 4 catégories par défaut seront affichées (Téléphones, TV, Electroménager, Ordinateurs).
+                                    Sélectionnez les catégories et/ou sous-catégories à afficher comme sections de produits sur la page d'accueil. L'ordre de sélection détermine l'ordre d'affichage. Si aucune sélection, les 4 catégories par défaut seront affichées (Téléphones, TV, Electroménager, Ordinateurs).
                                 </small>
                             @elseif($setting->key === 'deals_subcategories' || $setting->key === 'homepage_subcategories')
                                 <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>

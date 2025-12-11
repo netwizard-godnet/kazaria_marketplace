@@ -379,7 +379,13 @@
                 @if($section['is_active'] && $section['products']->count() > 0)
                 <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
                     <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                        <h5 class="mb-0 me-4">{{ $section['category']->name }}</h5>
+                        <h5 class="mb-0 me-4">
+                            @if($section['type'] === 'subcategory' && $section['subcategory'])
+                                {{ $section['subcategory']->name }}
+                            @else
+                                {{ $section['category']->name }}
+                            @endif
+                        </h5>
                     </div>
                     <div class="multi-carousel-track d-flex">
                         @foreach ($section['products'] as $product)

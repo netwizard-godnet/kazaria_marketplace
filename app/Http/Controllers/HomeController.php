@@ -237,36 +237,94 @@ class HomeController extends Controller
             ->take(16)
             ->get();
         
-        // Récupérer les sections de catégories configurées pour la page d'accueil
+        // Récupérer les sections de catégories/sous-catégories configurées pour la page d'accueil
         $homepageCategorySections = \App\Helpers\SettingHelper::get('homepage_category_sections', '');
         $categorySections = collect();
         
         if (!empty($homepageCategorySections)) {
-            // Si des catégories sont configurées, les utiliser
-            $categoryIds = array_map('trim', explode(',', $homepageCategorySections));
-            $configuredCategories = Category::active()
-                ->whereIn('id', $categoryIds)
-                ->get();
+            // Si des catégories/sous-catégories sont configurées, les utiliser
+            // Format attendu: "category:ID" ou "subcategory:ID" séparés par des virgules
+            $items = array_map('trim', explode(',', $homepageCategorySections));
             
             // Préserver l'ordre de configuration
-            foreach ($categoryIds as $categoryId) {
-                $category = $configuredCategories->firstWhere('id', $categoryId);
-                if ($category) {
-                    $products = Product::active()
-                        ->whereHas('category', function($query) use ($category) {
-                            $query->where('id', $category->id)
-                                  ->where('is_active', true);
-                        })
-                        ->inStock()
-                        ->take(12)
-                        ->get();
+            foreach ($items as $item) {
+                if (str_starts_with($item, 'category:')) {
+                    // C'est une catégorie
+                    $categoryId = (int) str_replace('category:', '', $item);
+                    $category = Category::active()->where('id', $categoryId)->first();
                     
-                    if ($products->count() > 0) {
-                        $categorySections->push([
-                            'category' => $category,
-                            'products' => $products,
-                            'is_active' => true
-                        ]);
+                    if ($category) {
+                        $products = Product::active()
+                            ->whereHas('category', function($query) use ($category) {
+                                $query->where('id', $category->id)
+                                      ->where('is_active', true);
+                            })
+                            ->inStock()
+                            ->take(12)
+                            ->get();
+                        
+                        if ($products->count() > 0) {
+                            $categorySections->push([
+                                'category' => $category,
+                                'subcategory' => null,
+                                'products' => $products,
+                                'is_active' => true,
+                                'type' => 'category'
+                            ]);
+                        }
+                    }
+                } elseif (str_starts_with($item, 'subcategory:')) {
+                    // C'est une sous-catégorie
+                    $subcategoryId = (int) str_replace('subcategory:', '', $item);
+                    $subcategory = \App\Models\Subcategory::active()
+                        ->with('category')
+                        ->where('id', $subcategoryId)
+                        ->first();
+                    
+                    if ($subcategory && $subcategory->category && $subcategory->category->is_active) {
+                        $products = Product::active()
+                            ->whereHas('subcategory', function($query) use ($subcategory) {
+                                $query->where('id', $subcategory->id)
+                                      ->where('is_active', true);
+                            })
+                            ->inStock()
+                            ->take(12)
+                            ->get();
+                        
+                        if ($products->count() > 0) {
+                            $categorySections->push([
+                                'category' => $subcategory->category,
+                                'subcategory' => $subcategory,
+                                'products' => $products,
+                                'is_active' => true,
+                                'type' => 'subcategory'
+                            ]);
+                        }
+                    }
+                } elseif (is_numeric($item)) {
+                    // Rétrocompatibilité: format ancien (juste l'ID, considéré comme catégorie)
+                    $categoryId = (int) $item;
+                    $category = Category::active()->where('id', $categoryId)->first();
+                    
+                    if ($category) {
+                        $products = Product::active()
+                            ->whereHas('category', function($query) use ($category) {
+                                $query->where('id', $category->id)
+                                      ->where('is_active', true);
+                            })
+                            ->inStock()
+                            ->take(12)
+                            ->get();
+                        
+                        if ($products->count() > 0) {
+                            $categorySections->push([
+                                'category' => $category,
+                                'subcategory' => null,
+                                'products' => $products,
+                                'is_active' => true,
+                                'type' => 'category'
+                            ]);
+                        }
                     }
                 }
             }
@@ -294,8 +352,10 @@ class HomeController extends Controller
                     if ($products->count() > 0) {
                         $categorySections->push([
                             'category' => $category,
+                            'subcategory' => null,
                             'products' => $products,
-                            'is_active' => true
+                            'is_active' => true,
+                            'type' => 'category'
                         ]);
                     }
                 }
