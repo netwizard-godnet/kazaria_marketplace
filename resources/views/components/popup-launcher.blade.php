@@ -85,7 +85,6 @@
     /* Layout superposé (overlay) */
     .popup-launcher-modal [data-popup-row].layout-stacked {
         position: relative;
-        min-height: 300px;
     }
 
     .popup-launcher-modal [data-popup-row].layout-stacked .popup-launcher-image-wrapper {
@@ -93,7 +92,6 @@
         top: 0;
         left: 0;
         width: 100%;
-        min-height: 300px;
         z-index: 1;
         /* Pas de sticky pour stacked, c'est un overlay */
     }
@@ -103,7 +101,6 @@
         top: 0;
         left: 0;
         width: 100%;
-        min-height: 300px;
         z-index: 2;
         background: transparent;
     }
@@ -135,7 +132,7 @@
     }
 
     .popup-launcher-modal .row:not(.layout-top-bottom) {
-        min-height: 200px;
+        /*min-height: 200px;*/
     }
 
     .popup-launcher-modal [data-popup-row] {
@@ -144,7 +141,7 @@
     }
 
     .popup-launcher-modal .layout-top-bottom {
-        min-height: 200px;
+        /*min-height: 200px;*/
     }
 
     /* Pour la disposition top-bottom, permettre le scroll vertical sur le modal */
@@ -168,7 +165,7 @@
     }
 
     .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
-        min-height: 200px;
+        /*min-height: 200px;*/
         display: flex;
         align-items: center;
         justify-content: center;
@@ -220,8 +217,8 @@
         }
 
         .popup-launcher-modal .popup-launcher-image-wrapper {
-            min-height: 200px;
-            max-height: 250px;
+            /*min-height: 200px;
+            max-height: 250px;*/
         }
 
         .popup-launcher-modal .row {

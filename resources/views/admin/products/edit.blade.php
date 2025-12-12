@@ -480,14 +480,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour charger les sous-catégories pour plusieurs catégories
     function loadSubcategoriesForCategories() {
-        // Récupérer les catégories sélectionnées de plusieurs façons pour être sûr
-        let selectedCategories = Array.from(categoriesSelect.selectedOptions).map(opt => opt.value).filter(id => id !== '');
+        // Vérifier que les éléments existent et sont valides
+        if (!categoriesSelect || !subcategoriesSelect) {
+            console.error('Les éléments categoriesSelect ou subcategoriesSelect ne sont pas disponibles');
+            return;
+        }
         
-        // Si aucune catégorie n'est sélectionnée via selectedOptions, vérifier les options avec l'attribut selected
-        if (selectedCategories.length === 0) {
-            selectedCategories = Array.from(categoriesSelect.options)
-                .filter(opt => opt.selected && opt.value !== '')
-                .map(opt => opt.value);
+        // Vérifier que selectedOptions existe (peut être undefined dans certains navigateurs)
+        let selectedCategories = [];
+        
+        try {
+            if (categoriesSelect.selectedOptions && categoriesSelect.selectedOptions.length !== undefined) {
+                selectedCategories = Array.from(categoriesSelect.selectedOptions)
+                    .map(opt => opt && opt.value ? opt.value : '')
+                    .filter(id => id !== '');
+            }
+            
+            // Si aucune catégorie n'est sélectionnée via selectedOptions, vérifier les options avec l'attribut selected
+            if (selectedCategories.length === 0 && categoriesSelect.options && categoriesSelect.options.length !== undefined) {
+                selectedCategories = Array.from(categoriesSelect.options)
+                    .filter(opt => opt && opt.selected && opt.value)
+                    .map(opt => opt.value)
+                    .filter(id => id !== '');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la récupération des catégories sélectionnées:', error);
+            return;
         }
         
         console.log('Catégories sélectionnées:', selectedCategories);
@@ -574,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Mettre à jour le champ caché avec la première sous-catégorie sélectionnée (pour compatibilité)
-            if (subcategoriesSelect.selectedOptions.length > 0) {
+            if (subcategoriesSelect.selectedOptions && subcategoriesSelect.selectedOptions.length > 0) {
                 subcategoryIdHidden.value = subcategoriesSelect.selectedOptions[0].value;
             }
         })
@@ -589,9 +607,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour vérifier et charger les sous-catégories au chargement
     function initializeSubcategories() {
-        // Vérifier les catégories sélectionnées de plusieurs façons
-        const selectedViaSelectedOptions = Array.from(categoriesSelect.selectedOptions).filter(opt => opt.value !== '');
-        const selectedViaOptions = Array.from(categoriesSelect.options).filter(opt => opt.selected && opt.value !== '');
+        // Vérifier que les éléments existent avant de les utiliser
+        if (!categoriesSelect || !subcategoriesSelect) {
+            console.error('Les éléments categoriesSelect ou subcategoriesSelect ne sont pas disponibles');
+            return;
+        }
+        
+        // Vérifier les catégories sélectionnées de plusieurs façons avec gestion d'erreur
+        let selectedViaSelectedOptions = [];
+        let selectedViaOptions = [];
+        
+        try {
+            if (categoriesSelect.selectedOptions && categoriesSelect.selectedOptions.length !== undefined) {
+                selectedViaSelectedOptions = Array.from(categoriesSelect.selectedOptions)
+                    .filter(opt => opt && opt.value && opt.value !== '')
+                    .map(opt => opt.value);
+            }
+            
+            if (categoriesSelect.options && categoriesSelect.options.length !== undefined) {
+                selectedViaOptions = Array.from(categoriesSelect.options)
+                    .filter(opt => opt && opt.selected && opt.value && opt.value !== '')
+                    .map(opt => opt.value);
+            }
+        } catch (error) {
+            console.error('Erreur lors de la vérification des catégories sélectionnées:', error);
+            return;
+        }
         
         const hasSelectedCategories = selectedViaSelectedOptions.length > 0 || selectedViaOptions.length > 0;
         
@@ -604,7 +645,13 @@ document.addEventListener('DOMContentLoaded', function() {
             loadSubcategoriesForCategories();
         } else {
             console.log('Aucune catégorie présélectionnée');
-            subcategoriesSelect.innerHTML = '<option value="">Sélectionner d\'abord une ou plusieurs catégories</option>';
+            try {
+                if (subcategoriesSelect) {
+                    subcategoriesSelect.innerHTML = '<option value="">Sélectionner d\'abord une ou plusieurs catégories</option>';
+                }
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour du select des sous-catégories:', error);
+            }
         }
     }
     
@@ -621,7 +668,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mettre à jour le champ caché lors de la sélection de sous-catégories
     subcategoriesSelect.addEventListener('change', function() {
-        if (this.selectedOptions.length > 0) {
+        if (this.selectedOptions && this.selectedOptions.length > 0) {
             subcategoryIdHidden.value = this.selectedOptions[0].value;
         } else {
             subcategoryIdHidden.value = '';
@@ -632,10 +679,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            if (categoriesSelect.selectedOptions.length === 0) {
+            if (!categoriesSelect || !categoriesSelect.selectedOptions || categoriesSelect.selectedOptions.length === 0) {
                 e.preventDefault();
                 alert('Veuillez sélectionner au moins une catégorie.');
-                categoriesSelect.focus();
+                if (categoriesSelect) {
+                    categoriesSelect.focus();
+                }
                 return false;
             }
         });
