@@ -21,6 +21,90 @@
         </ul>
     </div>
 
+    <!-- Filtres -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-round">
+                <div class="card-header">
+                    <div class="card-head-row">
+                        <div class="card-title">
+                            <i class="fas fa-filter me-2"></i>Filtres
+                            @if($pagePath || ($period && $period != 'month'))
+                                <span class="badge badge-info ms-2">
+                                    <i class="fas fa-check-circle me-1"></i>Filtres actifs
+                                </span>
+                            @endif
+                        </div>
+                        <div class="card-tools">
+                            @if($pagePath || ($period && $period != 'month'))
+                                <span class="badge badge-warning me-2">
+                                    @if($pagePath)
+                                        Page: {{ $all_pages->firstWhere('page_path', $pagePath)->page_name ?? $pagePath }}
+                                    @endif
+                                    @if($period && $period != 'month')
+                                        | Période: {{ ucfirst($period) }}
+                                    @endif
+                                </span>
+                            @endif
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="resetFilters()">
+                                <i class="fas fa-redo me-1"></i>Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ route('admin.statistics.index') }}" id="filterForm">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="period" class="form-label">Période</label>
+                                <select class="form-control" id="period" name="period" onchange="toggleCustomDates()">
+                                    <option value="today" {{ $period == 'today' ? 'selected' : '' }}>Aujourd'hui</option>
+                                    <option value="week" {{ $period == 'week' ? 'selected' : '' }}>Cette semaine</option>
+                                    <option value="month" {{ $period == 'month' ? 'selected' : '' }}>Ce mois</option>
+                                    <option value="year" {{ $period == 'year' ? 'selected' : '' }}>Cette année</option>
+                                    <option value="custom" {{ $period == 'custom' ? 'selected' : '' }}>Personnalisé</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3" id="dateFromGroup" style="display: {{ $period == 'custom' ? 'block' : 'none' }};">
+                                <label for="date_from" class="form-label">Date de début</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" 
+                                       value="{{ $dateFrom ?? '' }}" 
+                                       {{ $period == 'custom' ? 'required' : '' }}>
+                            </div>
+                            <div class="col-md-3 mb-3" id="dateToGroup" style="display: {{ $period == 'custom' ? 'block' : 'none' }};">
+                                <label for="date_to" class="form-label">Date de fin</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" 
+                                       value="{{ $dateTo ?? '' }}" 
+                                       {{ $period == 'custom' ? 'required' : '' }}>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="page_path" class="form-label">Page spécifique</label>
+                                <select class="form-control" id="page_path" name="page_path">
+                                    <option value="">Toutes les pages</option>
+                                    @foreach($all_pages ?? [] as $page)
+                                        <option value="{{ $page->page_path }}" {{ $pagePath == $page->page_path ? 'selected' : '' }}>
+                                            {{ $page->page_name ?? $page->page_path }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-2"></i>Appliquer les filtres
+                                </button>
+                                @if($pagePath || ($period && $period != 'month'))
+                                    <a href="{{ route('admin.statistics.index') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>Effacer
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Cartes de statistiques principales -->
     <div class="row">
         <div class="col-sm-6 col-md-3">
@@ -36,7 +120,7 @@
                             <div class="numbers">
                                 <p class="card-category">Total Visites</p>
                                 <h4 class="card-title">{{ number_format($stats['total_visits'] ?? 0, 0, ',', ' ') }}</h4>
-                                @if(isset($growth['visits_today_vs_yesterday']))
+                                @if(isset($growth['visits_today_vs_yesterday']) && !$pagePath)
                                     <small class="text-{{ $growth['visits_today_vs_yesterday'] >= 0 ? 'success' : 'danger' }}">
                                         <i class="fas fa-arrow-{{ $growth['visits_today_vs_yesterday'] >= 0 ? 'up' : 'down' }}"></i>
                                         {{ abs($growth['visits_today_vs_yesterday']) }}% vs hier
@@ -61,7 +145,7 @@
                             <div class="numbers">
                                 <p class="card-category">Total Clics</p>
                                 <h4 class="card-title">{{ number_format($stats['total_clicks'] ?? 0, 0, ',', ' ') }}</h4>
-                                @if(isset($growth['clicks_today_vs_yesterday']))
+                                @if(isset($growth['clicks_today_vs_yesterday']) && !$pagePath)
                                     <small class="text-{{ $growth['clicks_today_vs_yesterday'] >= 0 ? 'success' : 'danger' }}">
                                         <i class="fas fa-arrow-{{ $growth['clicks_today_vs_yesterday'] >= 0 ? 'up' : 'down' }}"></i>
                                         {{ abs($growth['clicks_today_vs_yesterday']) }}% vs hier
@@ -85,8 +169,22 @@
                         <div class="col col-stats ms-3 ms-sm-0">
                             <div class="numbers">
                                 <p class="card-category">Visiteurs Uniques</p>
-                                <h4 class="card-title">{{ number_format($stats['unique_visitors_this_month'] ?? 0, 0, ',', ' ') }}</h4>
-                                <small class="text-muted">Ce mois</small>
+                                <h4 class="card-title">{{ number_format($stats['unique_visitors'] ?? 0, 0, ',', ' ') }}</h4>
+                                <small class="text-muted">
+                                    @if($pagePath)
+                                        Page sélectionnée
+                                    @elseif($period == 'today')
+                                        Aujourd'hui
+                                    @elseif($period == 'week')
+                                        Cette semaine
+                                    @elseif($period == 'month')
+                                        Ce mois
+                                    @elseif($period == 'year')
+                                        Cette année
+                                    @else
+                                        Période sélectionnée
+                                    @endif
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -116,33 +214,41 @@
     </div>
 
     <!-- Statistiques détaillées -->
+    @if(!$pagePath)
     <div class="row">
         <div class="col-md-6">
             <div class="card card-round">
                 <div class="card-header">
                     <div class="card-head-row">
-                        <div class="card-title">Visites Aujourd'hui</div>
+                        <div class="card-title">
+                            @if(isset($stats['total_visits_today']))
+                                Visites Aujourd'hui
+                            @else
+                                Statistiques de la période
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-6">
-                            <h2 class="text-primary">{{ number_format($stats['total_visits_today'] ?? 0, 0, ',', ' ') }}</h2>
+                            <h2 class="text-primary">{{ number_format($stats['total_visits_today'] ?? $stats['total_visits'] ?? 0, 0, ',', ' ') }}</h2>
                             <p class="text-muted">Pages visitées</p>
                         </div>
                         <div class="col-6">
-                            <h2 class="text-success">{{ number_format($stats['total_clicks_today'] ?? 0, 0, ',', ' ') }}</h2>
+                            <h2 class="text-success">{{ number_format($stats['total_clicks_today'] ?? $stats['total_clicks'] ?? 0, 0, ',', ' ') }}</h2>
                             <p class="text-muted">Clics effectués</p>
                         </div>
                         <div class="col-12 mt-3">
                             <hr>
-                            <h5 class="text-muted">Visiteurs uniques aujourd'hui</h5>
-                            <h3>{{ number_format($stats['unique_visitors_today'] ?? 0, 0, ',', ' ') }}</h3>
+                            <h5 class="text-muted">Visiteurs uniques</h5>
+                            <h3>{{ number_format($stats['unique_visitors_today'] ?? $stats['unique_visitors'] ?? 0, 0, ',', ' ') }}</h3>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        @if(isset($stats['total_visits_this_week']))
         <div class="col-md-6">
             <div class="card card-round">
                 <div class="card-header">
@@ -169,7 +275,9 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
+    @endif
 
     <!-- Graphiques -->
     <div class="row">
@@ -177,7 +285,12 @@
             <div class="card card-round">
                 <div class="card-header">
                     <div class="card-head-row">
-                        <div class="card-title">Visites par Jour (30 derniers jours)</div>
+                        <div class="card-title">
+                            Visites par Jour
+                            @if($pagePath)
+                                - {{ $all_pages->firstWhere('page_path', $pagePath)->page_name ?? $pagePath }}
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -191,7 +304,12 @@
             <div class="card card-round">
                 <div class="card-header">
                     <div class="card-head-row">
-                        <div class="card-title">Visites par Heure (24h)</div>
+                        <div class="card-title">
+                            Visites par Heure
+                            @if($pagePath)
+                                - {{ $all_pages->firstWhere('page_path', $pagePath)->page_name ?? $pagePath }}
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -365,6 +483,39 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Fonction pour afficher/masquer les champs de dates personnalisées
+    function toggleCustomDates() {
+        const period = document.getElementById('period').value;
+        const dateFromGroup = document.getElementById('dateFromGroup');
+        const dateToGroup = document.getElementById('dateToGroup');
+        const dateFrom = document.getElementById('date_from');
+        const dateTo = document.getElementById('date_to');
+        
+        if (period === 'custom') {
+            dateFromGroup.style.display = 'block';
+            dateToGroup.style.display = 'block';
+            dateFrom.setAttribute('required', 'required');
+            dateTo.setAttribute('required', 'required');
+        } else {
+            dateFromGroup.style.display = 'none';
+            dateToGroup.style.display = 'none';
+            dateFrom.removeAttribute('required');
+            dateTo.removeAttribute('required');
+            dateFrom.value = '';
+            dateTo.value = '';
+        }
+    }
+    
+    // Initialiser l'état des champs au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleCustomDates();
+    });
+    
+    // Fonction pour réinitialiser les filtres
+    function resetFilters() {
+        window.location.href = '{{ route("admin.statistics.index") }}';
+    }
+    
     // Graphique des visites par jour
     const visitsByDayCtx = document.getElementById('visitsByDayChart');
     if (visitsByDayCtx) {
