@@ -169,7 +169,20 @@ class ProductController extends Controller
             });
         }
         
-        $bestOffers = $bestOffersQuery->take(12)->get();
+        // Trier par pourcentage de réduction décroissant pour afficher les meilleures offres en premier
+        $bestOffers = $bestOffersQuery
+            ->selectRaw('*, 
+                CASE 
+                    WHEN discount_percentage IS NOT NULL AND discount_percentage > 0 
+                    THEN discount_percentage 
+                    WHEN old_price IS NOT NULL AND old_price > price 
+                    THEN ROUND(((old_price - price) / old_price) * 100, 2)
+                    ELSE 0 
+                END as calculated_discount')
+            ->orderBy('calculated_discount', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->take(12)
+            ->get();
         
         // Nouveautés de la catégorie/sous-catégorie (produits récemment ajoutés)
         $newProductsQuery = Product::active()
@@ -587,6 +600,16 @@ class ProductController extends Controller
                 });
             })
             ->inStock()
+            ->selectRaw('*, 
+                CASE 
+                    WHEN discount_percentage IS NOT NULL AND discount_percentage > 0 
+                    THEN discount_percentage 
+                    WHEN old_price IS NOT NULL AND old_price > price 
+                    THEN ROUND(((old_price - price) / old_price) * 100, 2)
+                    ELSE 0 
+                END as calculated_discount')
+            ->orderBy('calculated_discount', 'desc')
+            ->orderBy('created_at', 'desc')
             ->take(12)
             ->get();
         
