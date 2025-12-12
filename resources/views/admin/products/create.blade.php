@@ -85,36 +85,47 @@
                             </div>
                         </div>
 
-                        <!-- Catégorie et Sous-catégorie -->
+                        <!-- Catégories et Sous-catégories (sélection multiple) -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="category_id">Catégorie <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('category_id') is-invalid @enderror" id="category_id" name="category_id" required>
-                                        <option value="">Sélectionner une catégorie</option>
+                                    <label for="categories">Catégories <span class="text-danger">*</span></label>
+                                    <select class="form-control @error('categories') is-invalid @enderror" id="categories" name="categories[]" multiple size="6" required>
                                         @foreach($categories as $category)
-                                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            <option value="{{ $category->id }}" {{ (old('categories') && in_array($category->id, old('categories'))) ? 'selected' : '' }}>
                                                 {{ $category->name }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @error('category_id')
+                                    <small class="text-muted">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs catégories</small>
+                                    @error('categories')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    @error('categories.*')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="subcategory_id">Sous-catégorie</label>
-                                    <select class="form-control @error('subcategory_id') is-invalid @enderror" id="subcategory_id" name="subcategory_id">
-                                        <option value="">Sélectionner d'abord une catégorie</option>
+                                    <label for="subcategories">Sous-catégories</label>
+                                    <select class="form-control @error('subcategories') is-invalid @enderror" id="subcategories" name="subcategories[]" multiple size="6">
+                                        <option value="">Sélectionner d'abord une ou plusieurs catégories</option>
                                     </select>
-                                    @error('subcategory_id')
+                                    <small class="text-muted">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs sous-catégories</small>
+                                    @error('subcategories')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    @error('subcategories.*')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Compatibilité avec l'ancien système (champs cachés pour category_id et subcategory_id) -->
+                        <input type="hidden" id="category_id" name="category_id" value="{{ old('category_id') }}">
+                        <input type="hidden" id="subcategory_id" name="subcategory_id" value="{{ old('subcategory_id') }}">
 
                         <!-- Boutique / Vendeur -->
                         <div class="row">
@@ -355,58 +366,120 @@
 
 @push('scripts')
 <script>
-// Charger les sous-catégories lors de la sélection d'une catégorie
+// Charger les sous-catégories lors de la sélection de catégories (sélection multiple)
 document.addEventListener('DOMContentLoaded', function() {
-    const categorySelect = document.getElementById('category_id');
-    if (!categorySelect) {
-        console.error('Champ category_id non trouvé');
+    const categoriesSelect = document.getElementById('categories');
+    const subcategoriesSelect = document.getElementById('subcategories');
+    const categoryIdHidden = document.getElementById('category_id');
+    const subcategoryIdHidden = document.getElementById('subcategory_id');
+    
+    if (!categoriesSelect || !subcategoriesSelect) {
+        console.error('Champs categories ou subcategories non trouvés');
         return;
     }
     
-    categorySelect.addEventListener('change', function() {
-    const categoryId = this.value;
-    const subcategorySelect = document.getElementById('subcategory_id');
-    
-    // Vider les options existantes
-    subcategorySelect.innerHTML = '<option value="">Chargement...</option>';
-    subcategorySelect.disabled = true;
-    
-    if (!categoryId) {
-        subcategorySelect.innerHTML = '<option value="">Sélectionner d\'abord une catégorie</option>';
-        return;
-    }
-    
-    // Charger les sous-catégories via AJAX
-    fetch(`/api/categories/${categoryId}/subcategories`, {
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        subcategorySelect.innerHTML = '<option value="">Sélectionner une sous-catégorie</option>';
+    // Fonction pour charger les sous-catégories pour plusieurs catégories
+    function loadSubcategoriesForCategories() {
+        const selectedCategories = Array.from(categoriesSelect.selectedOptions).map(opt => opt.value);
         
-        if (data.success && data.subcategories && data.subcategories.length > 0) {
-            data.subcategories.forEach(subcategory => {
+        // Mettre à jour le champ caché avec la première catégorie sélectionnée (pour compatibilité)
+        if (selectedCategories.length > 0) {
+            categoryIdHidden.value = selectedCategories[0];
+        } else {
+            categoryIdHidden.value = '';
+        }
+        
+        // Vider les sous-catégories
+        subcategoriesSelect.innerHTML = '';
+        subcategoryIdHidden.value = '';
+        
+        if (selectedCategories.length === 0) {
+            subcategoriesSelect.innerHTML = '<option value="">Sélectionner d\'abord une ou plusieurs catégories</option>';
+            return;
+        }
+        
+        // Charger les sous-catégories pour toutes les catégories sélectionnées
+        const allSubcategories = new Map(); // Utiliser Map pour éviter les doublons
+        
+        Promise.all(selectedCategories.map(categoryId => {
+            return fetch(`/api/categories/${categoryId}/subcategories`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.subcategories && data.subcategories.length > 0) {
+                    data.subcategories.forEach(subcategory => {
+                        if (!allSubcategories.has(subcategory.id)) {
+                            allSubcategories.set(subcategory.id, subcategory);
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des sous-catégories:', error);
+            });
+        }))
+        .then(() => {
+            // Trier les sous-catégories par nom
+            const sortedSubcategories = Array.from(allSubcategories.values()).sort((a, b) => 
+                a.name.localeCompare(b.name)
+            );
+            
+            // Ajouter les options
+            sortedSubcategories.forEach(subcategory => {
                 const option = document.createElement('option');
                 option.value = subcategory.id;
                 option.textContent = subcategory.name;
-                subcategorySelect.appendChild(option);
+                
+                // Vérifier si cette sous-catégorie était sélectionnée précédemment
+                const oldSubcategories = @json(old('subcategories', []));
+                if (oldSubcategories.includes(subcategory.id.toString())) {
+                    option.selected = true;
+                }
+                
+                subcategoriesSelect.appendChild(option);
             });
+            
+            // Mettre à jour le champ caché avec la première sous-catégorie sélectionnée (pour compatibilité)
+            if (subcategoriesSelect.selectedOptions.length > 0) {
+                subcategoryIdHidden.value = subcategoriesSelect.selectedOptions[0].value;
+            }
+        });
+    }
+    
+    // Écouter les changements sur les catégories
+    categoriesSelect.addEventListener('change', loadSubcategoriesForCategories);
+    
+    // Charger les sous-catégories au chargement si des catégories sont déjà sélectionnées
+    if (categoriesSelect.selectedOptions.length > 0) {
+        loadSubcategoriesForCategories();
+    }
+    
+    // Mettre à jour le champ caché lors de la sélection de sous-catégories
+    subcategoriesSelect.addEventListener('change', function() {
+        if (this.selectedOptions.length > 0) {
+            subcategoryIdHidden.value = this.selectedOptions[0].value;
         } else {
-            subcategorySelect.innerHTML = '<option value="">Aucune sous-catégorie disponible</option>';
+            subcategoryIdHidden.value = '';
         }
-        
-        subcategorySelect.disabled = false;
-    })
-    .catch(error => {
-        console.error('Erreur lors du chargement des sous-catégories:', error);
-        subcategorySelect.innerHTML = '<option value="">Erreur de chargement</option>';
-        subcategorySelect.disabled = false;
     });
-    });
+    
+    // Validation : au moins une catégorie doit être sélectionnée
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (categoriesSelect.selectedOptions.length === 0) {
+                e.preventDefault();
+                alert('Veuillez sélectionner au moins une catégorie.');
+                categoriesSelect.focus();
+                return false;
+            }
+        });
+    }
 });
 
 // Synchronisation Prix / Prix Promo / Réduction

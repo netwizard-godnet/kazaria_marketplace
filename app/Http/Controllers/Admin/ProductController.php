@@ -75,7 +75,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'promo_price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'nullable|exists:categories,id',
             'subcategory_id' => 'nullable|exists:subcategories,id',
             'store_id' => 'nullable|exists:stores,id',
             'status' => 'required|in:pending,approved,rejected',
@@ -101,6 +101,10 @@ class ProductController extends Controller
             'variations.*.is_default' => 'nullable|boolean',
             'variations_to_delete' => 'nullable|array',
             'variations_to_delete.*' => 'exists:product_variations,id',
+            'categories' => 'nullable|array',
+            'categories.*' => 'exists:categories,id',
+            'subcategories' => 'nullable|array',
+            'subcategories.*' => 'exists:subcategories,id',
         ]);
 
         $data = $request->only([
@@ -212,6 +216,15 @@ class ProductController extends Controller
         if ($request->filled('tags')) {
             $tags = array_map('trim', explode(',', $request->tags));
             $data['tags'] = array_filter($tags); // Supprimer les valeurs vides
+        }
+
+        // Validation : au moins une catégorie doit être sélectionnée
+        if (!$request->has('categories') || empty($request->categories)) {
+            if (!$request->has('category_id') || empty($request->category_id)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['categories' => 'Veuillez sélectionner au moins une catégorie.']);
+            }
         }
 
         $product->update($data);
@@ -355,6 +368,60 @@ class ProductController extends Controller
             ProductVariation::where('product_id', $product->id)->delete();
         }
 
+        // Gestion des catégories multiples (many-to-many)
+        if ($request->has('categories') && is_array($request->categories)) {
+            // Si categories[] est présent (même vide), on synchronise avec ce qui est fourni
+            $categoriesData = [];
+            foreach ($request->categories as $index => $categoryId) {
+                if (!empty($categoryId)) { // Ignorer les valeurs vides
+                    $categoriesData[$categoryId] = [
+                        'is_primary' => $index === 0, // Première catégorie = principale
+                        'order' => $index,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+            $product->categories()->sync($categoriesData);
+        } elseif ($request->has('category_id') && !empty($request->category_id)) {
+            // Compatibilité avec l'ancien système : si category_id est fourni mais pas categories[]
+            $product->categories()->sync([
+                $request->category_id => [
+                    'is_primary' => true,
+                    'order' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
+
+        // Gestion des sous-catégories multiples (many-to-many)
+        if ($request->has('subcategories') && is_array($request->subcategories)) {
+            // Si subcategories[] est présent (même vide), on synchronise avec ce qui est fourni
+            $subcategoriesData = [];
+            foreach ($request->subcategories as $index => $subcategoryId) {
+                if (!empty($subcategoryId)) { // Ignorer les valeurs vides
+                    $subcategoriesData[$subcategoryId] = [
+                        'is_primary' => $index === 0, // Première sous-catégorie = principale
+                        'order' => $index,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+            $product->subcategories()->sync($subcategoriesData);
+        } elseif ($request->has('subcategory_id') && !empty($request->subcategory_id)) {
+            // Compatibilité avec l'ancien système : si subcategory_id est fourni mais pas subcategories[]
+            $product->subcategories()->sync([
+                $request->subcategory_id => [
+                    'is_primary' => true,
+                    'order' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
+
         return redirect()->route('admin.products.index')->with('success', 'Produit mis à jour avec succès.');
     }
 
@@ -395,7 +462,9 @@ class ProductController extends Controller
         $product->load([
             'store', 
             'category', 
-            'subcategory', 
+            'subcategory',
+            'categories',
+            'subcategories',
             'attributeValues.attribute',
             'variations.attributeValues.attribute'
         ]);
@@ -445,7 +514,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'promo_price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => 'nullable|exists:categories,id',
             'subcategory_id' => 'nullable|exists:subcategories,id',
             'store_id' => 'nullable|exists:stores,id',
             'status' => 'required|in:pending,approved,rejected',
@@ -468,6 +537,10 @@ class ProductController extends Controller
             'variations.*.stock' => 'required_with:variations|integer|min:0',
             'variations.*.sku' => 'nullable|string|max:255',
             'variations.*.is_default' => 'nullable|boolean',
+            'categories' => 'nullable|array',
+            'categories.*' => 'exists:categories,id',
+            'subcategories' => 'nullable|array',
+            'subcategories.*' => 'exists:subcategories,id',
         ]);
 
         $data = $request->only([
@@ -551,6 +624,15 @@ class ProductController extends Controller
         $data['is_trending'] = $request->has('is_trending');
         $data['status'] = $request->status ?? 'pending';
 
+        // Validation : au moins une catégorie doit être sélectionnée
+        if (!$request->has('categories') || empty($request->categories)) {
+            if (!$request->has('category_id') || empty($request->category_id)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['categories' => 'Veuillez sélectionner au moins une catégorie.']);
+            }
+        }
+
         // Créer le produit
         $product = Product::create($data);
 
@@ -630,6 +712,60 @@ class ProductController extends Controller
                     $firstVariation->update(['is_default' => true]);
                 }
             }
+        }
+
+        // Gestion des catégories multiples (many-to-many)
+        if ($request->has('categories') && is_array($request->categories)) {
+            // Si categories[] est présent (même vide), on synchronise avec ce qui est fourni
+            $categoriesData = [];
+            foreach ($request->categories as $index => $categoryId) {
+                if (!empty($categoryId)) { // Ignorer les valeurs vides
+                    $categoriesData[$categoryId] = [
+                        'is_primary' => $index === 0, // Première catégorie = principale
+                        'order' => $index,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+            $product->categories()->sync($categoriesData);
+        } elseif ($request->has('category_id') && !empty($request->category_id)) {
+            // Compatibilité avec l'ancien système : si category_id est fourni mais pas categories[]
+            $product->categories()->sync([
+                $request->category_id => [
+                    'is_primary' => true,
+                    'order' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
+        }
+
+        // Gestion des sous-catégories multiples (many-to-many)
+        if ($request->has('subcategories') && is_array($request->subcategories)) {
+            // Si subcategories[] est présent (même vide), on synchronise avec ce qui est fourni
+            $subcategoriesData = [];
+            foreach ($request->subcategories as $index => $subcategoryId) {
+                if (!empty($subcategoryId)) { // Ignorer les valeurs vides
+                    $subcategoriesData[$subcategoryId] = [
+                        'is_primary' => $index === 0, // Première sous-catégorie = principale
+                        'order' => $index,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+            $product->subcategories()->sync($subcategoriesData);
+        } elseif ($request->has('subcategory_id') && !empty($request->subcategory_id)) {
+            // Compatibilité avec l'ancien système : si subcategory_id est fourni mais pas subcategories[]
+            $product->subcategories()->sync([
+                $request->subcategory_id => [
+                    'is_primary' => true,
+                    'order' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            ]);
         }
 
         return redirect()->route('admin.products.index')->with('success', 'Produit ajouté avec succès.');
