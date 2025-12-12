@@ -220,7 +220,7 @@ if (auth()->check()) {
                     <div class="col-md-8 hstack gap-1">
                         <div class="d-flex align-items-center justify-content-start">
                             <a class="btn btn-sm orange-bg text-white fs-8 text-nowrap" href="{{ route('boutique_officielle') }}">
-                            Boutiques Officielles <i class="fa-solid fa-certificate"></i>
+                            Nos Boutiques <i class="fa-solid fa-certificate"></i>
                             </a>
                         </div>
                         @if(isset($allCategories))
