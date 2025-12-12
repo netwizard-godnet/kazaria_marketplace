@@ -401,7 +401,7 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
 
 .popup-launcher-modal .popup-launcher-image-wrapper {
     overflow: hidden;
-    height: 100%;
+    min-height: 450px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -419,6 +419,7 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
 .popup-launcher-modal img[data-popup-image] {
     width: 100% !important;
     height: 100% !important;
+    min-height: 450px !important;
     object-fit: contain !important;
     object-position: center !important;
     display: block !important;
@@ -490,6 +491,9 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
     width: auto !important;
     max-width: none !important;
     height: 100% !important;
+    min-height: 450px !important;
+    object-fit: contain !important;
+    object-position: center !important;
 }
 
 .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
@@ -545,8 +549,7 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
     }
 
     .popup-launcher-modal .popup-launcher-image-wrapper {
-        min-height: 200px;
-        max-height: 250px;
+        min-height: 450px;
     }
 
     .popup-launcher-modal .row {
