@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PopupController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
+use App\Http\Controllers\Admin\StatisticsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,12 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
     
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Statistics
+    Route::prefix('statistics')->name('statistics.')->group(function () {
+        Route::get('/', [StatisticsController::class, 'index'])->name('index');
+        Route::get('/page-stats', [StatisticsController::class, 'getPageStats'])->name('page-stats');
+    });
     
     // Users Management
     Route::prefix('users')->name('users.')->middleware('permission:view_users')->group(function () {

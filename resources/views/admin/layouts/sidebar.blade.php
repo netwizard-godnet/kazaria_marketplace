@@ -263,6 +263,13 @@
                     </div>
                 </li>
 
+                <li class="nav-item {{ request()->routeIs('admin.statistics.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.statistics.index') }}">
+                        <i class="fas fa-chart-line"></i>
+                        <p>Statistiques</p>
+                    </a>
+                </li>
+
                 <!-- Configuration -->
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">

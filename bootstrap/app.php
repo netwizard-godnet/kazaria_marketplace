@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SeoMiddleware::class,
             \App\Http\Middleware\LandingPageMiddleware::class,
+            \App\Http\Middleware\TrackPageVisits::class,
         ]);
         
         // NE PAS appliquer ForceSessionSave car il modifie la session
