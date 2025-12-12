@@ -332,7 +332,7 @@ class OrderController extends Controller
                 mkdir($pdfPath, 0777, true);
             }
             
-            $pdfFileName = 'facture-' . $order->order_number . '.pdf';
+            $pdfFileName = $this->generateInvoiceFileName($order);
             $pdfFullPath = $pdfPath . $pdfFileName;
             $pdf->save($pdfFullPath);
             
@@ -420,7 +420,25 @@ class OrderController extends Controller
         // Générer et télécharger le PDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
         
-        return $pdf->download('facture-' . $order->order_number . '.pdf');
+        $fileName = $this->generateInvoiceFileName($order);
+        return $pdf->download($fileName);
+    }
+
+    /**
+     * Générer le nom de fichier de la facture au format: facture-KAZ-YYYYMMDD-XXXXXX.pdf
+     */
+    private function generateInvoiceFileName($order)
+    {
+        // Format de date: YYYYMMDD
+        $date = $order->created_at->format('Ymd');
+        
+        // Générer un code de 6 caractères hexadécimaux basé sur la commande
+        // Cela garantit que la même commande aura toujours le même nom de fichier
+        $seed = $order->id . $order->order_number . $order->created_at->timestamp;
+        $randomCode = strtoupper(substr(md5($seed), 0, 6));
+        
+        // Format: facture-KAZ-YYYYMMDD-XXXXXX.pdf
+        return 'facture-KAZ-' . $date . '-' . $randomCode . '.pdf';
     }
 
     /**
