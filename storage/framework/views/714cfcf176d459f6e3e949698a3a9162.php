@@ -707,6 +707,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <?php
         $selectedSubcategories = old('subcategories', $product->subcategories->pluck('id')->toArray());
+        // Convertir en tableau de strings pour la comparaison JavaScript
+        $selectedSubcategories = array_map('strval', $selectedSubcategories);
     ?>
     const currentSubcategoryIds = <?php echo json_encode($selectedSubcategories, 15, 512) ?>;
     
@@ -717,7 +719,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour charger les sous-catégories pour plusieurs catégories
     function loadSubcategoriesForCategories() {
-        const selectedCategories = Array.from(categoriesSelect.selectedOptions).map(opt => opt.value);
+        // Récupérer les catégories sélectionnées de plusieurs façons pour être sûr
+        let selectedCategories = Array.from(categoriesSelect.selectedOptions).map(opt => opt.value).filter(id => id !== '');
+        
+        // Si aucune catégorie n'est sélectionnée via selectedOptions, vérifier les options avec l'attribut selected
+        if (selectedCategories.length === 0) {
+            selectedCategories = Array.from(categoriesSelect.options)
+                .filter(opt => opt.selected && opt.value !== '')
+                .map(opt => opt.value);
+        }
+        
+        console.log('Catégories sélectionnées:', selectedCategories);
         
         // Mettre à jour le champ caché avec la première catégorie sélectionnée (pour compatibilité)
         if (selectedCategories.length > 0) {
@@ -739,6 +751,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const allSubcategories = new Map(); // Utiliser Map pour éviter les doublons
         
         Promise.all(selectedCategories.map(categoryId => {
+            console.log('Chargement des sous-catégories pour la catégorie:', categoryId);
             return fetch(`/api/categories/${categoryId}/subcategories`, {
                 method: 'GET',
                 headers: {
@@ -746,59 +759,103 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Réponse API pour catégorie', categoryId, ':', data);
                 if (data.success && data.subcategories && data.subcategories.length > 0) {
                     data.subcategories.forEach(subcategory => {
-                        if (!allSubcategories.has(subcategory.id)) {
-                            allSubcategories.set(subcategory.id, subcategory);
+                        const subId = subcategory.id.toString();
+                        if (!allSubcategories.has(subId)) {
+                            allSubcategories.set(subId, subcategory);
                         }
                     });
                 }
             })
             .catch(error => {
-                console.error('Erreur lors du chargement des sous-catégories:', error);
+                console.error('Erreur lors du chargement des sous-catégories pour catégorie', categoryId, ':', error);
             });
         }))
         .then(() => {
+            console.log('Toutes les sous-catégories chargées:', Array.from(allSubcategories.values()));
+            
             // Trier les sous-catégories par nom
             const sortedSubcategories = Array.from(allSubcategories.values()).sort((a, b) => 
                 a.name.localeCompare(b.name)
             );
             
             // Ajouter les options
-            sortedSubcategories.forEach(subcategory => {
-                const option = document.createElement('option');
-                option.value = subcategory.id;
-                option.textContent = subcategory.name;
-                
-                // Vérifier si cette sous-catégorie était sélectionnée précédemment
-                const oldSubcategories = <?php echo json_encode(old('subcategories', []), 512) ?>;
-                const subcategoryIdStr = subcategory.id.toString();
-                const subcategoryIdNum = parseInt(subcategory.id);
-                if (oldSubcategories.includes(subcategoryIdStr) || 
-                    oldSubcategories.includes(subcategoryIdNum) ||
-                    currentSubcategoryIds.includes(subcategoryIdStr) || 
-                    currentSubcategoryIds.includes(subcategoryIdNum)) {
-                    option.selected = true;
-                }
-                
-                subcategoriesSelect.appendChild(option);
-            });
+            if (sortedSubcategories.length === 0) {
+                subcategoriesSelect.innerHTML = '<option value="">Aucune sous-catégorie disponible</option>';
+            } else {
+                sortedSubcategories.forEach(subcategory => {
+                    const option = document.createElement('option');
+                    const subId = subcategory.id.toString();
+                    option.value = subId;
+                    option.textContent = subcategory.name;
+                    
+                    // Vérifier si cette sous-catégorie était sélectionnée précédemment
+                    const oldSubcategories = <?php echo json_encode(old('subcategories', []), 512) ?>;
+                    const oldSubcategoriesStr = oldSubcategories.map(id => id.toString());
+                    
+                    // Comparer avec les IDs actuels (convertis en strings)
+                    if (oldSubcategoriesStr.includes(subId) || currentSubcategoryIds.includes(subId)) {
+                        option.selected = true;
+                        console.log('Sous-catégorie sélectionnée:', subcategory.name);
+                    }
+                    
+                    subcategoriesSelect.appendChild(option);
+                });
+            }
             
             // Mettre à jour le champ caché avec la première sous-catégorie sélectionnée (pour compatibilité)
             if (subcategoriesSelect.selectedOptions.length > 0) {
                 subcategoryIdHidden.value = subcategoriesSelect.selectedOptions[0].value;
             }
+        })
+        .catch(error => {
+            console.error('Erreur générale lors du chargement des sous-catégories:', error);
+            subcategoriesSelect.innerHTML = '<option value="">Erreur lors du chargement</option>';
         });
     }
     
     // Écouter les changements sur les catégories
     categoriesSelect.addEventListener('change', loadSubcategoriesForCategories);
     
+    // Fonction pour vérifier et charger les sous-catégories au chargement
+    function initializeSubcategories() {
+        // Vérifier les catégories sélectionnées de plusieurs façons
+        const selectedViaSelectedOptions = Array.from(categoriesSelect.selectedOptions).filter(opt => opt.value !== '');
+        const selectedViaOptions = Array.from(categoriesSelect.options).filter(opt => opt.selected && opt.value !== '');
+        
+        const hasSelectedCategories = selectedViaSelectedOptions.length > 0 || selectedViaOptions.length > 0;
+        
+        console.log('Initialisation - Catégories via selectedOptions:', selectedViaSelectedOptions.length);
+        console.log('Initialisation - Catégories via options:', selectedViaOptions.length);
+        
+        if (hasSelectedCategories) {
+            console.log('Catégories présélectionnées trouvées, chargement des sous-catégories...');
+            // Forcer le rechargement en déclenchant manuellement l'événement change
+            loadSubcategoriesForCategories();
+        } else {
+            console.log('Aucune catégorie présélectionnée');
+            subcategoriesSelect.innerHTML = '<option value="">Sélectionner d\'abord une ou plusieurs catégories</option>';
+        }
+    }
+    
     // Charger les sous-catégories au chargement si des catégories sont déjà sélectionnées
-    if (categoriesSelect.selectedOptions.length > 0) {
-        loadSubcategoriesForCategories();
+    // Utiliser plusieurs méthodes pour s'assurer que ça fonctionne
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeSubcategories, 200);
+        });
+    } else {
+        // DOM déjà chargé
+        setTimeout(initializeSubcategories, 200);
     }
     
     // Mettre à jour le champ caché lors de la sélection de sous-catégories
