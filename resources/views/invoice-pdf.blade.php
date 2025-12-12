@@ -68,9 +68,9 @@
 <body>
     <!-- En-tête -->
     <div class="header">
-        <div class="logo">KAZARIA</div>
+        <div class="logo">{{ $siteName ?? 'KAZARIA' }}</div>
         <p style="margin: 5px 0;">E-commerce en Côte d'Ivoire</p>
-        <p style="margin: 5px 0;">Email: contact@kazaria.ci | Tél: +225 XX XX XX XX XX</p>
+        <p style="margin: 5px 0;">Email: {{ $siteEmail ?? 'contact@kazaria.ci' }} | Tél: {{ $sitePhone ?? '+225 XX XX XX XX XX' }}</p>
     </div>
 
     <!-- Détails de la facture -->
@@ -180,9 +180,9 @@
     <div class="footer">
         <p>
             <strong>Merci pour votre confiance !</strong><br>
-            Pour toute question, contactez-nous à contact@kazaria.ci ou au +225 XX XX XX XX XX<br>
+            Pour toute question, contactez-nous à {{ $siteEmail ?? 'contact@kazaria.ci' }} ou au {{ $sitePhone ?? '+225 XX XX XX XX XX' }}<br>
             <br>
-            <small>KAZARIA - E-commerce en Côte d'Ivoire - www.kazaria.ci</small>
+            <small>{{ $siteName ?? 'KAZARIA' }} - E-commerce en Côte d'Ivoire - www.kazaria.ci</small>
         </p>
     </div>
 </body>

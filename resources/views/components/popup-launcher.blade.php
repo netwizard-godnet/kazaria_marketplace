@@ -297,12 +297,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function canDisplay(popup) {
-        // Ne pas afficher si ni titre ni contenu
-        const hasTitle = popup.title && popup.title.trim().length > 0;
-        const hasContent = popup.content && popup.content.trim().length > 0;
-        if (!hasTitle && !hasContent) {
-            return false;
-        }
 
         const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
 
@@ -419,15 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showPopup(popup) {
-        // Vérification supplémentaire avant affichage
-        const hasTitle = popup.title && popup.title.trim().length > 0;
-        const hasContent = popup.content && popup.content.trim().length > 0;
-        if (!hasTitle && !hasContent) {
-            console.warn('[Popups] popup ignorée: ni titre ni contenu', popup.slug);
-            state.active = false;
-            processQueue();
-            return;
-        }
+        const hasTitle = popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0;
+        const hasContent = popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0;
 
         if (titleEl) {
             titleEl.textContent = popup.title || '';
@@ -479,8 +466,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     console.info('[Popups] détectées :', popups);
+    console.info('[Popups] nombre de popups:', popups.length);
 
     popups.forEach((popup) => {
+        console.info('[Popups] traitement popup:', {
+            slug: popup.slug,
+            title: popup.title,
+            content: popup.content ? (popup.content.substring(0, 50) + '...') : 'vide',
+            hasTitle: popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0,
+            hasContent: popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0
+        });
         const delay = Math.max(0, Number(popup.delay) || 0);
         setTimeout(() => {
             if (canDisplay(popup)) {
@@ -488,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 state.queue.push(popup);
                 processQueue();
             } else {
-                console.info('[Popups] filtrée par fréquence/limite', popup.slug);
+                console.info('[Popups] filtrée par fréquence/limite ou titre/contenu', popup.slug);
             }
         }, delay * 1000);
     });

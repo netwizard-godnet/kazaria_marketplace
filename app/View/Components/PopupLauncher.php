@@ -19,10 +19,6 @@ class PopupLauncher extends Component
     public function __construct(Request $request, PopupService $popupService)
     {
         $this->popups = $popupService->getActivePopups($request);
-        // Filtrer une deuxième fois pour s'assurer qu'on n'affiche pas les popups sans titre ni contenu
-        $this->popups = array_values(array_filter($this->popups, function ($popup) {
-            return !empty(trim($popup->title ?? '')) || !empty(trim($popup->content ?? ''));
-        }));
         $this->payload = array_map(function ($popup) {
             $image = $popup->image;
 

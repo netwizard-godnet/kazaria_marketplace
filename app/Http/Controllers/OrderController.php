@@ -8,6 +8,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Store;
+use App\Models\Setting;
 use App\Services\StockService;
 use App\Services\OrderStatusService;
 use App\Notifications\NewOrderNotification;
@@ -310,8 +311,20 @@ class OrderController extends Controller
             // NE PAS marquer comme payée si paiement à la livraison
             // Le statut de paiement reste "pending" jusqu'à la livraison effective
             
+            // Récupérer les paramètres de contact depuis la BD
+            $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+            $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+            $siteName = Setting::get('site_name', 'KAZARIA');
+            $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
+            
             // Générer le PDF de la facture
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', ['order' => $order]);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', [
+                'order' => $order,
+                'siteEmail' => $siteEmail,
+                'sitePhone' => $sitePhone,
+                'siteName' => $siteName,
+                'siteAddress' => $siteAddress
+            ]);
             $pdfPath = storage_path('app/public/invoices/');
             
             // Créer le dossier s'il n'existe pas
@@ -380,7 +393,13 @@ class OrderController extends Controller
             ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
             ->firstOrFail();
         
-        return view('invoice', compact('order'));
+        // Récupérer les paramètres de contact depuis la BD
+        $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+        $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $siteName = Setting::get('site_name', 'KAZARIA');
+        $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
+        
+        return view('invoice', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
     }
 
     /**
@@ -392,8 +411,14 @@ class OrderController extends Controller
             ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
             ->firstOrFail();
         
+        // Récupérer les paramètres de contact depuis la BD
+        $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+        $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $siteName = Setting::get('site_name', 'KAZARIA');
+        $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
+        
         // Générer et télécharger le PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', compact('order'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
         
         return $pdf->download('facture-' . $order->order_number . '.pdf');
     }
