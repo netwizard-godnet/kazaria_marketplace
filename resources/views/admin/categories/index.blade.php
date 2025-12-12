@@ -154,7 +154,7 @@
                                                     </small>
                                                 </div>
                                                 <div class="d-flex flex-wrap">
-                                                    @foreach($category->subcategories->orderBy('order')->orderBy('name')->take(3) as $subcategory)
+                                                    @foreach($category->subcategories->sortBy(function($subcategory) { return [$subcategory->order ?? 999, $subcategory->name]; })->take(3) as $subcategory)
                                                         <span class="badge badge-{{ $subcategory->is_active ? 'success' : 'secondary' }} mr-1 mb-1 small" title="{{ $subcategory->is_active ? 'Visible sur le site' : 'Masquée sur le site' }}">
                                                             {{ $subcategory->name }}
                                                             <i class="fas fa-{{ $subcategory->is_active ? 'eye' : 'eye-slash' }} ml-1"></i>
