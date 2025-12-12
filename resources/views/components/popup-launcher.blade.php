@@ -76,7 +76,6 @@
 
     .popup-launcher-modal img[data-popup-image] {
         width: 100% !important;
-        max-height: 70vh;
         object-fit: contain !important;
         object-position: center !important;
         display: block !important;
