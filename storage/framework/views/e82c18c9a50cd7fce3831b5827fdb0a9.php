@@ -17,12 +17,13 @@
                             <!-- En-tête -->
                             <div class="row mb-4">
                                 <div class="col-6">
-                                    <img src="<?php echo e(asset('images/logo.png')); ?>" alt="KAZARIA" height="50">
+                                    <img src="<?php echo e(asset('images/logo.png')); ?>" alt="<?php echo e($siteName ?? 'KAZARIA'); ?>" height="50">
                                     <p class="mt-2 mb-0 small">
-                                        <strong>KAZARIA</strong><br>
+                                        <strong><?php echo e($siteName ?? 'KAZARIA'); ?></strong><br>
                                         E-commerce en Côte d'Ivoire<br>
-                                        Email: contact@kazaria.ci<br>
-                                        Tél: +225 XX XX XX XX XX
+                                        Email: <?php echo e($siteEmail ?? 'contact@kazaria.ci'); ?><br>
+                                        Tél: <?php echo e($sitePhone ?? '+225 XX XX XX XX XX'); ?>
+
                                     </p>
                                 </div>
                                 <div class="col-6 text-end">
