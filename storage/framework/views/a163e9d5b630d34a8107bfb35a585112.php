@@ -585,5 +585,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })();
 </script>
-<?php $__env->stopPush(); ?>
 <?php $__env->stopPush(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\components\popup-launcher.blade.php ENDPATH**/ ?>
