@@ -27,7 +27,7 @@ class PopupRequest extends FormRequest
         $popupId = $this->route('popup')?->id ?? $this->route('popup');
 
         return [
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:255'],
             'slug' => [
                 'nullable',
                 'string',
@@ -48,8 +48,8 @@ class PopupRequest extends FormRequest
             'display_pages_custom' => ['nullable', 'string'],
             'display_devices' => ['nullable', 'array'],
             'display_devices.*' => ['in:desktop,mobile,tablet'],
-            'frequency' => ['required', Rule::in(['once_per_session', 'once_per_day', 'once_per_visit', 'always'])],
-            'delay_seconds' => ['required', 'integer', 'min:0', 'max:86400'],
+            'frequency' => ['nullable', Rule::in(['once_per_session', 'once_per_day', 'once_per_visit', 'always'])],
+            'delay_seconds' => ['nullable', 'integer', 'min:0', 'max:86400'],
             'max_impressions' => ['nullable', 'integer', 'min:1'],
             'priority' => ['nullable', 'integer', 'min:0', 'max:1000'],
             'options' => ['nullable', 'array'],
