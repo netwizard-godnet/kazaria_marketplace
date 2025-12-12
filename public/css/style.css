@@ -393,7 +393,7 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
 
 .popup-launcher-modal .modal-body {
     height: 100%;
-    overflow-y: scroll!important;
+    overflow-y: auto!important;
     overflow-x: hidden!important;
     padding: 0 !important;
     margin: 0 !important;
@@ -419,7 +419,8 @@ span.fw-bold.orange-color:not(.fs-3):not(.fs-4):not(.fs-5):not(.fs-7) {
 .popup-launcher-modal img[data-popup-image] {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
+    object-position: center !important;
     display: block !important;
 }
 

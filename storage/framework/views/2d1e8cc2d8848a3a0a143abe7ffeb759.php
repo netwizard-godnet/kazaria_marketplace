@@ -169,33 +169,34 @@ unset($__errorArgs, $__bag); ?>
                             </div>
                         </div>
 
-                        <!-- Catégories et Sous-catégories (sélection multiple) -->
+                        <!-- Catégories et Sous-catégories (checkboxes) -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="categories">Catégories <span class="text-danger">*</span></label>
-                                    <select class="form-control <?php $__errorArgs = ['categories'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>" id="categories" name="categories[]" multiple size="6" required>
+                                    <label>Catégories <span class="text-danger">*</span></label>
+                                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
                                         <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <option value="<?php echo e($category->id); ?>" <?php echo e((old('categories') && in_array($category->id, old('categories'))) ? 'selected' : ''); ?>>
-                                                <?php echo e($category->name); ?>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input category-checkbox" 
+                                                       type="checkbox" 
+                                                       name="categories[]" 
+                                                       value="<?php echo e($category->id); ?>" 
+                                                       id="category_<?php echo e($category->id); ?>"
+                                                       <?php echo e((old('categories') && in_array($category->id, old('categories'))) ? 'checked' : ''); ?>>
+                                                <label class="form-check-label" for="category_<?php echo e($category->id); ?>">
+                                                    <?php echo e($category->name); ?>
 
-                                            </option>
+                                                </label>
+                                            </div>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                    </select>
-                                    <small class="text-muted">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs catégories</small>
+                                    </div>
+                                    <small class="text-muted">Cochez une ou plusieurs catégories</small>
                                     <?php $__errorArgs = ['categories'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
-                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                        <div class="invalid-feedback d-block"><?php echo e($message); ?></div>
                                     <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
@@ -205,7 +206,7 @@ $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
-                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                        <div class="invalid-feedback d-block"><?php echo e($message); ?></div>
                                     <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
@@ -214,24 +215,19 @@ unset($__errorArgs, $__bag); ?>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="subcategories">Sous-catégories</label>
-                                    <select class="form-control <?php $__errorArgs = ['subcategories'];
-$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
-if ($__bag->has($__errorArgs[0])) :
-if (isset($message)) { $__messageOriginal = $message; }
-$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
-if (isset($__messageOriginal)) { $message = $__messageOriginal; }
-endif;
-unset($__errorArgs, $__bag); ?>" id="subcategories" name="subcategories[]" multiple size="6">
-                                        <option value="">Sélectionner d'abord une ou plusieurs catégories</option>
-                                    </select>
-                                    <small class="text-muted">Maintenez Ctrl (ou Cmd sur Mac) pour sélectionner plusieurs sous-catégories</small>
+                                    <label>Sous-catégories</label>
+                                    <div class="border rounded p-3" id="subcategories-container" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="text-muted text-center py-3">
+                                            Sélectionnez d'abord une ou plusieurs catégories
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Les sous-catégories apparaîtront après la sélection des catégories</small>
                                     <?php $__errorArgs = ['subcategories'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
-                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                        <div class="invalid-feedback d-block"><?php echo e($message); ?></div>
                                     <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
@@ -241,7 +237,7 @@ $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
 $message = $__bag->first($__errorArgs[0]); ?>
-                                        <div class="invalid-feedback"><?php echo e($message); ?></div>
+                                        <div class="invalid-feedback d-block"><?php echo e($message); ?></div>
                                     <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
@@ -621,49 +617,35 @@ unset($__errorArgs, $__bag); ?>
 
 <?php $__env->startPush('scripts'); ?>
 <script>
-// Charger les sous-catégories lors de la sélection de catégories (sélection multiple)
+// Charger les sous-catégories lors de la sélection de catégories (checkboxes)
 document.addEventListener('DOMContentLoaded', function() {
-    const categoriesSelect = document.getElementById('categories');
-    const subcategoriesSelect = document.getElementById('subcategories');
+    const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+    const subcategoriesContainer = document.getElementById('subcategories-container');
     const categoryIdHidden = document.getElementById('category_id');
     const subcategoryIdHidden = document.getElementById('subcategory_id');
     
-    if (!categoriesSelect || !subcategoriesSelect) {
-        console.error('Champs categories ou subcategories non trouvés');
+    if (!categoryCheckboxes || categoryCheckboxes.length === 0) {
+        console.error('Checkboxes de catégories non trouvés');
         return;
+    }
+    
+    if (!subcategoriesContainer) {
+        console.error('Container des sous-catégories non trouvé');
+        return;
+    }
+    
+    // Fonction pour obtenir les catégories sélectionnées via les checkboxes
+    function getSelectedCategories() {
+        const selected = Array.from(categoryCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        return selected;
     }
     
     // Fonction pour charger les sous-catégories pour plusieurs catégories
     function loadSubcategoriesForCategories() {
-        // Vérifier que les éléments existent et sont valides
-        if (!categoriesSelect || !subcategoriesSelect) {
-            console.error('Les éléments categoriesSelect ou subcategoriesSelect ne sont pas disponibles');
-            return;
-        }
-        
-        // Récupérer les catégories sélectionnées avec vérifications de sécurité
-        let selectedCategories = [];
-        
-        try {
-            if (categoriesSelect.selectedOptions && categoriesSelect.selectedOptions.length !== undefined) {
-                selectedCategories = Array.from(categoriesSelect.selectedOptions)
-                    .map(opt => opt && opt.value ? opt.value : '')
-                    .filter(id => id !== '');
-            }
-            
-            // Si aucune catégorie n'est sélectionnée via selectedOptions, vérifier les options avec l'attribut selected
-            if (selectedCategories.length === 0 && categoriesSelect.options && categoriesSelect.options.length !== undefined) {
-                selectedCategories = Array.from(categoriesSelect.options)
-                    .filter(opt => opt && opt.selected && opt.value)
-                    .map(opt => opt.value)
-                    .filter(id => id !== '');
-            }
-        } catch (error) {
-            console.error('Erreur lors de la récupération des catégories sélectionnées:', error);
-            return;
-        }
-        
-        console.log('Catégories sélectionnées:', selectedCategories);
+        const selectedCategories = getSelectedCategories();
+        console.log('📋 Catégories sélectionnées:', selectedCategories);
         
         // Mettre à jour le champ caché avec la première catégorie sélectionnée (pour compatibilité)
         if (selectedCategories.length > 0) {
@@ -673,11 +655,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Vider les sous-catégories
-        subcategoriesSelect.innerHTML = '';
+        subcategoriesContainer.innerHTML = '<div class="text-muted text-center py-3"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
         subcategoryIdHidden.value = '';
         
         if (selectedCategories.length === 0) {
-            subcategoriesSelect.innerHTML = '<option value="">Sélectionner d\'abord une ou plusieurs catégories</option>';
+            subcategoriesContainer.innerHTML = '<div class="text-muted text-center py-3">Sélectionnez d\'abord une ou plusieurs catégories</div>';
             return;
         }
         
@@ -685,7 +667,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const allSubcategories = new Map(); // Utiliser Map pour éviter les doublons
         
         Promise.all(selectedCategories.map(categoryId => {
-            console.log('Chargement des sous-catégories pour la catégorie:', categoryId);
             return fetch(`/api/categories/${categoryId}/subcategories`, {
                 method: 'GET',
                 headers: {
@@ -700,8 +681,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                console.log('Réponse API pour catégorie', categoryId, ':', data);
-                if (data.success && data.subcategories && data.subcategories.length > 0) {
+                if (data && data.success && data.subcategories && Array.isArray(data.subcategories)) {
                     data.subcategories.forEach(subcategory => {
                         const subId = subcategory.id.toString();
                         if (!allSubcategories.has(subId)) {
@@ -715,79 +695,91 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }))
         .then(() => {
-            console.log('Toutes les sous-catégories chargées:', Array.from(allSubcategories.values()));
+            const allSubcatsArray = Array.from(allSubcategories.values());
             
             // Trier les sous-catégories par nom
-            const sortedSubcategories = Array.from(allSubcategories.values()).sort((a, b) => 
+            const sortedSubcategories = allSubcatsArray.sort((a, b) => 
                 a.name.localeCompare(b.name)
             );
             
-            // Ajouter les options
-            if (sortedSubcategories.length === 0) {
-                subcategoriesSelect.innerHTML = '<option value="">Aucune sous-catégorie disponible</option>';
-            } else {
-                sortedSubcategories.forEach(subcategory => {
-                    const option = document.createElement('option');
-                    const subId = subcategory.id.toString();
-                    option.value = subId;
-                    option.textContent = subcategory.name;
-                    
-                    // Vérifier si cette sous-catégorie était sélectionnée précédemment
-                    const oldSubcategories = <?php echo json_encode(old('subcategories', []), 512) ?>;
-                    const oldSubcategoriesStr = oldSubcategories.map(id => id.toString());
-                    if (oldSubcategoriesStr.includes(subId)) {
-                        option.selected = true;
-                    }
-                    
-                    subcategoriesSelect.appendChild(option);
-                });
-            }
+            // Vider le container avant d'ajouter les nouvelles checkboxes
+            subcategoriesContainer.innerHTML = '';
             
-            // Mettre à jour le champ caché avec la première sous-catégorie sélectionnée (pour compatibilité)
-            if (subcategoriesSelect.selectedOptions && subcategoriesSelect.selectedOptions.length > 0) {
-                subcategoryIdHidden.value = subcategoriesSelect.selectedOptions[0].value;
+            // Ajouter les checkboxes
+            if (sortedSubcategories.length === 0) {
+                subcategoriesContainer.innerHTML = '<div class="text-muted text-center py-3">Aucune sous-catégorie disponible</div>';
+            } else {
+                const oldSubcategories = <?php echo json_encode(old('subcategories', []), 512) ?>;
+                const oldSubcategoriesStr = oldSubcategories.map(id => id.toString());
+                
+                sortedSubcategories.forEach(subcategory => {
+                    const subId = subcategory.id.toString();
+                    const isChecked = oldSubcategoriesStr.includes(subId);
+                    
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'form-check mb-2';
+                    checkboxDiv.innerHTML = `
+                        <input class="form-check-input subcategory-checkbox" 
+                               type="checkbox" 
+                               name="subcategories[]" 
+                               value="${subId}" 
+                               id="subcategory_${subId}"
+                               ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="subcategory_${subId}">
+                            ${subcategory.name}
+                        </label>
+                    `;
+                    subcategoriesContainer.appendChild(checkboxDiv);
+                });
+                
+                // Mettre à jour le champ caché avec la première sous-catégorie sélectionnée (pour compatibilité)
+                const firstChecked = subcategoriesContainer.querySelector('.subcategory-checkbox:checked');
+                if (firstChecked) {
+                    subcategoryIdHidden.value = firstChecked.value;
+                }
             }
         })
         .catch(error => {
             console.error('Erreur générale lors du chargement des sous-catégories:', error);
-            subcategoriesSelect.innerHTML = '<option value="">Erreur lors du chargement</option>';
+            subcategoriesContainer.innerHTML = '<div class="text-danger text-center py-3">Erreur lors du chargement</div>';
         });
     }
     
-    // Écouter les changements sur les catégories
-    categoriesSelect.addEventListener('change', loadSubcategoriesForCategories);
-    
-    // Charger les sous-catégories au chargement si des catégories sont déjà sélectionnées
-    // Utiliser setTimeout pour s'assurer que le DOM est complètement chargé
-    setTimeout(function() {
-        if (categoriesSelect && categoriesSelect.selectedOptions && categoriesSelect.selectedOptions.length > 0) {
-            console.log('Chargement initial des sous-catégories...');
-            loadSubcategoriesForCategories();
-        } else {
-            if (subcategoriesSelect) {
-                subcategoriesSelect.innerHTML = '<option value="">Sélectionner d\'abord une ou plusieurs catégories</option>';
-            }
-        }
-    }, 100);
+    // Écouter les changements sur les checkboxes de catégories
+    categoryCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', loadSubcategoriesForCategories);
+    });
     
     // Mettre à jour le champ caché lors de la sélection de sous-catégories
-    subcategoriesSelect.addEventListener('change', function() {
-        if (this.selectedOptions && this.selectedOptions.length > 0) {
-            subcategoryIdHidden.value = this.selectedOptions[0].value;
-        } else {
-            subcategoryIdHidden.value = '';
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('subcategory-checkbox')) {
+            const checkedSubcategories = Array.from(document.querySelectorAll('.subcategory-checkbox:checked'));
+            if (checkedSubcategories.length > 0) {
+                subcategoryIdHidden.value = checkedSubcategories[0].value;
+            } else {
+                subcategoryIdHidden.value = '';
+            }
         }
     });
+    
+    // Charger les sous-catégories au chargement si des catégories sont déjà sélectionnées
+    setTimeout(function() {
+        const selectedCategories = getSelectedCategories();
+        if (selectedCategories.length > 0) {
+            loadSubcategoriesForCategories();
+        }
+    }, 300);
     
     // Validation : au moins une catégorie doit être sélectionnée
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            if (!categoriesSelect || !categoriesSelect.selectedOptions || categoriesSelect.selectedOptions.length === 0) {
+            const selectedCategories = getSelectedCategories();
+            if (selectedCategories.length === 0) {
                 e.preventDefault();
                 alert('Veuillez sélectionner au moins une catégorie.');
-                if (categoriesSelect) {
-                    categoriesSelect.focus();
+                if (categoryCheckboxes.length > 0) {
+                    categoryCheckboxes[0].focus();
                 }
                 return false;
             }

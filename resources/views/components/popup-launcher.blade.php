@@ -2,7 +2,7 @@
 
 <div class="modal fade popup-launcher-modal z-index-9x" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg" style="background: transparent!important;">
+        <div class="modal-content border-0" style="background: transparent!important;">
             <button type="button" class="btn-close popup-close-btn" data-bs-dismiss="modal" aria-label="Fermer"></button>
             <div class="modal-body p-0" data-popup-body>
                 <div class="row g-0 position-relative" data-popup-row>
@@ -24,6 +24,14 @@
 
 @push('styles')
 <style>
+    /* Règle globale pour toutes les images - object-fit contain obligatoire */
+    .popup-launcher-modal img[data-popup-image],
+    .popup-launcher-modal [data-popup-image-wrapper] img,
+    .popup-launcher-modal .popup-launcher-image-wrapper img {
+        object-fit: contain !important;
+        object-position: center !important;
+    }
+    
     .popup-launcher-modal .modal-dialog {
         max-width: 90%;
         max-height: 90vh;
@@ -56,6 +64,11 @@
         margin: 0;
         padding: 0;
     }
+    
+    /* S'assurer que le wrapper a une hauteur pour object-fit contain */
+    .popup-launcher-modal .popup-launcher-image-wrapper:not(.d-none) {
+        height: auto;
+    }
 
     /* Image fixe pour les layouts horizontaux */
     .popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 {
@@ -63,6 +76,15 @@
         left: 0;
         z-index: 10;
         align-self: flex-start;
+        height: 100%;
+    }
+    
+    /* Images pour layouts horizontaux (left-right, right-left) */
+    .popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 img[data-popup-image] {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        object-position: center !important;
     }
     
     /* Pour les layouts horizontaux, aligner l'image et le contenu en haut */
@@ -74,8 +96,8 @@
         align-self: stretch;
     }
 
+    /* Règle générale pour toutes les images - object-fit contain */
     .popup-launcher-modal img[data-popup-image] {
-        width: 100% !important;
         object-fit: contain !important;
         object-position: center !important;
         display: block !important;
@@ -92,8 +114,17 @@
         top: 0;
         left: 0;
         width: 100%;
+        height: 100%;
         z-index: 1;
         /* Pas de sticky pour stacked, c'est un overlay */
+    }
+    
+    /* Images pour layout stacked */
+    .popup-launcher-modal [data-popup-row].layout-stacked img[data-popup-image] {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        object-position: center !important;
     }
 
     .popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-wrapper] {
@@ -156,12 +187,23 @@
         overflow-y: hidden;
     }
 
+    /* Images pour layout top-bottom */
     .popup-launcher-modal .layout-top-bottom img[data-popup-image] {
-        width: auto !important;
+        width: 100% !important;
         max-width: 100% !important;
-        max-height: 50vh !important;
+        max-height: 70vh !important;
         height: auto !important;
         object-fit: contain !important;
+        object-position: center !important;
+    }
+    
+    /* Images sans layout spécifique (fallback) */
+    .popup-launcher-modal .popup-launcher-image-wrapper img[data-popup-image] {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 70vh !important;
+        object-fit: contain !important;
+        object-position: center !important;
     }
 
     .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
@@ -543,4 +585,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })();
 </script>
+@endpush
 @endpush
