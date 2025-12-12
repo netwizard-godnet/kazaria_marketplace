@@ -90,6 +90,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
     Route::prefix('orders')->name('orders.')->middleware('permission:view_orders')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/{order}/invoice', [OrderController::class, 'invoice'])->name('invoice');
         Route::get('/stats', [OrderController::class, 'getStats'])->name('stats');
         Route::get('/{order}/available-statuses', [OrderController::class, 'getAvailableStatuses'])->name('available-statuses');
         

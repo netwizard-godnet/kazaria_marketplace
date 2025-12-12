@@ -40,7 +40,7 @@
                         <div class="col-12 text-center">
                             <div class="profile-photo-container">
                                 @if($user->profile_pic_url)
-                                    <img src="{{ $user->profile_pic_url }}" alt="Photo de profil" class="profile-photo rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #ff6b35;">
+                                    <img src="{{ str_starts_with($user->profile_pic_url, 'http') ? $user->profile_pic_url : asset($user->profile_pic_url) }}" alt="Photo de profil" class="profile-photo rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #ff6b35;">
                                 @else
                                     <div class="profile-photo-placeholder rounded-circle d-flex align-items-center justify-content-center" style="width: 120px; height: 120px; background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%); color: white; font-size: 48px; font-weight: bold; margin: 0 auto; border: 4px solid #ff6b35;">
                                         {{ strtoupper(substr($user->nom ?? 'U', 0, 1)) }}{{ strtoupper(substr($user->prenoms ?? '', 0, 1)) }}
