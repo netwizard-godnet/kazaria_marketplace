@@ -48,8 +48,8 @@ class PopupController extends Controller
     public function store(PopupRequest $request)
     {
         $data = $request->validated();
-        $data['title'] = $data['title'] ?? 'Popup sans titre';
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title']);
+        $data['title'] = !empty($data['title']) ? $data['title'] : null;
+        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'] ?? null);
         $data['frequency'] = $data['frequency'] ?? 'once_per_session';
         $data['delay_seconds'] = $data['delay_seconds'] ?? 0;
         $data['display_pages'] = $this->resolvePages(
@@ -90,8 +90,13 @@ class PopupController extends Controller
     public function update(PopupRequest $request, Popup $popup)
     {
         $data = $request->validated();
-        $data['title'] = $data['title'] ?? $popup->title ?? 'Popup sans titre';
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'], $popup->id);
+        // Si le titre est vide, le mettre à null (pas de valeur par défaut)
+        if (isset($data['title']) && empty(trim($data['title']))) {
+            $data['title'] = null;
+        } else {
+            $data['title'] = $data['title'] ?? $popup->title;
+        }
+        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'] ?? null, $popup->id);
         $data['frequency'] = $data['frequency'] ?? $popup->frequency ?? 'once_per_session';
         $data['delay_seconds'] = $data['delay_seconds'] ?? $popup->delay_seconds ?? 0;
         $data['display_pages'] = $this->resolvePages(

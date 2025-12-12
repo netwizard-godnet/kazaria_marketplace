@@ -16,6 +16,11 @@ class PopupService
             ->orderByDesc('priority')
             ->get()
             ->filter(function (Popup $popup) use ($path, $device) {
+                // Ne pas afficher si ni titre ni contenu
+                if (empty(trim($popup->title ?? '')) && empty(trim($popup->content ?? ''))) {
+                    return false;
+                }
+
                 if (!empty($popup->display_devices) && !in_array($device, $popup->display_devices, true)) {
                     return false;
                 }

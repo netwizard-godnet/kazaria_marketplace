@@ -297,6 +297,13 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function canDisplay(popup) {
+        // Ne pas afficher si ni titre ni contenu
+        const hasTitle = popup.title && popup.title.trim().length > 0;
+        const hasContent = popup.content && popup.content.trim().length > 0;
+        if (!hasTitle && !hasContent) {
+            return false;
+        }
+
         const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
 
         if (popup.max_impressions && stats.count >= popup.max_impressions) {
@@ -412,13 +419,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showPopup(popup) {
+        // Vérification supplémentaire avant affichage
+        const hasTitle = popup.title && popup.title.trim().length > 0;
+        const hasContent = popup.content && popup.content.trim().length > 0;
+        if (!hasTitle && !hasContent) {
+            console.warn('[Popups] popup ignorée: ni titre ni contenu', popup.slug);
+            state.active = false;
+            processQueue();
+            return;
+        }
+
         if (titleEl) {
             titleEl.textContent = popup.title || '';
-            titleEl.classList.toggle('d-none', !popup.title);
+            titleEl.classList.toggle('d-none', !hasTitle);
         }
 
         if (contentEl) {
             contentEl.innerHTML = popup.content || '';
+            contentEl.classList.toggle('d-none', !hasContent);
         }
 
         const layout = popup.layout || 'left-right';
