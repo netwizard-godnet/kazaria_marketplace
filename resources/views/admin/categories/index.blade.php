@@ -45,7 +45,7 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center justify-content-between">
                         <h4 class="card-title">Catégories et sous-catégories</h4>
-                        <button class="btn btn-primary" data-toggle="modal" data-target="#addCategoryModal">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                             <i class="fas fa-plus"></i> Ajouter une catégorie
                         </button>
                     </div>
@@ -263,9 +263,7 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Ajouter une catégorie</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
@@ -317,7 +315,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Créer
                     </button>
@@ -435,17 +433,29 @@
 @push('scripts')
 <script>
 // Aperçu de l'image dans le modal
-document.getElementById('image').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('preview-img').src = e.target.result;
-            document.getElementById('image-preview').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        document.getElementById('image-preview').style.display = 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('image');
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewImg = document.getElementById('preview-img');
+                    const imagePreview = document.getElementById('image-preview');
+                    if (previewImg && imagePreview) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const imagePreview = document.getElementById('image-preview');
+                if (imagePreview) {
+                    imagePreview.style.display = 'none';
+                }
+            }
+        });
     }
 });
 
