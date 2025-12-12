@@ -30,6 +30,7 @@
     .popup-launcher-modal .popup-launcher-image-wrapper img {
         object-fit: contain !important;
         object-position: center !important;
+        min-height: 300px !important;
     }
     
     .popup-launcher-modal .modal-dialog {
@@ -83,6 +84,7 @@
     .popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 img[data-popup-image] {
         width: 100% !important;
         height: 100% !important;
+        min-height: 300px !important;
         object-fit: contain !important;
         object-position: center !important;
     }
@@ -100,6 +102,7 @@
     .popup-launcher-modal img[data-popup-image] {
         object-fit: contain !important;
         object-position: center !important;
+        min-height: 300px !important;
         display: block !important;
     }
 
@@ -123,6 +126,7 @@
     .popup-launcher-modal [data-popup-row].layout-stacked img[data-popup-image] {
         width: 100% !important;
         height: 100% !important;
+        min-height: 300px !important;
         object-fit: contain !important;
         object-position: center !important;
     }
@@ -193,6 +197,7 @@
         max-width: 100% !important;
         max-height: 70vh !important;
         height: auto !important;
+        min-height: 300px !important;
         object-fit: contain !important;
         object-position: center !important;
     }
@@ -202,6 +207,7 @@
         width: 100% !important;
         height: auto !important;
         max-height: 70vh !important;
+        min-height: 300px !important;
         object-fit: contain !important;
         object-position: center !important;
     }
