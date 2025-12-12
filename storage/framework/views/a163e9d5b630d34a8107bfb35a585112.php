@@ -25,28 +25,31 @@
 <?php $__env->startPush('styles'); ?>
 <style>
     .popup-launcher-modal .modal-dialog {
-        height: 500px;
+        max-width: 90%;
+        max-height: 90vh;
+        height: auto;
+        margin: 1.75rem auto;
     }
 
     .popup-launcher-modal .modal-content {
         border-radius: 0;
-        height: 500px;
+        max-height: 90vh;
         overflow: hidden;
         position: relative;
         padding: 0 !important;
     }
 
     .popup-launcher-modal .modal-body {
-        height: 100%;
-        overflow-y: scroll!important;
-        overflow-x: hidden!important;
+        max-height: 90vh;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         padding: 0 !important;
         margin: 0 !important;
     }
 
     .popup-launcher-modal .popup-launcher-image-wrapper {
         overflow: hidden;
-        height: 100%;
+        min-height: 200px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -59,11 +62,21 @@
         position: sticky;
         left: 0;
         z-index: 10;
+        align-self: flex-start;
+    }
+    
+    /* Pour les layouts horizontaux, aligner l'image et le contenu en haut */
+    .popup-launcher-modal .row:not(.layout-stacked):not(.layout-top-bottom) {
+        align-items: flex-start;
+    }
+    
+    .popup-launcher-modal .row:not(.layout-stacked):not(.layout-top-bottom) [data-popup-content-wrapper] {
+        align-self: stretch;
     }
 
     .popup-launcher-modal img[data-popup-image] {
         width: 100% !important;
-        height: 100% !important;
+        max-height: 70vh;
         object-fit: contain !important;
         display: block !important;
     }
@@ -72,8 +85,7 @@
     /* Layout superposé (overlay) */
     .popup-launcher-modal [data-popup-row].layout-stacked {
         position: relative;
-        height: 100%;
-        min-height: 400px;
+        min-height: 300px;
     }
 
     .popup-launcher-modal [data-popup-row].layout-stacked .popup-launcher-image-wrapper {
@@ -81,7 +93,7 @@
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
+        min-height: 300px;
         z-index: 1;
         /* Pas de sticky pour stacked, c'est un overlay */
     }
@@ -91,7 +103,7 @@
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
+        min-height: 300px;
         z-index: 2;
         background: transparent;
     }
@@ -105,8 +117,25 @@
         margin: 0 auto;
     }
 
+    /* Masquer le fond blanc si pas de contenu texte */
+    .popup-launcher-modal [data-popup-content-inner].d-none {
+        display: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+
+    .popup-launcher-modal [data-popup-content-inner]:has([data-popup-title].d-none):has([data-popup-content].d-none) {
+        background: transparent !important;
+        padding: 0 !important;
+    }
+
+    /* Masquer le wrapper parent si pas de contenu texte */
+    .popup-launcher-modal [data-popup-content-wrapper]:has([data-popup-content-inner][style*="display: none"]) {
+        background: transparent !important;
+    }
+
     .popup-launcher-modal .row:not(.layout-top-bottom) {
-        height: 100%;
+        min-height: 200px;
     }
 
     .popup-launcher-modal [data-popup-row] {
@@ -115,7 +144,7 @@
     }
 
     .popup-launcher-modal .layout-top-bottom {
-        height: 100%;
+        min-height: 200px;
     }
 
     /* Pour la disposition top-bottom, permettre le scroll vertical sur le modal */
@@ -132,12 +161,13 @@
 
     .popup-launcher-modal .layout-top-bottom img[data-popup-image] {
         width: auto !important;
-        max-width: none !important;
-        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 50vh !important;
+        height: auto !important;
     }
 
     .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
-        height: 100%;
+        min-height: 200px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -145,7 +175,7 @@
 
     .popup-launcher-modal [data-popup-content-inner] {
         width: 100%;
-        max-height: 100%;
+        max-height: 70vh;
         overflow-y: auto;
         overflow-x: hidden;
         display: flex;
@@ -415,6 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showPopup(popup) {
         const hasTitle = popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0;
         const hasContent = popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0;
+        const hasTextContent = hasTitle || hasContent;
 
         if (titleEl) {
             titleEl.textContent = popup.title || '';
@@ -424,6 +455,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (contentEl) {
             contentEl.innerHTML = popup.content || '';
             contentEl.classList.toggle('d-none', !hasContent);
+        }
+
+        const contentInner = modalElement.querySelector('[data-popup-content-inner]');
+        const contentWrapperEl = modalElement.querySelector('[data-popup-content-wrapper]');
+        
+        if (contentInner) {
+            // Masquer le wrapper de contenu si ni titre ni contenu
+            if (!hasTextContent) {
+                contentInner.style.display = 'none';
+                contentInner.style.background = 'transparent';
+                contentInner.style.padding = '0';
+                // Masquer aussi le wrapper parent si pas de contenu texte
+                if (contentWrapperEl) {
+                    contentWrapperEl.style.background = 'transparent';
+                }
+            } else {
+                contentInner.style.display = '';
+                contentInner.style.background = '';
+                contentInner.style.padding = '';
+                if (contentWrapperEl) {
+                    contentWrapperEl.style.background = '';
+                }
+            }
+        } else if (contentWrapperEl && !hasTextContent) {
+            // Si pas de contentInner mais qu'on a le wrapper, masquer son fond aussi
+            contentWrapperEl.style.background = 'transparent';
         }
 
         const layout = popup.layout || 'left-right';

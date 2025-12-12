@@ -2,7 +2,7 @@
 
 <div class="modal fade popup-launcher-modal z-index-9x" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg">
+        <div class="modal-content border-0 shadow-lg" style="background: transparent!important;">
             <button type="button" class="btn-close popup-close-btn" data-bs-dismiss="modal" aria-label="Fermer"></button>
             <div class="modal-body p-0" data-popup-body>
                 <div class="row g-0 position-relative" data-popup-row>
@@ -78,6 +78,7 @@
         width: 100% !important;
         max-height: 70vh;
         object-fit: contain !important;
+        object-position: center !important;
         display: block !important;
     }
 
@@ -164,6 +165,7 @@
         max-width: 100% !important;
         max-height: 50vh !important;
         height: auto !important;
+        object-fit: contain !important;
     }
 
     .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
@@ -460,27 +462,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const contentInner = modalElement.querySelector('[data-popup-content-inner]');
         const contentWrapperEl = modalElement.querySelector('[data-popup-content-wrapper]');
         
-        if (contentInner) {
-            // Masquer le wrapper de contenu si ni titre ni contenu
-            if (!hasTextContent) {
+        // Masquer le wrapper de contenu si ni titre ni contenu
+        if (!hasTextContent) {
+            if (contentInner) {
                 contentInner.style.display = 'none';
                 contentInner.style.background = 'transparent';
                 contentInner.style.padding = '0';
-                // Masquer aussi le wrapper parent si pas de contenu texte
-                if (contentWrapperEl) {
-                    contentWrapperEl.style.background = 'transparent';
-                }
-            } else {
+            }
+            if (contentWrapperEl) {
+                contentWrapperEl.style.display = 'none';
+            }
+        } else {
+            if (contentInner) {
                 contentInner.style.display = '';
                 contentInner.style.background = '';
                 contentInner.style.padding = '';
-                if (contentWrapperEl) {
-                    contentWrapperEl.style.background = '';
-                }
             }
-        } else if (contentWrapperEl && !hasTextContent) {
-            // Si pas de contentInner mais qu'on a le wrapper, masquer son fond aussi
-            contentWrapperEl.style.background = 'transparent';
+            if (contentWrapperEl) {
+                contentWrapperEl.style.display = '';
+            }
         }
 
         const layout = popup.layout || 'left-right';
