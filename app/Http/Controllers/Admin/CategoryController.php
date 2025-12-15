@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Models\Subcategory;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -85,29 +86,52 @@ class CategoryController extends Controller
         }
         
         // Traiter les bannières personnalisées
-        if ($request->filled('custom_banners')) {
-            $data['custom_banners'] = is_string($request->custom_banners) 
-                ? json_decode($request->custom_banners, true) 
-                : $request->custom_banners;
+        if ($request->has('custom_banners') && $request->custom_banners !== null && $request->custom_banners !== '') {
+            $bannersData = $request->custom_banners;
+            $newBanners = is_string($bannersData) 
+                ? json_decode($bannersData, true) 
+                : (is_array($bannersData) ? $bannersData : []);
+            $data['custom_banners'] = is_array($newBanners) && !empty($newBanners) ? $newBanners : null;
         } elseif (!$request->has('is_customized')) {
+            $data['custom_banners'] = null;
+        } else {
             $data['custom_banners'] = null;
         }
         
         // Traiter les carrousels personnalisés
-        if ($request->filled('custom_carousels')) {
-            $data['custom_carousels'] = is_string($request->custom_carousels) 
-                ? json_decode($request->custom_carousels, true) 
-                : $request->custom_carousels;
+        if ($request->has('custom_carousels') && $request->custom_carousels !== null && $request->custom_carousels !== '') {
+            $carouselsData = $request->custom_carousels;
+            $newCarousels = is_string($carouselsData) 
+                ? json_decode($carouselsData, true) 
+                : (is_array($carouselsData) ? $carouselsData : []);
+            $data['custom_carousels'] = is_array($newCarousels) && !empty($newCarousels) ? $newCarousels : null;
         } elseif (!$request->has('is_customized')) {
+            $data['custom_carousels'] = null;
+        } else {
             $data['custom_carousels'] = null;
         }
         
         // Traiter les couleurs personnalisées
-        if ($request->filled('custom_colors')) {
-            $data['custom_colors'] = is_string($request->custom_colors) 
-                ? json_decode($request->custom_colors, true) 
-                : $request->custom_colors;
+        if ($request->has('custom_colors') && $request->custom_colors !== null && $request->custom_colors !== '') {
+            $colorsData = $request->custom_colors;
+            $customColors = is_string($colorsData) 
+                ? json_decode($colorsData, true) 
+                : (is_array($colorsData) ? $colorsData : []);
+            
+            // Filtrer les couleurs vides ou par défaut
+            $filteredColors = [];
+            if (is_array($customColors)) {
+                foreach ($customColors as $key => $value) {
+                    if (!empty($value) && $value !== '#000000') {
+                        $filteredColors[$key] = $value;
+                    }
+                }
+            }
+            
+            $data['custom_colors'] = !empty($filteredColors) ? $filteredColors : null;
         } elseif (!$request->has('is_customized')) {
+            $data['custom_colors'] = null;
+        } else {
             $data['custom_colors'] = null;
         }
 
@@ -183,10 +207,16 @@ class CategoryController extends Controller
         
         // Traiter les bannières personnalisées
         $oldBanners = $category->custom_banners ?? [];
-        if ($request->filled('custom_banners')) {
-            $newBanners = is_string($request->custom_banners) 
-                ? json_decode($request->custom_banners, true) 
-                : $request->custom_banners;
+        if ($request->has('custom_banners') && $request->custom_banners !== null && $request->custom_banners !== '') {
+            $bannersData = $request->custom_banners;
+            $newBanners = is_string($bannersData) 
+                ? json_decode($bannersData, true) 
+                : (is_array($bannersData) ? $bannersData : []);
+            
+            // S'assurer que c'est un tableau
+            if (!is_array($newBanners)) {
+                $newBanners = [];
+            }
             
             // Supprimer les images des bannières qui ne sont plus utilisées
             $oldBannerImages = collect($oldBanners)->pluck('image')->filter()->toArray();
@@ -208,14 +238,23 @@ class CategoryController extends Controller
                 }
             }
             $data['custom_banners'] = null;
+        } else {
+            // Si personnalisation activée mais pas de bannières, mettre tableau vide
+            $data['custom_banners'] = [];
         }
         
         // Traiter les carrousels personnalisés
         $oldCarousels = $category->custom_carousels ?? [];
-        if ($request->filled('custom_carousels')) {
-            $newCarousels = is_string($request->custom_carousels) 
-                ? json_decode($request->custom_carousels, true) 
-                : $request->custom_carousels;
+        if ($request->has('custom_carousels') && $request->custom_carousels !== null && $request->custom_carousels !== '') {
+            $carouselsData = $request->custom_carousels;
+            $newCarousels = is_string($carouselsData) 
+                ? json_decode($carouselsData, true) 
+                : (is_array($carouselsData) ? $carouselsData : []);
+            
+            // S'assurer que c'est un tableau
+            if (!is_array($newCarousels)) {
+                $newCarousels = [];
+            }
             
             // Supprimer les images des carrousels qui ne sont plus utilisées
             $oldCarouselImages = collect($oldCarousels)->pluck('images')->flatten()->pluck('url')->filter()->toArray();
@@ -241,6 +280,9 @@ class CategoryController extends Controller
                 }
             }
             $data['custom_carousels'] = null;
+        } else {
+            // Si personnalisation activée mais pas de carrousels, mettre tableau vide
+            $data['custom_carousels'] = [];
         }
         
         // Traiter les couleurs personnalisées
@@ -252,17 +294,24 @@ class CategoryController extends Controller
             $data['custom_colors'] = null;
         }
 
-        $category->update($data);
+        try {
+            $category->update($data);
 
-        if ($request->hasFile('image')) {
-            if ($category->image) {
-                Storage::disk('public')->delete($category->image);
+            if ($request->hasFile('image')) {
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image);
+                }
+                $imagePath = $request->file('image')->store('categories', 'public');
+                $category->update(['image' => $imagePath]);
             }
-            $imagePath = $request->file('image')->store('categories', 'public');
-            $category->update(['image' => $imagePath]);
-        }
 
-        return redirect()->route('admin.categories.index')->with('success', 'Catégorie mise à jour avec succès.');
+            return redirect()->route('admin.categories.index')->with('success', 'Catégorie mise à jour avec succès.');
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la mise à jour de la catégorie: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
+        }
     }
 
     public function destroy(Category $category)

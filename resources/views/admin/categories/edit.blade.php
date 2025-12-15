@@ -165,7 +165,7 @@
                                             </div>
                                         @endforeach
                                     </div>
-                                    <input type="hidden" name="custom_layout" id="custom_layout_input" value="">
+                                    <input type="hidden" name="custom_layout" id="custom_layout_input" value="" data-empty-value='{}'>
                                 </div>
                             </div>
                         </div>
@@ -242,6 +242,7 @@
                                                 </div>
                                             @endforeach
                                         </div>
+                                        <input type="hidden" name="custom_colors" id="custom_colors_input" value="{{ json_encode($customColors ?? []) }}" data-empty-value='{}'>
                                     </div>
 
                                     <!-- Onglet Bannières -->
@@ -271,7 +272,7 @@
                                                 @endforeach
                                             @endif
                                         </div>
-                                        <input type="hidden" name="custom_banners" id="custom_banners_input" value="{{ json_encode($customBanners ?? []) }}">
+                                        <input type="hidden" name="custom_banners" id="custom_banners_input" value="{{ json_encode($customBanners ?? []) }}" data-empty-value='[]'>
                                     </div>
 
                                     <!-- Onglet Carrousels -->
@@ -301,7 +302,7 @@
                                                 @endforeach
                                             @endif
                                         </div>
-                                        <input type="hidden" name="custom_carousels" id="custom_carousels_input" value="{{ json_encode($customCarousels ?? []) }}">
+                                        <input type="hidden" name="custom_carousels" id="custom_carousels_input" value="{{ json_encode($customCarousels ?? []) }}" data-empty-value='[]'>
                                     </div>
                                 </div>
                             </div>
@@ -492,7 +493,11 @@ function updateCustomColors() {
         const key = input.name.match(/\[(.*?)\]/)[1];
         colors[key] = input.value;
     });
-    // Pas besoin de champ caché, les couleurs sont déjà dans le formulaire
+    // Mettre à jour le champ caché
+    const colorsInput = document.getElementById('custom_colors_input');
+    if (colorsInput) {
+        colorsInput.value = JSON.stringify(colors);
+    }
 }
 
 // Synchroniser les sélecteurs de couleur avec les champs texte
@@ -534,7 +539,10 @@ function updateCustomBanners() {
             });
         }
     });
-    document.getElementById('custom_banners_input').value = JSON.stringify(banners);
+    const bannersInput = document.getElementById('custom_banners_input');
+    if (bannersInput) {
+        bannersInput.value = JSON.stringify(banners);
+    }
 }
 
 // Ajouter une bannière
@@ -761,7 +769,10 @@ function updateCustomCarousels() {
             });
         }
     });
-    document.getElementById('custom_carousels_input').value = JSON.stringify(carousels);
+    const carouselsInput = document.getElementById('custom_carousels_input');
+    if (carouselsInput) {
+        carouselsInput.value = JSON.stringify(carousels);
+    }
 }
 
 // Ajouter un carrousel
@@ -1007,12 +1018,39 @@ document.querySelectorAll('.carousel-item').forEach(item => {
 
 // Mettre à jour le layout avant la soumission du formulaire
 document.querySelector('form').addEventListener('submit', function(e) {
-    if (isCustomizedCheckbox.checked) {
-        updateCustomLayout();
-        updateCustomBanners();
-        updateCustomCarousels();
-        updateCustomColors();
+    // Toujours mettre à jour les données, même si personnalisation désactivée
+    updateCustomLayout();
+    updateCustomBanners();
+    updateCustomCarousels();
+    updateCustomColors();
+    
+    // S'assurer que les champs cachés ont toujours une valeur (même vide)
+    const layoutInput = document.getElementById('custom_layout_input');
+    const bannersInput = document.getElementById('custom_banners_input');
+    const carouselsInput = document.getElementById('custom_carousels_input');
+    const colorsInput = document.getElementById('custom_colors_input');
+    
+    if (layoutInput && !layoutInput.value) {
+        layoutInput.value = layoutInput.getAttribute('data-empty-value') || '{}';
     }
+    if (bannersInput && !bannersInput.value) {
+        bannersInput.value = bannersInput.getAttribute('data-empty-value') || '[]';
+    }
+    if (carouselsInput && !carouselsInput.value) {
+        carouselsInput.value = carouselsInput.getAttribute('data-empty-value') || '[]';
+    }
+    if (colorsInput && !colorsInput.value) {
+        colorsInput.value = colorsInput.getAttribute('data-empty-value') || '{}';
+    }
+    
+    // Log pour déboguer (à retirer en production)
+    console.log('Données envoyées:', {
+        is_customized: isCustomizedCheckbox.checked,
+        custom_layout: layoutInput?.value,
+        custom_banners: bannersInput?.value,
+        custom_carousels: carouselsInput?.value,
+        custom_colors: colorsInput?.value
+    });
 });
 </script>
 @endpush
