@@ -96,7 +96,7 @@
                                     <h6 class="mb-3">Configuration des sections</h6>
                                     <p class="text-muted small mb-3">Définissez l'ordre d'affichage et la visibilité de chaque section. Vous pouvez également personnaliser les titres.</p>
                                     
-                                    @php
+                                        @php
                                         $defaultSections = [
                                             'best_offers' => ['enabled' => true, 'order' => 1, 'title' => 'Meilleures offres'],
                                             'banners_top' => ['enabled' => true, 'order' => 2, 'title' => 'Bannières supérieures'],
@@ -106,13 +106,17 @@
                                         ];
                                         
                                         $customLayout = old('custom_layout', $category->custom_layout);
+                                        // S'assurer que c'est un tableau
                                         if (is_string($customLayout)) {
                                             $customLayout = json_decode($customLayout, true);
+                                        }
+                                        if (!is_array($customLayout)) {
+                                            $customLayout = [];
                                         }
                                         
                                         // Fusionner les sections par défaut avec les sections personnalisées
                                         $sections = $defaultSections;
-                                        if (is_array($customLayout) && !empty($customLayout)) {
+                                        if (!empty($customLayout)) {
                                             foreach ($customLayout as $key => $config) {
                                                 if (isset($sections[$key])) {
                                                     $sections[$key] = array_merge($sections[$key], $config);
@@ -199,6 +203,13 @@
                                         
                                         @php
                                             $customColors = old('custom_colors', $category->custom_colors ?? []);
+                                            // S'assurer que c'est un tableau
+                                            if (is_string($customColors)) {
+                                                $customColors = json_decode($customColors, true) ?? [];
+                                            }
+                                            if (!is_array($customColors)) {
+                                                $customColors = [];
+                                            }
                                             $colorFields = [
                                                 'primary' => ['label' => 'Couleur principale', 'default' => '#f04e27', 'description' => 'Couleur des liens et éléments principaux'],
                                                 'secondary' => ['label' => 'Couleur secondaire', 'default' => '#333333', 'description' => 'Couleur du texte secondaire'],
@@ -246,6 +257,13 @@
                                         <div id="banners-container">
                                             @php
                                                 $customBanners = old('custom_banners', $category->custom_banners ?? []);
+                                                // S'assurer que c'est un tableau
+                                                if (is_string($customBanners)) {
+                                                    $customBanners = json_decode($customBanners, true) ?? [];
+                                                }
+                                                if (!is_array($customBanners)) {
+                                                    $customBanners = [];
+                                                }
                                             @endphp
                                             @if(!empty($customBanners))
                                                 @foreach($customBanners as $index => $banner)
@@ -269,6 +287,13 @@
                                         <div id="carousels-container">
                                             @php
                                                 $customCarousels = old('custom_carousels', $category->custom_carousels ?? []);
+                                                // S'assurer que c'est un tableau
+                                                if (is_string($customCarousels)) {
+                                                    $customCarousels = json_decode($customCarousels, true) ?? [];
+                                                }
+                                                if (!is_array($customCarousels)) {
+                                                    $customCarousels = [];
+                                                }
                                             @endphp
                                             @if(!empty($customCarousels))
                                                 @foreach($customCarousels as $index => $carousel)
