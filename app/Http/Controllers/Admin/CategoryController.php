@@ -112,27 +112,45 @@ class CategoryController extends Controller
         }
         
         // Traiter les couleurs personnalisées
-        if ($request->has('custom_colors') && $request->custom_colors !== null && $request->custom_colors !== '') {
-            $colorsData = $request->custom_colors;
-            $customColors = is_string($colorsData) 
-                ? json_decode($colorsData, true) 
-                : (is_array($colorsData) ? $colorsData : []);
-            
-            // Filtrer les couleurs vides ou par défaut
-            $filteredColors = [];
-            if (is_array($customColors)) {
-                foreach ($customColors as $key => $value) {
-                    if (!empty($value) && $value !== '#000000') {
-                        $filteredColors[$key] = $value;
-                    }
+        // Traiter les couleurs personnalisées
+        // Priorité au champ caché JSON, sinon construire depuis les champs individuels
+        $customColors = null;
+        
+        // Vérifier d'abord le champ caché JSON (custom_colors_input)
+        if ($request->filled('custom_colors')) {
+            $colorsData = $request->input('custom_colors');
+            if (is_string($colorsData) && !empty(trim($colorsData))) {
+                $decoded = json_decode($colorsData, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $customColors = $decoded;
+                }
+            } elseif (is_array($colorsData)) {
+                $customColors = $colorsData;
+            }
+        }
+        
+        // Si pas de JSON valide, construire depuis les champs individuels custom_colors[key]
+        if ($customColors === null && $request->has('custom_colors')) {
+            $colorsArray = $request->input('custom_colors', []);
+            if (is_array($colorsArray) && !empty($colorsArray)) {
+                $customColors = $colorsArray;
+            }
+        }
+        
+        // Filtrer les couleurs vides ou invalides
+        $filteredColors = [];
+        if (is_array($customColors) && !empty($customColors)) {
+            foreach ($customColors as $key => $value) {
+                if (!empty($value) && is_string($value) && preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
+                    $filteredColors[$key] = $value;
                 }
             }
-            
-            $data['custom_colors'] = !empty($filteredColors) ? $filteredColors : null;
-        } elseif (!$request->has('is_customized')) {
+        }
+        
+        if (!$request->has('is_customized')) {
             $data['custom_colors'] = null;
         } else {
-            $data['custom_colors'] = null;
+            $data['custom_colors'] = !empty($filteredColors) ? $filteredColors : null;
         }
 
         $category = Category::create($data);
@@ -286,12 +304,44 @@ class CategoryController extends Controller
         }
         
         // Traiter les couleurs personnalisées
+        // Priorité au champ caché JSON, sinon construire depuis les champs individuels
+        $customColors = null;
+        
+        // Vérifier d'abord le champ caché JSON (custom_colors_input)
         if ($request->filled('custom_colors')) {
-            $data['custom_colors'] = is_string($request->custom_colors) 
-                ? json_decode($request->custom_colors, true) 
-                : $request->custom_colors;
-        } elseif (!$request->has('is_customized')) {
+            $colorsData = $request->input('custom_colors');
+            if (is_string($colorsData) && !empty(trim($colorsData))) {
+                $decoded = json_decode($colorsData, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $customColors = $decoded;
+                }
+            } elseif (is_array($colorsData)) {
+                $customColors = $colorsData;
+            }
+        }
+        
+        // Si pas de JSON valide, construire depuis les champs individuels custom_colors[key]
+        if ($customColors === null && $request->has('custom_colors')) {
+            $colorsArray = $request->input('custom_colors', []);
+            if (is_array($colorsArray) && !empty($colorsArray)) {
+                $customColors = $colorsArray;
+            }
+        }
+        
+        // Filtrer les couleurs vides ou invalides
+        $filteredColors = [];
+        if (is_array($customColors) && !empty($customColors)) {
+            foreach ($customColors as $key => $value) {
+                if (!empty($value) && is_string($value) && preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
+                    $filteredColors[$key] = $value;
+                }
+            }
+        }
+        
+        if (!$request->has('is_customized')) {
             $data['custom_colors'] = null;
+        } else {
+            $data['custom_colors'] = !empty($filteredColors) ? $filteredColors : null;
         }
 
         try {

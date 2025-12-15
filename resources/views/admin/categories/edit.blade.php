@@ -538,11 +538,13 @@ document.querySelectorAll('.section-title, .section-order, .section-enabled').fo
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
+    // Toujours initialiser les couleurs au chargement
+    updateCustomColors();
+    
     if (isCustomizedCheckbox && isCustomizedCheckbox.checked) {
         updateCustomLayout();
         updateCustomBanners();
         updateCustomCarousels();
-        updateCustomColors();
     }
 });
 
@@ -550,13 +552,21 @@ document.addEventListener('DOMContentLoaded', function() {
 function updateCustomColors() {
     const colors = {};
     document.querySelectorAll('input[type="color"][name^="custom_colors"]').forEach(input => {
-        const key = input.name.match(/\[(.*?)\]/)[1];
-        colors[key] = input.value;
+        const match = input.name.match(/\[(.*?)\]/);
+        if (match && match[1]) {
+            const key = match[1];
+            const value = input.value.trim();
+            // Inclure toutes les couleurs, même celles par défaut
+            if (value && value.length > 0) {
+                colors[key] = value;
+            }
+        }
     });
     // Mettre à jour le champ caché
     const colorsInput = document.getElementById('custom_colors_input');
     if (colorsInput) {
         colorsInput.value = JSON.stringify(colors);
+        console.log('Couleurs mises à jour:', colors);
     }
 }
 

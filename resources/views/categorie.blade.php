@@ -9,6 +9,14 @@
     $customBanners = $category->custom_banners ?? [];
     $customCarousels = $category->custom_carousels ?? [];
     
+    // S'assurer que customColors est un tableau
+    if (is_string($customColors)) {
+        $customColors = json_decode($customColors, true) ?? [];
+    }
+    if (!is_array($customColors)) {
+        $customColors = [];
+    }
+    
     // Couleurs par défaut
     $defaultColors = [
         'primary' => '#f04e27',
@@ -22,7 +30,7 @@
     $colors = array_merge($defaultColors, $customColors);
 @endphp
 
-@if($isCustomized && !empty($customColors))
+@if($isCustomized)
 <style>
     /* Styles personnalisés pour la catégorie */
     .category-custom-style {
@@ -33,13 +41,10 @@
         --category-accent: {{ $colors['accent'] ?? '#f04e27' }};
     }
     
+    @if(isset($customColors['primary']) && !empty($customColors['primary']))
     .category-custom-style .breadcrumb-item a,
     .category-custom-style .breadcrumb-item.active {
         color: var(--category-primary) !important;
-    }
-    
-    .category-custom-style .section-title {
-        color: var(--category-text) !important;
     }
     
     .category-custom-style .orange-color {
@@ -49,16 +54,33 @@
     .category-custom-style .blue-bg {
         background-color: var(--category-primary) !important;
     }
+    @endif
     
-    @if(isset($colors['background']) && $colors['background'] !== '#ffffff')
-    .category-custom-style main {
+    @if(isset($customColors['text']) && !empty($customColors['text']))
+    .category-custom-style .section-title {
+        color: var(--category-text) !important;
+    }
+    @endif
+    
+    @if(isset($customColors['background']) && !empty($customColors['background']))
+    .category-custom-style main,
+    .category-custom-style .bg-white,
+    .category-custom-style section.bg-white {
+        background-color: var(--category-background) !important;
+    }
+    
+    .category-custom-style .container-fluid {
+        background-color: var(--category-background) !important;
+    }
+    
+    .category-custom-style body {
         background-color: var(--category-background) !important;
     }
     @endif
 </style>
 @endif
 
-    <main class="container-fluid {{ $isCustomized && !empty($customColors) ? 'category-custom-style' : '' }}">
+    <main class="container-fluid {{ $isCustomized ? 'category-custom-style' : '' }}">
         <!-- SECTION BREADCRUMB ET TITRE -->
         <section class="bg-white py-3 border-bottom">
             <div class="container-fluid">
