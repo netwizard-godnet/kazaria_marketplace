@@ -459,7 +459,7 @@
                         $banner = $sectionConfig['banner_data'];
                     @endphp
                     <!-- BANNIÈRE PERSONNALISÉE -->
-                    <section class="py-5">
+                    <section class="py-2">
                         <div class="row g-3">
                             <div class="{{ $banner['columns'] ?? 'col-12' }}">
                                 @if(isset($banner['image']) && $banner['image'])
@@ -485,7 +485,7 @@
                     @endphp
                     @if(!empty($carouselImages))
                         <!-- CARROUSEL PERSONNALISÉ -->
-                        <section class="multi-carousel py-5" 
+                        <section class="multi-carousel py-2" 
                                  data-multi-carousel 
                                  data-slides-to-show="{{ $carousel['slides_to_show'] ?? 6 }}" 
                                  data-slides-lg="{{ $carousel['slides_lg'] ?? 4 }}" 
