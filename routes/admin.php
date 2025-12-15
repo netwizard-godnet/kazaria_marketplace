@@ -260,6 +260,8 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
         Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
         Route::post('/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/upload-image', [CategoryController::class, 'uploadImage'])->name('upload-image');
+        Route::post('/delete-image', [CategoryController::class, 'deleteImage'])->name('delete-image');
     });
     
     // Subcategories

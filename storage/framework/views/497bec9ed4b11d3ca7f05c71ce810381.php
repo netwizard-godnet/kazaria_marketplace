@@ -249,7 +249,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 <?php if($user->profile_pic_url): ?>
-                                                    <img src="<?php echo e($user->profile_pic_url); ?>" class="rounded-circle" width="40" height="40" alt="Avatar" style="object-fit: cover; border: 2px solid #ff6b35;">
+                                                    <img src="<?php echo e(str_starts_with($user->profile_pic_url, 'http') ? $user->profile_pic_url : asset($user->profile_pic_url)); ?>" class="rounded-circle" width="40" height="40" alt="Avatar" style="object-fit: cover; border: 2px solid #ff6b35;">
                                                 <?php else: ?>
                                                     <div class="text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%); font-weight: bold; font-size: 14px;">
                                                         <?php echo e(strtoupper(substr($user->nom ?? 'U', 0, 1))); ?><?php echo e(strtoupper(substr($user->prenoms ?? '', 0, 1))); ?>

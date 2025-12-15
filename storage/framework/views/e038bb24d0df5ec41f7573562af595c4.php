@@ -387,7 +387,18 @@ function updatePaymentStatus(paymentStatus) {
 }
 
 function printOrder() {
-    window.print();
+    // Ouvrir la facture dans une nouvelle fenêtre
+    const invoiceUrl = '<?php echo e(route("admin.orders.invoice", $order->id)); ?>';
+    const printWindow = window.open(invoiceUrl, '_blank');
+    
+    // Attendre que la page soit chargée puis déclencher l'impression
+    if (printWindow) {
+        printWindow.onload = function() {
+            setTimeout(function() {
+                printWindow.print();
+            }, 500);
+        };
+    }
 }
 
 function deleteOrder() {

@@ -17,11 +17,21 @@ class Category extends Model
         'image',
         'description',
         'is_active',
+        'is_customized',
+        'custom_layout',
+        'custom_banners',
+        'custom_carousels',
+        'custom_colors',
         'order'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_customized' => 'boolean',
+        'custom_layout' => 'array',
+        'custom_banners' => 'array',
+        'custom_carousels' => 'array',
+        'custom_colors' => 'array',
     ];
 
     // Générer automatiquement le slug
