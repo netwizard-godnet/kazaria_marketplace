@@ -111,30 +111,30 @@
             
             // Ajouter les sections personnalisées si elles existent
             if ($isCustomized && !empty($customBanners)) {
-                foreach ($customBanners as $banner) {
-                    $key = 'custom_banner_' . ($banner['id'] ?? uniqid());
-                    if (!isset($defaultSections[$key])) {
-                        $defaultSections[$key] = [
-                            'enabled' => $banner['enabled'] ?? true,
-                            'order' => $banner['order'] ?? 999,
-                            'title' => $banner['title'] ?? 'Bannière personnalisée',
-                            'banner_data' => $banner
-                        ];
-                    }
+                foreach ($customBanners as $index => $banner) {
+                    $key = 'custom_banner_' . $index;
+                    $defaultSections[$key] = [
+                        'enabled' => $banner['enabled'] ?? true,
+                        'order' => $banner['order'] ?? (10 + $index),
+                        'title' => $banner['title'] ?? ('Bannière #' . ($index + 1)),
+                        'banner_data' => $banner,
+                        'is_custom' => true,
+                        'type' => 'banner'
+                    ];
                 }
             }
             
             if ($isCustomized && !empty($customCarousels)) {
-                foreach ($customCarousels as $carousel) {
-                    $key = 'custom_carousel_' . ($carousel['id'] ?? uniqid());
-                    if (!isset($defaultSections[$key])) {
-                        $defaultSections[$key] = [
-                            'enabled' => $carousel['enabled'] ?? true,
-                            'order' => $carousel['order'] ?? 999,
-                            'title' => $carousel['title'] ?? 'Carrousel personnalisé',
-                            'carousel_data' => $carousel
-                        ];
-                    }
+                foreach ($customCarousels as $index => $carousel) {
+                    $key = 'custom_carousel_' . $index;
+                    $defaultSections[$key] = [
+                        'enabled' => $carousel['enabled'] ?? true,
+                        'order' => $carousel['order'] ?? (20 + $index),
+                        'title' => $carousel['title'] ?? ('Carrousel #' . ($index + 1)),
+                        'carousel_data' => $carousel,
+                        'is_custom' => true,
+                        'type' => 'carousel'
+                    ];
                 }
             }
             

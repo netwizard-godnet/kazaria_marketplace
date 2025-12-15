@@ -17,10 +17,12 @@
             </div>
             <div class="col-md-6">
                 <div class="form-group mb-3">
-                    <label>Ordre d'affichage</label>
+                    <label>Position dans le layout</label>
                     <input type="number" class="form-control carousel-order" 
-                           value="{{ $carousel['order'] ?? ($index + 1) }}" 
-                           min="1">
+                           value="{{ $carousel['order'] ?? (20 + $index) }}" 
+                           min="0" step="0.1"
+                           placeholder="Ex: 3.5 (entre Nouveautés et Produits)">
+                    <small class="text-muted">Définissez l'ordre d'affichage. Les sections par défaut sont : 1=Meilleures offres, 2=Bannières sup, 3=Nouveautés, 4=Produits, 5=Bannières inf. Utilisez des décimales (ex: 3.5) pour insérer entre deux sections.</small>
                 </div>
             </div>
         </div>

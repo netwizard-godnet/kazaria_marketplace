@@ -105,6 +105,51 @@
                                             'banners_bottom' => ['enabled' => true, 'order' => 5, 'title' => 'Bannières inférieures'],
                                         ];
                                         
+                                        // Récupérer les bannières et carrousels personnalisés
+                                        $customBanners = old('custom_banners', $category->custom_banners ?? []);
+                                        $customCarousels = old('custom_carousels', $category->custom_carousels ?? []);
+                                        
+                                        // S'assurer que ce sont des tableaux
+                                        if (is_string($customBanners)) {
+                                            $customBanners = json_decode($customBanners, true) ?? [];
+                                        }
+                                        if (!is_array($customBanners)) {
+                                            $customBanners = [];
+                                        }
+                                        
+                                        if (is_string($customCarousels)) {
+                                            $customCarousels = json_decode($customCarousels, true) ?? [];
+                                        }
+                                        if (!is_array($customCarousels)) {
+                                            $customCarousels = [];
+                                        }
+                                        
+                                        // Ajouter les bannières personnalisées aux sections
+                                        foreach ($customBanners as $index => $banner) {
+                                            $key = 'custom_banner_' . $index;
+                                            $defaultSections[$key] = [
+                                                'enabled' => $banner['enabled'] ?? true,
+                                                'order' => $banner['order'] ?? (10 + $index),
+                                                'title' => $banner['title'] ?: ('Bannière #' . ($index + 1)),
+                                                'is_custom' => true,
+                                                'type' => 'banner',
+                                                'index' => $index
+                                            ];
+                                        }
+                                        
+                                        // Ajouter les carrousels personnalisés aux sections
+                                        foreach ($customCarousels as $index => $carousel) {
+                                            $key = 'custom_carousel_' . $index;
+                                            $defaultSections[$key] = [
+                                                'enabled' => $carousel['enabled'] ?? true,
+                                                'order' => $carousel['order'] ?? (20 + $index),
+                                                'title' => $carousel['title'] ?: ('Carrousel #' . ($index + 1)),
+                                                'is_custom' => true,
+                                                'type' => 'carousel',
+                                                'index' => $index
+                                            ];
+                                        }
+                                        
                                         $customLayout = old('custom_layout', $category->custom_layout);
                                         // S'assurer que c'est un tableau
                                         if (is_string($customLayout)) {
@@ -123,6 +168,11 @@
                                                 }
                                             }
                                         }
+                                        
+                                        // Trier par ordre pour l'affichage
+                                        uasort($sections, function($a, $b) {
+                                            return ($a['order'] ?? 999) <=> ($b['order'] ?? 999);
+                                        });
                                     @endphp
 
                                     <div id="sections-container">
@@ -135,6 +185,15 @@
                                                         </div>
                                                         <div class="col-md-3">
                                                             <strong>{{ $sectionConfig['title'] ?? ucfirst(str_replace('_', ' ', $sectionKey)) }}</strong>
+                                                            @if(isset($sectionConfig['is_custom']) && $sectionConfig['is_custom'])
+                                                                <br><small class="text-muted">
+                                                                    @if($sectionConfig['type'] === 'banner')
+                                                                        <i class="fas fa-image"></i> Bannière personnalisée
+                                                                    @elseif($sectionConfig['type'] === 'carousel')
+                                                                        <i class="fas fa-images"></i> Carrousel personnalisé
+                                                                    @endif
+                                                                </small>
+                                                            @endif
                                                         </div>
                                                         <div class="col-md-3">
                                                             <input type="text" class="form-control form-control-sm section-title" 
@@ -146,7 +205,8 @@
                                                             <input type="number" class="form-control form-control-sm section-order" 
                                                                    name="section_orders[{{ $sectionKey }}]" 
                                                                    value="{{ $sectionConfig['order'] ?? 999 }}" 
-                                                                   min="1" placeholder="Ordre">
+                                                                   min="0" step="0.1" placeholder="Ordre">
+                                                            <small class="text-muted">Ex: 1.5</small>
                                                         </div>
                                                         <div class="col-md-2">
                                                             <div class="form-check">
@@ -525,10 +585,11 @@ function updateCustomBanners() {
     document.querySelectorAll('.banner-item').forEach((item, index) => {
         const imageUrl = item.querySelector('.banner-image-url').value;
         if (imageUrl) {
+            const orderValue = item.querySelector('.banner-order').value;
             banners.push({
                 id: index,
                 title: item.querySelector('.banner-title').value || '',
-                order: parseInt(item.querySelector('.banner-order').value) || (index + 1),
+                order: orderValue ? parseFloat(orderValue) : (10 + index),
                 image: imageUrl,
                 link_url: item.querySelector('.banner-link-url').value || '',
                 link_target: item.querySelector('.banner-link-target').value || '_blank',
@@ -543,6 +604,9 @@ function updateCustomBanners() {
     if (bannersInput) {
         bannersInput.value = JSON.stringify(banners);
     }
+    
+    // Mettre à jour aussi le layout pour synchroniser
+    updateCustomLayout();
 }
 
 // Ajouter une bannière
@@ -567,8 +631,9 @@ document.getElementById('add-banner-btn')?.addEventListener('click', function() 
                     </div>
                     <div class="col-md-6">
                         <div class="form-group mb-3">
-                            <label>Ordre d'affichage</label>
-                            <input type="number" class="form-control banner-order" value="${index + 1}" min="1">
+                            <label>Position dans le layout</label>
+                            <input type="number" class="form-control banner-order" value="${10 + index}" min="0" step="0.1" placeholder="Ex: 1.5">
+                            <small class="text-muted d-block">Sections: 1=Meilleures offres, 2=Bannières sup, 3=Nouveautés, 4=Produits, 5=Bannières inf</small>
                         </div>
                     </div>
                 </div>
@@ -751,10 +816,11 @@ function updateCustomCarousels() {
         });
         
         if (images.length > 0) {
+            const orderValue = item.querySelector('.carousel-order').value;
             carousels.push({
                 id: index,
                 title: item.querySelector('.carousel-title').value || '',
-                order: parseInt(item.querySelector('.carousel-order').value) || (index + 1),
+                order: orderValue ? parseFloat(orderValue) : (20 + index),
                 slides_to_show: parseInt(item.querySelector('.carousel-slides-to-show').value) || 6,
                 slides_lg: parseInt(item.querySelector('.carousel-slides-lg').value) || 4,
                 slides_md: parseInt(item.querySelector('.carousel-slides-md').value) || 3,
@@ -773,6 +839,9 @@ function updateCustomCarousels() {
     if (carouselsInput) {
         carouselsInput.value = JSON.stringify(carousels);
     }
+    
+    // Mettre à jour aussi le layout pour synchroniser
+    updateCustomLayout();
 }
 
 // Ajouter un carrousel
@@ -797,8 +866,9 @@ document.getElementById('add-carousel-btn')?.addEventListener('click', function(
                     </div>
                     <div class="col-md-6">
                         <div class="form-group mb-3">
-                            <label>Ordre d'affichage</label>
-                            <input type="number" class="form-control carousel-order" value="${index + 1}" min="1">
+                            <label>Position dans le layout</label>
+                            <input type="number" class="form-control carousel-order" value="${20 + index}" min="0" step="0.1" placeholder="Ex: 3.5">
+                            <small class="text-muted d-block">Sections: 1=Meilleures offres, 2=Bannières sup, 3=Nouveautés, 4=Produits, 5=Bannières inf</small>
                         </div>
                     </div>
                 </div>
