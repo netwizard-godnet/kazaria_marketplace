@@ -125,7 +125,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    @foreach($category->subcategories->orderBy('order')->orderBy('name') as $subcategory)
+                    @foreach($category->subcategories->sortBy(function($subcategory) { return [$subcategory->order ?? 999, $subcategory->name]; }) as $subcategory)
                         <div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded">
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center">
