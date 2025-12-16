@@ -312,7 +312,11 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
         
-        $products = $query->paginate(15)->withQueryString();
+        $products = $query->paginate(15);
+        
+        // S'assurer que le slug de la catégorie est inclus dans les URLs de pagination
+        // et préserver tous les paramètres de requête (filtres, tri, etc.)
+        $products->setPath(route('categorie', $category->slug))->appends(request()->except('page'));
         
         // Récupérer les attributs filtrables pour cette catégorie qui ont des produits disponibles
         $attributes = \App\Models\Attribute::filterable()
