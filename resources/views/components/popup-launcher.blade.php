@@ -24,6 +24,19 @@
 
 @push('styles')
 <style>
+    /* Flou de l'arrière-plan de la modal */
+    .modal-backdrop.show {
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    /* Cibler spécifiquement le backdrop quand la popup est ouverte */
+    body.modal-open .modal-backdrop {
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+    }
+
     /* Règle globale pour toutes les images - object-fit contain obligatoire */
     .popup-launcher-modal img[data-popup-image],
     .popup-launcher-modal [data-popup-image-wrapper] img,
