@@ -224,7 +224,7 @@ if (auth()->check()) {
                             </a>
                         </div>
                         @if(isset($allCategories))
-                            @foreach($allCategories->take(4) as $menuCategory)
+                            @foreach($allCategories->take(5) as $menuCategory)
                         <div class="header-menu d-flex align-items-center justify-content-start">
                                 <a class="btn btn-sm text-white fs-8 text-nowrap" href="{{ route('categorie', $menuCategory->slug) }}">
                                     @if($menuCategory->image && !empty($menuCategory->image))
