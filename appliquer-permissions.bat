@@ -25,7 +25,7 @@ if %errorlevel% neq 0 (
 echo OK!
 echo.
 
-echo [3/3] Mise a jour des roles...
+echo [3/5] Mise a jour des roles...
 php artisan db:seed --class=RoleSeeder
 if %errorlevel% neq 0 (
     echo ERREUR: Echec de la mise a jour des roles
@@ -33,6 +33,22 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 echo OK!
+echo.
+
+echo [4/5] Vidage du cache...
+php artisan cache:clear
+php artisan view:clear
+php artisan config:clear
+if %errorlevel% neq 0 (
+    echo ERREUR: Echec du vidage du cache
+    pause
+    exit /b 1
+)
+echo OK!
+echo.
+
+echo [5/5] Verification du systeme...
+php diagnostic-permissions.php
 echo.
 
 echo ========================================

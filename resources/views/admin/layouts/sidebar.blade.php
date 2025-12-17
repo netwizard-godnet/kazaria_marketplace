@@ -32,7 +32,7 @@
                 </li>
 
                 <!-- Gestion des utilisateurs -->
-                @if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_categories', 'manage_subcategories', 'manage_attributes']))
+                @if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_messages', 'manage_payments', 'manage_categories', 'manage_subcategories', 'manage_attributes']))
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
@@ -123,6 +123,46 @@
                             <li>
                                 <a href="{{ route('admin.stores.index') }}">
                                     <span class="sub-item">Toutes les boutiques</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                <!-- Gestion des messages -->
+                @if(canAccess('manage_messages'))
+                <li class="nav-item {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}">
+                    <a data-bs-toggle="collapse" href="#messages" class="{{ request()->routeIs('admin.messages.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.messages.*') ? 'true' : 'false' }}">
+                        <i class="fas fa-comments"></i>
+                        <p>Messages</p>
+                        <span class="caret"></span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.messages.*') ? 'show' : '' }}" id="messages">
+                        <ul class="nav nav-collapse">
+                            <li>
+                                <a href="{{ route('admin.messages.index') }}">
+                                    <span class="sub-item">Tous les messages</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                <!-- Gestion des paiements -->
+                @if(canAccess('manage_payments'))
+                <li class="nav-item {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}">
+                    <a data-bs-toggle="collapse" href="#payments" class="{{ request()->routeIs('admin.payments.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.payments.*') ? 'true' : 'false' }}">
+                        <i class="fas fa-credit-card"></i>
+                        <p>Paiements</p>
+                        <span class="caret"></span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.payments.*') ? 'show' : '' }}" id="payments">
+                        <ul class="nav nav-collapse">
+                            <li>
+                                <a href="{{ route('admin.payments.index') }}">
+                                    <span class="sub-item">Tous les paiements</span>
                                 </a>
                             </li>
                         </ul>
@@ -337,13 +377,6 @@
                     </a>
                 </li>
                 @endif
-
-                <li class="d-none nav-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.categories.index') }}">
-                        <i class="fas fa-tags"></i>
-                        <p>Catégories</p>
-                    </a>
-                </li>
 
                 <!-- Retour au site -->
                 <li class="nav-item">
