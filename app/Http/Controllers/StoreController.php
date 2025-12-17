@@ -15,7 +15,12 @@ class StoreController extends Controller
      */
     public function create()
     {
-        $categories = Category::with('subcategories')->get();
+        $categories = Category::active()
+            ->ordered()
+            ->with(['subcategories' => function($query) {
+                $query->where('is_active', true)->orderBy('order')->orderBy('name');
+            }])
+            ->get();
         return view('store.create', compact('categories'));
     }
 

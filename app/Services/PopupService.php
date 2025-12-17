@@ -16,6 +16,7 @@ class PopupService
             ->orderByDesc('priority')
             ->get()
             ->filter(function (Popup $popup) use ($path, $device) {
+
                 if (!empty($popup->display_devices) && !in_array($device, $popup->display_devices, true)) {
                     return false;
                 }

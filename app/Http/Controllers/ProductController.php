@@ -130,25 +130,75 @@ class ProductController extends Controller
                   ->orderBy('name');
         }]);
         
-        // Meilleures offres de la catégorie
-        $bestOffers = Product::active()
+        // Détecter la sous-catégorie si elle est dans la requête
+        $subcategory = null;
+        if ($request->filled('subcategory')) {
+            $subcategoryValue = $request->subcategory;
+            // Vérifier si c'est un ID numérique ou un slug
+            if (is_numeric($subcategoryValue)) {
+                $subcategory = \App\Models\Subcategory::where('id', $subcategoryValue)->first();
+            } else {
+                // C'est un slug
+                $subcategory = \App\Models\Subcategory::where('slug', $subcategoryValue)->first();
+            }
+        }
+        
+        // Meilleures offres de la catégorie/sous-catégorie (produits en promo)
+        $bestOffersQuery = Product::active()
             ->whereHas('categories', function($query) use ($category) {
                 $query->where('categories.id', $category->id);
             })
-            ->bestOffer()
-            ->inStock()
+            ->where(function($q) {
+                // Produit en promo si old_price est renseigné et différent de price
+                $q->where(function($subQ) {
+                    $subQ->whereNotNull('old_price')
+                         ->whereColumn('old_price', '>', 'price');
+                })
+                // OU si discount_percentage est renseigné et supérieur à 0
+                ->orWhere(function($subQ) {
+                    $subQ->whereNotNull('discount_percentage')
+                         ->where('discount_percentage', '>', 0);
+                });
+            })
+            ->inStock();
+        
+        // Appliquer le filtre de sous-catégorie si une sous-catégorie est sélectionnée
+        if ($subcategory) {
+            $bestOffersQuery->whereHas('subcategories', function($query) use ($subcategory) {
+                $query->where('subcategories.id', $subcategory->id);
+            });
+        }
+        
+        // Trier par pourcentage de réduction décroissant pour afficher les meilleures offres en premier
+        $bestOffers = $bestOffersQuery
+            ->selectRaw('*, 
+                CASE 
+                    WHEN discount_percentage IS NOT NULL AND discount_percentage > 0 
+                    THEN discount_percentage 
+                    WHEN old_price IS NOT NULL AND old_price > price 
+                    THEN ROUND(((old_price - price) / old_price) * 100, 2)
+                    ELSE 0 
+                END as calculated_discount')
+            ->orderBy('calculated_discount', 'desc')
+            ->orderBy('created_at', 'desc')
             ->take(12)
             ->get();
         
-        // Nouveautés de la catégorie
-        $newProducts = Product::active()
+        // Nouveautés de la catégorie/sous-catégorie (produits récemment ajoutés)
+        $newProductsQuery = Product::active()
             ->whereHas('categories', function($query) use ($category) {
                 $query->where('categories.id', $category->id);
             })
-            ->new()
-            ->inStock()
-            ->take(12)
-            ->get();
+            ->inStock();
+        
+        // Appliquer le filtre de sous-catégorie si une sous-catégorie est sélectionnée
+        if ($subcategory) {
+            $newProductsQuery->whereHas('subcategories', function($query) use ($subcategory) {
+                $query->where('subcategories.id', $subcategory->id);
+            });
+        }
+        
+        $newProducts = $newProductsQuery->orderBy('created_at', 'desc')->take(12)->get();
         
         // Construire la requête avec filtres
         $query = Product::active()
@@ -158,24 +208,10 @@ class ProductController extends Controller
             ->inStock();
         
         // Filtre par sous-catégorie
-        $subcategory = null;
-        if ($request->filled('subcategory')) {
-            $subcategoryValue = $request->subcategory;
-            // Vérifier si c'est un ID numérique ou un slug
-            if (is_numeric($subcategoryValue)) {
-                $subcategory = \App\Models\Subcategory::where('id', $subcategoryValue)->first();
-                $query->whereHas('subcategories', function($query) use ($subcategoryValue) {
-                    $query->where('subcategories.id', $subcategoryValue);
-                });
-            } else {
-                // C'est un slug
-                $subcategory = \App\Models\Subcategory::where('slug', $subcategoryValue)->first();
-                if ($subcategory) {
-                    $query->whereHas('subcategories', function($query) use ($subcategoryValue) {
-                        $query->where('subcategories.slug', $subcategoryValue);
-                    });
-                }
-            }
+        if ($subcategory) {
+            $query->whereHas('subcategories', function($query) use ($subcategory) {
+                $query->where('subcategories.id', $subcategory->id);
+            });
         }
         
         // Filtre par prix
@@ -276,7 +312,14 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
         
-        $products = $query->paginate(15)->withQueryString();
+        $products = $query->paginate(15);
+        
+        // S'assurer que le slug de la catégorie est inclus dans les URLs de pagination
+        // setPath() doit être appelé AVANT withQueryString() pour que le chemin soit correct
+        $products->setPath('/categorie/' . $category->slug);
+        
+        // Préserver tous les paramètres de requête (filtres, tri, etc.)
+        $products->withQueryString();
         
         // Récupérer les attributs filtrables pour cette catégorie qui ont des produits disponibles
         $attributes = \App\Models\Attribute::filterable()
@@ -545,7 +588,7 @@ class ProductController extends Controller
     
     public function boutique(Request $request)
     {
-        // Meilleures offres (produits des boutiques officielles EN PROMO uniquement)
+        // Meilleures offres (produits des boutiques officielles en promo)
         $bestOffers = Product::active()
             ->with('store')
             ->whereHas('store', function($q) {
@@ -561,15 +604,23 @@ class ProductController extends Controller
                 ->orWhere(function($subQ) {
                     $subQ->whereNotNull('discount_percentage')
                          ->where('discount_percentage', '>', 0);
-                })
-                // OU si is_best_offer est true (produit marqué comme meilleure offre)
-                ->orWhere('is_best_offer', true);
+                });
             })
             ->inStock()
+            ->selectRaw('*, 
+                CASE 
+                    WHEN discount_percentage IS NOT NULL AND discount_percentage > 0 
+                    THEN discount_percentage 
+                    WHEN old_price IS NOT NULL AND old_price > price 
+                    THEN ROUND(((old_price - price) / old_price) * 100, 2)
+                    ELSE 0 
+                END as calculated_discount')
+            ->orderBy('calculated_discount', 'desc')
+            ->orderBy('created_at', 'desc')
             ->take(12)
             ->get();
         
-        // Nouveautés des boutiques officielles (les plus récents, incluant aussi les produits en promo)
+        // Nouveautés des boutiques officielles (produits récemment ajoutés)
         $newProducts = Product::active()
             ->with('store')
             ->whereHas('store', function($q) {

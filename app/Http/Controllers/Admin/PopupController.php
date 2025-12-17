@@ -48,7 +48,10 @@ class PopupController extends Controller
     public function store(PopupRequest $request)
     {
         $data = $request->validated();
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title']);
+        $data['title'] = !empty($data['title']) ? $data['title'] : null;
+        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'] ?? null);
+        $data['frequency'] = $data['frequency'] ?? 'once_per_session';
+        $data['delay_seconds'] = $data['delay_seconds'] ?? 0;
         $data['display_pages'] = $this->resolvePages(
             $data['display_pages'] ?? [],
             $data['display_pages_custom'] ?? null
@@ -87,7 +90,15 @@ class PopupController extends Controller
     public function update(PopupRequest $request, Popup $popup)
     {
         $data = $request->validated();
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'], $popup->id);
+        // Si le titre est vide, le mettre à null (pas de valeur par défaut)
+        if (isset($data['title']) && empty(trim($data['title']))) {
+            $data['title'] = null;
+        } else {
+            $data['title'] = $data['title'] ?? $popup->title;
+        }
+        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'] ?? null, $popup->id);
+        $data['frequency'] = $data['frequency'] ?? $popup->frequency ?? 'once_per_session';
+        $data['delay_seconds'] = $data['delay_seconds'] ?? $popup->delay_seconds ?? 0;
         $data['display_pages'] = $this->resolvePages(
             $data['display_pages'] ?? [],
             $data['display_pages_custom'] ?? null
@@ -189,9 +200,9 @@ class PopupController extends Controller
         ]);
     }
 
-    protected function generateSlug(?string $slug, string $title, ?int $ignoreId = null): string
+    protected function generateSlug(?string $slug, ?string $title, ?int $ignoreId = null): string
     {
-        $base = Str::slug($slug ?: $title);
+        $base = Str::slug($slug ?: ($title ?? 'popup-sans-titre'));
         $candidate = $base;
         $counter = 1;
 

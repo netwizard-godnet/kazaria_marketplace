@@ -64,7 +64,7 @@ class StoreController extends Controller
             }
         }
         
-        $stores = $query->orderBy('created_at', 'desc')->paginate(15)->appends($request->query());
+        $stores = $query->orderBy('created_at', 'desc')->paginate(15)->appends($request->except('page'));
         
         return view('admin.stores.index', compact('stores'));
     }

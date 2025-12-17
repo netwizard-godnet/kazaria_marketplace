@@ -2,10 +2,10 @@
 
 <div class="modal fade popup-launcher-modal z-index-9x" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg">
-            <button type="button" class="btn-close popup-close-btn" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="modal-content border-0" style="background: transparent!important;">
             <div class="modal-body p-0" data-popup-body>
                 <div class="row g-0 position-relative" data-popup-row>
+                    <button type="button" class="btn-close popup-close-btn position-absolute top-0 end-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
                     <div class="popup-launcher-image-wrapper d-none" data-popup-image-wrapper>
                         <img src="" alt="" class="w-100 h-100" data-popup-image>
                     </div>
@@ -24,34 +24,64 @@
 
 @push('styles')
 <style>
+    /* Flou de l'arrière-plan de la modal */
+    .modal-backdrop.show {
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    /* Cibler spécifiquement le backdrop quand la popup est ouverte */
+    body.modal-open .modal-backdrop {
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+    }
+
+    /* Règle globale pour toutes les images - object-fit contain obligatoire */
+    .popup-launcher-modal img[data-popup-image],
+    .popup-launcher-modal [data-popup-image-wrapper] img,
+    .popup-launcher-modal .popup-launcher-image-wrapper img {
+        object-fit: contain !important;
+        object-position: center !important;
+        min-height: 450px !important;
+    }
+    
     .popup-launcher-modal .modal-dialog {
-        height: 500px;
+        max-width: 90%;
+        max-height: 90vh;
+        height: auto;
+        margin: 1.75rem auto;
     }
 
     .popup-launcher-modal .modal-content {
         border-radius: 0;
-        height: 500px;
+        max-height: 90vh;
         overflow: hidden;
         position: relative;
         padding: 0 !important;
     }
 
     .popup-launcher-modal .modal-body {
-        height: 100%;
-        overflow-y: scroll!important;
-        overflow-x: hidden!important;
+        max-height: 90vh;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         padding: 0 !important;
         margin: 0 !important;
     }
 
     .popup-launcher-modal .popup-launcher-image-wrapper {
         overflow: hidden;
-        height: 100%;
+        min-height: 450px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0;
         padding: 0;
+    }
+    
+    /* S'assurer que le wrapper a une hauteur pour object-fit contain */
+    .popup-launcher-modal .popup-launcher-image-wrapper:not(.d-none) {
+        height: auto;
     }
 
     /* Image fixe pour les layouts horizontaux */
@@ -59,12 +89,33 @@
         position: sticky;
         left: 0;
         z-index: 10;
+        align-self: flex-start;
+        height: 100%;
     }
-
-    .popup-launcher-modal img[data-popup-image] {
+    
+    /* Images pour layouts horizontaux (left-right, right-left) */
+    .popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 img[data-popup-image] {
         width: 100% !important;
         height: 100% !important;
+        min-height: 450px !important;
         object-fit: contain !important;
+        object-position: center !important;
+    }
+    
+    /* Pour les layouts horizontaux, aligner l'image et le contenu en haut */
+    .popup-launcher-modal .row:not(.layout-stacked):not(.layout-top-bottom) {
+        align-items: flex-start;
+    }
+    
+    .popup-launcher-modal .row:not(.layout-stacked):not(.layout-top-bottom) [data-popup-content-wrapper] {
+        align-self: stretch;
+    }
+
+    /* Règle générale pour toutes les images - object-fit contain */
+    .popup-launcher-modal img[data-popup-image] {
+        object-fit: contain !important;
+        object-position: center !important;
+        min-height: 450px !important;
         display: block !important;
     }
 
@@ -72,8 +123,6 @@
     /* Layout superposé (overlay) */
     .popup-launcher-modal [data-popup-row].layout-stacked {
         position: relative;
-        height: 100%;
-        min-height: 400px;
     }
 
     .popup-launcher-modal [data-popup-row].layout-stacked .popup-launcher-image-wrapper {
@@ -85,13 +134,21 @@
         z-index: 1;
         /* Pas de sticky pour stacked, c'est un overlay */
     }
+    
+    /* Images pour layout stacked */
+    .popup-launcher-modal [data-popup-row].layout-stacked img[data-popup-image] {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 450px !important;
+        object-fit: contain !important;
+        object-position: center !important;
+    }
 
     .popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-wrapper] {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
         z-index: 2;
         background: transparent;
     }
@@ -105,8 +162,25 @@
         margin: 0 auto;
     }
 
+    /* Masquer le fond blanc si pas de contenu texte */
+    .popup-launcher-modal [data-popup-content-inner].d-none {
+        display: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+
+    .popup-launcher-modal [data-popup-content-inner]:has([data-popup-title].d-none):has([data-popup-content].d-none) {
+        background: transparent !important;
+        padding: 0 !important;
+    }
+
+    /* Masquer le wrapper parent si pas de contenu texte */
+    .popup-launcher-modal [data-popup-content-wrapper]:has([data-popup-content-inner][style*="display: none"]) {
+        background: transparent !important;
+    }
+
     .popup-launcher-modal .row:not(.layout-top-bottom) {
-        height: 100%;
+        /*min-height: 200px;*/
     }
 
     .popup-launcher-modal [data-popup-row] {
@@ -115,7 +189,7 @@
     }
 
     .popup-launcher-modal .layout-top-bottom {
-        height: 100%;
+        /*min-height: 200px;*/
     }
 
     /* Pour la disposition top-bottom, permettre le scroll vertical sur le modal */
@@ -130,14 +204,29 @@
         overflow-y: hidden;
     }
 
+    /* Images pour layout top-bottom */
     .popup-launcher-modal .layout-top-bottom img[data-popup-image] {
-        width: auto !important;
-        max-width: none !important;
-        height: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 70vh !important;
+        height: auto !important;
+        min-height: 450px !important;
+        object-fit: contain !important;
+        object-position: center !important;
+    }
+    
+    /* Images sans layout spécifique (fallback) */
+    .popup-launcher-modal .popup-launcher-image-wrapper img[data-popup-image] {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 70vh !important;
+        min-height: 450px !important;
+        object-fit: contain !important;
+        object-position: center !important;
     }
 
     .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
-        height: 100%;
+        /*min-height: 200px;*/
         display: flex;
         align-items: center;
         justify-content: center;
@@ -145,7 +234,7 @@
 
     .popup-launcher-modal [data-popup-content-inner] {
         width: 100%;
-        max-height: 100%;
+        max-height: 70vh;
         overflow-y: auto;
         overflow-x: hidden;
         display: flex;
@@ -189,8 +278,8 @@
         }
 
         .popup-launcher-modal .popup-launcher-image-wrapper {
-            min-height: 200px;
-            max-height: 250px;
+            /*min-height: 200px;
+            max-height: 250px;*/
         }
 
         .popup-launcher-modal .row {
@@ -297,6 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function canDisplay(popup) {
+
         const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
 
         if (popup.max_impressions && stats.count >= popup.max_impressions) {
@@ -412,13 +502,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showPopup(popup) {
+        const hasTitle = popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0;
+        const hasContent = popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0;
+        const hasTextContent = hasTitle || hasContent;
+
         if (titleEl) {
             titleEl.textContent = popup.title || '';
-            titleEl.classList.toggle('d-none', !popup.title);
+            titleEl.classList.toggle('d-none', !hasTitle);
         }
 
         if (contentEl) {
             contentEl.innerHTML = popup.content || '';
+            contentEl.classList.toggle('d-none', !hasContent);
+        }
+
+        const contentInner = modalElement.querySelector('[data-popup-content-inner]');
+        const contentWrapperEl = modalElement.querySelector('[data-popup-content-wrapper]');
+        
+        // Masquer le wrapper de contenu si ni titre ni contenu
+        if (!hasTextContent) {
+            if (contentInner) {
+                contentInner.style.display = 'none';
+                contentInner.style.background = 'transparent';
+                contentInner.style.padding = '0';
+            }
+            if (contentWrapperEl) {
+                contentWrapperEl.style.display = 'none';
+            }
+        } else {
+            if (contentInner) {
+                contentInner.style.display = '';
+                contentInner.style.background = '';
+                contentInner.style.padding = '';
+            }
+            if (contentWrapperEl) {
+                contentWrapperEl.style.display = '';
+            }
         }
 
         const layout = popup.layout || 'left-right';
@@ -461,8 +580,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     console.info('[Popups] détectées :', popups);
+    console.info('[Popups] nombre de popups:', popups.length);
 
     popups.forEach((popup) => {
+        console.info('[Popups] traitement popup:', {
+            slug: popup.slug,
+            title: popup.title,
+            content: popup.content ? (popup.content.substring(0, 50) + '...') : 'vide',
+            hasTitle: popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0,
+            hasContent: popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0
+        });
         const delay = Math.max(0, Number(popup.delay) || 0);
         setTimeout(() => {
             if (canDisplay(popup)) {
@@ -470,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 state.queue.push(popup);
                 processQueue();
             } else {
-                console.info('[Popups] filtrée par fréquence/limite', popup.slug);
+                console.info('[Popups] filtrée par fréquence/limite ou titre/contenu', popup.slug);
             }
         }, delay * 1000);
     });

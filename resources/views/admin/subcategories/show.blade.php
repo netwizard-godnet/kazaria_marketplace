@@ -59,7 +59,7 @@
                     <div class="row">
                         <div class="col-md-4">
                             @if($subcategory->image)
-                                <img src="{{ Storage::url($subcategory->image) }}" alt="{{ $subcategory->name }}" 
+                                <img src="{{ $subcategory->image_url }}" alt="{{ $subcategory->name }}" 
                                      class="img-fluid rounded">
                             @else
                                 <div class="bg-light d-flex align-items-center justify-content-center rounded" 

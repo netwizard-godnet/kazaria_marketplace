@@ -8,6 +8,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Store;
+use App\Models\Setting;
 use App\Services\StockService;
 use App\Services\OrderStatusService;
 use App\Notifications\NewOrderNotification;
@@ -310,8 +311,20 @@ class OrderController extends Controller
             // NE PAS marquer comme payée si paiement à la livraison
             // Le statut de paiement reste "pending" jusqu'à la livraison effective
             
+            // Récupérer les paramètres de contact depuis la BD
+            $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+            $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+            $siteName = Setting::get('site_name', 'KAZARIA');
+            $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
+            
             // Générer le PDF de la facture
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', ['order' => $order]);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', [
+                'order' => $order,
+                'siteEmail' => $siteEmail,
+                'sitePhone' => $sitePhone,
+                'siteName' => $siteName,
+                'siteAddress' => $siteAddress
+            ]);
             $pdfPath = storage_path('app/public/invoices/');
             
             // Créer le dossier s'il n'existe pas
@@ -319,7 +332,7 @@ class OrderController extends Controller
                 mkdir($pdfPath, 0777, true);
             }
             
-            $pdfFileName = 'facture-' . $order->order_number . '.pdf';
+            $pdfFileName = $this->generateInvoiceFileName($order);
             $pdfFullPath = $pdfPath . $pdfFileName;
             $pdf->save($pdfFullPath);
             
@@ -380,7 +393,13 @@ class OrderController extends Controller
             ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
             ->firstOrFail();
         
-        return view('invoice', compact('order'));
+        // Récupérer les paramètres de contact depuis la BD
+        $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+        $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $siteName = Setting::get('site_name', 'KAZARIA');
+        $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
+        
+        return view('invoice', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
     }
 
     /**
@@ -392,10 +411,34 @@ class OrderController extends Controller
             ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
             ->firstOrFail();
         
-        // Générer et télécharger le PDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', compact('order'));
+        // Récupérer les paramètres de contact depuis la BD
+        $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+        $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $siteName = Setting::get('site_name', 'KAZARIA');
+        $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
         
-        return $pdf->download('facture-' . $order->order_number . '.pdf');
+        // Générer et télécharger le PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoice-pdf', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
+        
+        $fileName = $this->generateInvoiceFileName($order);
+        return $pdf->download($fileName);
+    }
+
+    /**
+     * Générer le nom de fichier de la facture au format: facture-KAZ-YYYYMMDD-XXXXXX.pdf
+     */
+    private function generateInvoiceFileName($order)
+    {
+        // Format de date: YYYYMMDD
+        $date = $order->created_at->format('Ymd');
+        
+        // Générer un code de 6 caractères hexadécimaux basé sur la commande
+        // Cela garantit que la même commande aura toujours le même nom de fichier
+        $seed = $order->id . $order->order_number . $order->created_at->timestamp;
+        $randomCode = strtoupper(substr(md5($seed), 0, 6));
+        
+        // Format: facture-KAZ-YYYYMMDD-XXXXXX.pdf
+        return 'facture-KAZ-' . $date . '-' . $randomCode . '.pdf';
     }
 
     /**

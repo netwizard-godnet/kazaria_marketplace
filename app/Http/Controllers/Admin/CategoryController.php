@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Category;
 use App\Models\Subcategory;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -46,12 +47,111 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,bmp,tiff,ico,avif,heic|max:5120',
             'is_active' => 'boolean',
+            'is_customized' => 'boolean',
+            'custom_layout' => 'nullable|json',
+            'custom_banners' => 'nullable|json',
+            'custom_carousels' => 'nullable|json',
+            'custom_colors' => 'nullable|json',
             'order' => 'nullable|integer|min:0',
         ]);
 
         $data = $request->all();
         $data['is_active'] = $request->has('is_active');
+        $data['is_customized'] = $request->has('is_customized');
         $data['slug'] = Str::slug($request->name);
+        
+        // Traiter le custom_layout
+        if ($request->has('is_customized') && $request->filled('section_titles')) {
+            // Reconstruire le layout à partir des données du formulaire
+            $customLayout = [];
+            $sectionTitles = $request->input('section_titles', []);
+            $sectionOrders = $request->input('section_orders', []);
+            $sectionEnabled = $request->input('section_enabled', []);
+            
+            foreach ($sectionTitles as $key => $title) {
+                $customLayout[$key] = [
+                    'enabled' => isset($sectionEnabled[$key]),
+                    'order' => isset($sectionOrders[$key]) ? (int)$sectionOrders[$key] : 999,
+                    'title' => $title ?: null,
+                ];
+            }
+            
+            $data['custom_layout'] = $customLayout;
+        } elseif ($request->filled('custom_layout')) {
+            // Si c'est déjà du JSON (fallback)
+            $data['custom_layout'] = json_decode($request->custom_layout, true);
+        } else {
+            // Si la personnalisation est désactivée, réinitialiser le layout
+            $data['custom_layout'] = null;
+        }
+        
+        // Traiter les bannières personnalisées
+        if ($request->has('custom_banners') && $request->custom_banners !== null && $request->custom_banners !== '') {
+            $bannersData = $request->custom_banners;
+            $newBanners = is_string($bannersData) 
+                ? json_decode($bannersData, true) 
+                : (is_array($bannersData) ? $bannersData : []);
+            $data['custom_banners'] = is_array($newBanners) && !empty($newBanners) ? $newBanners : null;
+        } elseif (!$request->has('is_customized')) {
+            $data['custom_banners'] = null;
+        } else {
+            $data['custom_banners'] = null;
+        }
+        
+        // Traiter les carrousels personnalisés
+        if ($request->has('custom_carousels') && $request->custom_carousels !== null && $request->custom_carousels !== '') {
+            $carouselsData = $request->custom_carousels;
+            $newCarousels = is_string($carouselsData) 
+                ? json_decode($carouselsData, true) 
+                : (is_array($carouselsData) ? $carouselsData : []);
+            $data['custom_carousels'] = is_array($newCarousels) && !empty($newCarousels) ? $newCarousels : null;
+        } elseif (!$request->has('is_customized')) {
+            $data['custom_carousels'] = null;
+        } else {
+            $data['custom_carousels'] = null;
+        }
+        
+        // Traiter les couleurs personnalisées
+        // Traiter les couleurs personnalisées
+        // Priorité au champ caché JSON, sinon construire depuis les champs individuels
+        $customColors = null;
+        
+        // Vérifier d'abord le champ caché JSON (custom_colors_input)
+        if ($request->filled('custom_colors')) {
+            $colorsData = $request->input('custom_colors');
+            if (is_string($colorsData) && !empty(trim($colorsData))) {
+                $decoded = json_decode($colorsData, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $customColors = $decoded;
+                }
+            } elseif (is_array($colorsData)) {
+                $customColors = $colorsData;
+            }
+        }
+        
+        // Si pas de JSON valide, construire depuis les champs individuels custom_colors[key]
+        if ($customColors === null && $request->has('custom_colors')) {
+            $colorsArray = $request->input('custom_colors', []);
+            if (is_array($colorsArray) && !empty($colorsArray)) {
+                $customColors = $colorsArray;
+            }
+        }
+        
+        // Filtrer les couleurs vides ou invalides
+        $filteredColors = [];
+        if (is_array($customColors) && !empty($customColors)) {
+            foreach ($customColors as $key => $value) {
+                if (!empty($value) && is_string($value) && preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
+                    $filteredColors[$key] = $value;
+                }
+            }
+        }
+        
+        if (!$request->has('is_customized')) {
+            $data['custom_colors'] = null;
+        } else {
+            $data['custom_colors'] = !empty($filteredColors) ? $filteredColors : null;
+        }
 
         $category = Category::create($data);
 
@@ -65,7 +165,9 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
-        $category->load(['subcategories', 'products' => function($query) {
+        $category->load(['subcategories' => function($query) {
+            $query->orderBy('order')->orderBy('name');
+        }, 'products' => function($query) {
             $query->latest()->take(10);
         }]);
         return view('admin.categories.show', compact('category'));
@@ -83,24 +185,183 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'image' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,bmp,tiff,ico,avif,heic|max:5120',
             'is_active' => 'boolean',
+            'is_customized' => 'boolean',
+            'custom_layout' => 'nullable|json',
+            'custom_banners' => 'nullable|json',
+            'custom_carousels' => 'nullable|json',
+            'custom_colors' => 'nullable|json',
             'order' => 'nullable|integer|min:0',
         ]);
 
         $data = $request->all();
         $data['is_active'] = $request->has('is_active');
+        $data['is_customized'] = $request->has('is_customized');
         $data['slug'] = Str::slug($request->name);
-
-        $category->update($data);
-
-        if ($request->hasFile('image')) {
-            if ($category->image) {
-                Storage::disk('public')->delete($category->image);
+        
+        // Traiter le custom_layout
+        if ($request->has('is_customized') && $request->filled('section_titles')) {
+            // Reconstruire le layout à partir des données du formulaire
+            $customLayout = [];
+            $sectionTitles = $request->input('section_titles', []);
+            $sectionOrders = $request->input('section_orders', []);
+            $sectionEnabled = $request->input('section_enabled', []);
+            
+            foreach ($sectionTitles as $key => $title) {
+                $customLayout[$key] = [
+                    'enabled' => isset($sectionEnabled[$key]),
+                    'order' => isset($sectionOrders[$key]) ? (int)$sectionOrders[$key] : 999,
+                    'title' => $title ?: null,
+                ];
             }
-            $imagePath = $request->file('image')->store('categories', 'public');
-            $category->update(['image' => $imagePath]);
+            
+            $data['custom_layout'] = $customLayout;
+        } elseif ($request->filled('custom_layout')) {
+            // Si c'est déjà du JSON (fallback)
+            $data['custom_layout'] = json_decode($request->custom_layout, true);
+        } else {
+            // Si la personnalisation est désactivée, réinitialiser le layout
+            $data['custom_layout'] = null;
+        }
+        
+        // Traiter les bannières personnalisées
+        $oldBanners = $category->custom_banners ?? [];
+        if ($request->has('custom_banners') && $request->custom_banners !== null && $request->custom_banners !== '') {
+            $bannersData = $request->custom_banners;
+            $newBanners = is_string($bannersData) 
+                ? json_decode($bannersData, true) 
+                : (is_array($bannersData) ? $bannersData : []);
+            
+            // S'assurer que c'est un tableau
+            if (!is_array($newBanners)) {
+                $newBanners = [];
+            }
+            
+            // Supprimer les images des bannières qui ne sont plus utilisées
+            $oldBannerImages = collect($oldBanners)->pluck('image')->filter()->toArray();
+            $newBannerImages = collect($newBanners)->pluck('image')->filter()->toArray();
+            $imagesToDelete = array_diff($oldBannerImages, $newBannerImages);
+            
+            foreach ($imagesToDelete as $imagePath) {
+                if ($imagePath && !str_starts_with($imagePath, 'data:') && Storage::disk('public')->exists($imagePath)) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+            
+            $data['custom_banners'] = $newBanners;
+        } elseif (!$request->has('is_customized')) {
+            // Supprimer toutes les images des bannières si la personnalisation est désactivée
+            foreach ($oldBanners as $banner) {
+                if (isset($banner['image']) && !str_starts_with($banner['image'], 'data:') && Storage::disk('public')->exists($banner['image'])) {
+                    Storage::disk('public')->delete($banner['image']);
+                }
+            }
+            $data['custom_banners'] = null;
+        } else {
+            // Si personnalisation activée mais pas de bannières, mettre tableau vide
+            $data['custom_banners'] = [];
+        }
+        
+        // Traiter les carrousels personnalisés
+        $oldCarousels = $category->custom_carousels ?? [];
+        if ($request->has('custom_carousels') && $request->custom_carousels !== null && $request->custom_carousels !== '') {
+            $carouselsData = $request->custom_carousels;
+            $newCarousels = is_string($carouselsData) 
+                ? json_decode($carouselsData, true) 
+                : (is_array($carouselsData) ? $carouselsData : []);
+            
+            // S'assurer que c'est un tableau
+            if (!is_array($newCarousels)) {
+                $newCarousels = [];
+            }
+            
+            // Supprimer les images des carrousels qui ne sont plus utilisées
+            $oldCarouselImages = collect($oldCarousels)->pluck('images')->flatten()->pluck('url')->filter()->toArray();
+            $newCarouselImages = collect($newCarousels)->pluck('images')->flatten()->pluck('url')->filter()->toArray();
+            $imagesToDelete = array_diff($oldCarouselImages, $newCarouselImages);
+            
+            foreach ($imagesToDelete as $imagePath) {
+                if ($imagePath && !str_starts_with($imagePath, 'data:') && Storage::disk('public')->exists($imagePath)) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
+            
+            $data['custom_carousels'] = $newCarousels;
+        } elseif (!$request->has('is_customized')) {
+            // Supprimer toutes les images des carrousels si la personnalisation est désactivée
+            foreach ($oldCarousels as $carousel) {
+                if (isset($carousel['images']) && is_array($carousel['images'])) {
+                    foreach ($carousel['images'] as $image) {
+                        if (isset($image['url']) && !str_starts_with($image['url'], 'data:') && Storage::disk('public')->exists($image['url'])) {
+                            Storage::disk('public')->delete($image['url']);
+                        }
+                    }
+                }
+            }
+            $data['custom_carousels'] = null;
+        } else {
+            // Si personnalisation activée mais pas de carrousels, mettre tableau vide
+            $data['custom_carousels'] = [];
+        }
+        
+        // Traiter les couleurs personnalisées
+        // Priorité au champ caché JSON, sinon construire depuis les champs individuels
+        $customColors = null;
+        
+        // Vérifier d'abord le champ caché JSON (custom_colors_input)
+        if ($request->filled('custom_colors')) {
+            $colorsData = $request->input('custom_colors');
+            if (is_string($colorsData) && !empty(trim($colorsData))) {
+                $decoded = json_decode($colorsData, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $customColors = $decoded;
+                }
+            } elseif (is_array($colorsData)) {
+                $customColors = $colorsData;
+            }
+        }
+        
+        // Si pas de JSON valide, construire depuis les champs individuels custom_colors[key]
+        if ($customColors === null && $request->has('custom_colors')) {
+            $colorsArray = $request->input('custom_colors', []);
+            if (is_array($colorsArray) && !empty($colorsArray)) {
+                $customColors = $colorsArray;
+            }
+        }
+        
+        // Filtrer les couleurs vides ou invalides
+        $filteredColors = [];
+        if (is_array($customColors) && !empty($customColors)) {
+            foreach ($customColors as $key => $value) {
+                if (!empty($value) && is_string($value) && preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
+                    $filteredColors[$key] = $value;
+                }
+            }
+        }
+        
+        if (!$request->has('is_customized')) {
+            $data['custom_colors'] = null;
+        } else {
+            $data['custom_colors'] = !empty($filteredColors) ? $filteredColors : null;
         }
 
-        return redirect()->route('admin.categories.index')->with('success', 'Catégorie mise à jour avec succès.');
+        try {
+            $category->update($data);
+
+            if ($request->hasFile('image')) {
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image);
+                }
+                $imagePath = $request->file('image')->store('categories', 'public');
+                $category->update(['image' => $imagePath]);
+            }
+
+            return redirect()->route('admin.categories.index')->with('success', 'Catégorie mise à jour avec succès.');
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la mise à jour de la catégorie: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Erreur lors de la mise à jour : ' . $e->getMessage());
+        }
     }
 
     public function destroy(Category $category)
@@ -113,8 +374,31 @@ class CategoryController extends Controller
             return redirect()->back()->with('error', 'Impossible de supprimer une catégorie qui contient des sous-catégories.');
         }
 
+        // Supprimer l'image principale
         if ($category->image) {
             Storage::disk('public')->delete($category->image);
+        }
+
+        // Supprimer les images des bannières personnalisées
+        if ($category->custom_banners) {
+            foreach ($category->custom_banners as $banner) {
+                if (isset($banner['image']) && !str_starts_with($banner['image'], 'data:') && Storage::disk('public')->exists($banner['image'])) {
+                    Storage::disk('public')->delete($banner['image']);
+                }
+            }
+        }
+
+        // Supprimer les images des carrousels personnalisés
+        if ($category->custom_carousels) {
+            foreach ($category->custom_carousels as $carousel) {
+                if (isset($carousel['images']) && is_array($carousel['images'])) {
+                    foreach ($carousel['images'] as $image) {
+                        if (isset($image['url']) && !str_starts_with($image['url'], 'data:') && Storage::disk('public')->exists($image['url'])) {
+                            Storage::disk('public')->delete($image['url']);
+                        }
+                    }
+                }
+            }
         }
 
         $category->delete();
@@ -141,6 +425,74 @@ class CategoryController extends Controller
                 ];
             })
         ]);
+    }
+
+    /**
+     * Upload une image pour une bannière ou un carrousel personnalisé
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|file|mimes:jpeg,jpg,png,gif,webp,svg,bmp,tiff,ico,avif,heic|max:5120',
+            'type' => 'required|in:banner,carousel',
+        ]);
+
+        try {
+            $file = $request->file('image');
+            $type = $request->input('type');
+            
+            // Déterminer le dossier de stockage selon le type
+            $folder = $type === 'banner' ? 'categories/banners' : 'categories/carousels';
+            
+            // Stocker le fichier
+            $path = $file->store($folder, 'public');
+            
+            return response()->json([
+                'success' => true,
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+                'message' => 'Image uploadée avec succès'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload : ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Supprimer une image uploadée
+     */
+    public function deleteImage(Request $request)
+    {
+        $request->validate([
+            'path' => 'required|string',
+        ]);
+
+        try {
+            $path = $request->input('path');
+            
+            // Vérifier que le chemin est dans le storage public
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Image supprimée avec succès'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Image non trouvée'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression : ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
 

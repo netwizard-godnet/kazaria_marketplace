@@ -17,8 +17,8 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label">Titre <span class="text-danger">*</span></label>
-                    <input type="text" name="title" class="form-control" value="{{ old('title', $popup->title) }}" required>
+                    <label class="form-label">Titre</label>
+                    <input type="text" name="title" class="form-control" value="{{ old('title', $popup->title) }}">
                 </div>
 
                 <div class="mb-3">

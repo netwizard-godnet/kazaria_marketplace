@@ -56,7 +56,7 @@ use Illuminate\Support\Facades\Storage;
                                 <div class="row">
             @php
                 // Définir l'ordre d'affichage des groupes
-                $groupOrder = ['general', 'contact', 'ecommerce', 'deals', 'social', 'maintenance', 'cinetpay', 'stripe'];
+                $groupOrder = ['general', 'contact', 'ecommerce', 'deals', 'homepage', 'social', 'maintenance', 'cinetpay', 'stripe'];
                 // Réorganiser les groupes selon l'ordre défini
                 $orderedGroups = [];
                 foreach ($groupOrder as $orderedGroupName) {
@@ -111,6 +111,9 @@ use Illuminate\Support\Facades\Storage;
                                 @case('deals')
                                     <i class="fas fa-fire me-2"></i>Deals du jour
                                     @break
+                                @case('homepage')
+                                    <i class="fas fa-home me-2"></i>Page d'accueil
+                                    @break
                                 @case('maintenance')
                                     <i class="fas fa-tools me-2"></i>Maintenance
                                     @break
@@ -164,6 +167,10 @@ use Illuminate\Support\Facades\Storage;
                                 'deals_max_discount' => 'Pourcentage de remise maximum (%)',
                                 'deals_categories' => 'Catégories des deals',
                                 'deals_subcategories' => 'Sous-catégories des deals',
+                                // Page d'accueil
+                                'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
+                                'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',
@@ -198,33 +205,89 @@ use Illuminate\Support\Facades\Storage;
                             };
                         @endphp
                         <div class="form-group mb-3 {{ $isGeneral ? 'col-md-6' : '' }}">
-                            <label for="setting_{{ $setting->key }}" class="form-label">
+                            <label for="setting_{{ $setting->key }}" class="form-label" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;">
                                 {{ $label }}
                                 @if($setting->is_public)
                                     <span class="badge badge-success badge-sm">Public</span>
                                 @endif
                             </label>
                             
-                            @if($setting->key === 'deals_categories')
+                            @if($setting->key === 'deals_categories' || $setting->key === 'homepage_categories')
                                 <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
                                     <option value="">Toutes les catégories</option>
-                                    @foreach(\App\Models\Category::active()->get() as $category)
+                                    @foreach(\App\Models\Category::active()->ordered()->get() as $category)
                                         <option value="{{ $category->id }}" {{ in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
                                             {{ $category->name }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted">Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)</small>
-                            @elseif($setting->key === 'deals_subcategories')
+                                <small class="text-muted">
+                                    @if($setting->key === 'homepage_categories')
+                                        Sélectionnez les catégories à afficher dans la section "Top Catégories du Mois" sur la page d'accueil. Si aucune sélection, les catégories les plus visitées seront affichées automatiquement.
+                                    @else
+                                        Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)
+                                    @endif
+                                </small>
+                            @elseif($setting->key === 'homepage_category_sections')
+                                @php
+                                    // Parser les valeurs existantes pour déterminer ce qui est sélectionné
+                                    $selectedValues = [];
+                                    if ($setting->value) {
+                                        $items = array_map('trim', explode(',', $setting->value));
+                                        foreach ($items as $item) {
+                                            if (str_starts_with($item, 'category:') || str_starts_with($item, 'subcategory:')) {
+                                                $selectedValues[] = $item;
+                                            } elseif (is_numeric($item)) {
+                                                // Rétrocompatibilité: ancien format
+                                                $selectedValues[] = 'category:' . $item;
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple size="10">
+                                    <option value="">Aucune section (masquer toutes les sections)</option>
+                                    <optgroup label="Catégories">
+                                        @foreach(\App\Models\Category::active()->ordered()->get() as $category)
+                                            @php
+                                                $value = 'category:' . $category->id;
+                                                $isSelected = in_array($value, $selectedValues) || in_array($category->id, $selectedValues);
+                                            @endphp
+                                            <option value="{{ $value }}" {{ $isSelected ? 'selected' : '' }}>
+                                                📁 {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                    <optgroup label="Sous-catégories">
+                                        @foreach(\App\Models\Subcategory::active()->with('category')->ordered()->get() as $subcategory)
+                                            @php
+                                                $value = 'subcategory:' . $subcategory->id;
+                                                $isSelected = in_array($value, $selectedValues);
+                                            @endphp
+                                            <option value="{{ $value }}" {{ $isSelected ? 'selected' : '' }}>
+                                                📂 {{ $subcategory->category->name ?? 'N/A' }} > {{ $subcategory->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                </select>
+                                <small class="text-muted">
+                                    Sélectionnez les catégories et/ou sous-catégories à afficher comme sections de produits sur la page d'accueil. L'ordre de sélection détermine l'ordre d'affichage. Si aucune sélection, les 4 catégories par défaut seront affichées (Téléphones, TV, Electroménager, Ordinateurs).
+                                </small>
+                            @elseif($setting->key === 'deals_subcategories' || $setting->key === 'homepage_subcategories')
                                 <select class="form-control" id="setting_{{ $setting->key }}" name="settings[{{ $setting->key }}][]" multiple>
                                     <option value="">Toutes les sous-catégories</option>
-                                    @foreach(\App\Models\Subcategory::active()->get() as $subcategory)
+                                    @foreach(\App\Models\Subcategory::active()->ordered()->get() as $subcategory)
                                         <option value="{{ $subcategory->id }}" {{ in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : '' }}>
-                                            {{ $subcategory->name }}
+                                            {{ $subcategory->category->name ?? 'N/A' }} > {{ $subcategory->name }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="text-muted">Sélectionnez plusieurs sous-catégories en maintenant Ctrl (Cmd sur Mac)</small>
+                                <small class="text-muted">
+                                    @if($setting->key === 'homepage_subcategories')
+                                        Sélectionnez les sous-catégories à afficher dans la section "Top Catégories du Mois" sur la page d'accueil. Si aucune sélection, les sous-catégories les plus visitées seront affichées automatiquement.
+                                    @else
+                                        Sélectionnez plusieurs sous-catégories en maintenant Ctrl (Cmd sur Mac)
+                                    @endif
+                                </small>
                             @elseif($setting->type === 'boolean' || in_array($setting->key, $booleanKeys))
                                 <div>
                                     <div class="form-check form-check-inline">
@@ -339,6 +402,10 @@ use Illuminate\Support\Facades\Storage;
                                 'deals_max_discount' => 'Pourcentage de remise maximum (%)',
                                 'deals_categories' => 'Catégories des deals',
                                 'deals_subcategories' => 'Sous-catégories des deals',
+                                // Page d'accueil
+                                'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
+                                'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',

@@ -19,12 +19,12 @@
                             <!-- En-tête -->
                             <div class="row mb-4">
                                 <div class="col-6">
-                                    <img src="{{ asset('images/logo.png') }}" alt="KAZARIA" height="50">
+                                    <img src="{{ asset('images/logo.png') }}" alt="{{ $siteName ?? 'KAZARIA' }}" height="50">
                                     <p class="mt-2 mb-0 small">
-                                        <strong>KAZARIA</strong><br>
+                                        <strong>{{ $siteName ?? 'KAZARIA' }}</strong><br>
                                         E-commerce en Côte d'Ivoire<br>
-                                        Email: contact@kazaria.ci<br>
-                                        Tél: +225 XX XX XX XX XX
+                                        Email: {{ $siteEmail ?? 'contact@kazaria.ci' }}<br>
+                                        Tél: {{ $sitePhone ?? '+225 XX XX XX XX XX' }}
                                     </p>
                                 </div>
                                 <div class="col-6 text-end">

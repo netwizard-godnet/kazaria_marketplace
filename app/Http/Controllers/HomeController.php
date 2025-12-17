@@ -17,116 +17,177 @@ class HomeController extends Controller
             view()->share($seoKey, $value);
         }
         
-        // Récupérer les catégories avec le nombre total de vues de leurs produits
-        $categoriesWithViews = Category::query()
-            ->leftJoin('products', 'categories.id', '=', 'products.category_id')
-            ->where('categories.is_active', true)
-            ->selectRaw('categories.*, COALESCE(SUM(products.views), 0) as total_views')
-            ->groupBy('categories.id')
-            ->orderBy('total_views', 'desc')
-            ->take(7)
-            ->get();
+        // Récupérer les catégories/sous-catégories configurées pour la page d'accueil
+        $homepageCategories = \App\Helpers\SettingHelper::get('homepage_categories', '');
+        $homepageSubcategories = \App\Helpers\SettingHelper::get('homepage_subcategories', '');
         
-        // Récupérer les sous-catégories avec le nombre total de vues de leurs produits
-        $subcategoriesWithViews = \App\Models\Subcategory::query()
-            ->leftJoin('products', 'subcategories.id', '=', 'products.subcategory_id')
-            ->where('subcategories.is_active', true)
-            ->selectRaw('subcategories.*, COALESCE(SUM(products.views), 0) as total_views')
-            ->groupBy('subcategories.id')
-            ->orderBy('total_views', 'desc')
-            ->take(7)
-            ->get();
-        
-        // Combiner catégories et sous-catégories et trier par nombre de vues
         $allTopCategories = collect();
         
-        foreach ($categoriesWithViews as $category) {
-            $allTopCategories->push([
-                'id' => $category->id,
-                'name' => $category->name,
-                'slug' => $category->slug,
-                'image' => $category->image,
-                'views' => $category->total_views ?? 0,
-                'type' => 'category',
-                'route' => route('categorie', $category->slug)
-            ]);
-        }
-        
-        foreach ($subcategoriesWithViews as $subcategory) {
-            // Utiliser la route de la catégorie parente avec le slug de la sous-catégorie
-            $route = '#';
-            if ($subcategory->category) {
-                $route = route('categorie', $subcategory->category->slug) . '?subcategory=' . $subcategory->slug;
-            }
-            
-            $allTopCategories->push([
-                'id' => $subcategory->id,
-                'name' => $subcategory->name,
-                'slug' => $subcategory->slug,
-                'image' => $subcategory->image,
-                'views' => $subcategory->total_views ?? 0,
-                'type' => 'subcategory',
-                'route' => $route
-            ]);
-        }
-        
-        // Prendre les 7 plus visitées (catégories + sous-catégories combinées)
-        $top7 = $allTopCategories->sortByDesc('views')->take(7)->values();
-        
-        // Si on a moins de 7 résultats, compléter avec des catégories/sous-catégories actives
-        if ($top7->count() < 7) {
-            $needed = 7 - $top7->count();
-            
-            // Récupérer des catégories/sous-catégories qui ne sont pas déjà dans le top
-            $existingIds = $top7->pluck('id')->toArray();
-            
-            $additionalCategories = Category::active()
-                ->whereNotIn('id', $existingIds)
-                ->take($needed)
-                ->get();
-            
-            foreach ($additionalCategories as $category) {
-                $top7->push([
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                    'image' => $category->image,
-                    'views' => 0,
-                    'type' => 'category',
-                    'route' => route('categorie', $category->slug)
-                ]);
-            }
-            
-            // Si on a encore besoin d'éléments, ajouter des sous-catégories
-            if ($top7->count() < 7) {
-                $needed = 7 - $top7->count();
-                $existingIds = $top7->pluck('id')->toArray();
-                
-                $additionalSubcategories = \App\Models\Subcategory::active()
-                    ->whereNotIn('id', $existingIds)
-                    ->take($needed)
+        // Si des catégories/sous-catégories sont configurées, les utiliser
+        if (!empty($homepageCategories) || !empty($homepageSubcategories)) {
+            // Charger les catégories configurées
+            if (!empty($homepageCategories)) {
+                $categoryIds = array_map('trim', explode(',', $homepageCategories));
+                $configuredCategories = Category::active()
+                    ->whereIn('id', $categoryIds)
+                    ->ordered()
                     ->get();
                 
-                foreach ($additionalSubcategories as $subcategory) {
+                foreach ($configuredCategories as $category) {
+                    $allTopCategories->push([
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'image' => $category->image,
+                        'views' => 0,
+                        'type' => 'category',
+                        'route' => route('categorie', $category->slug),
+                        'order' => array_search($category->id, $categoryIds)
+                    ]);
+                }
+            }
+            
+            // Charger les sous-catégories configurées
+            if (!empty($homepageSubcategories)) {
+                $subcategoryIds = array_map('trim', explode(',', $homepageSubcategories));
+                $configuredSubcategories = \App\Models\Subcategory::active()
+                    ->whereIn('id', $subcategoryIds)
+                    ->with('category')
+                    ->ordered()
+                    ->get();
+                
+                foreach ($configuredSubcategories as $subcategory) {
                     $route = '#';
                     if ($subcategory->category) {
                         $route = route('categorie', $subcategory->category->slug) . '?subcategory=' . $subcategory->slug;
                     }
                     
-                    $top7->push([
+                    $allTopCategories->push([
                         'id' => $subcategory->id,
                         'name' => $subcategory->name,
                         'slug' => $subcategory->slug,
                         'image' => $subcategory->image,
                         'views' => 0,
                         'type' => 'subcategory',
-                        'route' => $route
+                        'route' => $route,
+                        'order' => array_search($subcategory->id, $subcategoryIds) + 1000 // Pour garder l'ordre mais après les catégories
                     ]);
                 }
             }
+            
+            // Trier par ordre de configuration et limiter à 7
+            $categories = $allTopCategories->sortBy('order')->take(7)->values();
+        } else {
+            // Sinon, utiliser le système automatique basé sur les vues
+            // Récupérer les catégories avec le nombre total de vues de leurs produits
+            $categoriesWithViews = Category::query()
+                ->leftJoin('products', 'categories.id', '=', 'products.category_id')
+                ->where('categories.is_active', true)
+                ->selectRaw('categories.*, COALESCE(SUM(products.views), 0) as total_views')
+                ->groupBy('categories.id')
+                ->orderBy('total_views', 'desc')
+                ->take(7)
+                ->get();
+            
+            // Récupérer les sous-catégories avec le nombre total de vues de leurs produits
+            $subcategoriesWithViews = \App\Models\Subcategory::query()
+                ->leftJoin('products', 'subcategories.id', '=', 'products.subcategory_id')
+                ->where('subcategories.is_active', true)
+                ->selectRaw('subcategories.*, COALESCE(SUM(products.views), 0) as total_views')
+                ->groupBy('subcategories.id')
+                ->orderBy('total_views', 'desc')
+                ->take(7)
+                ->get();
+            
+            // Combiner catégories et sous-catégories et trier par nombre de vues
+            foreach ($categoriesWithViews as $category) {
+                $allTopCategories->push([
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'image' => $category->image,
+                    'views' => $category->total_views ?? 0,
+                    'type' => 'category',
+                    'route' => route('categorie', $category->slug)
+                ]);
+            }
+            
+            foreach ($subcategoriesWithViews as $subcategory) {
+                // Utiliser la route de la catégorie parente avec le slug de la sous-catégorie
+                $route = '#';
+                if ($subcategory->category) {
+                    $route = route('categorie', $subcategory->category->slug) . '?subcategory=' . $subcategory->slug;
+                }
+                
+                $allTopCategories->push([
+                    'id' => $subcategory->id,
+                    'name' => $subcategory->name,
+                    'slug' => $subcategory->slug,
+                    'image' => $subcategory->image,
+                    'views' => $subcategory->total_views ?? 0,
+                    'type' => 'subcategory',
+                    'route' => $route
+                ]);
+            }
+            
+            // Prendre les 7 plus visitées (catégories + sous-catégories combinées)
+            $top7 = $allTopCategories->sortByDesc('views')->take(7)->values();
+            
+            // Si on a moins de 7 résultats, compléter avec des catégories/sous-catégories actives
+            if ($top7->count() < 7) {
+                $needed = 7 - $top7->count();
+                
+                // Récupérer des catégories/sous-catégories qui ne sont pas déjà dans le top
+                $existingIds = $top7->pluck('id')->toArray();
+                
+                $additionalCategories = Category::active()
+                    ->whereNotIn('id', $existingIds)
+                    ->take($needed)
+                    ->get();
+                
+                foreach ($additionalCategories as $category) {
+                    $top7->push([
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'image' => $category->image,
+                        'views' => 0,
+                        'type' => 'category',
+                        'route' => route('categorie', $category->slug)
+                    ]);
+                }
+                
+                // Si on a encore besoin d'éléments, ajouter des sous-catégories
+                if ($top7->count() < 7) {
+                    $needed = 7 - $top7->count();
+                    $existingIds = $top7->pluck('id')->toArray();
+                    
+                    $additionalSubcategories = \App\Models\Subcategory::active()
+                        ->whereNotIn('id', $existingIds)
+                        ->take($needed)
+                        ->get();
+                    
+                    foreach ($additionalSubcategories as $subcategory) {
+                        $route = '#';
+                        if ($subcategory->category) {
+                            $route = route('categorie', $subcategory->category->slug) . '?subcategory=' . $subcategory->slug;
+                        }
+                        
+                        $top7->push([
+                            'id' => $subcategory->id,
+                            'name' => $subcategory->name,
+                            'slug' => $subcategory->slug,
+                            'image' => $subcategory->image,
+                            'views' => 0,
+                            'type' => 'subcategory',
+                            'route' => $route
+                        ]);
+                    }
+                }
+            }
+            
+            $categories = $top7;
         }
-        
-        $categories = $top7;
         
         // Récupérer la durée du countdown pour les deals (en minutes, défaut: 60)
         $countdownDuration = \App\Helpers\SettingHelper::get('deals_countdown_duration', '60');
@@ -176,65 +237,129 @@ class HomeController extends Controller
             ->take(16)
             ->get();
         
-        // Récupérer les produits par catégorie (uniquement si les catégories sont actives)
-        $phoneCategory = Category::where('slug', 'telephones-et-tablettes')->first();
-        $phoneProducts = collect();
-        $isPhoneCategoryActive = false;
-        if ($phoneCategory && $phoneCategory->is_active) {
-            $isPhoneCategoryActive = true;
-            $phoneProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'telephones-et-tablettes')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
-        }
+        // Récupérer les sections de catégories/sous-catégories configurées pour la page d'accueil
+        $homepageCategorySections = \App\Helpers\SettingHelper::get('homepage_category_sections', '');
+        $categorySections = collect();
+        
+        if (!empty($homepageCategorySections)) {
+            // Si des catégories/sous-catégories sont configurées, les utiliser
+            // Format attendu: "category:ID" ou "subcategory:ID" séparés par des virgules
+            $items = array_map('trim', explode(',', $homepageCategorySections));
             
-        $tvCategory = Category::where('slug', 'tv-et-electronique')->first();
-        $tvProducts = collect();
-        $isTvCategoryActive = false;
-        if ($tvCategory && $tvCategory->is_active) {
-            $isTvCategoryActive = true;
-            $tvProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'tv-et-electronique')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
-        }
+            // Préserver l'ordre de configuration
+            foreach ($items as $item) {
+                if (str_starts_with($item, 'category:')) {
+                    // C'est une catégorie
+                    $categoryId = (int) str_replace('category:', '', $item);
+                    $category = Category::active()->where('id', $categoryId)->first();
+                    
+                    if ($category) {
+                        $products = Product::active()
+                            ->whereHas('category', function($query) use ($category) {
+                                $query->where('id', $category->id)
+                                      ->where('is_active', true);
+                            })
+                            ->inStock()
+                            ->take(12)
+                            ->get();
+                        
+                        if ($products->count() > 0) {
+                            $categorySections->push([
+                                'category' => $category,
+                                'subcategory' => null,
+                                'products' => $products,
+                                'is_active' => true,
+                                'type' => 'category'
+                            ]);
+                        }
+                    }
+                } elseif (str_starts_with($item, 'subcategory:')) {
+                    // C'est une sous-catégorie
+                    $subcategoryId = (int) str_replace('subcategory:', '', $item);
+                    $subcategory = \App\Models\Subcategory::active()
+                        ->with('category')
+                        ->where('id', $subcategoryId)
+                        ->first();
+                    
+                    if ($subcategory && $subcategory->category && $subcategory->category->is_active) {
+                        $products = Product::active()
+                            ->whereHas('subcategory', function($query) use ($subcategory) {
+                                $query->where('id', $subcategory->id)
+                                      ->where('is_active', true);
+                            })
+                            ->inStock()
+                            ->take(12)
+                            ->get();
+                        
+                        if ($products->count() > 0) {
+                            $categorySections->push([
+                                'category' => $subcategory->category,
+                                'subcategory' => $subcategory,
+                                'products' => $products,
+                                'is_active' => true,
+                                'type' => 'subcategory'
+                            ]);
+                        }
+                    }
+                } elseif (is_numeric($item)) {
+                    // Rétrocompatibilité: format ancien (juste l'ID, considéré comme catégorie)
+                    $categoryId = (int) $item;
+                    $category = Category::active()->where('id', $categoryId)->first();
+                    
+                    if ($category) {
+                        $products = Product::active()
+                            ->whereHas('category', function($query) use ($category) {
+                                $query->where('id', $category->id)
+                                      ->where('is_active', true);
+                            })
+                            ->inStock()
+                            ->take(12)
+                            ->get();
+                        
+                        if ($products->count() > 0) {
+                            $categorySections->push([
+                                'category' => $category,
+                                'subcategory' => null,
+                                'products' => $products,
+                                'is_active' => true,
+                                'type' => 'category'
+                            ]);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Par défaut, utiliser les 4 catégories existantes (rétrocompatibilité)
+            $defaultSlugs = [
+                'telephones-et-tablettes',
+                'tv-et-electronique',
+                'electromenager',
+                'ordinateurs-et-accessoires'
+            ];
             
-        $electroCategory = Category::where('slug', 'electromenager')->first();
-        $electroProducts = collect();
-        $isElectroCategoryActive = false;
-        if ($electroCategory && $electroCategory->is_active) {
-            $isElectroCategoryActive = true;
-            $electroProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'electromenager')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
-        }
-            
-        $computerCategory = Category::where('slug', 'ordinateurs-et-accessoires')->first();
-        $computerProducts = collect();
-        $isComputerCategoryActive = false;
-        if ($computerCategory && $computerCategory->is_active) {
-            $isComputerCategoryActive = true;
-            $computerProducts = Product::active()
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'ordinateurs-et-accessoires')
-                          ->where('is_active', true);
-                })
-                ->inStock()
-                ->take(12)
-                ->get();
+            foreach ($defaultSlugs as $slug) {
+                $category = Category::where('slug', $slug)->first();
+                if ($category && $category->is_active) {
+                    $products = Product::active()
+                        ->whereHas('category', function($query) use ($category) {
+                            $query->where('id', $category->id)
+                                  ->where('is_active', true);
+                        })
+                        ->inStock()
+                        ->take(12)
+                        ->get();
+                    
+                    if ($products->count() > 0) {
+                        $categorySections->push([
+                            'category' => $category,
+                            'subcategory' => null,
+                            'products' => $products,
+                            'is_active' => true,
+                            'type' => 'category'
+                        ]);
+                    }
+                }
+            }
         }
         
         // Récupérer les produits tendance
@@ -253,17 +378,10 @@ class HomeController extends Controller
         return view('accueil', compact(
             'categories',
             'dealsProducts',
-            'phoneProducts',
-            'tvProducts',
-            'electroProducts',
-            'computerProducts',
+            'categorySections',
             'trendingProducts',
             'countdownEndTime',
-            'topBrands',
-            'isPhoneCategoryActive',
-            'isTvCategoryActive',
-            'isElectroCategoryActive',
-            'isComputerCategoryActive'
+            'topBrands'
         ));
     }
 }

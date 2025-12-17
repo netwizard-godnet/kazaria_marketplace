@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Category;
+use App\Models\Setting;
 use App\Services\OrderStatusService;
 use Illuminate\Support\Facades\Log;
 
@@ -53,7 +54,7 @@ class OrderController extends Controller
             });
         }
 
-        $orders = $query->paginate(15)->appends($request->query());
+        $orders = $query->paginate(15)->appends($request->except('page'));
         $currentStatus = $request->status;
         $currentPaymentStatus = $request->payment_status;
 
@@ -249,6 +250,22 @@ class OrderController extends Controller
                 'message' => 'Erreur lors de la suppression de la commande.'
             ], 500);
         }
+    }
+
+    /**
+     * Afficher la facture pour l'admin
+     */
+    public function invoice(Order $order)
+    {
+        $order->load(['items.product', 'items.variation.attributeValues.attribute', 'user']);
+        
+        // Récupérer les paramètres de contact depuis la BD
+        $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
+        $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $siteName = Setting::get('site_name', 'KAZARIA');
+        $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
+        
+        return view('invoice', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
     }
 }
 

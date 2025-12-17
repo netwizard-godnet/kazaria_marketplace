@@ -249,7 +249,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="mr-2">
                                                 @if($user->profile_pic_url)
-                                                    <img src="{{ $user->profile_pic_url }}" class="rounded-circle" width="40" height="40" alt="Avatar" style="object-fit: cover; border: 2px solid #ff6b35;">
+                                                    <img src="{{ str_starts_with($user->profile_pic_url, 'http') ? $user->profile_pic_url : asset($user->profile_pic_url) }}" class="rounded-circle" width="40" height="40" alt="Avatar" style="object-fit: cover; border: 2px solid #ff6b35;">
                                                 @else
                                                     <div class="text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%); font-weight: bold; font-size: 14px;">
                                                         {{ strtoupper(substr($user->nom ?? 'U', 0, 1)) }}{{ strtoupper(substr($user->prenoms ?? '', 0, 1)) }}

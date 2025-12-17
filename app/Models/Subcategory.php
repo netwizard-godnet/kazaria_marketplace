@@ -67,4 +67,14 @@ class Subcategory extends Model
     {
         return $query->orderBy('order');
     }
+
+    // Méthodes d'accès aux images
+    public function getImageUrlAttribute()
+    {
+        if ($this->image) {
+            // Le store() retourne 'subcategories/fichier.jpg', donc on ajoute 'storage/' devant
+            return asset('storage/' . $this->image);
+        }
+        return null;
+    }
 }

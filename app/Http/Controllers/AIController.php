@@ -1393,7 +1393,11 @@ class AIController extends Controller
         try {
             $t = mb_strtolower($text);
             // Charger catégories et sous-catégories actives
-            $categories = \App\Models\Category::active()->with('subcategories')->get(['id','name','slug']);
+            $categories = \App\Models\Category::active()
+                ->with(['subcategories' => function($query) {
+                    $query->where('is_active', true)->orderBy('order')->orderBy('name');
+                }])
+                ->get(['id','name','slug']);
             $bestCat = null; $bestScore = 0; $bestSub = null;
             foreach ($categories as $cat) {
                 $names = [mb_strtolower($cat->name), mb_strtolower($cat->slug)];
@@ -1852,7 +1856,12 @@ class AIController extends Controller
      */
     private function answerCategoryQuestion(string $text): ?string
     {
-        $categories = Category::active()->with('subcategories')->orderBy('order')->get();
+        $categories = Category::active()
+            ->with(['subcategories' => function($query) {
+                $query->where('is_active', true)->orderBy('order')->orderBy('name');
+            }])
+            ->orderBy('order')
+            ->get();
         
         if ($categories->isEmpty()) {
             $userName = session('ai_user_name');

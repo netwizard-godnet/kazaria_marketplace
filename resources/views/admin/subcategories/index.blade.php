@@ -73,19 +73,22 @@
                     <!-- Messages -->
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ session('success') }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ session('error') }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    @if(session('warning'))
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>{{ session('warning') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 
@@ -109,11 +112,12 @@
                                     <td>{{ $subcategory->id }}</td>
                                     <td>
                                         @if($subcategory->image)
-                                            <img src="{{ Storage::url($subcategory->image) }}" alt="{{ $subcategory->name }}" 
-                                                 class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <img src="{{ $subcategory->image_url }}" alt="{{ $subcategory->name }}" 
+                                                 class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"
+                                                 onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'bg-light d-flex align-items-center justify-content-center\' style=\'width: 50px; height: 50px; border-radius: 4px;\'><i class=\'fas fa-image text-muted\'></i></div>';">
                                         @else
                                             <div class="bg-light d-flex align-items-center justify-content-center" 
-                                                 style="width: 50px; height: 50px;">
+                                                 style="width: 50px; height: 50px; border-radius: 4px;">
                                                 <i class="fas fa-image text-muted"></i>
                                             </div>
                                         @endif
@@ -122,7 +126,8 @@
                                     <td>{{ $subcategory->category->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge badge-{{ $subcategory->is_active ? 'success' : 'danger' }}">
-                                            {{ $subcategory->is_active ? 'Active' : 'Inactive' }}
+                                            <i class="fas fa-{{ $subcategory->is_active ? 'eye' : 'eye-slash' }}"></i>
+                                            {{ $subcategory->is_active ? 'Visible' : 'Masquée' }}
                                         </span>
                                     </td>
                                     <td>{{ $subcategory->order ?? 0 }}</td>
@@ -136,9 +141,10 @@
                                             </a>
                                             <form action="{{ route('admin.subcategories.toggle-status', $subcategory) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-{{ $subcategory->is_active ? 'secondary' : 'success' }} btn-sm" 
-                                                        onclick="return confirm('{{ $subcategory->is_active ? 'Désactiver' : 'Activer' }} cette sous-catégorie ?')">
-                                                    <i class="fas fa-{{ $subcategory->is_active ? 'pause' : 'play' }}"></i>
+                                                <button type="submit" class="btn btn-{{ $subcategory->is_active ? 'warning' : 'success' }} btn-sm" 
+                                                        title="{{ $subcategory->is_active ? 'Masquer sur le site' : 'Afficher sur le site' }}"
+                                                        onclick="return confirm('{{ $subcategory->is_active ? 'Masquer' : 'Afficher' }} cette sous-catégorie sur le site ?')">
+                                                    <i class="fas fa-{{ $subcategory->is_active ? 'eye-slash' : 'eye' }}"></i>
                                                 </button>
                                             </form>
                                             <form action="{{ route('admin.subcategories.destroy', $subcategory) }}" method="POST" class="d-inline">
@@ -162,12 +168,207 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-center">
-                        {{ $subcategories->links() }}
+                    @if($subcategories->hasPages())
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Affichage de {{ $subcategories->firstItem() }} à {{ $subcategories->lastItem() }} sur {{ $subcategories->total() }} sous-catégories
+                        </div>
+                        <div class="pagination-wrapper">
+                            {{ $subcategories->appends(request()->query())->links('pagination.bootstrap-4') }}
+                        </div>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+/* Styles pour la pagination */
+.pagination-wrapper {
+    margin-top: 0;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.pagination .page-link {
+    color: #007bff;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    color: #0056b3;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive pour la pagination */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center !important;
+    }
+    
+    .pagination-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination .page-link {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+        min-width: 35px;
+    }
+}
+
+/* Amélioration du tableau */
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Amélioration des boutons d'action */
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Amélioration des badges */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.badge-success {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Amélioration du tableau */
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,.02);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+
+/* Styles pour les alertes */
+.alert {
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+}
+
+.alert .btn-close {
+    padding: 0.5rem 0.75rem;
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérifier et afficher les messages de session
+    const alerts = document.querySelectorAll('.alert');
+    
+    alerts.forEach(function(alert) {
+        // S'assurer que l'alerte est visible
+        alert.style.display = 'block';
+        alert.style.opacity = '1';
+        
+        // Gérer la fermeture pour Bootstrap 4 et 5
+        const closeButton = alert.querySelector('.btn-close, .close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert.style.transition = 'opacity 0.15s linear';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 150);
+            });
+        }
+    });
+    
+    // Auto-fermer les alertes après 5 secondes
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            if (alert && alert.parentNode) {
+                alert.style.transition = 'opacity 0.15s linear';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    if (alert && alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 150);
+            }
+        }, 5000);
+    });
+});
+</script>
+@endpush

@@ -106,38 +106,60 @@
                             </div>
                         </div>
 
+                        <!-- Catégories et Sous-catégories (checkboxes) -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="category_id">Catégorie <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('category_id') is-invalid @enderror" id="category_id" name="category_id" required>
-                                        <option value="">Sélectionner une catégorie</option>
+                                    <label>Catégories <span class="text-danger">*</span></label>
+                                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                        @php
+                                            $selectedCategories = old('categories', $product->categories->pluck('id')->toArray());
+                                        @endphp
                                         @foreach($categories as $category)
-                                            <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-                                                {{ $category->name }}
-                                            </option>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input category-checkbox" 
+                                                       type="checkbox" 
+                                                       name="categories[]" 
+                                                       value="{{ $category->id }}" 
+                                                       id="category_{{ $category->id }}"
+                                                       {{ in_array($category->id, $selectedCategories) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="category_{{ $category->id }}">
+                                                    {{ $category->name }}
+                                                </label>
+                                            </div>
                                         @endforeach
-                                    </select>
-                                    @error('category_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    </div>
+                                    <small class="text-muted">Cochez une ou plusieurs catégories</small>
+                                    @error('categories')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    @error('categories.*')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="subcategory_id">Sous-catégorie</label>
-                                    <select class="form-control @error('subcategory_id') is-invalid @enderror" id="subcategory_id" name="subcategory_id">
-                                        <option value="">Sélectionner d'abord une catégorie</option>
-                                        @if($product->subcategory_id)
-                                            <option value="{{ $product->subcategory_id }}" selected>{{ $product->subcategory->name ?? '' }}</option>
-                                        @endif
-                                    </select>
-                                    @error('subcategory_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    <label>Sous-catégories</label>
+                                    <div class="border rounded p-3" id="subcategories-container" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="text-muted text-center py-3">
+                                            <i class="fas fa-spinner fa-spin"></i> Sélectionnez d'abord une ou plusieurs catégories
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Les sous-catégories apparaîtront après la sélection des catégories</small>
+                                    @error('subcategories')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    @error('subcategories.*')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Compatibilité avec l'ancien système (champs cachés pour category_id et subcategory_id) -->
+                        <input type="hidden" id="category_id" name="category_id" value="{{ old('category_id', $product->category_id) }}">
+                        <input type="hidden" id="subcategory_id" name="subcategory_id" value="{{ old('subcategory_id', $product->subcategory_id) }}">
 
                         <!-- Boutique / Vendeur -->
                         <div class="row">
@@ -447,66 +469,189 @@
 const availableAttributes = @json($attributesData);
 </script>
 <script>
-// Charger les sous-catégories lors de la sélection d'une catégorie
+// Charger les sous-catégories lors de la sélection de catégories (checkboxes)
 document.addEventListener('DOMContentLoaded', function() {
-    const categorySelect = document.getElementById('category_id');
-    const subcategorySelect = document.getElementById('subcategory_id');
-    const currentSubcategoryId = {{ $product->subcategory_id ?? 'null' }};
+    const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+    const subcategoriesContainer = document.getElementById('subcategories-container');
+    const categoryIdHidden = document.getElementById('category_id');
+    const subcategoryIdHidden = document.getElementById('subcategory_id');
     
-    if (!categorySelect || !subcategorySelect) {
+    @php
+        $selectedSubcategories = old('subcategories', $product->subcategories->pluck('id')->toArray());
+        // Convertir en tableau de strings pour la comparaison JavaScript
+        $selectedSubcategories = array_map('strval', $selectedSubcategories);
+    @endphp
+    const currentSubcategoryIds = @json($selectedSubcategories);
+    
+    if (!categoryCheckboxes || categoryCheckboxes.length === 0) {
+        console.error('Checkboxes de catégories non trouvés');
         return;
     }
     
-    // Charger les sous-catégories pour la catégorie actuelle
-    if (categorySelect.value) {
-        loadSubcategories(categorySelect.value, currentSubcategoryId);
+    if (!subcategoriesContainer) {
+        console.error('Container des sous-catégories non trouvé');
+        return;
     }
     
-    categorySelect.addEventListener('change', function() {
-        loadSubcategories(this.value, null);
-    });
+    // Fonction pour obtenir les catégories sélectionnées via les checkboxes
+    function getSelectedCategories() {
+        const selected = Array.from(categoryCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        return selected;
+    }
     
-    function loadSubcategories(categoryId, selectedId = null) {
-        subcategorySelect.innerHTML = '<option value="">Chargement...</option>';
-        subcategorySelect.disabled = true;
+    // Fonction pour charger les sous-catégories pour plusieurs catégories
+    function loadSubcategoriesForCategories() {
+        const selectedCategories = getSelectedCategories();
+        console.log('📋 Catégories sélectionnées:', selectedCategories);
         
-        if (!categoryId) {
-            subcategorySelect.innerHTML = '<option value="">Sélectionner d\'abord une catégorie</option>';
-            subcategorySelect.disabled = false;
+        // Mettre à jour le champ caché avec la première catégorie sélectionnée (pour compatibilité)
+        if (selectedCategories.length > 0) {
+            categoryIdHidden.value = selectedCategories[0];
+        } else {
+            categoryIdHidden.value = '';
+        }
+        
+        // Vider les sous-catégories
+        subcategoriesContainer.innerHTML = '<div class="text-muted text-center py-3"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+        subcategoryIdHidden.value = '';
+        
+        if (selectedCategories.length === 0) {
+            subcategoriesContainer.innerHTML = '<div class="text-muted text-center py-3">Sélectionnez d\'abord une ou plusieurs catégories</div>';
             return;
         }
         
-        fetch(`/api/categories/${categoryId}/subcategories`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            subcategorySelect.innerHTML = '<option value="">Sélectionner une sous-catégorie</option>';
+        // Charger les sous-catégories pour toutes les catégories sélectionnées
+        const allSubcategories = new Map(); // Utiliser Map pour éviter les doublons
+        
+        console.log('🚀 Début du chargement des sous-catégories pour', selectedCategories.length, 'catégorie(s)');
+        
+        Promise.all(selectedCategories.map(categoryId => {
+            console.log('📡 Appel API pour catégorie:', categoryId);
+            return fetch(`/api/categories/${categoryId}/subcategories`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('✅ Réponse API pour catégorie', categoryId, ':', data);
+                if (data && data.success && data.subcategories && Array.isArray(data.subcategories)) {
+                    data.subcategories.forEach(subcategory => {
+                        const subId = subcategory.id.toString();
+                        if (!allSubcategories.has(subId)) {
+                            allSubcategories.set(subId, subcategory);
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erreur lors du chargement des sous-catégories pour catégorie', categoryId, ':', error);
+            });
+        }))
+        .then(() => {
+            const allSubcatsArray = Array.from(allSubcategories.values());
+            console.log('✅ Toutes les sous-catégories chargées:', allSubcatsArray.length, 'sous-catégorie(s)');
             
-            if (data.success && data.subcategories && data.subcategories.length > 0) {
-                data.subcategories.forEach(subcategory => {
-                    const option = document.createElement('option');
-                    option.value = subcategory.id;
-                    option.textContent = subcategory.name;
-                    if (selectedId && subcategory.id == selectedId) {
-                        option.selected = true;
-                    }
-                    subcategorySelect.appendChild(option);
-                });
+            // Trier les sous-catégories par nom
+            const sortedSubcategories = allSubcatsArray.sort((a, b) => 
+                a.name.localeCompare(b.name)
+            );
+            
+            // Vider le container avant d'ajouter les nouvelles checkboxes
+            subcategoriesContainer.innerHTML = '';
+            
+            // Ajouter les checkboxes
+            if (sortedSubcategories.length === 0) {
+                subcategoriesContainer.innerHTML = '<div class="text-muted text-center py-3">Aucune sous-catégorie disponible</div>';
             } else {
-                subcategorySelect.innerHTML = '<option value="">Aucune sous-catégorie disponible</option>';
+                const oldSubcategories = @json(old('subcategories', []));
+                const oldSubcategoriesStr = oldSubcategories.map(id => id.toString());
+                
+                sortedSubcategories.forEach(subcategory => {
+                    const subId = subcategory.id.toString();
+                    const isChecked = oldSubcategoriesStr.includes(subId) || 
+                                    (Array.isArray(currentSubcategoryIds) && currentSubcategoryIds.includes(subId)) ||
+                                    (Array.isArray(currentSubcategoryIds) && currentSubcategoryIds.includes(parseInt(subId)));
+                    
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'form-check mb-2';
+                    checkboxDiv.innerHTML = `
+                        <input class="form-check-input subcategory-checkbox" 
+                               type="checkbox" 
+                               name="subcategories[]" 
+                               value="${subId}" 
+                               id="subcategory_${subId}"
+                               ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="subcategory_${subId}">
+                            ${subcategory.name}
+                        </label>
+                    `;
+                    subcategoriesContainer.appendChild(checkboxDiv);
+                });
+                
+                console.log('✅', sortedSubcategories.length, 'sous-catégorie(s) ajoutée(s) avec succès');
+                
+                // Mettre à jour le champ caché avec la première sous-catégorie sélectionnée (pour compatibilité)
+                const firstChecked = subcategoriesContainer.querySelector('.subcategory-checkbox:checked');
+                if (firstChecked) {
+                    subcategoryIdHidden.value = firstChecked.value;
+                }
             }
-            
-            subcategorySelect.disabled = false;
         })
         .catch(error => {
-            console.error('Erreur lors du chargement des sous-catégories:', error);
-            subcategorySelect.innerHTML = '<option value="">Erreur de chargement</option>';
-            subcategorySelect.disabled = false;
+            console.error('❌ Erreur générale lors du chargement des sous-catégories:', error);
+            subcategoriesContainer.innerHTML = '<div class="text-danger text-center py-3">Erreur lors du chargement</div>';
+        });
+    }
+    
+    // Écouter les changements sur les checkboxes de catégories
+    categoryCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', loadSubcategoriesForCategories);
+    });
+    
+    // Mettre à jour le champ caché lors de la sélection de sous-catégories
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('subcategory-checkbox')) {
+            const checkedSubcategories = Array.from(document.querySelectorAll('.subcategory-checkbox:checked'));
+            if (checkedSubcategories.length > 0) {
+                subcategoryIdHidden.value = checkedSubcategories[0].value;
+            } else {
+                subcategoryIdHidden.value = '';
+            }
+        }
+    });
+    
+    // Charger les sous-catégories au chargement si des catégories sont déjà sélectionnées
+    setTimeout(function() {
+        const selectedCategories = getSelectedCategories();
+        if (selectedCategories.length > 0) {
+            console.log('🔄 Chargement initial des sous-catégories pour', selectedCategories.length, 'catégorie(s) présélectionnée(s)');
+            loadSubcategoriesForCategories();
+        }
+    }, 300);
+    
+    // Validation : au moins une catégorie doit être sélectionnée
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selectedCategories = getSelectedCategories();
+            if (selectedCategories.length === 0) {
+                e.preventDefault();
+                alert('Veuillez sélectionner au moins une catégorie.');
+                if (categoryCheckboxes.length > 0) {
+                    categoryCheckboxes[0].focus();
+                }
+                return false;
+            }
         });
     }
 });
