@@ -51,15 +51,19 @@ class RoleSeeder extends Seeder
         // Super Admin a toutes les permissions
         $superAdmin->permissions()->attach($allPermissions->pluck('id')->toArray());
         
-        // Moderator a les permissions pour gérer les utilisateurs, produits, commandes et boutiques
+        // Moderator a les permissions pour gérer les utilisateurs, produits, commandes, boutiques, contenus et statistiques
         $moderatorPermissions = $allPermissions->filter(function($permission) {
-            return in_array($permission->module, ['users', 'products', 'orders', 'stores', 'categories', 'messages']);
+            return in_array($permission->module, [
+                'users', 'products', 'orders', 'stores', 'categories', 'subcategories',
+                'messages', 'statistics', 'banners', 'carousel', 'brands', 'coupons',
+                'attributes', 'payments'
+            ]);
         });
         $moderator->permissions()->attach($moderatorPermissions->pluck('id')->toArray());
         
-        // Support a les permissions pour voir les commandes, gérer les messages
+        // Support a les permissions pour voir les commandes, statistiques, gérer les messages
         $supportPermissions = $allPermissions->filter(function($permission) {
-            return in_array($permission->module, ['orders', 'messages']);
+            return in_array($permission->module, ['orders', 'messages', 'statistics']);
         });
         $support->permissions()->attach($supportPermissions->pluck('id')->toArray());
         

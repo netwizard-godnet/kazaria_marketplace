@@ -54,10 +54,34 @@ class PermissionSeeder extends Seeder
             
             // Payments
             ['name' => 'Gérer les paiements', 'slug' => 'manage_payments', 'description' => 'Peut gérer les paiements et remboursements', 'module' => 'payments'],
+            
+            // Statistics & Dashboard
+            ['name' => 'Voir les statistiques', 'slug' => 'view_statistics', 'description' => 'Peut voir les statistiques et le dashboard', 'module' => 'statistics'],
+            
+            // Banners
+            ['name' => 'Gérer les bannières', 'slug' => 'manage_banners', 'description' => 'Peut gérer les bannières et publicités', 'module' => 'banners'],
+            
+            // Carousel
+            ['name' => 'Gérer le carousel', 'slug' => 'manage_carousel', 'description' => 'Peut gérer le carousel principal', 'module' => 'carousel'],
+            
+            // Brands
+            ['name' => 'Gérer les marques', 'slug' => 'manage_brands', 'description' => 'Peut gérer les marques', 'module' => 'brands'],
+            
+            // Coupons
+            ['name' => 'Gérer les codes promo', 'slug' => 'manage_coupons', 'description' => 'Peut gérer les codes promo', 'module' => 'coupons'],
+            
+            // Subcategories
+            ['name' => 'Gérer les sous-catégories', 'slug' => 'manage_subcategories', 'description' => 'Peut gérer les sous-catégories', 'module' => 'subcategories'],
+            
+            // Attributes
+            ['name' => 'Gérer les attributs', 'slug' => 'manage_attributes', 'description' => 'Peut gérer les attributs de produits', 'module' => 'attributes'],
         ];
         
         foreach ($permissions as $permission) {
-            Permission::create($permission);
+            Permission::updateOrCreate(
+                ['slug' => $permission['slug']],
+                $permission
+            );
         }
         
         $this->command->info('Permissions créées avec succès!');

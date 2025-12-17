@@ -32,13 +32,16 @@
                 </li>
 
                 <!-- Gestion des utilisateurs -->
+                <?php if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_categories', 'manage_subcategories', 'manage_attributes'])): ?>
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
                     </span>
                     <h4 class="text-section">Gestion</h4>
                 </li>
+                <?php endif; ?>
 
+                <?php if(canAccess('view_users')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.users.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#users" class="<?php echo e(request()->routeIs('admin.users.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.users.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-users"></i>
@@ -65,8 +68,10 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <!-- Gestion des produits -->
+                <?php if(canAccess('view_products')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.products.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#products" class="<?php echo e(request()->routeIs('admin.products.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.products.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-box"></i>
@@ -83,8 +88,10 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <!-- Gestion des commandes -->
+                <?php if(canAccess('view_orders')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.orders.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#orders" class="<?php echo e(request()->routeIs('admin.orders.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.orders.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-shopping-cart"></i>
@@ -101,8 +108,10 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <!-- Gestion des boutiques -->
+                <?php if(canAccess('view_stores')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.stores.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#stores" class="<?php echo e(request()->routeIs('admin.stores.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.stores.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-store"></i>
@@ -119,8 +128,10 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <!-- Gestion des catégories -->
+                <?php if(canAccess('manage_categories')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.categories.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#categories" class="<?php echo e(request()->routeIs('admin.categories.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.categories.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-tags"></i>
@@ -137,8 +148,10 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <!-- Gestion des sous-catégories -->
+                <?php if(canAccess('manage_subcategories')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.subcategories.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#subcategories" class="<?php echo e(request()->routeIs('admin.subcategories.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.subcategories.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-tag"></i>
@@ -155,8 +168,10 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
                 <!-- Gestion des attributs -->
+                <?php if(canAccess('manage_attributes')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.attributes.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#attributes" class="<?php echo e(request()->routeIs('admin.attributes.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.attributes.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-list-ul"></i>
@@ -178,23 +193,28 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
         <!-- Gestion du contenu -->
+        <?php if(canAccessAny(['manage_banners', 'manage_settings', 'manage_carousel', 'manage_brands'])): ?>
         <li class="nav-section">
             <span class="sidebar-mini-icon">
                 <i class="fa fa-ellipsis-h"></i>
             </span>
             <h4 class="text-section">Contenu</h4>
         </li>
+        <?php endif; ?>
 
-
+        <?php if(canAccess('manage_banners')): ?>
         <li class="nav-item <?php echo e(request()->routeIs('admin.banners.*') ? 'active' : ''); ?>">
             <a href="<?php echo e(route('admin.banners.index')); ?>">
                 <i class="fas fa-image"></i>
                 <p>Bannières</p>
             </a>
         </li>
+        <?php endif; ?>
 
+        <?php if(canAccess('manage_settings')): ?>
         <li class="nav-item <?php echo e(request()->routeIs('admin.newsletter.*') ? 'active' : ''); ?>">
             <a href="<?php echo e(route('admin.newsletter.index')); ?>">
                 <i class="fas fa-envelope-open"></i>
@@ -208,29 +228,37 @@
                 <p>Pop-ups</p>
             </a>
         </li>
+        <?php endif; ?>
 
+        <?php if(canAccess('manage_carousel')): ?>
         <li class="nav-item <?php echo e(request()->routeIs('admin.carousel.*') ? 'active' : ''); ?>">
             <a href="<?php echo e(route('admin.carousel.index')); ?>">
                 <i class="fas fa-images"></i>
                 <p>Carousel Principal</p>
             </a>
         </li>
+        <?php endif; ?>
 
+        <?php if(canAccess('manage_brands')): ?>
         <li class="nav-item <?php echo e(request()->routeIs('admin.brands.*') ? 'active' : ''); ?>">
             <a href="<?php echo e(route('admin.brands.index')); ?>">
                 <i class="fas fa-tags"></i>
                 <p>Marques</p>
             </a>
         </li>
+        <?php endif; ?>
 
         <!-- Rapports et statistiques -->
+        <?php if(canAccessAny(['view_reports', 'view_statistics'])): ?>
         <li class="nav-section">
             <span class="sidebar-mini-icon">
                 <i class="fa fa-ellipsis-h"></i>
             </span>
             <h4 class="text-section">Rapports</h4>
         </li>
+        <?php endif; ?>
 
+                <?php if(canAccess('view_reports')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.reports.*') ? 'active' : ''); ?>">
                     <a data-bs-toggle="collapse" href="#reports" class="<?php echo e(request()->routeIs('admin.reports.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.reports.*') ? 'true' : 'false'); ?>">
                         <i class="fas fa-chart-bar"></i>
@@ -262,42 +290,53 @@
                         </ul>
                     </div>
                 </li>
+                <?php endif; ?>
 
+                <?php if(canAccess('view_statistics')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.statistics.*') ? 'active' : ''); ?>">
                     <a href="<?php echo e(route('admin.statistics.index')); ?>">
                         <i class="fas fa-chart-line"></i>
                         <p>Statistiques</p>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <!-- Configuration -->
+                <?php if(canAccessAny(['manage_settings', 'manage_coupons', 'manage_roles'])): ?>
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
                     </span>
                     <h4 class="text-section">Configuration</h4>
                 </li>
+                <?php endif; ?>
 
+                <?php if(canAccess('manage_settings')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.settings.*') ? 'active' : ''); ?>">
                     <a href="<?php echo e(route('admin.settings.index')); ?>">
                         <i class="fas fa-cog"></i>
                         <p>Paramètres</p>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <?php if(canAccess('manage_coupons')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.coupons.*') ? 'active' : ''); ?>">
                     <a href="<?php echo e(route('admin.coupons.index')); ?>">
                         <i class="fas fa-ticket-alt"></i>
                         <p>Codes promo</p>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <?php if(canAccess('manage_roles')): ?>
                 <li class="nav-item <?php echo e(request()->routeIs('admin.roles.*') ? 'active' : ''); ?>">
                     <a href="<?php echo e(route('admin.roles.index')); ?>">
                         <i class="fas fa-user-shield"></i>
                         <p>Rôles & Permissions</p>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <li class="d-none nav-item <?php echo e(request()->routeIs('admin.categories.*') ? 'active' : ''); ?>">
                     <a href="<?php echo e(route('admin.categories.index')); ?>">

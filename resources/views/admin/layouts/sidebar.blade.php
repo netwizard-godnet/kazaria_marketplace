@@ -32,13 +32,16 @@
                 </li>
 
                 <!-- Gestion des utilisateurs -->
+                @if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_categories', 'manage_subcategories', 'manage_attributes']))
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
                     </span>
                     <h4 class="text-section">Gestion</h4>
                 </li>
+                @endif
 
+                @if(canAccess('view_users'))
                 <li class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#users" class="{{ request()->routeIs('admin.users.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.users.*') ? 'true' : 'false' }}">
                         <i class="fas fa-users"></i>
@@ -65,8 +68,10 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
                 <!-- Gestion des produits -->
+                @if(canAccess('view_products'))
                 <li class="nav-item {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#products" class="{{ request()->routeIs('admin.products.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.products.*') ? 'true' : 'false' }}">
                         <i class="fas fa-box"></i>
@@ -83,8 +88,10 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
                 <!-- Gestion des commandes -->
+                @if(canAccess('view_orders'))
                 <li class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#orders" class="{{ request()->routeIs('admin.orders.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.orders.*') ? 'true' : 'false' }}">
                         <i class="fas fa-shopping-cart"></i>
@@ -101,8 +108,10 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
                 <!-- Gestion des boutiques -->
+                @if(canAccess('view_stores'))
                 <li class="nav-item {{ request()->routeIs('admin.stores.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#stores" class="{{ request()->routeIs('admin.stores.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.stores.*') ? 'true' : 'false' }}">
                         <i class="fas fa-store"></i>
@@ -119,8 +128,10 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
                 <!-- Gestion des catégories -->
+                @if(canAccess('manage_categories'))
                 <li class="nav-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#categories" class="{{ request()->routeIs('admin.categories.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.categories.*') ? 'true' : 'false' }}">
                         <i class="fas fa-tags"></i>
@@ -137,8 +148,10 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
                 <!-- Gestion des sous-catégories -->
+                @if(canAccess('manage_subcategories'))
                 <li class="nav-item {{ request()->routeIs('admin.subcategories.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#subcategories" class="{{ request()->routeIs('admin.subcategories.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.subcategories.*') ? 'true' : 'false' }}">
                         <i class="fas fa-tag"></i>
@@ -155,8 +168,10 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
                 <!-- Gestion des attributs -->
+                @if(canAccess('manage_attributes'))
                 <li class="nav-item {{ request()->routeIs('admin.attributes.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#attributes" class="{{ request()->routeIs('admin.attributes.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.attributes.*') ? 'true' : 'false' }}">
                         <i class="fas fa-list-ul"></i>
@@ -178,23 +193,28 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
         <!-- Gestion du contenu -->
+        @if(canAccessAny(['manage_banners', 'manage_settings', 'manage_carousel', 'manage_brands']))
         <li class="nav-section">
             <span class="sidebar-mini-icon">
                 <i class="fa fa-ellipsis-h"></i>
             </span>
             <h4 class="text-section">Contenu</h4>
         </li>
+        @endif
 
-
+        @if(canAccess('manage_banners'))
         <li class="nav-item {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}">
             <a href="{{ route('admin.banners.index') }}">
                 <i class="fas fa-image"></i>
                 <p>Bannières</p>
             </a>
         </li>
+        @endif
 
+        @if(canAccess('manage_settings'))
         <li class="nav-item {{ request()->routeIs('admin.newsletter.*') ? 'active' : '' }}">
             <a href="{{ route('admin.newsletter.index') }}">
                 <i class="fas fa-envelope-open"></i>
@@ -208,29 +228,37 @@
                 <p>Pop-ups</p>
             </a>
         </li>
+        @endif
 
+        @if(canAccess('manage_carousel'))
         <li class="nav-item {{ request()->routeIs('admin.carousel.*') ? 'active' : '' }}">
             <a href="{{ route('admin.carousel.index') }}">
                 <i class="fas fa-images"></i>
                 <p>Carousel Principal</p>
             </a>
         </li>
+        @endif
 
+        @if(canAccess('manage_brands'))
         <li class="nav-item {{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">
             <a href="{{ route('admin.brands.index') }}">
                 <i class="fas fa-tags"></i>
                 <p>Marques</p>
             </a>
         </li>
+        @endif
 
         <!-- Rapports et statistiques -->
+        @if(canAccessAny(['view_reports', 'view_statistics']))
         <li class="nav-section">
             <span class="sidebar-mini-icon">
                 <i class="fa fa-ellipsis-h"></i>
             </span>
             <h4 class="text-section">Rapports</h4>
         </li>
+        @endif
 
+                @if(canAccess('view_reports'))
                 <li class="nav-item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
                     <a data-bs-toggle="collapse" href="#reports" class="{{ request()->routeIs('admin.reports.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.reports.*') ? 'true' : 'false' }}">
                         <i class="fas fa-chart-bar"></i>
@@ -262,42 +290,53 @@
                         </ul>
                     </div>
                 </li>
+                @endif
 
+                @if(canAccess('view_statistics'))
                 <li class="nav-item {{ request()->routeIs('admin.statistics.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.statistics.index') }}">
                         <i class="fas fa-chart-line"></i>
                         <p>Statistiques</p>
                     </a>
                 </li>
+                @endif
 
                 <!-- Configuration -->
+                @if(canAccessAny(['manage_settings', 'manage_coupons', 'manage_roles']))
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
                     </span>
                     <h4 class="text-section">Configuration</h4>
                 </li>
+                @endif
 
+                @if(canAccess('manage_settings'))
                 <li class="nav-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.settings.index') }}">
                         <i class="fas fa-cog"></i>
                         <p>Paramètres</p>
                     </a>
                 </li>
+                @endif
 
+                @if(canAccess('manage_coupons'))
                 <li class="nav-item {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.coupons.index') }}">
                         <i class="fas fa-ticket-alt"></i>
                         <p>Codes promo</p>
                     </a>
                 </li>
+                @endif
 
+                @if(canAccess('manage_roles'))
                 <li class="nav-item {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.roles.index') }}">
                         <i class="fas fa-user-shield"></i>
                         <p>Rôles & Permissions</p>
                     </a>
                 </li>
+                @endif
 
                 <li class="d-none nav-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                     <a href="{{ route('admin.categories.index') }}">
