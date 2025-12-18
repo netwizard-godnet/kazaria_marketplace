@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadOrderItemsBtn.disabled = true;
             loadOrderItemsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
             
-            fetch(`{{ route('admin.invoices.api.order-items', '') }}/${orderId}`)
+            fetch(`{{ url('/admin/invoices/api/order-items') }}/${orderId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.items.length > 0) {
