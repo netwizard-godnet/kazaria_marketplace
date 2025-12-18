@@ -185,7 +185,7 @@
                                     <span class="sub-item">Toutes les factures</span>
                                 </a>
                             </li>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create_invoices')): ?>
+                            <?php if(canAccess('create_invoices')): ?>
                             <li>
                                 <a href="<?php echo e(route('admin.invoices.create')); ?>">
                                     <span class="sub-item">Créer une facture</span>

@@ -154,7 +154,7 @@
                         <a href="<?php echo e(route('admin.invoices.download', $invoice)); ?>" class="btn btn-success">
                             <i class="fas fa-download"></i> Télécharger PDF
                         </a>
-                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('edit_invoices')): ?>
+                        <?php if(canAccess('edit_invoices')): ?>
                         <a href="<?php echo e(route('admin.invoices.edit', $invoice)); ?>" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Modifier
                         </a>

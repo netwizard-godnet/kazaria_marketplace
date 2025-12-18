@@ -145,7 +145,7 @@
                 <div class="card-header">
                     <h3 class="card-title">Liste des Factures</h3>
                     <div class="card-tools">
-                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create_invoices')): ?>
+                        <?php if(canAccess('create_invoices')): ?>
                         <a href="<?php echo e(route('admin.invoices.create')); ?>" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> Créer une facture
                         </a>
@@ -235,7 +235,7 @@
                                             <a href="<?php echo e(route('admin.invoices.show', $invoice)); ?>" class="btn btn-info btn-sm" title="Voir">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('edit_invoices')): ?>
+                                            <?php if(canAccess('edit_invoices')): ?>
                                             <a href="<?php echo e(route('admin.invoices.edit', $invoice)); ?>" class="btn btn-warning btn-sm" title="Modifier">
                                                 <i class="fas fa-edit"></i>
                                             </a>
@@ -243,7 +243,7 @@
                                             <a href="<?php echo e(route('admin.invoices.download', $invoice)); ?>" class="btn btn-success btn-sm" title="Télécharger PDF">
                                                 <i class="fas fa-download"></i>
                                             </a>
-                                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('delete_invoices')): ?>
+                                            <?php if(canAccess('delete_invoices')): ?>
                                             <?php if($invoice->status !== 'paid'): ?>
                                             <form action="<?php echo e(route('admin.invoices.destroy', $invoice)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?');">
                                                 <?php echo csrf_field(); ?>
@@ -261,7 +261,7 @@
                                 <tr>
                                     <td colspan="7" class="text-center">
                                         <p class="text-muted py-4">Aucune facture trouvée.</p>
-                                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create_invoices')): ?>
+                                        <?php if(canAccess('create_invoices')): ?>
                                         <a href="<?php echo e(route('admin.invoices.create')); ?>" class="btn btn-primary">
                                             <i class="fas fa-plus"></i> Créer une facture
                                         </a>
