@@ -185,13 +185,13 @@
                                     <span class="sub-item">Toutes les factures</span>
                                 </a>
                             </li>
-                            @can('create_invoices')
+                            @if(canAccess('create_invoices'))
                             <li>
                                 <a href="{{ route('admin.invoices.create') }}">
                                     <span class="sub-item">Créer une facture</span>
                                 </a>
                             </li>
-                            @endcan
+                            @endif
                         </ul>
                     </div>
                 </li>

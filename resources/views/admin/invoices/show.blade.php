@@ -153,11 +153,11 @@
                         <a href="{{ route('admin.invoices.download', $invoice) }}" class="btn btn-success">
                             <i class="fas fa-download"></i> Télécharger PDF
                         </a>
-                        @can('edit_invoices')
+                        @if(canAccess('edit_invoices'))
                         <a href="{{ route('admin.invoices.edit', $invoice) }}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Modifier
                         </a>
-                        @endcan
+                        @endif
                         <a href="{{ route('admin.invoices.index') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Retour à la liste
                         </a>

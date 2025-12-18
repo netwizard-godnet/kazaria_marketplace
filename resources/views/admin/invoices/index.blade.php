@@ -145,11 +145,11 @@
                 <div class="card-header">
                     <h3 class="card-title">Liste des Factures</h3>
                     <div class="card-tools">
-                        @can('create_invoices')
+                        @if(canAccess('create_invoices'))
                         <a href="{{ route('admin.invoices.create') }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> Créer une facture
                         </a>
-                        @endcan
+                        @endif
                     </div>
                 </div>
                 <div class="card-body">
@@ -233,15 +233,15 @@
                                             <a href="{{ route('admin.invoices.show', $invoice) }}" class="btn btn-info btn-sm" title="Voir">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            @can('edit_invoices')
+                                            @if(canAccess('edit_invoices'))
                                             <a href="{{ route('admin.invoices.edit', $invoice) }}" class="btn btn-warning btn-sm" title="Modifier">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            @endcan
+                                            @endif
                                             <a href="{{ route('admin.invoices.download', $invoice) }}" class="btn btn-success btn-sm" title="Télécharger PDF">
                                                 <i class="fas fa-download"></i>
                                             </a>
-                                            @can('delete_invoices')
+                                            @if(canAccess('delete_invoices'))
                                             @if($invoice->status !== 'paid')
                                             <form action="{{ route('admin.invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?');">
                                                 @csrf
@@ -251,7 +251,7 @@
                                                 </button>
                                             </form>
                                             @endif
-                                            @endcan
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -259,11 +259,11 @@
                                 <tr>
                                     <td colspan="7" class="text-center">
                                         <p class="text-muted py-4">Aucune facture trouvée.</p>
-                                        @can('create_invoices')
+                                        @if(canAccess('create_invoices'))
                                         <a href="{{ route('admin.invoices.create') }}" class="btn btn-primary">
                                             <i class="fas fa-plus"></i> Créer une facture
                                         </a>
-                                        @endcan
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforelse
