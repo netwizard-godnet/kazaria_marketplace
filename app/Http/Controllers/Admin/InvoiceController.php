@@ -159,9 +159,16 @@ class InvoiceController extends Controller
         $validated['invoice_number'] = Invoice::generateInvoiceNumber();
         $validated['created_by'] = auth()->id();
 
-        // Convertir items en JSON si fourni
-        if (isset($validated['items']) && is_array($validated['items'])) {
-            $validated['items'] = json_encode($validated['items']);
+        // Le cast 'array' du modèle Invoice va automatiquement encoder en JSON lors de la sauvegarde
+        // et décoder automatiquement lors de la récupération
+        // On s'assure juste que c'est bien un tableau, pas besoin de json_encode
+        if (isset($validated['items']) && !is_array($validated['items'])) {
+            // Si ce n'est pas un tableau, essayer de le décoder
+            if (is_string($validated['items'])) {
+                $validated['items'] = json_decode($validated['items'], true) ?? [];
+            } else {
+                $validated['items'] = [];
+            }
         }
 
         $invoice = Invoice::create($validated);
@@ -266,9 +273,16 @@ class InvoiceController extends Controller
         $discount = $validated['discount'] ?? 0;
         $validated['total'] = $subtotal + $taxAmount + $shipping - $discount;
 
-        // Convertir items en JSON si fourni
-        if (isset($validated['items']) && is_array($validated['items'])) {
-            $validated['items'] = json_encode($validated['items']);
+        // Le cast 'array' du modèle Invoice va automatiquement encoder en JSON lors de la sauvegarde
+        // et décoder automatiquement lors de la récupération
+        // On s'assure juste que c'est bien un tableau, pas besoin de json_encode
+        if (isset($validated['items']) && !is_array($validated['items'])) {
+            // Si ce n'est pas un tableau, essayer de le décoder
+            if (is_string($validated['items'])) {
+                $validated['items'] = json_decode($validated['items'], true) ?? [];
+            } else {
+                $validated['items'] = [];
+            }
         }
 
         $invoice->update($validated);
@@ -300,6 +314,15 @@ class InvoiceController extends Controller
     public function download(Invoice $invoice)
     {
         $invoice->load(['user', 'order', 'creator']);
+        
+        // S'assurer que les items sont bien décodés en tableau
+        // Le cast 'array' devrait le faire automatiquement, mais on vérifie quand même
+        if (is_string($invoice->items)) {
+            $invoice->items = json_decode($invoice->items, true) ?? [];
+        }
+        if (!is_array($invoice->items)) {
+            $invoice->items = [];
+        }
         
         // Récupérer les paramètres de l'entreprise depuis les settings
         $companyName = $invoice->company_name ?? Setting::get('site_name', 'KAZARIA');

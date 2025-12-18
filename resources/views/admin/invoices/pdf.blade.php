@@ -219,7 +219,17 @@
     </div>
 
     <!-- Articles -->
-    @if($invoice->items && is_array($invoice->items) && count($invoice->items) > 0)
+    @php
+        // S'assurer que les items sont bien un tableau
+        $items = $invoice->items;
+        if (is_string($items)) {
+            $items = json_decode($items, true) ?? [];
+        }
+        if (!is_array($items)) {
+            $items = [];
+        }
+    @endphp
+    @if(is_array($items) && count($items) > 0)
     <div class="section-title" style="margin-bottom: 10px;">Détail des articles</div>
     <table class="items">
         <thead>
@@ -231,14 +241,14 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($invoice->items as $item)
+            @foreach($items as $item)
             <tr>
                 <td>
-                    <strong>{{ $item['description'] ?? 'Article' }}</strong>
+                    <strong>{{ $item['description'] ?? ($item['name'] ?? 'Article') }}</strong>
                 </td>
                 <td class="text-center">{{ $item['quantity'] ?? 1 }}</td>
-                <td class="text-right">{{ number_format($item['price'] ?? 0, 0, ',', ' ') }} FCFA</td>
-                <td class="text-right"><strong>{{ number_format($item['total'] ?? ($item['quantity'] ?? 1) * ($item['price'] ?? 0), 0, ',', ' ') }} FCFA</strong></td>
+                <td class="text-right">{{ number_format(floatval($item['price'] ?? 0), 0, ',', ' ') }} FCFA</td>
+                <td class="text-right"><strong>{{ number_format(floatval($item['total'] ?? (($item['quantity'] ?? 1) * ($item['price'] ?? 0))), 0, ',', ' ') }} FCFA</strong></td>
             </tr>
             @endforeach
         </tbody>
