@@ -61,6 +61,43 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Permissions -->
+                    <div class="card-body border-top">
+                        <h3 class="card-title mb-3">Sélectionner les Permissions</h3>
+                        <p class="text-muted mb-4">Cochez les permissions que ce rôle possédera</p>
+                        @if($permissions->count() > 0)
+                            @foreach($permissions as $module => $modulePermissions)
+                                <div class="mb-4">
+                                    <h5 class="text-primary">
+                                        <i class="fas fa-folder"></i> {{ ucfirst($module) }}
+                                    </h5>
+                                    <div class="row">
+                                        @foreach($modulePermissions as $permission)
+                                            <div class="col-md-4 col-lg-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="permissions[]" 
+                                                           value="{{ $permission->id }}"
+                                                           id="permission_{{ $permission->id }}"
+                                                           {{ $role->permissions->contains($permission->id) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="permission_{{ $permission->id }}">
+                                                        {{ $permission->name }}
+                                                    </label>
+                                                    @if($permission->description)
+                                                        <small class="text-muted d-block">{{ $permission->description }}</small>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="text-muted">Aucune permission disponible. Veuillez d'abord créer des permissions.</p>
+                        @endif
+                    </div>
+
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Enregistrer
@@ -70,50 +107,6 @@
                         </a>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Permissions -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Sélectionner les Permissions</h3>
-                    <p class="text-muted mb-0">Cochez les permissions que ce rôle possédera</p>
-                </div>
-                <div class="card-body">
-                    @if($permissions->count() > 0)
-                        @foreach($permissions as $module => $modulePermissions)
-                            <div class="mb-4">
-                                <h5 class="text-primary">
-                                    <i class="fas fa-folder"></i> {{ ucfirst($module) }}
-                                </h5>
-                                <div class="row">
-                                    @foreach($modulePermissions as $permission)
-                                        <div class="col-md-4 col-lg-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="permissions[]" 
-                                                       value="{{ $permission->id }}"
-                                                       id="permission_{{ $permission->id }}"
-                                                       {{ $role->permissions->contains($permission->id) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="permission_{{ $permission->id }}">
-                                                    {{ $permission->name }}
-                                                </label>
-                                                @if($permission->description)
-                                                    <small class="text-muted d-block">{{ $permission->description }}</small>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-                    @else
-                        <p class="text-muted">Aucune permission disponible. Veuillez d'abord créer des permissions.</p>
-                    @endif
-                </div>
             </div>
         </div>
     </div>
