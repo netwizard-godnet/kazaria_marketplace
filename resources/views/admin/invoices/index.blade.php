@@ -118,7 +118,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-12">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
