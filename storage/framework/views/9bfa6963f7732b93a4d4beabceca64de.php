@@ -32,7 +32,7 @@
                 </li>
 
                 <!-- Gestion des utilisateurs -->
-                <?php if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_messages', 'manage_payments', 'manage_categories', 'manage_subcategories', 'manage_attributes'])): ?>
+                <?php if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_messages', 'manage_payments', 'view_invoices', 'manage_categories', 'manage_subcategories', 'manage_attributes'])): ?>
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
@@ -165,6 +165,33 @@
                                     <span class="sub-item">Tous les paiements</span>
                                 </a>
                             </li>
+                        </ul>
+                    </div>
+                </li>
+                <?php endif; ?>
+
+                <!-- Gestion des factures -->
+                <?php if(canAccess('view_invoices')): ?>
+                <li class="nav-item <?php echo e(request()->routeIs('admin.invoices.*') ? 'active' : ''); ?>">
+                    <a data-bs-toggle="collapse" href="#invoices" class="<?php echo e(request()->routeIs('admin.invoices.*') ? '' : 'collapsed'); ?>" aria-expanded="<?php echo e(request()->routeIs('admin.invoices.*') ? 'true' : 'false'); ?>">
+                        <i class="fas fa-file-invoice"></i>
+                        <p>Factures</p>
+                        <span class="caret"></span>
+                    </a>
+                    <div class="collapse <?php echo e(request()->routeIs('admin.invoices.*') ? 'show' : ''); ?>" id="invoices">
+                        <ul class="nav nav-collapse">
+                            <li>
+                                <a href="<?php echo e(route('admin.invoices.index')); ?>">
+                                    <span class="sub-item">Toutes les factures</span>
+                                </a>
+                            </li>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('create_invoices')): ?>
+                            <li>
+                                <a href="<?php echo e(route('admin.invoices.create')); ?>">
+                                    <span class="sub-item">Créer une facture</span>
+                                </a>
+                            </li>
+                            <?php endif; ?>
                         </ul>
                     </div>
                 </li>

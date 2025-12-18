@@ -32,7 +32,7 @@
                 </li>
 
                 <!-- Gestion des utilisateurs -->
-                @if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_messages', 'manage_payments', 'manage_categories', 'manage_subcategories', 'manage_attributes']))
+                @if(canAccessAny(['view_users', 'view_products', 'view_orders', 'view_stores', 'manage_messages', 'manage_payments', 'view_invoices', 'manage_categories', 'manage_subcategories', 'manage_attributes']))
                 <li class="nav-section">
                     <span class="sidebar-mini-icon">
                         <i class="fa fa-ellipsis-h"></i>
@@ -165,6 +165,33 @@
                                     <span class="sub-item">Tous les paiements</span>
                                 </a>
                             </li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                <!-- Gestion des factures -->
+                @if(canAccess('view_invoices'))
+                <li class="nav-item {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
+                    <a data-bs-toggle="collapse" href="#invoices" class="{{ request()->routeIs('admin.invoices.*') ? '' : 'collapsed' }}" aria-expanded="{{ request()->routeIs('admin.invoices.*') ? 'true' : 'false' }}">
+                        <i class="fas fa-file-invoice"></i>
+                        <p>Factures</p>
+                        <span class="caret"></span>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('admin.invoices.*') ? 'show' : '' }}" id="invoices">
+                        <ul class="nav nav-collapse">
+                            <li>
+                                <a href="{{ route('admin.invoices.index') }}">
+                                    <span class="sub-item">Toutes les factures</span>
+                                </a>
+                            </li>
+                            @can('create_invoices')
+                            <li>
+                                <a href="{{ route('admin.invoices.create') }}">
+                                    <span class="sub-item">Créer une facture</span>
+                                </a>
+                            </li>
+                            @endcan
                         </ul>
                     </div>
                 </li>

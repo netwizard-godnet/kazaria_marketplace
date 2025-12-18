@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\Store;
+use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -27,6 +28,16 @@ class DashboardController extends Controller
                 ->sum('total'),
             'active_users' => User::where('updated_at', '>=', now()->subDays(30))->count(),
             'growth_rate' => $this->calculateGrowthRate(),
+            // Statistiques des factures
+            'total_invoices' => Invoice::count(),
+            'paid_invoices' => Invoice::where('status', 'paid')->count(),
+            'pending_invoices' => Invoice::whereIn('status', ['sent', 'draft'])->count(),
+            'overdue_invoices' => Invoice::overdue()->count(),
+            'total_invoice_amount' => Invoice::where('status', 'paid')->sum('total'),
+            'monthly_invoice_amount' => Invoice::whereMonth('invoice_date', now()->month)
+                ->whereYear('invoice_date', now()->year)
+                ->where('status', 'paid')
+                ->sum('total'),
         ];
 
         // Commandes récentes

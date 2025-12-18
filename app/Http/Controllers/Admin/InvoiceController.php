@@ -1,0 +1,259 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Invoice;
+use App\Models\User;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Carbon\Carbon;
+
+class InvoiceController extends Controller
+{
+    /**
+     * Afficher la liste des factures
+     */
+    public function index(Request $request)
+    {
+        $query = Invoice::with(['user', 'order', 'creator'])->latest();
+
+        // Filtre par statut
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filtre par client
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        // Filtre par date d'émission
+        if ($request->filled('date_from')) {
+            $query->whereDate('invoice_date', '>=', Carbon::parse($request->date_from)->startOfDay());
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('invoice_date', '<=', Carbon::parse($request->date_to)->endOfDay());
+        }
+
+        // Recherche par numéro de facture ou nom du client
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                  ->orWhere('client_name', 'like', "%{$search}%")
+                  ->orWhere('client_email', 'like', "%{$search}%");
+            });
+        }
+
+        $invoices = $query->paginate(15)->appends($request->except('page'));
+
+        // Statistiques
+        $stats = [
+            'total' => Invoice::count(),
+            'draft' => Invoice::where('status', 'draft')->count(),
+            'sent' => Invoice::where('status', 'sent')->count(),
+            'paid' => Invoice::where('status', 'paid')->count(),
+            'overdue' => Invoice::overdue()->count(),
+            'total_amount' => Invoice::where('status', 'paid')->sum('total'),
+            'pending_amount' => Invoice::whereIn('status', ['sent', 'draft'])->sum('total'),
+        ];
+
+        return view('admin.invoices.index', compact('invoices', 'stats'));
+    }
+
+    /**
+     * Afficher le formulaire de création
+     */
+    public function create(Request $request)
+    {
+        // Récupérer tous les utilisateurs clients et vendeurs
+        $users = User::where(function($q) {
+            $q->where('is_seller', true)
+              ->orWhere(function($q2) {
+                  $q2->where('is_seller', false)
+                     ->where('is_admin', false);
+              });
+        })->orderBy('nom')->orderBy('prenoms')->get();
+        
+        $orders = Order::where('status', '!=', 'cancelled')->latest()->get();
+        
+        // Si un order_id est fourni, pré-remplir les données
+        $order = null;
+        if ($request->filled('order_id')) {
+            $order = Order::with(['user', 'orderItems.product'])->find($request->order_id);
+        }
+
+        return view('admin.invoices.create', compact('users', 'orders', 'order'));
+    }
+
+    /**
+     * Créer une nouvelle facture
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'order_id' => 'nullable|exists:orders,id',
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'client_phone' => 'nullable|string|max:50',
+            'client_address' => 'nullable|string',
+            'client_city' => 'nullable|string|max:100',
+            'client_postal_code' => 'nullable|string|max:20',
+            'client_country' => 'nullable|string|max:100',
+            'client_tax_id' => 'nullable|string|max:100',
+            'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string',
+            'company_phone' => 'nullable|string|max:50',
+            'company_email' => 'nullable|email|max:255',
+            'company_tax_id' => 'nullable|string|max:100',
+            'subtotal' => 'required|numeric|min:0',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'discount' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'total' => 'required|numeric|min:0',
+            'status' => 'required|in:draft,sent,paid,overdue,cancelled,refunded',
+            'invoice_date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:invoice_date',
+            'paid_date' => 'nullable|date',
+            'payment_method' => 'nullable|in:card,mobile_money,cash,bank_transfer,other',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_notes' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'terms' => 'nullable|string',
+            'description' => 'nullable|string',
+            'items' => 'nullable|array',
+        ]);
+
+        // Calculer le montant de la TVA si nécessaire
+        if (!isset($validated['tax_amount']) && isset($validated['tax_rate']) && isset($validated['subtotal'])) {
+            $validated['tax_amount'] = ($validated['subtotal'] * $validated['tax_rate']) / 100;
+        }
+
+        // Générer le numéro de facture
+        $validated['invoice_number'] = Invoice::generateInvoiceNumber();
+        $validated['created_by'] = auth()->id();
+
+        // Convertir items en JSON si fourni
+        if (isset($validated['items'])) {
+            $validated['items'] = json_encode($validated['items']);
+        }
+
+        $invoice = Invoice::create($validated);
+
+        return redirect()->route('admin.invoices.show', $invoice)
+            ->with('success', 'Facture créée avec succès.');
+    }
+
+    /**
+     * Afficher une facture
+     */
+    public function show(Invoice $invoice)
+    {
+        $invoice->load(['user', 'order.orderItems.product', 'creator']);
+        return view('admin.invoices.show', compact('invoice'));
+    }
+
+    /**
+     * Afficher le formulaire d'édition
+     */
+    public function edit(Invoice $invoice)
+    {
+        // Récupérer tous les utilisateurs clients et vendeurs
+        $users = User::where(function($q) {
+            $q->where('is_seller', true)
+              ->orWhere(function($q2) {
+                  $q2->where('is_seller', false)
+                     ->where('is_admin', false);
+              });
+        })->orderBy('nom')->orderBy('prenoms')->get();
+        
+        $orders = Order::where('status', '!=', 'cancelled')->latest()->get();
+        $invoice->load(['user', 'order']);
+        
+        return view('admin.invoices.edit', compact('invoice', 'users', 'orders'));
+    }
+
+    /**
+     * Mettre à jour une facture
+     */
+    public function update(Request $request, Invoice $invoice)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'order_id' => 'nullable|exists:orders,id',
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'client_phone' => 'nullable|string|max:50',
+            'client_address' => 'nullable|string',
+            'client_city' => 'nullable|string|max:100',
+            'client_postal_code' => 'nullable|string|max:20',
+            'client_country' => 'nullable|string|max:100',
+            'client_tax_id' => 'nullable|string|max:100',
+            'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string',
+            'company_phone' => 'nullable|string|max:50',
+            'company_email' => 'nullable|email|max:255',
+            'company_tax_id' => 'nullable|string|max:100',
+            'subtotal' => 'required|numeric|min:0',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'discount' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'total' => 'required|numeric|min:0',
+            'status' => 'required|in:draft,sent,paid,overdue,cancelled,refunded',
+            'invoice_date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:invoice_date',
+            'paid_date' => 'nullable|date',
+            'payment_method' => 'nullable|in:card,mobile_money,cash,bank_transfer,other',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_notes' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'terms' => 'nullable|string',
+            'description' => 'nullable|string',
+            'items' => 'nullable|array',
+        ]);
+
+        // Calculer le montant de la TVA si nécessaire
+        if (!isset($validated['tax_amount']) && isset($validated['tax_rate']) && isset($validated['subtotal'])) {
+            $validated['tax_amount'] = ($validated['subtotal'] * $validated['tax_rate']) / 100;
+        }
+
+        // Convertir items en JSON si fourni
+        if (isset($validated['items'])) {
+            $validated['items'] = json_encode($validated['items']);
+        }
+
+        $invoice->update($validated);
+
+        return redirect()->route('admin.invoices.show', $invoice)
+            ->with('success', 'Facture mise à jour avec succès.');
+    }
+
+    /**
+     * Supprimer une facture
+     */
+    public function destroy(Invoice $invoice)
+    {
+        // Ne pas permettre la suppression si la facture est payée
+        if ($invoice->status === 'paid') {
+            return redirect()->back()
+                ->with('error', 'Impossible de supprimer une facture payée.');
+        }
+
+        $invoice->delete();
+
+        return redirect()->route('admin.invoices.index')
+            ->with('success', 'Facture supprimée avec succès.');
+    }
+
+    /**
+     * Générer un PDF de facture (à implémenter avec une bibliothèque PDF)
+     */
+    public function download(Invoice $invoice)
+    {
+        // TODO: Implémenter la génération de PDF
+        // Pour l'instant, rediriger vers la vue
+        return redirect()->route('admin.invoices.show', $invoice);
+    }
+}
