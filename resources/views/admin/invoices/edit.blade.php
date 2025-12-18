@@ -183,6 +183,71 @@
             </div>
         </div>
 
+        <!-- Produits/Services -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Produits / Services</h3>
+                        <button type="button" class="btn btn-sm btn-success" id="addItemBtn">
+                            <i class="fas fa-plus"></i> Ajouter un produit
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="itemsTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%;">Description</th>
+                                        <th style="width: 15%;">Quantité</th>
+                                        <th style="width: 20%;">Prix unitaire (FCFA)</th>
+                                        <th style="width: 20%;">Total (FCFA)</th>
+                                        <th style="width: 5%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    @if($invoice->items && is_array($invoice->items))
+                                        @foreach($invoice->items as $index => $item)
+                                        <tr class="item-row">
+                                            <td>
+                                                <input type="text" class="form-control item-description" name="items[][description]" 
+                                                       value="{{ $item['description'] ?? '' }}" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control item-quantity" name="items[][quantity]" 
+                                                       value="{{ $item['quantity'] ?? 1 }}" min="1" step="1" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control item-price" name="items[][price]" 
+                                                       value="{{ $item['price'] ?? 0 }}" step="0.01" min="0" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control item-total" name="items[][total]" 
+                                                       value="{{ $item['total'] ?? ($item['quantity'] ?? 1) * ($item['price'] ?? 0) }}" step="0.01" readonly>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-danger remove-item">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    @endif
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-right"><strong>Sous-total:</strong></td>
+                                        <td><strong id="itemsSubtotal">0</strong> FCFA</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Description et notes -->
         <div class="row">
             <div class="col-12">
@@ -238,8 +303,75 @@ document.addEventListener('DOMContentLoaded', function() {
     const discountInput = document.getElementById('discount');
     const shippingInput = document.getElementById('shipping_cost');
     const totalInput = document.getElementById('total');
+    const itemsTableBody = document.getElementById('itemsTableBody');
+    const itemsSubtotal = document.getElementById('itemsSubtotal');
+    const addItemBtn = document.getElementById('addItemBtn');
 
-    function calculateTotal() {
+    // Ajouter une nouvelle ligne de produit
+    addItemBtn.addEventListener('click', function() {
+        const row = document.createElement('tr');
+        row.className = 'item-row';
+        row.innerHTML = `
+            <td>
+                <input type="text" class="form-control item-description" name="items[][description]" required>
+            </td>
+            <td>
+                <input type="number" class="form-control item-quantity" name="items[][quantity]" value="1" min="1" step="1" required>
+            </td>
+            <td>
+                <input type="number" class="form-control item-price" name="items[][price]" value="0" step="0.01" min="0" required>
+            </td>
+            <td>
+                <input type="number" class="form-control item-total" name="items[][total]" value="0" step="0.01" readonly>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger remove-item">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        itemsTableBody.appendChild(row);
+        attachItemEvents(row);
+    });
+
+    // Attacher les événements à une ligne
+    function attachItemEvents(row) {
+        const quantityInput = row.querySelector('.item-quantity');
+        const priceInput = row.querySelector('.item-price');
+        const totalInput = row.querySelector('.item-total');
+        const removeBtn = row.querySelector('.remove-item');
+
+        // Calculer le total de la ligne
+        function calculateRowTotal() {
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = quantity * price;
+            totalInput.value = total.toFixed(2);
+            calculateItemsSubtotal();
+            calculateInvoiceTotal();
+        }
+
+        quantityInput.addEventListener('input', calculateRowTotal);
+        priceInput.addEventListener('input', calculateRowTotal);
+        removeBtn.addEventListener('click', function() {
+            row.remove();
+            calculateItemsSubtotal();
+            calculateInvoiceTotal();
+        });
+    }
+
+    // Calculer le sous-total des items
+    function calculateItemsSubtotal() {
+        let subtotal = 0;
+        document.querySelectorAll('.item-total').forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
+        });
+        itemsSubtotal.textContent = subtotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        subtotalInput.value = subtotal.toFixed(2);
+    }
+
+    // Calculer le total de la facture
+    function calculateInvoiceTotal() {
         const subtotal = parseFloat(subtotalInput.value) || 0;
         const taxRate = parseFloat(taxRateInput.value) || 0;
         const discount = parseFloat(discountInput.value) || 0;
@@ -251,10 +383,19 @@ document.addEventListener('DOMContentLoaded', function() {
         totalInput.value = total.toFixed(2);
     }
 
-    subtotalInput.addEventListener('input', calculateTotal);
-    taxRateInput.addEventListener('input', calculateTotal);
-    discountInput.addEventListener('input', calculateTotal);
-    shippingInput.addEventListener('input', calculateTotal);
+    // Attacher les événements aux lignes existantes
+    document.querySelectorAll('.item-row').forEach(row => {
+        attachItemEvents(row);
+    });
+
+    // Calculer le sous-total initial
+    calculateItemsSubtotal();
+    calculateInvoiceTotal();
+
+    // Écouter les changements sur les champs de calcul
+    taxRateInput.addEventListener('input', calculateInvoiceTotal);
+    discountInput.addEventListener('input', calculateInvoiceTotal);
+    shippingInput.addEventListener('input', calculateInvoiceTotal);
 });
 </script>
 @endpush

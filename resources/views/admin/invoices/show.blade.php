@@ -73,6 +73,35 @@
                     </div>
                     @endif
 
+                    <!-- Produits/Services -->
+                    @if($invoice->items && is_array($invoice->items) && count($invoice->items) > 0)
+                    <div class="mb-4">
+                        <h6>Produits / Services</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th class="text-center">Quantité</th>
+                                        <th class="text-end">Prix unitaire</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($invoice->items as $item)
+                                    <tr>
+                                        <td>{{ $item['description'] ?? 'Article' }}</td>
+                                        <td class="text-center">{{ $item['quantity'] ?? 1 }}</td>
+                                        <td class="text-end">{{ number_format($item['price'] ?? 0, 0, ',', ' ') }} FCFA</td>
+                                        <td class="text-end"><strong>{{ number_format($item['total'] ?? ($item['quantity'] ?? 1) * ($item['price'] ?? 0), 0, ',', ' ') }} FCFA</strong></td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Tableau des montants -->
                     <div class="table-responsive">
                         <table class="table table-bordered">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -126,17 +127,40 @@ class InvoiceController extends Controller
             'items' => 'nullable|array',
         ]);
 
+        // Calculer le sous-total à partir des items si fournis
+        if (isset($validated['items']) && is_array($validated['items']) && count($validated['items']) > 0) {
+            $itemsSubtotal = 0;
+            foreach ($validated['items'] as $item) {
+                if (isset($item['total'])) {
+                    $itemsSubtotal += floatval($item['total']);
+                } elseif (isset($item['quantity']) && isset($item['price'])) {
+                    $itemsSubtotal += floatval($item['quantity']) * floatval($item['price']);
+                }
+            }
+            // Utiliser le sous-total calculé si le champ subtotal n'est pas rempli ou est différent
+            if (!isset($validated['subtotal']) || $validated['subtotal'] == 0 || abs($validated['subtotal'] - $itemsSubtotal) > 0.01) {
+                $validated['subtotal'] = $itemsSubtotal;
+            }
+        }
+
         // Calculer le montant de la TVA si nécessaire
         if (!isset($validated['tax_amount']) && isset($validated['tax_rate']) && isset($validated['subtotal'])) {
             $validated['tax_amount'] = ($validated['subtotal'] * $validated['tax_rate']) / 100;
         }
+
+        // Recalculer le total final
+        $subtotal = $validated['subtotal'] ?? 0;
+        $taxAmount = $validated['tax_amount'] ?? 0;
+        $shipping = $validated['shipping_cost'] ?? 0;
+        $discount = $validated['discount'] ?? 0;
+        $validated['total'] = $subtotal + $taxAmount + $shipping - $discount;
 
         // Générer le numéro de facture
         $validated['invoice_number'] = Invoice::generateInvoiceNumber();
         $validated['created_by'] = auth()->id();
 
         // Convertir items en JSON si fourni
-        if (isset($validated['items'])) {
+        if (isset($validated['items']) && is_array($validated['items'])) {
             $validated['items'] = json_encode($validated['items']);
         }
 
@@ -214,13 +238,36 @@ class InvoiceController extends Controller
             'items' => 'nullable|array',
         ]);
 
+        // Calculer le sous-total à partir des items si fournis
+        if (isset($validated['items']) && is_array($validated['items']) && count($validated['items']) > 0) {
+            $itemsSubtotal = 0;
+            foreach ($validated['items'] as $item) {
+                if (isset($item['total'])) {
+                    $itemsSubtotal += floatval($item['total']);
+                } elseif (isset($item['quantity']) && isset($item['price'])) {
+                    $itemsSubtotal += floatval($item['quantity']) * floatval($item['price']);
+                }
+            }
+            // Utiliser le sous-total calculé si le champ subtotal n'est pas rempli ou est différent
+            if (!isset($validated['subtotal']) || $validated['subtotal'] == 0 || abs($validated['subtotal'] - $itemsSubtotal) > 0.01) {
+                $validated['subtotal'] = $itemsSubtotal;
+            }
+        }
+
         // Calculer le montant de la TVA si nécessaire
         if (!isset($validated['tax_amount']) && isset($validated['tax_rate']) && isset($validated['subtotal'])) {
             $validated['tax_amount'] = ($validated['subtotal'] * $validated['tax_rate']) / 100;
         }
 
+        // Recalculer le total final
+        $subtotal = $validated['subtotal'] ?? 0;
+        $taxAmount = $validated['tax_amount'] ?? 0;
+        $shipping = $validated['shipping_cost'] ?? 0;
+        $discount = $validated['discount'] ?? 0;
+        $validated['total'] = $subtotal + $taxAmount + $shipping - $discount;
+
         // Convertir items en JSON si fourni
-        if (isset($validated['items'])) {
+        if (isset($validated['items']) && is_array($validated['items'])) {
             $validated['items'] = json_encode($validated['items']);
         }
 
@@ -248,12 +295,40 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Générer un PDF de facture (à implémenter avec une bibliothèque PDF)
+     * Générer un PDF de facture
      */
     public function download(Invoice $invoice)
     {
-        // TODO: Implémenter la génération de PDF
-        // Pour l'instant, rediriger vers la vue
-        return redirect()->route('admin.invoices.show', $invoice);
+        $invoice->load(['user', 'order', 'creator']);
+        
+        // Récupérer les paramètres de l'entreprise depuis les settings
+        $companyName = $invoice->company_name ?? Setting::get('site_name', 'KAZARIA');
+        $companyEmail = $invoice->company_email ?? Setting::get('site_email', 'contact@kazaria.ci');
+        $companyPhone = $invoice->company_phone ?? Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $companyAddress = $invoice->company_address ?? Setting::get('site_address', 'Côte d\'Ivoire');
+        
+        // Générer le PDF
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.invoices.pdf', [
+            'invoice' => $invoice,
+            'companyName' => $companyName,
+            'companyEmail' => $companyEmail,
+            'companyPhone' => $companyPhone,
+            'companyAddress' => $companyAddress,
+        ]);
+        
+        $fileName = 'facture-' . $invoice->invoice_number . '.pdf';
+        
+        // Sauvegarder le PDF si pas encore sauvegardé
+        if (!$invoice->pdf_path) {
+            $pdfPath = storage_path('app/public/invoices/');
+            if (!file_exists($pdfPath)) {
+                mkdir($pdfPath, 0777, true);
+            }
+            $pdfFullPath = $pdfPath . $fileName;
+            $pdf->save($pdfFullPath);
+            $invoice->update(['pdf_path' => 'invoices/' . $fileName]);
+        }
+        
+        return $pdf->download($fileName);
     }
 }
