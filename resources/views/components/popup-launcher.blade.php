@@ -5,8 +5,12 @@
         <div class="modal-content border-0" style="background: transparent!important;">
             <div class="modal-body p-0" data-popup-body>
                 <div class="row g-0 position-relative" data-popup-row>
-                    <button type="button" class="btn-close popup-close-btn position-absolute top-0 end-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
                     <div class="popup-launcher-image-wrapper d-none" data-popup-image-wrapper>
+                        <!-- Close button -->
+                         <div class="positive-relative h-100 w-100">
+                            <button type="button" class="btn-close popup-close-btn position-absolute top-0 end-0" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                         </div>
+                        <!-- End Close button -->
                         <img src="" alt="" class="w-100 h-100" data-popup-image>
                     </div>
                     <div class="d-flex align-items-center justify-content-center" data-popup-content-wrapper>
