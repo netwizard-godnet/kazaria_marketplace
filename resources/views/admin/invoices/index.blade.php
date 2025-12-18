@@ -243,13 +243,17 @@
                                             </a>
                                             @if(canAccess('delete_invoices'))
                                             @if($invoice->status !== 'paid')
-                                            <form action="{{ route('admin.invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?');">
+                                            <form action="{{ route('admin.invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm" title="Supprimer">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
+                                            @else
+                                            <button type="button" class="btn btn-danger btn-sm" disabled title="Impossible de supprimer une facture payée">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                             @endif
                                             @endif
                                         </div>

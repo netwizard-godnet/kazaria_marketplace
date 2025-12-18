@@ -151,6 +151,10 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
     Route::prefix('invoices')->name('invoices.')->middleware('permission:view_invoices')->group(function () {
         Route::get('/', [InvoiceController::class, 'index'])->name('index');
         
+        // Routes API pour la recherche de produits et récupération des items de commande
+        Route::get('/api/search-products', [InvoiceController::class, 'searchProducts'])->name('api.search-products');
+        Route::get('/api/order-items/{order}', [InvoiceController::class, 'getOrderItems'])->name('api.order-items');
+        
         // Routes de création doivent être AVANT les routes avec paramètres
         Route::middleware('permission:create_invoices')->group(function () {
             Route::get('/create', [InvoiceController::class, 'create'])->name('create');

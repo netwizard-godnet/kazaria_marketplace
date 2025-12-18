@@ -189,11 +189,34 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Produits / Services</h3>
-                        <button type="button" class="btn btn-sm btn-success" id="addItemBtn">
-                            <i class="fas fa-plus"></i> Ajouter un produit
-                        </button>
+                        <div class="btn-group">
+                            @if($invoice->order)
+                            <button type="button" class="btn btn-sm btn-primary" id="loadOrderItemsBtn" title="Charger les produits de la commande associée">
+                                <i class="fas fa-shopping-cart"></i> Charger depuis la commande
+                            </button>
+                            @endif
+                            <button type="button" class="btn btn-sm btn-info" id="searchProductBtn" title="Rechercher et ajouter un produit du catalogue">
+                                <i class="fas fa-search"></i> Rechercher un produit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-success" id="addItemBtn">
+                                <i class="fas fa-plus"></i> Ajouter manuellement
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
+                        <!-- Champ de recherche de produit -->
+                        <div class="mb-3" id="productSearchContainer" style="display: none;">
+                            <label>Rechercher un produit</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="productSearch" placeholder="Tapez le nom d'un produit...">
+                                <button type="button" class="btn btn-secondary" id="cancelSearchBtn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div id="productSearchResults" class="mt-2" style="max-height: 300px; overflow-y: auto; display: none;">
+                                <!-- Les résultats de recherche apparaîtront ici -->
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-bordered" id="itemsTable">
                                 <thead>
@@ -415,6 +438,191 @@ document.addEventListener('DOMContentLoaded', function() {
     taxRateInput.addEventListener('input', calculateInvoiceTotal);
     discountInput.addEventListener('input', calculateInvoiceTotal);
     shippingInput.addEventListener('input', calculateInvoiceTotal);
+
+    // ========== CHARGEMENT AUTOMATIQUE DEPUIS UNE COMMANDE ==========
+    const loadOrderItemsBtn = document.getElementById('loadOrderItemsBtn');
+    
+    if (loadOrderItemsBtn) {
+        loadOrderItemsBtn.addEventListener('click', function() {
+            const orderId = @json($invoice->order_id ?? null);
+            if (!orderId) {
+                alert('Aucune commande associée à cette facture.');
+                return;
+            }
+            
+            if (confirm('Charger les produits de cette commande ? Les produits existants seront remplacés.')) {
+                loadOrderItemsBtn.disabled = true;
+                loadOrderItemsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+                
+                fetch(`{{ route('admin.invoices.api.order-items', '') }}/${orderId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.items.length > 0) {
+                            // Vider le tableau
+                            itemsTableBody.innerHTML = '';
+                            
+                            // Ajouter les items de la commande
+                            data.items.forEach((item, index) => {
+                                const row = document.createElement('tr');
+                                row.className = 'item-row';
+                                row.innerHTML = `
+                                    <td>
+                                        <input type="text" class="form-control item-description" name="items[${index}][description]" 
+                                               value="${item.description}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control item-quantity" name="items[${index}][quantity]" 
+                                               value="${item.quantity}" min="1" step="1" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control item-price" name="items[${index}][price]" 
+                                               value="${item.price}" step="0.01" min="0" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control item-total" name="items[${index}][total]" 
+                                               value="${item.total}" step="0.01" readonly>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-danger remove-item">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                `;
+                                itemsTableBody.appendChild(row);
+                                attachItemEvents(row);
+                            });
+                            
+                            // Mettre à jour le sous-total
+                            subtotalInput.value = data.subtotal.toFixed(2);
+                            calculateInvoiceTotal();
+                            
+                            alert('Produits chargés avec succès !');
+                        } else {
+                            alert('Aucun produit trouvé dans cette commande.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert('Erreur lors du chargement des produits.');
+                    })
+                    .finally(() => {
+                        loadOrderItemsBtn.disabled = false;
+                        loadOrderItemsBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Charger depuis la commande';
+                    });
+            }
+        });
+    }
+
+    // ========== RECHERCHE DE PRODUITS ==========
+    const searchProductBtn = document.getElementById('searchProductBtn');
+    const productSearchContainer = document.getElementById('productSearchContainer');
+    const productSearch = document.getElementById('productSearch');
+    const productSearchResults = document.getElementById('productSearchResults');
+    const cancelSearchBtn = document.getElementById('cancelSearchBtn');
+    let searchTimeout;
+
+    if (searchProductBtn) {
+        searchProductBtn.addEventListener('click', function() {
+            productSearchContainer.style.display = 'block';
+            productSearch.focus();
+        });
+
+        cancelSearchBtn.addEventListener('click', function() {
+            productSearchContainer.style.display = 'none';
+            productSearch.value = '';
+            productSearchResults.style.display = 'none';
+            productSearchResults.innerHTML = '';
+        });
+
+        productSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                productSearchResults.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                fetch(`{{ route('admin.invoices.api.search-products') }}?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        if (products.length > 0) {
+                            productSearchResults.innerHTML = products.map(product => `
+                                <div class="card mb-2 product-result-item" style="cursor: pointer;" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex align-items-center">
+                                            ${product.image ? `<img src="${product.image}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">` : ''}
+                                            <div class="flex-grow-1">
+                                                <strong>${product.name}</strong><br>
+                                                <small class="text-muted">${product.display}</small>
+                                                ${product.stock > 0 ? `<br><small class="text-success">Stock: ${product.stock}</small>` : '<br><small class="text-danger">Rupture de stock</small>'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('');
+                            productSearchResults.style.display = 'block';
+                            
+                            // Attacher les événements de clic
+                            document.querySelectorAll('.product-result-item').forEach(item => {
+                                item.addEventListener('click', function() {
+                                    const productId = this.dataset.productId;
+                                    const productName = this.dataset.productName;
+                                    const productPrice = parseFloat(this.dataset.productPrice);
+                                    
+                                    // Ajouter le produit au tableau
+                                    const index = getNextItemIndex();
+                                    const row = document.createElement('tr');
+                                    row.className = 'item-row';
+                                    row.innerHTML = `
+                                        <td>
+                                            <input type="text" class="form-control item-description" name="items[${index}][description]" 
+                                                   value="${productName}" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control item-quantity" name="items[${index}][quantity]" 
+                                                   value="1" min="1" step="1" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control item-price" name="items[${index}][price]" 
+                                                   value="${productPrice}" step="0.01" min="0" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control item-total" name="items[${index}][total]" 
+                                                   value="${productPrice}" step="0.01" readonly>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-danger remove-item">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    `;
+                                    itemsTableBody.appendChild(row);
+                                    attachItemEvents(row);
+                                    calculateItemsSubtotal();
+                                    calculateInvoiceTotal();
+                                    
+                                    // Fermer la recherche
+                                    productSearch.value = '';
+                                    productSearchResults.style.display = 'none';
+                                    productSearchResults.innerHTML = '';
+                                });
+                            });
+                        } else {
+                            productSearchResults.innerHTML = '<div class="alert alert-info">Aucun produit trouvé.</div>';
+                            productSearchResults.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        productSearchResults.innerHTML = '<div class="alert alert-danger">Erreur lors de la recherche.</div>';
+                        productSearchResults.style.display = 'block';
+                    });
+            }, 300);
+        });
+    }
 });
 </script>
 @endpush

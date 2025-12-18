@@ -187,6 +187,21 @@
                             <i class="fas fa-edit"></i> Modifier
                         </a>
                         @endif
+                        @if(canAccess('delete_invoices'))
+                            @if($invoice->status !== 'paid')
+                            <form action="{{ route('admin.invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </form>
+                            @else
+                            <button type="button" class="btn btn-danger" disabled title="Impossible de supprimer une facture payée">
+                                <i class="fas fa-trash"></i> Supprimer (non disponible)
+                            </button>
+                            @endif
+                        @endif
                         <a href="{{ route('admin.invoices.index') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Retour à la liste
                         </a>

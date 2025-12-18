@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -299,7 +300,15 @@ class InvoiceController extends Controller
         // Ne pas permettre la suppression si la facture est payée
         if ($invoice->status === 'paid') {
             return redirect()->back()
-                ->with('error', 'Impossible de supprimer une facture payée.');
+                ->with('error', 'Impossible de supprimer une facture payée. Veuillez d\'abord changer le statut de la facture.');
+        }
+
+        // Supprimer le fichier PDF associé s'il existe
+        if ($invoice->pdf_path) {
+            $pdfPath = storage_path('app/public/' . $invoice->pdf_path);
+            if (file_exists($pdfPath)) {
+                @unlink($pdfPath);
+            }
         }
 
         $invoice->delete();
@@ -353,5 +362,63 @@ class InvoiceController extends Controller
         }
         
         return $pdf->download($fileName);
+    }
+
+    /**
+     * Rechercher des produits pour l'autocomplétion
+     */
+    public function searchProducts(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $products = Product::where('is_active', true)
+            ->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('slug', 'like', "%{$query}%")
+                  ->orWhere('brand', 'like', "%{$query}%");
+            })
+            ->select('id', 'name', 'price', 'stock', 'image')
+            ->limit(20)
+            ->get()
+            ->map(function($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => $product->price,
+                    'stock' => $product->stock,
+                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'display' => $product->name . ' - ' . number_format($product->price, 0, ',', ' ') . ' FCFA'
+                ];
+            });
+
+        return response()->json($products);
+    }
+
+    /**
+     * Récupérer les items d'une commande
+     */
+    public function getOrderItems(Order $order)
+    {
+        $order->load('orderItems');
+        
+        $items = $order->orderItems->map(function($item) {
+            return [
+                'description' => $item->product_name,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+                'total' => $item->total,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'items' => $items,
+            'subtotal' => $order->subtotal,
+            'total' => $order->total,
+        ]);
     }
 }
