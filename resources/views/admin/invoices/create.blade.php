@@ -202,22 +202,22 @@
                                 </thead>
                                 <tbody id="itemsTableBody">
                                     @if($order && $order->orderItems)
-                                        @foreach($order->orderItems as $item)
+                                        @foreach($order->orderItems as $index => $item)
                                         <tr class="item-row">
                                             <td>
-                                                <input type="text" class="form-control item-description" name="items[][description]" 
+                                                <input type="text" class="form-control item-description" name="items[{{ $index }}][description]" 
                                                        value="{{ $item->product_name }}" required>
                                             </td>
                                             <td>
-                                                <input type="number" class="form-control item-quantity" name="items[][quantity]" 
+                                                <input type="number" class="form-control item-quantity" name="items[{{ $index }}][quantity]" 
                                                        value="{{ $item->quantity }}" min="1" step="1" required>
                                             </td>
                                             <td>
-                                                <input type="number" class="form-control item-price" name="items[][price]" 
+                                                <input type="number" class="form-control item-price" name="items[{{ $index }}][price]" 
                                                        value="{{ $item->price }}" step="0.01" min="0" required>
                                             </td>
                                             <td>
-                                                <input type="number" class="form-control item-total" name="items[][total]" 
+                                                <input type="number" class="form-control item-total" name="items[{{ $index }}][total]" 
                                                        value="{{ $item->total }}" step="0.01" readonly>
                                             </td>
                                             <td>
@@ -302,22 +302,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const itemsSubtotal = document.getElementById('itemsSubtotal');
     const addItemBtn = document.getElementById('addItemBtn');
 
+    // Fonction pour obtenir le prochain index disponible
+    function getNextItemIndex() {
+        const rows = itemsTableBody.querySelectorAll('.item-row');
+        return rows.length;
+    }
+
+    // Fonction pour réindexer tous les champs après suppression
+    function reindexItems() {
+        const rows = itemsTableBody.querySelectorAll('.item-row');
+        rows.forEach((row, index) => {
+            row.querySelector('.item-description').name = `items[${index}][description]`;
+            row.querySelector('.item-quantity').name = `items[${index}][quantity]`;
+            row.querySelector('.item-price').name = `items[${index}][price]`;
+            row.querySelector('.item-total').name = `items[${index}][total]`;
+        });
+    }
+
     // Ajouter une nouvelle ligne de produit
     addItemBtn.addEventListener('click', function() {
+        const index = getNextItemIndex();
         const row = document.createElement('tr');
         row.className = 'item-row';
         row.innerHTML = `
             <td>
-                <input type="text" class="form-control item-description" name="items[][description]" required>
+                <input type="text" class="form-control item-description" name="items[${index}][description]" required>
             </td>
             <td>
-                <input type="number" class="form-control item-quantity" name="items[][quantity]" value="1" min="1" step="1" required>
+                <input type="number" class="form-control item-quantity" name="items[${index}][quantity]" value="1" min="1" step="1" required>
             </td>
             <td>
-                <input type="number" class="form-control item-price" name="items[][price]" value="0" step="0.01" min="0" required>
+                <input type="number" class="form-control item-price" name="items[${index}][price]" value="0" step="0.01" min="0" required>
             </td>
             <td>
-                <input type="number" class="form-control item-total" name="items[][total]" value="0" step="0.01" readonly>
+                <input type="number" class="form-control item-total" name="items[${index}][total]" value="0" step="0.01" readonly>
             </td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger remove-item">
@@ -350,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         priceInput.addEventListener('input', calculateRowTotal);
         removeBtn.addEventListener('click', function() {
             row.remove();
+            reindexItems(); // Réindexer après suppression
             calculateItemsSubtotal();
             calculateInvoiceTotal();
         });
