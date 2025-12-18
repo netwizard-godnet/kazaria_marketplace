@@ -34,7 +34,7 @@
                             <select class="form-control @error('user_id') is-invalid @enderror" id="user_id" name="user_id" required>
                                 <option value="">Sélectionner un client</option>
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}" {{ old('user_id', $order->user_id ?? '') == $user->id ? 'selected' : '' }}>
+                                    <option value="{{ $user->id }}" {{ old('user_id', $order->user_id ?? null) == $user->id ? 'selected' : '' }}>
                                         {{ $user->prenoms }} {{ $user->nom }} ({{ $user->email }})
                                     </option>
                                 @endforeach
@@ -49,7 +49,7 @@
                             <select class="form-control" id="order_id" name="order_id">
                                 <option value="">Aucune</option>
                                 @foreach($orders as $ord)
-                                    <option value="{{ $ord->id }}" {{ old('order_id', $order->id ?? '') == $ord->id ? 'selected' : '' }}>
+                                    <option value="{{ $ord->id }}" {{ old('order_id', $order ? $order->id : null) == $ord->id ? 'selected' : '' }}>
                                         {{ $ord->order_number }} - {{ $ord->user->prenoms ?? '' }} {{ $ord->user->nom ?? '' }} ({{ number_format($ord->total, 0, ',', ' ') }} FCFA)
                                     </option>
                                 @endforeach
@@ -59,7 +59,7 @@
                         <div class="form-group">
                             <label for="client_name">Nom du client *</label>
                             <input type="text" class="form-control @error('client_name') is-invalid @enderror" 
-                                   id="client_name" name="client_name" value="{{ old('client_name', $order->user->prenoms . ' ' . $order->user->nom ?? '') }}" required>
+                                   id="client_name" name="client_name" value="{{ old('client_name', $order && $order->user ? ($order->user->prenoms . ' ' . $order->user->nom) : '') }}" required>
                             @error('client_name')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -68,7 +68,7 @@
                         <div class="form-group">
                             <label for="client_email">Email *</label>
                             <input type="email" class="form-control @error('client_email') is-invalid @enderror" 
-                                   id="client_email" name="client_email" value="{{ old('client_email', $order->user->email ?? '') }}" required>
+                                   id="client_email" name="client_email" value="{{ old('client_email', $order && $order->user ? $order->user->email : '') }}" required>
                             @error('client_email')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -77,12 +77,12 @@
                         <div class="form-group">
                             <label for="client_phone">Téléphone</label>
                             <input type="text" class="form-control" id="client_phone" name="client_phone" 
-                                   value="{{ old('client_phone', $order->shipping_phone ?? $order->user->telephone ?? '') }}">
+                                   value="{{ old('client_phone', $order ? ($order->shipping_phone ?? ($order->user ? $order->user->telephone : '')) : '') }}">
                         </div>
 
                         <div class="form-group">
                             <label for="client_address">Adresse</label>
-                            <textarea class="form-control" id="client_address" name="client_address" rows="2">{{ old('client_address', $order->shipping_address ?? '') }}</textarea>
+                            <textarea class="form-control" id="client_address" name="client_address" rows="2">{{ old('client_address', $order ? ($order->shipping_address ?? '') : '') }}</textarea>
                         </div>
 
                         <div class="row">
@@ -90,14 +90,14 @@
                                 <div class="form-group">
                                     <label for="client_city">Ville</label>
                                     <input type="text" class="form-control" id="client_city" name="client_city" 
-                                           value="{{ old('client_city', $order->shipping_city ?? '') }}">
+                                           value="{{ old('client_city', $order ? ($order->shipping_city ?? '') : '') }}">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="client_postal_code">Code postal</label>
                                     <input type="text" class="form-control" id="client_postal_code" name="client_postal_code" 
-                                           value="{{ old('client_postal_code', $order->shipping_postal_code ?? '') }}">
+                                           value="{{ old('client_postal_code', $order ? ($order->shipping_postal_code ?? '') : '') }}">
                                 </div>
                             </div>
                         </div>
@@ -141,7 +141,7 @@
                         <div class="form-group">
                             <label for="subtotal">Sous-total (FCFA) *</label>
                             <input type="number" step="0.01" class="form-control @error('subtotal') is-invalid @enderror" 
-                                   id="subtotal" name="subtotal" value="{{ old('subtotal', $order->subtotal ?? 0) }}" required>
+                                   id="subtotal" name="subtotal" value="{{ old('subtotal', $order ? ($order->subtotal ?? 0) : 0) }}" required>
                             @error('subtotal')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -156,19 +156,19 @@
                         <div class="form-group">
                             <label for="discount">Remise (FCFA)</label>
                             <input type="number" step="0.01" class="form-control" id="discount" name="discount" 
-                                   value="{{ old('discount', $order->discount ?? 0) }}" min="0">
+                                   value="{{ old('discount', $order ? ($order->discount ?? 0) : 0) }}" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="shipping_cost">Frais de livraison (FCFA)</label>
                             <input type="number" step="0.01" class="form-control" id="shipping_cost" name="shipping_cost" 
-                                   value="{{ old('shipping_cost', $order->shipping_cost ?? 0) }}" min="0">
+                                   value="{{ old('shipping_cost', $order ? ($order->shipping_cost ?? 0) : 0) }}" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="total">Total (FCFA) *</label>
                             <input type="number" step="0.01" class="form-control @error('total') is-invalid @enderror" 
-                                   id="total" name="total" value="{{ old('total', $order->total ?? 0) }}" required readonly>
+                                   id="total" name="total" value="{{ old('total', $order ? ($order->total ?? 0) : 0) }}" required readonly>
                             @error('total')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
