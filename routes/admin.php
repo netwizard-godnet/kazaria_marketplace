@@ -150,13 +150,16 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
     // Invoices Management
     Route::prefix('invoices')->name('invoices.')->middleware('permission:view_invoices')->group(function () {
         Route::get('/', [InvoiceController::class, 'index'])->name('index');
-        Route::get('/{invoice}', [InvoiceController::class, 'show'])->name('show');
-        Route::get('/{invoice}/download', [InvoiceController::class, 'download'])->name('download');
         
+        // Routes de création doivent être AVANT les routes avec paramètres
         Route::middleware('permission:create_invoices')->group(function () {
             Route::get('/create', [InvoiceController::class, 'create'])->name('create');
             Route::post('/', [InvoiceController::class, 'store'])->name('store');
         });
+        
+        // Routes avec paramètres {invoice} après les routes spécifiques
+        Route::get('/{invoice}', [InvoiceController::class, 'show'])->name('show');
+        Route::get('/{invoice}/download', [InvoiceController::class, 'download'])->name('download');
         
         Route::middleware('permission:edit_invoices')->group(function () {
             Route::get('/{invoice}/edit', [InvoiceController::class, 'edit'])->name('edit');
