@@ -337,7 +337,7 @@ class StoreController extends Controller
                 break;
         }
         
-        $products = $query->paginate(20)->appends($request->except('page'));
+        $products = $query->paginate(60)->appends($request->except('page'));
 
         return view('store.show', compact('store', 'products'));
     }

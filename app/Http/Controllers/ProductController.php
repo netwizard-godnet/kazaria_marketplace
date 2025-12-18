@@ -312,7 +312,7 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
         
-        $products = $query->paginate(15);
+        $products = $query->paginate(60);
         
         // S'assurer que le slug de la catégorie est inclus dans les URLs de pagination
         // setPath() doit être appelé AVANT withQueryString() pour que le chemin soit correct
@@ -498,7 +498,7 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
         
-        $products = $query->paginate(15)->withQueryString();
+        $products = $query->paginate(60)->withQueryString();
         
         // Récupérer uniquement les catégories qui ont des produits correspondant à la recherche
         $categories = Category::active()
@@ -724,7 +724,7 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
         
-        $products = $query->paginate(15)->withQueryString();
+        $products = $query->paginate(60)->withQueryString();
         
         // Récupérer uniquement les catégories qui ont des produits dans les boutiques officielles
         $categories = Category::active()
@@ -855,7 +855,7 @@ class ProductController extends Controller
                 $query->orderBy('name', 'asc');
         }
         
-        $products = $query->paginate(15)->withQueryString();
+        $products = $query->paginate(60)->withQueryString();
         
         // Récupérer les valeurs de cet attribut pour les filtres
         $attributeValues = $attribute->attributeValues()->orderBy('order')->get();
