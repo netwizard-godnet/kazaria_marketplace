@@ -365,20 +365,25 @@ use Illuminate\Support\Str;
                                             <h6 class="mb-3">Authentification à deux facteurs</h6>
                                             <div class="alert alert-info">
                                                 <i class="bi bi-info-circle me-2"></i>
-                                                Activez l'authentification à deux facteurs pour renforcer la sécurité de votre compte.
+                                                Activez l'authentification à deux facteurs pour renforcer la sécurité de votre compte. Un code de vérification sera envoyé par email à chaque connexion.
                                             </div>
                                             <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="twoFactorEnabled">
+                                                <input class="form-check-input" type="checkbox" id="twoFactorEnabled" <?php echo e($user->two_factor_enabled ? 'checked' : ''); ?>>
                                                 <label class="form-check-label" for="twoFactorEnabled">
-                                                    Activer l'authentification à deux facteurs
+                                                    Activer l'authentification à deux facteurs (2FA)
                                                 </label>
                                             </div>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
-                                                <i class="bi bi-qr-code me-2"></i>Configurer avec une application
-                                            </button>
-                                            <p class="text-muted small mt-2">
-                                                <i class="bi bi-clock me-1"></i>Fonctionnalité à venir
-                                            </p>
+                                            <?php if($user->two_factor_enabled): ?>
+                                            <div class="alert alert-success">
+                                                <i class="bi bi-shield-check me-2"></i>
+                                                L'authentification à deux facteurs est activée. Vous recevrez un code par email à chaque connexion.
+                                            </div>
+                                            <?php else: ?>
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-shield-exclamation me-2"></i>
+                                                L'authentification à deux facteurs est désactivée. Votre compte est moins sécurisé.
+                                            </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
 
@@ -1051,6 +1056,64 @@ use Illuminate\Support\Str;
                     } finally {
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
+                    }
+                });
+            }
+
+            // Gestion du toggle de l'authentification à deux facteurs
+            const twoFactorToggle = document.getElementById('twoFactorEnabled');
+            
+            if (twoFactorToggle) {
+                twoFactorToggle.addEventListener('change', async function(e) {
+                    const isEnabled = e.target.checked;
+                    
+                    // Désactiver le toggle pendant la requête
+                    twoFactorToggle.disabled = true;
+                    
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                        
+                        const response = await fetch('/profile/update-two-factor', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                two_factor_enabled: isEnabled
+                            })
+                        });
+
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            showToast('error', 'Erreur lors du traitement de la réponse du serveur.');
+                            // Restaurer l'état précédent
+                            e.target.checked = !isEnabled;
+                            twoFactorToggle.disabled = false;
+                            return;
+                        }
+                        
+                        if (response.ok && data.success) {
+                            showToast('success', data.message);
+                            // Recharger la page pour mettre à jour l'interface
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            showToast('error', data.message || 'Erreur lors de la mise à jour de l\'authentification à deux facteurs.');
+                            // Restaurer l'état précédent
+                            e.target.checked = !isEnabled;
+                            twoFactorToggle.disabled = false;
+                        }
+                    } catch (error) {
+                        showToast('error', 'Erreur de connexion. Veuillez réessayer.');
+                        // Restaurer l'état précédent
+                        e.target.checked = !isEnabled;
+                        twoFactorToggle.disabled = false;
                     }
                 });
             }

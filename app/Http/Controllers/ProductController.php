@@ -184,6 +184,9 @@ class ProductController extends Controller
             ->take(12)
             ->get();
         
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $bestOffers = $this->reorganizeProducts($bestOffers);
+        
         // Nouveautés de la catégorie/sous-catégorie (produits récemment ajoutés)
         $newProductsQuery = Product::active()
             ->whereHas('categories', function($query) use ($category) {
@@ -199,6 +202,9 @@ class ProductController extends Controller
         }
         
         $newProducts = $newProductsQuery->orderBy('created_at', 'desc')->take(12)->get();
+        
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $newProducts = $this->reorganizeProducts($newProducts);
         
         // Construire la requête avec filtres
         $query = Product::active()
@@ -313,6 +319,9 @@ class ProductController extends Controller
         }
         
         $products = $query->paginate(60);
+        
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $products->setCollection($this->reorganizeProducts($products->getCollection()));
         
         // S'assurer que le slug de la catégorie est inclus dans les URLs de pagination
         // setPath() doit être appelé AVANT withQueryString() pour que le chemin soit correct
@@ -500,6 +509,9 @@ class ProductController extends Controller
         
         $products = $query->paginate(60)->withQueryString();
         
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $products->setCollection($this->reorganizeProducts($products->getCollection()));
+        
         // Récupérer uniquement les catégories qui ont des produits correspondant à la recherche
         $categories = Category::active()
             ->whereHas('products', function($q) use ($searchQuery, $categoryId) {
@@ -620,6 +632,9 @@ class ProductController extends Controller
             ->take(12)
             ->get();
         
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $bestOffers = $this->reorganizeProducts($bestOffers);
+        
         // Nouveautés des boutiques officielles (produits récemment ajoutés)
         $newProducts = Product::active()
             ->with('store')
@@ -630,6 +645,9 @@ class ProductController extends Controller
             ->orderBy('created_at', 'desc')
             ->take(12)
             ->get();
+        
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $newProducts = $this->reorganizeProducts($newProducts);
         
         // Tous les produits des boutiques officielles avec filtres
         $query = Product::active()
@@ -725,6 +743,9 @@ class ProductController extends Controller
         }
         
         $products = $query->paginate(60)->withQueryString();
+        
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $products->setCollection($this->reorganizeProducts($products->getCollection()));
         
         // Récupérer uniquement les catégories qui ont des produits dans les boutiques officielles
         $categories = Category::active()
@@ -886,5 +907,68 @@ class ProductController extends Controller
             'priceRange', 
             'pageTitle'
         ));
+    }
+
+    /**
+     * Réorganise les produits pour éviter que les mêmes produits se suivent
+     * Compare les produits par leur nom, marque et modèle plutôt que par ID
+     * 
+     * @param \Illuminate\Support\Collection $products
+     * @return \Illuminate\Support\Collection
+     */
+    private function reorganizeProducts($products)
+    {
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $reorganized = collect();
+        $remaining = $products->values();
+        $lastProductSignature = null;
+
+        // Fonction pour générer une signature unique d'un produit basée sur son nom et caractéristiques
+        $getProductSignature = function($product) {
+            $name = strtolower(trim($product->name ?? ''));
+            $brand = strtolower(trim($product->brand ?? ''));
+            $model = strtolower(trim($product->model ?? ''));
+            
+            // Créer une signature basée sur le nom, et optionnellement la marque et le modèle
+            $signature = $name;
+            if (!empty($brand)) {
+                $signature .= '|' . $brand;
+            }
+            if (!empty($model)) {
+                $signature .= '|' . $model;
+            }
+            
+            return $signature;
+        };
+
+        while ($remaining->isNotEmpty()) {
+            // Trouver le premier produit qui est différent du précédent
+            $found = false;
+            foreach ($remaining as $index => $product) {
+                $currentSignature = $getProductSignature($product);
+                
+                if ($currentSignature !== $lastProductSignature) {
+                    $reorganized->push($product);
+                    $lastProductSignature = $currentSignature;
+                    $remaining->forget($index);
+                    $found = true;
+                    break;
+                }
+            }
+
+            // Si aucun produit différent n'a été trouvé, prendre le premier disponible
+            // (cela peut arriver si tous les produits restants sont identiques)
+            if (!$found && $remaining->isNotEmpty()) {
+                $product = $remaining->first();
+                $reorganized->push($product);
+                $lastProductSignature = $getProductSignature($product);
+                $remaining->shift();
+            }
+        }
+
+        return $reorganized->values();
     }
 }

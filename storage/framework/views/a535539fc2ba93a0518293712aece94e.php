@@ -23,7 +23,7 @@
     
     <!-- Statistiques -->
     <div class="row mb-4">
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
@@ -42,7 +42,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
@@ -61,7 +61,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
@@ -80,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
@@ -99,7 +99,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
@@ -118,7 +118,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-5">
             <div class="card card-stats">
                 <div class="card-body">
                     <div class="row">
@@ -245,13 +245,17 @@
                                             </a>
                                             <?php if(canAccess('delete_invoices')): ?>
                                             <?php if($invoice->status !== 'paid'): ?>
-                                            <form action="<?php echo e(route('admin.invoices.destroy', $invoice)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?');">
+                                            <form action="<?php echo e(route('admin.invoices.destroy', $invoice)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.');">
                                                 <?php echo csrf_field(); ?>
                                                 <?php echo method_field('DELETE'); ?>
                                                 <button type="submit" class="btn btn-danger btn-sm" title="Supprimer">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
+                                            <?php else: ?>
+                                            <button type="button" class="btn btn-danger btn-sm" disabled title="Impossible de supprimer une facture payée">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                             <?php endif; ?>
                                             <?php endif; ?>
                                         </div>

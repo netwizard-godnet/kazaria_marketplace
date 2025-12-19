@@ -338,6 +338,9 @@ class StoreController extends Controller
         }
         
         $products = $query->paginate(60)->appends($request->except('page'));
+        
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $products->setCollection($this->reorganizeProducts($products->getCollection()));
 
         return view('store.show', compact('store', 'products'));
     }
@@ -912,5 +915,68 @@ class StoreController extends Controller
                 'message' => 'Erreur lors de la suppression: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Réorganise les produits pour éviter que les mêmes produits se suivent
+     * Compare les produits par leur nom, marque et modèle plutôt que par ID
+     * 
+     * @param \Illuminate\Support\Collection $products
+     * @return \Illuminate\Support\Collection
+     */
+    private function reorganizeProducts($products)
+    {
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $reorganized = collect();
+        $remaining = $products->values();
+        $lastProductSignature = null;
+
+        // Fonction pour générer une signature unique d'un produit basée sur son nom et caractéristiques
+        $getProductSignature = function($product) {
+            $name = strtolower(trim($product->name ?? ''));
+            $brand = strtolower(trim($product->brand ?? ''));
+            $model = strtolower(trim($product->model ?? ''));
+            
+            // Créer une signature basée sur le nom, et optionnellement la marque et le modèle
+            $signature = $name;
+            if (!empty($brand)) {
+                $signature .= '|' . $brand;
+            }
+            if (!empty($model)) {
+                $signature .= '|' . $model;
+            }
+            
+            return $signature;
+        };
+
+        while ($remaining->isNotEmpty()) {
+            // Trouver le premier produit qui est différent du précédent
+            $found = false;
+            foreach ($remaining as $index => $product) {
+                $currentSignature = $getProductSignature($product);
+                
+                if ($currentSignature !== $lastProductSignature) {
+                    $reorganized->push($product);
+                    $lastProductSignature = $currentSignature;
+                    $remaining->forget($index);
+                    $found = true;
+                    break;
+                }
+            }
+
+            // Si aucun produit différent n'a été trouvé, prendre le premier disponible
+            // (cela peut arriver si tous les produits restants sont identiques)
+            if (!$found && $remaining->isNotEmpty()) {
+                $product = $remaining->first();
+                $reorganized->push($product);
+                $lastProductSignature = $getProductSignature($product);
+                $remaining->shift();
+            }
+        }
+
+        return $reorganized->values();
     }
 }

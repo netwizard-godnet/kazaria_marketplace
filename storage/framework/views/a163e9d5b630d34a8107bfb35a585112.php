@@ -1,13 +1,13 @@
 <div id="popup-launcher-root" data-popups='<?php echo json_encode($payload, JSON_UNESCAPED_UNICODE, 512) ?>'></div>
 
-<div class="modal fade popup-launcher-modal z-index-9x" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" style="backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important;">
+<div class="modal fade popup-launcher-modal" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" style="backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; z-index: 9999999999 !important;">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0" style="background: transparent!important;">
             <div class="modal-body p-0" data-popup-body>
                 <div class="row g-0 position-relative" data-popup-row>
                     <div class="popup-launcher-image-wrapper d-none" data-popup-image-wrapper>
                         <!-- Close button -->
-                         <div class="">
+                         <div class="" style="z-index: 9999999999 !important;">
                             <button type="button" class="btn-close popup-close-btn" data-bs-dismiss="modal" aria-label="Fermer"></button>
                          </div>
                         <!-- End Close button -->

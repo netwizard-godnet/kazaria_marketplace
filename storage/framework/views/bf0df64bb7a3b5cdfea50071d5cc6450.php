@@ -73,6 +73,35 @@
                     </div>
                     <?php endif; ?>
 
+                    <!-- Produits/Services -->
+                    <?php if($invoice->items && is_array($invoice->items) && count($invoice->items) > 0): ?>
+                    <div class="mb-4">
+                        <h6>Produits / Services</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th class="text-center">Quantité</th>
+                                        <th class="text-end">Prix unitaire</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php $__currentLoopData = $invoice->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr>
+                                        <td><?php echo e($item['description'] ?? 'Article'); ?></td>
+                                        <td class="text-center"><?php echo e($item['quantity'] ?? 1); ?></td>
+                                        <td class="text-end"><?php echo e(number_format($item['price'] ?? 0, 0, ',', ' ')); ?> FCFA</td>
+                                        <td class="text-end"><strong><?php echo e(number_format($item['total'] ?? ($item['quantity'] ?? 1) * ($item['price'] ?? 0), 0, ',', ' ')); ?> FCFA</strong></td>
+                                    </tr>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <!-- Tableau des montants -->
                     <div class="table-responsive">
                         <table class="table table-bordered">
@@ -158,6 +187,21 @@
                         <a href="<?php echo e(route('admin.invoices.edit', $invoice)); ?>" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Modifier
                         </a>
+                        <?php endif; ?>
+                        <?php if(canAccess('delete_invoices')): ?>
+                            <?php if($invoice->status !== 'paid'): ?>
+                            <form action="<?php echo e(route('admin.invoices.destroy', $invoice)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.');">
+                                <?php echo csrf_field(); ?>
+                                <?php echo method_field('DELETE'); ?>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </form>
+                            <?php else: ?>
+                            <button type="button" class="btn btn-danger" disabled title="Impossible de supprimer une facture payée">
+                                <i class="fas fa-trash"></i> Supprimer (non disponible)
+                            </button>
+                            <?php endif; ?>
                         <?php endif; ?>
                         <a href="<?php echo e(route('admin.invoices.index')); ?>" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Retour à la liste
