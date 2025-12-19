@@ -182,6 +182,56 @@ class ProfileController extends Controller
     }
 
     /**
+     * Mettre à jour le statut de l'authentification à deux facteurs (WEB - Sessions)
+     */
+    public function updateTwoFactor(Request $request)
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'two_factor_enabled' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'two_factor_enabled' => $request->boolean('two_factor_enabled')
+            ]);
+
+            $message = $user->two_factor_enabled 
+                ? 'Authentification à deux facteurs activée avec succès'
+                : 'Authentification à deux facteurs désactivée avec succès';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'two_factor_enabled' => $user->two_factor_enabled
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur mise à jour 2FA: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de l\'authentification à deux facteurs'
+            ], 500);
+        }
+    }
+
+    /**
      * Déconnecter tous les appareils de l'utilisateur (WEB - Sessions)
      */
     public function logoutAllDevices(Request $request)

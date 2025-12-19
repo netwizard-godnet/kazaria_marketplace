@@ -107,13 +107,39 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if (!$user->is_verified) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Veuillez d\'abord vérifier votre adresse email'
-            ], 401);
+        // Vérifier si l'authentification à deux facteurs est activée
+        if (!$user->two_factor_enabled) {
+            // Connexion directe sans code si le 2FA n'est pas activé
+            try {
+                // Régénérer l'ID de session AVANT le login
+                $request->session()->regenerate();
+                
+                // Créer une session web persistante
+                Auth::login($user, $request->has('remember'));
+                
+                // Régénérer le token CSRF
+                $request->session()->regenerateToken();
+                
+                // Forcer la sauvegarde de la session
+                $request->session()->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                    'requires_code' => false,
+                    'redirect' => route('accueil')
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur connexion directe: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la connexion. Veuillez réessayer.'
+                ], 500);
+            }
         }
 
+        // Si le 2FA est activé, envoyer le code de vérification
         try {
             // Générer et envoyer le code de connexion
             $authCode = AuthCode::createCode($user->email, 'login', $request);
@@ -210,7 +236,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Connexion réussie',
-            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
             'redirect' => route('accueil')
         ]);
     }

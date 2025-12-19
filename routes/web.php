@@ -280,6 +280,7 @@ Route::get('/profil', [App\Http\Controllers\ProfileController::class, 'index'])
 // Routes pour le profil utilisateur (authentification par session)
 Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.change-password');
+    Route::post('/profile/update-two-factor', [App\Http\Controllers\ProfileController::class, 'updateTwoFactor'])->name('profile.update-two-factor');
     Route::post('/profile/logout-all-devices', [App\Http\Controllers\ProfileController::class, 'logoutAllDevices'])->name('profile.logout-all-devices');
 });
 

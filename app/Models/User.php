@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'auth_code',
         'auth_code_expires_at',
         'auth_code_verified',
+        'two_factor_enabled',
         'provider_name',
         'provider_id',
         'provider_token',
@@ -83,6 +84,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'newsletter' => 'boolean',
             'termes_condition' => 'boolean',
             'auth_code_verified' => 'boolean',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 
