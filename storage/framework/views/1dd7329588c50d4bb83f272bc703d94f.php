@@ -362,7 +362,6 @@
                         </div>
                         <div class="py-3 border-top">
                             <p class="fs-6 my-0 orange-color text-center fw-bold"><?php echo e($item['name']); ?></p>
-                            <small class="text-muted text-center d-block"><?php echo e($item['type'] === 'category' ? 'Catégorie' : 'Sous-catégorie'); ?></small>
                         </div>
                     </a>
                 </div>
@@ -371,85 +370,37 @@
         </section>
         <!-- SECTION TOP CATEGORIES END -->
 
-        <!-- SECTION TELEPHONES & TABLETTES -->
-        <?php if(isset($isPhoneCategoryActive) && $isPhoneCategoryActive && $phoneProducts->count() > 0): ?>
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Téléphones et tablettes</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                <?php $__currentLoopData = $phoneProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="multi-carousel-item px-2">
-                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-                </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
-        <?php endif; ?>
-        <!-- SECTION TELEPHONES & TABLETTES END -->
+        <!-- SECTIONS DE CATÉGORIES DE PRODUITS (Dynamiques) -->
+        <?php if(isset($categorySections) && $categorySections->count() > 0): ?>
+            <?php $__currentLoopData = $categorySections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $section): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php if($section['is_active'] && $section['products']->count() > 0): ?>
+                <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
+                    <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
+                        <h5 class="mb-0 me-4">
+                            <?php if($section['type'] === 'subcategory' && $section['subcategory']): ?>
+                                <?php echo e($section['subcategory']->name); ?>
 
-        <!-- SECTION TV et Electronique -->
-        <?php if(isset($isTvCategoryActive) && $isTvCategoryActive && $tvProducts->count() > 0): ?>
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">TV et Electronique</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                <?php $__currentLoopData = $tvProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="multi-carousel-item px-2">
-                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-                </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
-        <?php endif; ?>
-        <!-- SECTION TV et Electronique END -->
+                            <?php else: ?>
+                                <?php echo e($section['category']->name); ?>
 
-        <!-- SECTION Electroménager -->
-        <?php if(isset($isElectroCategoryActive) && $isElectroCategoryActive && $electroProducts->count() > 0): ?>
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Electroménager</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                <?php $__currentLoopData = $electroProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="multi-carousel-item px-2">
-                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-                </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
+                            <?php endif; ?>
+                        </h5>
+                    </div>
+                    <div class="multi-carousel-track d-flex">
+                        <?php $__currentLoopData = $section['products']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <div class="multi-carousel-item px-2">
+                            <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                        </div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </div>
+                    <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
+                    <div class="multi-carousel-dots text-center mt-2"></div>
+                </section>
+                <?php endif; ?>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         <?php endif; ?>
-        <!-- SECTION Electroménager END -->
-
-        <!-- SECTION Ordinateurs et accessoires -->
-        <?php if(isset($isComputerCategoryActive) && $isComputerCategoryActive && $computerProducts->count() > 0): ?>
-        <section class="multi-carousel py-5" data-multi-carousel data-slides-to-show="6" data-slides-lg="4" data-slides-md="3" data-slides-sm="2" data-slides-xs="2" data-gap="0" data-autoplay="true" data-autoplay-speed="2000" data-pause-on-hover="true">
-            <div class="bg-light d-flex align-items-center justify-content-start mb-4 border-bottom p-2">
-                <h5 class="mb-0 me-4">Ordinateurs et accessoires</h5>
-            </div>
-            <div class="multi-carousel-track d-flex">
-                <?php $__currentLoopData = $computerProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="multi-carousel-item px-2">
-                    <?php echo $__env->make('components.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-                </div>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-            </div>
-            <button class="multi-carousel-prev btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-left"></i></button>
-            <button class="multi-carousel-next btn btn-sm btn-light orange-color"><i class="fa-solid fa-chevron-right"></i></button>
-            <div class="multi-carousel-dots text-center mt-2"></div>
-        </section>
-        <?php endif; ?>
-        <!-- SECTION Ordinateurs et accessoires END -->
+        <!-- SECTIONS DE CATÉGORIES DE PRODUITS END -->
 
         <!-- SECTION AFFICHES -->
         <section class="py-5">

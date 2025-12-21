@@ -98,6 +98,24 @@ if (auth()->check()) {
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+        <!-- Meta Pixel Code -->
+        <script>
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '1216745617091651');
+            fbq('track', 'PageView');
+        </script>
+        <noscript>
+            <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1216745617091651&ev=PageView&noscript=1"/>
+        </noscript>
+        <!-- End Meta Pixel Code -->
     </head>
 
     <body>
@@ -230,11 +248,11 @@ if (auth()->check()) {
                     <div class="col-md-8 hstack gap-1">
                         <div class="d-flex align-items-center justify-content-start">
                             <a class="btn btn-sm orange-bg text-white fs-8 text-nowrap" href="<?php echo e(route('boutique_officielle')); ?>">
-                            Boutiques Officielles <i class="fa-solid fa-certificate"></i>
+                            Nos Boutiques <i class="fa-solid fa-certificate"></i>
                             </a>
                         </div>
                         <?php if(isset($allCategories)): ?>
-                            <?php $__currentLoopData = $allCategories->take(4); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $menuCategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php $__currentLoopData = $allCategories->take(5); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $menuCategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <div class="header-menu d-flex align-items-center justify-content-start">
                                 <a class="btn btn-sm text-white fs-8 text-nowrap" href="<?php echo e(route('categorie', $menuCategory->slug)); ?>">
                                     <?php if($menuCategory->image && !empty($menuCategory->image)): ?>

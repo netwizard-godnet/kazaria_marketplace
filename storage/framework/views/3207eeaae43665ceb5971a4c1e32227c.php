@@ -58,7 +58,7 @@ use Illuminate\Support\Facades\Storage;
                                 <div class="row">
             <?php
                 // Définir l'ordre d'affichage des groupes
-                $groupOrder = ['general', 'contact', 'ecommerce', 'deals', 'social', 'maintenance', 'cinetpay', 'stripe'];
+                $groupOrder = ['general', 'contact', 'ecommerce', 'deals', 'homepage', 'social', 'maintenance', 'cinetpay', 'stripe'];
                 // Réorganiser les groupes selon l'ordre défini
                 $orderedGroups = [];
                 foreach ($groupOrder as $orderedGroupName) {
@@ -112,6 +112,9 @@ use Illuminate\Support\Facades\Storage;
                                     <?php break; ?>
                                 <?php case ('deals'): ?>
                                     <i class="fas fa-fire me-2"></i>Deals du jour
+                                    <?php break; ?>
+                                <?php case ('homepage'): ?>
+                                    <i class="fas fa-home me-2"></i>Page d'accueil
                                     <?php break; ?>
                                 <?php case ('maintenance'): ?>
                                     <i class="fas fa-tools me-2"></i>Maintenance
@@ -167,6 +170,10 @@ use Illuminate\Support\Facades\Storage;
                                 'deals_max_discount' => 'Pourcentage de remise maximum (%)',
                                 'deals_categories' => 'Catégories des deals',
                                 'deals_subcategories' => 'Sous-catégories des deals',
+                                // Page d'accueil
+                                'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
+                                'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',
@@ -201,7 +208,7 @@ use Illuminate\Support\Facades\Storage;
                             };
                         ?>
                         <div class="form-group mb-3 <?php echo e($isGeneral ? 'col-md-6' : ''); ?>">
-                            <label for="setting_<?php echo e($setting->key); ?>" class="form-label">
+                            <label for="setting_<?php echo e($setting->key); ?>" class="form-label" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;">
                                 <?php echo e($label); ?>
 
                                 <?php if($setting->is_public): ?>
@@ -209,28 +216,86 @@ use Illuminate\Support\Facades\Storage;
                                 <?php endif; ?>
                             </label>
                             
-                            <?php if($setting->key === 'deals_categories'): ?>
+                            <?php if($setting->key === 'deals_categories' || $setting->key === 'homepage_categories'): ?>
                                 <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple>
                                     <option value="">Toutes les catégories</option>
-                                    <?php $__currentLoopData = \App\Models\Category::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php $__currentLoopData = \App\Models\Category::active()->ordered()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($category->id); ?>" <?php echo e(in_array($category->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
                                             <?php echo e($category->name); ?>
 
                                         </option>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
-                                <small class="text-muted">Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)</small>
-                            <?php elseif($setting->key === 'deals_subcategories'): ?>
+                                <small class="text-muted">
+                                    <?php if($setting->key === 'homepage_categories'): ?>
+                                        Sélectionnez les catégories à afficher dans la section "Top Catégories du Mois" sur la page d'accueil. Si aucune sélection, les catégories les plus visitées seront affichées automatiquement.
+                                    <?php else: ?>
+                                        Sélectionnez plusieurs catégories en maintenant Ctrl (Cmd sur Mac)
+                                    <?php endif; ?>
+                                </small>
+                            <?php elseif($setting->key === 'homepage_category_sections'): ?>
+                                <?php
+                                    // Parser les valeurs existantes pour déterminer ce qui est sélectionné
+                                    $selectedValues = [];
+                                    if ($setting->value) {
+                                        $items = array_map('trim', explode(',', $setting->value));
+                                        foreach ($items as $item) {
+                                            if (str_starts_with($item, 'category:') || str_starts_with($item, 'subcategory:')) {
+                                                $selectedValues[] = $item;
+                                            } elseif (is_numeric($item)) {
+                                                // Rétrocompatibilité: ancien format
+                                                $selectedValues[] = 'category:' . $item;
+                                            }
+                                        }
+                                    }
+                                ?>
+                                <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple size="10">
+                                    <option value="">Aucune section (masquer toutes les sections)</option>
+                                    <optgroup label="Catégories">
+                                        <?php $__currentLoopData = \App\Models\Category::active()->ordered()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <?php
+                                                $value = 'category:' . $category->id;
+                                                $isSelected = in_array($value, $selectedValues) || in_array($category->id, $selectedValues);
+                                            ?>
+                                            <option value="<?php echo e($value); ?>" <?php echo e($isSelected ? 'selected' : ''); ?>>
+                                                📁 <?php echo e($category->name); ?>
+
+                                            </option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </optgroup>
+                                    <optgroup label="Sous-catégories">
+                                        <?php $__currentLoopData = \App\Models\Subcategory::active()->with('category')->ordered()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <?php
+                                                $value = 'subcategory:' . $subcategory->id;
+                                                $isSelected = in_array($value, $selectedValues);
+                                            ?>
+                                            <option value="<?php echo e($value); ?>" <?php echo e($isSelected ? 'selected' : ''); ?>>
+                                                📂 <?php echo e($subcategory->category->name ?? 'N/A'); ?> > <?php echo e($subcategory->name); ?>
+
+                                            </option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </optgroup>
+                                </select>
+                                <small class="text-muted">
+                                    Sélectionnez les catégories et/ou sous-catégories à afficher comme sections de produits sur la page d'accueil. L'ordre de sélection détermine l'ordre d'affichage. Si aucune sélection, les 4 catégories par défaut seront affichées (Téléphones, TV, Electroménager, Ordinateurs).
+                                </small>
+                            <?php elseif($setting->key === 'deals_subcategories' || $setting->key === 'homepage_subcategories'): ?>
                                 <select class="form-control" id="setting_<?php echo e($setting->key); ?>" name="settings[<?php echo e($setting->key); ?>][]" multiple>
                                     <option value="">Toutes les sous-catégories</option>
-                                    <?php $__currentLoopData = \App\Models\Subcategory::active()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php $__currentLoopData = \App\Models\Subcategory::active()->ordered()->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $subcategory): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($subcategory->id); ?>" <?php echo e(in_array($subcategory->id, $setting->value ? explode(',', $setting->value) : []) ? 'selected' : ''); ?>>
-                                            <?php echo e($subcategory->name); ?>
+                                            <?php echo e($subcategory->category->name ?? 'N/A'); ?> > <?php echo e($subcategory->name); ?>
 
                                         </option>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
-                                <small class="text-muted">Sélectionnez plusieurs sous-catégories en maintenant Ctrl (Cmd sur Mac)</small>
+                                <small class="text-muted">
+                                    <?php if($setting->key === 'homepage_subcategories'): ?>
+                                        Sélectionnez les sous-catégories à afficher dans la section "Top Catégories du Mois" sur la page d'accueil. Si aucune sélection, les sous-catégories les plus visitées seront affichées automatiquement.
+                                    <?php else: ?>
+                                        Sélectionnez plusieurs sous-catégories en maintenant Ctrl (Cmd sur Mac)
+                                    <?php endif; ?>
+                                </small>
                             <?php elseif($setting->type === 'boolean' || in_array($setting->key, $booleanKeys)): ?>
                                 <div>
                                     <div class="form-check form-check-inline">
@@ -346,6 +411,10 @@ use Illuminate\Support\Facades\Storage;
                                 'deals_max_discount' => 'Pourcentage de remise maximum (%)',
                                 'deals_categories' => 'Catégories des deals',
                                 'deals_subcategories' => 'Sous-catégories des deals',
+                                // Page d'accueil
+                                'homepage_categories' => 'Catégories à afficher sur la page d\'accueil',
+                                'homepage_subcategories' => 'Sous-catégories à afficher sur la page d\'accueil',
+                                'homepage_category_sections' => 'Sections de produits sur la page d\'accueil',
                                 // Réseaux sociaux
                                 'social_facebook' => 'Page Facebook',
                                 'social_twitter' => 'Compte Twitter/X',

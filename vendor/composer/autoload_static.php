@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
+class ComposerStaticInit9964ac576b238a4ccf65b3f57384f968
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -43,6 +43,7 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'ce9671a430e4846b44e1c68c7611f9f5' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery.php',
         'a1cfe24d14977df6878b9bf804af2d1c' => __DIR__ . '/..' . '/nunomaduro/collision/src/Adapters/Phpunit/Autoload.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
+        '00620ec3787303b77ee72cb3469bb395' => __DIR__ . '/../..' . '/app/Helpers/PermissionHelper.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -674,8 +675,10 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Console\\Commands\\FixPermissionsCommand' => __DIR__ . '/../..' . '/app/Console/Commands/FixPermissionsCommand.php',
         'App\\Console\\Commands\\FixStorageCommand' => __DIR__ . '/../..' . '/app/Console/Commands/FixStorageCommand.php',
         'App\\Console\\Commands\\GenerateSeoCommand' => __DIR__ . '/../..' . '/app/Console/Commands/GenerateSeoCommand.php',
+        'App\\Console\\Commands\\InitLandingPageSettings' => __DIR__ . '/../..' . '/app/Console/Commands/InitLandingPageSettings.php',
         'App\\Console\\Commands\\OptimizeSeoCommand' => __DIR__ . '/../..' . '/app/Console/Commands/OptimizeSeoCommand.php',
         'App\\Console\\Commands\\RecalculateStoreRatingsCommand' => __DIR__ . '/../..' . '/app/Console/Commands/RecalculateStoreRatingsCommand.php',
+        'App\\Console\\Commands\\SendPriceAlerts' => __DIR__ . '/../..' . '/app/Console/Commands/SendPriceAlerts.php',
         'App\\Console\\Commands\\TestAI' => __DIR__ . '/../..' . '/app/Console/Commands/TestAI.php',
         'App\\Helpers\\OrderHelper' => __DIR__ . '/../..' . '/app/Helpers/OrderHelper.php',
         'App\\Helpers\\SettingHelper' => __DIR__ . '/../..' . '/app/Helpers/SettingHelper.php',
@@ -700,9 +703,11 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Http\\Controllers\\Admin\\RoleController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/RoleController.php',
         'App\\Http\\Controllers\\Admin\\SettingController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/SettingController.php',
         'App\\Http\\Controllers\\Admin\\SettingsController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/SettingsController.php',
+        'App\\Http\\Controllers\\Admin\\StatisticsController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/StatisticsController.php',
         'App\\Http\\Controllers\\Admin\\StoreController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/StoreController.php',
         'App\\Http\\Controllers\\Admin\\SubcategoryController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/SubcategoryController.php',
         'App\\Http\\Controllers\\Admin\\UserController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/UserController.php',
+        'App\\Http\\Controllers\\Api\\NotificationController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/NotificationController.php',
         'App\\Http\\Controllers\\AuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/AuthController.php',
         'App\\Http\\Controllers\\Auth\\SocialAuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/SocialAuthController.php',
         'App\\Http\\Controllers\\AvatarController' => __DIR__ . '/../..' . '/app/Http/Controllers/AvatarController.php',
@@ -733,12 +738,14 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Http\\Middleware\\ClientAuthMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/ClientAuthMiddleware.php',
         'App\\Http\\Middleware\\ForceSessionSave' => __DIR__ . '/../..' . '/app/Http/Middleware/ForceSessionSave.php',
         'App\\Http\\Middleware\\HybridAuthMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/HybridAuthMiddleware.php',
+        'App\\Http\\Middleware\\LandingPageMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/LandingPageMiddleware.php',
         'App\\Http\\Middleware\\RedirectIfAuthenticated' => __DIR__ . '/../..' . '/app/Http/Middleware/RedirectIfAuthenticated.php',
         'App\\Http\\Middleware\\RedirectIfNotAdmin' => __DIR__ . '/../..' . '/app/Http/Middleware/RedirectIfNotAdmin.php',
         'App\\Http\\Middleware\\RedirectIfNotAuthenticated' => __DIR__ . '/../..' . '/app/Http/Middleware/RedirectIfNotAuthenticated.php',
         'App\\Http\\Middleware\\RedirectIfNotSeller' => __DIR__ . '/../..' . '/app/Http/Middleware/RedirectIfNotSeller.php',
         'App\\Http\\Middleware\\SeoMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/SeoMiddleware.php',
         'App\\Http\\Middleware\\SessionAuth' => __DIR__ . '/../..' . '/app/Http/Middleware/SessionAuth.php',
+        'App\\Http\\Middleware\\TrackPageVisits' => __DIR__ . '/../..' . '/app/Http/Middleware/TrackPageVisits.php',
         'App\\Http\\Middleware\\TrackProductViews' => __DIR__ . '/../..' . '/app/Http/Middleware/TrackProductViews.php',
         'App\\Http\\Middleware\\ValidateCsrfToken' => __DIR__ . '/../..' . '/app/Http/Middleware/ValidateCsrfToken.php',
         'App\\Http\\Requests\\Admin\\PopupRequest' => __DIR__ . '/../..' . '/app/Http/Requests/Admin/PopupRequest.php',
@@ -764,11 +771,13 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Models\\CrmTicketMessage' => __DIR__ . '/../..' . '/app/Models/CrmTicketMessage.php',
         'App\\Models\\FAQ' => __DIR__ . '/../..' . '/app/Models/FAQ.php',
         'App\\Models\\Favorite' => __DIR__ . '/../..' . '/app/Models/Favorite.php',
+        'App\\Models\\FcmToken' => __DIR__ . '/../..' . '/app/Models/FcmToken.php',
         'App\\Models\\Message' => __DIR__ . '/../..' . '/app/Models/Message.php',
         'App\\Models\\NewsletterSubscription' => __DIR__ . '/../..' . '/app/Models/NewsletterSubscription.php',
         'App\\Models\\Notification' => __DIR__ . '/../..' . '/app/Models/Notification.php',
         'App\\Models\\Order' => __DIR__ . '/../..' . '/app/Models/Order.php',
         'App\\Models\\OrderItem' => __DIR__ . '/../..' . '/app/Models/OrderItem.php',
+        'App\\Models\\PageVisit' => __DIR__ . '/../..' . '/app/Models/PageVisit.php',
         'App\\Models\\Payment' => __DIR__ . '/../..' . '/app/Models/Payment.php',
         'App\\Models\\Permission' => __DIR__ . '/../..' . '/app/Models/Permission.php',
         'App\\Models\\Popup' => __DIR__ . '/../..' . '/app/Models/Popup.php',
@@ -786,9 +795,11 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
         'App\\Models\\Wishlist' => __DIR__ . '/../..' . '/app/Models/Wishlist.php',
         'App\\Notifications\\NewOrderNotification' => __DIR__ . '/../..' . '/app/Notifications/NewOrderNotification.php',
+        'App\\Observers\\ProductObserver' => __DIR__ . '/../..' . '/app/Observers/ProductObserver.php',
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',
         'App\\Providers\\SettingServiceProvider' => __DIR__ . '/../..' . '/app/Providers/SettingServiceProvider.php',
         'App\\Providers\\ViewServiceProvider' => __DIR__ . '/../..' . '/app/Providers/ViewServiceProvider.php',
+        'App\\Services\\FirebaseNotificationService' => __DIR__ . '/../..' . '/app/Services/FirebaseNotificationService.php',
         'App\\Services\\OrderStatusService' => __DIR__ . '/../..' . '/app/Services/OrderStatusService.php',
         'App\\Services\\PopupService' => __DIR__ . '/../..' . '/app/Services/PopupService.php',
         'App\\Services\\StockService' => __DIR__ . '/../..' . '/app/Services/StockService.php',
@@ -7899,9 +7910,9 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit9964ac576b238a4ccf65b3f57384f968::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit9964ac576b238a4ccf65b3f57384f968::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit9964ac576b238a4ccf65b3f57384f968::$classMap;
 
         }, null, ClassLoader::class);
     }
