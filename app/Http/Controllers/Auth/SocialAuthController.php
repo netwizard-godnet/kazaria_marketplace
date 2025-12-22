@@ -108,6 +108,10 @@ class SocialAuthController extends Controller
         // Créer une session web persistante
         Auth::login($user, true);
         
+        // Stocker explicitement le hash du mot de passe dans la session
+        // pour éviter les problèmes avec AuthenticateSession
+        request()->session()->put('password_hash_web', $user->getAuthPassword());
+        
         // Régénérer le token CSRF
         request()->session()->regenerateToken();
         

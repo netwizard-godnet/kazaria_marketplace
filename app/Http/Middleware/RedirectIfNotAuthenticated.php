@@ -18,23 +18,23 @@ class RedirectIfNotAuthenticated
     {
         $guards = empty($guards) ? ['web'] : $guards;
 
-        // S'assurer que la session est démarrée pour vérifier l'authentification
-        if (!$request->hasSession() || !session()->isStarted()) {
-            // Démarrer la session si elle n'est pas démarrée
-            $session = app('session');
-            if (!$session->isStarted()) {
-                $session->start();
-            }
-            $request->setLaravelSession($session);
-        }
-
+        // Vérifier l'authentification avec chaque guard
         foreach ($guards as $guard) {
+            // Utiliser le guard explicite pour éviter les problèmes de session
             if (Auth::guard($guard)->check()) {
                 return $next($request);
             }
         }
 
-        // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
+        // Si l'utilisateur n'est pas connecté, vérifier si c'est une requête AJAX/API
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        // Pour les requêtes web, rediriger vers la page de connexion
         return redirect()->route('login')->with('error', 'Veuillez vous connecter pour accéder à cette page.');
     }
 }

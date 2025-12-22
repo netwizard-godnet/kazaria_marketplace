@@ -22,7 +22,7 @@ class ProfileController extends Controller
      */
     public function index(Request $request)
     {
-        // L'utilisateur est authentifié via le middleware auth:web
+        // L'utilisateur est authentifié via le middleware auth.redirect
         $user = auth()->user();
         
         if (!$user) {
