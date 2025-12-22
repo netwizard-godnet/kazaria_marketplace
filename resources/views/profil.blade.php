@@ -1428,14 +1428,15 @@ use Illuminate\Support\Str;
 
                 if (!response.ok) {
                     console.error('Erreur HTTP:', response.status);
+                    console.error('URL de la requête:', url);
+                    console.error('Filtre statut:', filterStatus);
                     const tbody = document.getElementById('ordersTableBody');
                     let errorMessage = 'Erreur lors du chargement des commandes';
                     
                     if (response.status === 401) {
-                        errorMessage = 'Vous devez être connecté pour voir vos commandes. Redirection...';
-                        setTimeout(() => {
-                            window.location.href = '/authentification';
-                        }, 2000);
+                        // Ne pas rediriger automatiquement - afficher juste un message
+                        errorMessage = 'Vous devez être connecté pour voir vos commandes. Veuillez rafraîchir la page.';
+                        console.error('Erreur 401 - Session peut-être expirée');
                     }
                     
                     tbody.innerHTML = `
