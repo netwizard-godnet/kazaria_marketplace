@@ -1390,18 +1390,34 @@ use Illuminate\Support\Str;
         // Charger les commandes de l'utilisateur
         async function loadOrders() {
             try {
+                const tbody = document.getElementById('ordersTableBody');
+                
+                // Afficher un indicateur de chargement
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Chargement...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Chargement des commandes...</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
                 // Récupérer les filtres avant de faire la requête
                 const filterDate = document.getElementById('filterDate')?.value || '';
                 const filterStatus = document.getElementById('filterStatus')?.value || '';
                 
                 // Construire l'URL avec les paramètres de filtre
+                // Toujours envoyer le paramètre status, même s'il est vide, pour que le serveur applique le filtre par défaut
                 const params = new URLSearchParams();
                 if (filterDate) {
                     params.append('date', filterDate);
                 }
-                if (filterStatus) {
-                    params.append('status', filterStatus);
-                }
+                // Toujours envoyer le paramètre status
+                params.append('status', filterStatus || '');
                 
                 const url = '/api/orders/my-orders' + (params.toString() ? '?' + params.toString() : '');
                 
@@ -1453,7 +1469,6 @@ use Illuminate\Support\Str;
                 }
                 
                 console.log('Données reçues:', data);
-                const tbody = document.getElementById('ordersTableBody');
                 
                 // Les commandes sont déjà filtrées côté serveur
                 const filteredOrders = data.orders || [];
@@ -1498,14 +1513,22 @@ use Illuminate\Support\Str;
                     // Mettre à jour le compteur de commandes
                     document.getElementById('totalOrders').textContent = filteredOrders.length;
                 } else {
+                    // Vérifier si des filtres sont actifs
+                    const hasActiveFilters = filterDate || (filterStatus && filterStatus !== '' && filterStatus !== 'all');
+                    const message = hasActiveFilters 
+                        ? 'Aucune commande ne correspond aux filtres sélectionnés'
+                        : 'Vous n\'avez pas encore de commande';
+                    
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                <p class="mt-2">Vous n'avez pas encore de commande</p>
-                                <a href="/" class="btn btn-sm orange-bg text-white">
-                                    <i class="bi bi-shop me-1"></i>Commencer mes achats
-                                </a>
+                                <p class="mt-2">${message}</p>
+                                ${!hasActiveFilters ? `
+                                    <a href="/" class="btn btn-sm orange-bg text-white">
+                                        <i class="bi bi-shop me-1"></i>Commencer mes achats
+                                    </a>
+                                ` : ''}
                             </td>
                         </tr>
                     `;

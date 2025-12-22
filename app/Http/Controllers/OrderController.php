@@ -461,13 +461,14 @@ class OrderController extends Controller
         
         // Filtrer par statut
         $status = $request->input('status');
-        if ($status && $status !== 'all') {
+        if ($status && $status !== 'all' && $status !== '') {
+            // Filtrer par le statut spécifié
             $query->where('status', $status);
-        } elseif (!$status || $status === '') {
+        } elseif ($status === '' || $status === null) {
             // Par défaut, afficher seulement les commandes en cours (pending ou processing)
             $query->whereIn('status', ['pending', 'processing']);
         }
-        // Si status === 'all', on ne filtre pas par statut
+        // Si status === 'all', on ne filtre pas par statut (afficher toutes les commandes)
         
         // Filtrer par date
         $dateFilter = $request->input('date');
