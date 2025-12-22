@@ -558,9 +558,12 @@ use Illuminate\Support\Str;
                                             <select class="form-select form-select-sm" id="filterStatus">
                                                 <option value="">Commandes en cours (par défaut)</option>
                                                 <option value="pending">En cours de validation</option>
+                                                <option value="paid">Payée</option>
                                                 <option value="processing">En cours de livraison</option>
+                                                <option value="shipped">Expédiée</option>
                                                 <option value="delivered">Livrée</option>
                                                 <option value="cancelled">Annulée</option>
+                                                <option value="refunded">Remboursée</option>
                                                 <option value="all">Toutes les commandes</option>
                                             </select>
                                         </div>
@@ -1431,14 +1434,15 @@ use Illuminate\Support\Str;
 
                 if (!response.ok) {
                     console.error('Erreur HTTP:', response.status);
+                    console.error('URL de la requête:', url);
+                    console.error('Filtre statut:', filterStatus);
                     const tbody = document.getElementById('ordersTableBody');
                     let errorMessage = 'Erreur lors du chargement des commandes';
                     
                     if (response.status === 401) {
-                        errorMessage = 'Vous devez être connecté pour voir vos commandes. Redirection...';
-                        setTimeout(() => {
-                            window.location.href = '/authentification';
-                        }, 2000);
+                        // Ne pas rediriger automatiquement - afficher juste un message
+                        errorMessage = 'Vous devez être connecté pour voir vos commandes. Veuillez rafraîchir la page.';
+                        console.error('Erreur 401 - Session peut-être expirée');
                     }
                     
                     tbody.innerHTML = `
@@ -1974,14 +1978,17 @@ use Illuminate\Support\Str;
             return methods[method] || method;
         }
 
-        // Calculer le pourcentage de progression (3 étapes: pending=33%, processing=66%, delivered=100%)
+        // Calculer le pourcentage de progression
         function getProgressPercentage(status) {
             switch (status) {
-                case 'pending': return 33;
-                case 'processing': return 66;
+                case 'pending': return 20;
+                case 'paid': return 40;
+                case 'processing': return 60;
+                case 'shipped': return 80;
                 case 'delivered': return 100;
                 case 'cancelled': return 0;
-                default: return 33;
+                case 'refunded': return 0;
+                default: return 20;
             }
         }
 
@@ -1989,9 +1996,12 @@ use Illuminate\Support\Str;
         function getStatusBadge(status) {
             const badges = {
                 'pending': { class: 'bg-warning', label: 'En cours de validation' },
+                'paid': { class: 'bg-success', label: 'Payée' },
                 'processing': { class: 'bg-info', label: 'En cours de livraison' },
+                'shipped': { class: 'bg-primary', label: 'Expédiée' },
                 'delivered': { class: 'bg-success', label: 'Livrée' },
-                'cancelled': { class: 'bg-danger', label: 'Annulée' }
+                'cancelled': { class: 'bg-danger', label: 'Annulée' },
+                'refunded': { class: 'bg-secondary', label: 'Remboursée' }
             };
             return badges[status] || { class: 'bg-secondary', label: status };
         }

@@ -461,14 +461,21 @@ class OrderController extends Controller
         
         // Filtrer par statut
         $status = $request->input('status');
-        if ($status && $status !== 'all' && $status !== '') {
-            // Filtrer par le statut spécifié
+        
+        // Liste des statuts valides
+        $validStatuses = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+        
+        if ($status === 'all') {
+            // Si status === 'all', on ne filtre pas par statut (afficher toutes les commandes)
+            // Ne rien faire, laisser passer toutes les commandes
+        } elseif ($status && $status !== '' && in_array($status, $validStatuses)) {
+            // Filtrer par le statut spécifié si c'est un statut valide
             $query->where('status', $status);
         } elseif ($status === '' || $status === null) {
-            // Par défaut, afficher seulement les commandes en cours (pending ou processing)
+            // Par défaut (status vide ou null), afficher seulement les commandes en cours
             $query->whereIn('status', ['pending', 'processing']);
         }
-        // Si status === 'all', on ne filtre pas par statut (afficher toutes les commandes)
+        // Si le statut n'est pas valide et n'est pas 'all', on ne filtre pas (afficher toutes les commandes)
         
         // Filtrer par date
         $dateFilter = $request->input('date');
