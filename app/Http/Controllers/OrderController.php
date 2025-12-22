@@ -456,10 +456,44 @@ class OrderController extends Controller
             ], 401);
         }
         
-        $orders = Order::forUser($user->id)
-            ->recent()
-            ->with('items')
-            ->get();
+        $query = Order::forUser($user->id)
+            ->with('items');
+        
+        // Filtrer par statut
+        $status = $request->input('status');
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        } elseif (!$status || $status === '') {
+            // Par défaut, afficher seulement les commandes en cours (pending ou processing)
+            $query->whereIn('status', ['pending', 'processing']);
+        }
+        // Si status === 'all', on ne filtre pas par statut
+        
+        // Filtrer par date
+        $dateFilter = $request->input('date');
+        if ($dateFilter) {
+            $now = now();
+            switch ($dateFilter) {
+                case 'today':
+                    $query->whereDate('created_at', $now->toDateString());
+                    break;
+                case 'week':
+                    $query->where('created_at', '>=', $now->copy()->subWeek());
+                    break;
+                case 'month':
+                    $query->whereMonth('created_at', $now->month)
+                          ->whereYear('created_at', $now->year);
+                    break;
+                case '3months':
+                    $query->where('created_at', '>=', $now->copy()->subMonths(3));
+                    break;
+                case 'year':
+                    $query->whereYear('created_at', $now->year);
+                    break;
+            }
+        }
+        
+        $orders = $query->recent()->get();
         
         return response()->json([
             'success' => true,

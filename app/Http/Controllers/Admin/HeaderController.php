@@ -15,8 +15,7 @@ class HeaderController extends Controller
 {
     public function __construct()
     {
-        // Temporairement désactivé pour debug
-        // $this->middleware('auth');
+        $this->middleware('admin');
     }
     /**
      * Recherche globale dans l'admin
@@ -24,10 +23,10 @@ class HeaderController extends Controller
     public function search(Request $request): JsonResponse
     {
         try {
-            // Vérification d'authentification manuelle (optionnelle)
-            // if (!auth()->check() || !auth()->user()->is_admin) {
-            //     return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
-            // }
+            // Vérifier l'authentification
+            if (!auth()->check() || !auth()->user()->is_admin) {
+                return response()->json(['success' => false, 'message' => 'Non autorisé'], 403);
+            }
 
             $query = $request->get('q', '');
             $results = [];
@@ -35,7 +34,7 @@ class HeaderController extends Controller
             // Recherche dans les produits
             try {
                 $products = \DB::table('products')
-                    ->where('name', 'like', "%{$query}%")
+                    ->where('name', 'like', '%' . $query . '%')
                     ->limit(3)
                     ->get(['id', 'name', 'price']);
 
@@ -58,7 +57,7 @@ class HeaderController extends Controller
             // Recherche dans les commandes
             try {
                 $orders = \DB::table('orders')
-                    ->where('order_number', 'like', "%{$query}%")
+                    ->where('order_number', 'like', '%' . $query . '%')
                     ->limit(3)
                     ->get(['id', 'order_number', 'total']);
 
@@ -82,9 +81,11 @@ class HeaderController extends Controller
             // Recherche dans les utilisateurs
             try {
                 $users = \DB::table('users')
-                    ->where('prenoms', 'like', "%{$query}%")
-                    ->orWhere('nom', 'like', "%{$query}%")
-                    ->orWhere('email', 'like', "%{$query}%")
+                    ->where(function($q) use ($query) {
+                        $q->where('prenoms', 'like', '%' . $query . '%')
+                          ->orWhere('nom', 'like', '%' . $query . '%')
+                          ->orWhere('email', 'like', '%' . $query . '%');
+                    })
                     ->limit(3)
                     ->get(['id', 'prenoms', 'nom', 'email']);
 

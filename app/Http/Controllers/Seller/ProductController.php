@@ -195,33 +195,6 @@ class ProductController extends Controller
         $product = Product::where('id', $id)
             ->where('store_id', $store->id)
             ->firstOrFail();
-
-        // Debug: Afficher les données reçues
-        \Log::info('=== DONNÉES REÇUES POUR MISE À JOUR ===', ['all' => $request->all()]);
-        \Log::info('Méthode HTTP: ' . $request->method());
-        \Log::info('Content-Type: ' . $request->header('Content-Type'));
-        \Log::info('Headers complets', ['headers' => $request->headers->all()]);
-        \Log::info('Raw input: ' . $request->getContent());
-        \Log::info('Champs spécifiques', [
-            'name' => $request->get('name') ?: 'MANQUANT',
-            'description' => $request->get('description') ?: 'MANQUANT',
-            'price' => $request->get('price') ?: 'MANQUANT',
-            'stock' => $request->get('stock') ?: 'MANQUANT',
-            'brand' => $request->get('brand') ?: 'MANQUANT',
-            'model' => $request->get('model') ?: 'MANQUANT',
-            'warranty' => $request->get('warranty') ?: 'MANQUANT',
-            'promo_price' => $request->get('promo_price') ?: 'MANQUANT',
-            'discount' => $request->get('discount') ?: 'MANQUANT',
-        ]);
-        
-        // Debug: Vérifier les données brutes
-        \Log::info('=== DEBUG DONNÉES BRUTES ===');
-        \Log::info('Request input', ['input' => $request->input()]);
-        \Log::info('Request files', ['files' => $request->file()]);
-        \Log::info('Request has name: ' . ($request->has('name') ? 'OUI' : 'NON'));
-        \Log::info('Request has description: ' . ($request->has('description') ? 'OUI' : 'NON'));
-        \Log::info('Request has price: ' . ($request->has('price') ? 'OUI' : 'NON'));
-        \Log::info('Request has stock: ' . ($request->has('stock') ? 'OUI' : 'NON'));
         
         // Validation optimisée
         // Nettoyer les données avant validation
@@ -253,19 +226,6 @@ class ProductController extends Controller
         $data['warranty'] = isset($data['warranty']) && $data['warranty'] === '' ? null : ($data['warranty'] ?? null);
         $data['promo_price'] = isset($data['promo_price']) && $data['promo_price'] === '' ? null : ($data['promo_price'] ?? null);
         $data['discount'] = isset($data['discount']) && $data['discount'] === '' ? null : ($data['discount'] ?? null);
-        
-        // Debug: Afficher les données nettoyées
-        \Log::info('=== DONNÉES NETTOYÉES ===', [
-            'name' => $data['name'],
-            'description' => $data['description'],
-            'price' => $data['price'],
-            'stock' => $data['stock'],
-            'brand' => $data['brand'],
-            'model' => $data['model'],
-            'warranty' => $data['warranty'],
-            'promo_price' => $data['promo_price'],
-            'discount' => $data['discount'],
-        ]);
         
         // Remplacer les données dans la requête
         $request->merge($data);

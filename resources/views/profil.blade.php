@@ -1384,20 +1384,46 @@ use Illuminate\Support\Str;
         // Charger les commandes de l'utilisateur
         async function loadOrders() {
             try {
-                const response = await fetch('/api/orders/my-orders', {
+                // Récupérer les filtres avant de faire la requête
+                const filterDate = document.getElementById('filterDate')?.value || '';
+                const filterStatus = document.getElementById('filterStatus')?.value || '';
+                
+                // Construire l'URL avec les paramètres de filtre
+                const params = new URLSearchParams();
+                if (filterDate) {
+                    params.append('date', filterDate);
+                }
+                if (filterStatus) {
+                    params.append('status', filterStatus);
+                }
+                
+                const url = '/api/orders/my-orders' + (params.toString() ? '?' + params.toString() : '');
+                
+                const response = await fetch(url, {
                     headers: {
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin' // Important pour envoyer les cookies de session
                 });
 
                 if (!response.ok) {
                     console.error('Erreur HTTP:', response.status);
                     const tbody = document.getElementById('ordersTableBody');
+                    let errorMessage = 'Erreur lors du chargement des commandes';
+                    
+                    if (response.status === 401) {
+                        errorMessage = 'Vous devez être connecté pour voir vos commandes. Redirection...';
+                        setTimeout(() => {
+                            window.location.href = '/authentification';
+                        }, 2000);
+                    }
+                    
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center text-danger py-4">
                                 <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
-                                <p class="mt-2">Erreur lors du chargement des commandes</p>
+                                <p class="mt-2">${errorMessage}</p>
                             </td>
                         </tr>
                     `;
@@ -1405,50 +1431,26 @@ use Illuminate\Support\Str;
                 }
 
                 const data = await response.json();
+                
+                if (!data.success) {
+                    console.error('Erreur API:', data.message);
+                    const tbody = document.getElementById('ordersTableBody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-danger py-4">
+                                <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                                <p class="mt-2">${data.message || 'Erreur lors du chargement des commandes'}</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
                 console.log('Données reçues:', data);
                 const tbody = document.getElementById('ordersTableBody');
                 
-                // Récupérer les filtres
-                const filterDate = document.getElementById('filterDate')?.value || '';
-                const filterStatus = document.getElementById('filterStatus')?.value || '';
-                
-                // Filtrer les commandes
-                let filteredOrders = data.orders || [];
-                
-                // Par défaut, afficher seulement les commandes en cours (pending ou processing)
-                if (!filterStatus) {
-                    // Aucun filtre sélectionné = afficher uniquement les commandes en cours
-                    filteredOrders = filteredOrders.filter(order => order.status === 'pending' || order.status === 'processing');
-                } else if (filterStatus === 'all') {
-                    // Afficher toutes les commandes
-                    filteredOrders = data.orders || [];
-                } else if (filterStatus) {
-                    // Filtrer par statut spécifique
-                    filteredOrders = filteredOrders.filter(order => order.status === filterStatus);
-                }
-                
-                if (filterDate) {
-                    const now = new Date();
-                    filteredOrders = filteredOrders.filter(order => {
-                        const orderDate = new Date(order.created_at);
-                        switch (filterDate) {
-                            case 'today':
-                                return orderDate.toDateString() === now.toDateString();
-                            case 'week':
-                                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                                return orderDate >= weekAgo;
-                            case 'month':
-                                return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
-                            case '3months':
-                                const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-                                return orderDate >= threeMonthsAgo;
-                            case 'year':
-                                return orderDate.getFullYear() === now.getFullYear();
-                            default:
-                                return true;
-                        }
-                    });
-                }
+                // Les commandes sont déjà filtrées côté serveur
+                const filteredOrders = data.orders || [];
                 
                 if (filteredOrders.length > 0) {
                     tbody.innerHTML = '';
@@ -2190,6 +2192,12 @@ use Illuminate\Support\Str;
         document.addEventListener('DOMContentLoaded', function() {
             const ordersTab = document.querySelector('a[href="#orders"]');
             if (ordersTab) {
+                // Vérifier si l'onglet orders est actif au chargement
+                const ordersPane = document.querySelector('#orders');
+                if (ordersPane && ordersPane.classList.contains('active')) {
+                    loadOrders();
+                }
+                
                 ordersTab.addEventListener('shown.bs.tab', function() {
                     loadOrders();
                     // Sauvegarder l'onglet actif

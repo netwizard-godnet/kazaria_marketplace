@@ -23,8 +23,8 @@ class ProductController extends Controller
             ])
             ->firstOrFail();
         
-        // Recharger le stock directement depuis la base de données AVANT de charger les relations
-        // Cela garantit que le stock est toujours à jour, même après des commandes récentes
+        // Recharger uniquement le stock depuis la base de données pour garantir qu'il est à jour
+        // Cela évite de recharger tout le produit et ses relations
         $freshStock = \Illuminate\Support\Facades\DB::table('products')
             ->where('id', $product->id)
             ->value('stock');
@@ -32,27 +32,6 @@ class ProductController extends Controller
         // Mettre à jour le stock du produit avec la valeur fraîche depuis la base
         if ($freshStock !== null) {
             $product->stock = (int)$freshStock;
-        }
-        
-        // Recharger complètement le produit depuis la base pour garantir la cohérence
-        // Cela force Laravel à récupérer toutes les données fraîches, y compris le stock
-        // IMPORTANT: Préserver les variations et les attributs pour la page produit
-        $freshProduct = Product::where('id', $product->id)
-            ->with([
-                'categories', 
-                'subcategories', 
-                'category', 
-                'subcategory',
-                'attributeValues.attribute',
-                'variations.attributeValues.attribute'
-            ])
-            ->first();
-        
-        if ($freshProduct) {
-            // Préserver les relations chargées du produit original
-            $freshProduct->setRelation('variations', $product->variations);
-            $freshProduct->setRelation('attributeValues', $product->attributeValues);
-            $product = $freshProduct;
         }
         
         // Métadonnées SEO

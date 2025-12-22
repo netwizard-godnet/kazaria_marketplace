@@ -16,15 +16,15 @@ class RedirectIfNotAuthenticated
      */
     public function handle(Request $request, Closure $next, string ...$guards): Response
     {
-        $guards = empty($guards) ? [null] : $guards;
+        $guards = empty($guards) ? ['web'] : $guards;
 
         foreach ($guards as $guard) {
-            if (!Auth::guard($guard)->check()) {
-                // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
-                return redirect()->route('login');
+            if (Auth::guard($guard)->check()) {
+                return $next($request);
             }
         }
 
-        return $next($request);
+        // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
+        return redirect()->route('login')->with('error', 'Veuillez vous connecter pour accéder à cette page.');
     }
 }
