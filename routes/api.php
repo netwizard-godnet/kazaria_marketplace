@@ -60,9 +60,9 @@ Route::prefix('favorites')->group(function () {
 // Route de mise à jour produit (API - sans CSRF pour test)
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
-// Routes de commande (protégées - support session web et token API)
-// Appliquer les middlewares web pour permettre l'authentification par session
-Route::middleware(['web', 'hybrid.auth'])->group(function () {
+// Routes de commande (protégées - support session web)
+// Le middleware web démarre la session, api.web.auth vérifie l'authentification et retourne JSON si non authentifié
+Route::middleware(['web', 'api.web.auth'])->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);

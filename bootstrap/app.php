@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'seo' => \App\Http\Middleware\SeoMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'hybrid.auth' => \App\Http\Middleware\HybridAuthMiddleware::class,
+            'api.web.auth' => \App\Http\Middleware\ApiWebAuth::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'auth.redirect' => \App\Http\Middleware\RedirectIfNotAuthenticated::class,
             'seller' => \App\Http\Middleware\RedirectIfNotSeller::class,
