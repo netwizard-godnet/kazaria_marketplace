@@ -18,6 +18,16 @@ class RedirectIfNotAuthenticated
     {
         $guards = empty($guards) ? ['web'] : $guards;
 
+        // S'assurer que la session est démarrée pour vérifier l'authentification
+        if (!$request->hasSession() || !session()->isStarted()) {
+            // Démarrer la session si elle n'est pas démarrée
+            $session = app('session');
+            if (!$session->isStarted()) {
+                $session->start();
+            }
+            $request->setLaravelSession($session);
+        }
+
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 return $next($request);

@@ -274,7 +274,7 @@ Route::get('/reset-password/{token}', function($token) {
 
 // Route profil utilisateur (authentification requise)
 Route::get('/profil', [App\Http\Controllers\ProfileController::class, 'index'])
-    ->middleware('auth.redirect')
+    ->middleware('auth:web')
     ->name('profil');
 
 // Routes pour le profil utilisateur (authentification par session)

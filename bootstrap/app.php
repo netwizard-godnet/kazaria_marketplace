@@ -61,5 +61,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Configurer la redirection pour les utilisateurs non authentifiés
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, \Illuminate\Http\Request $request) {
+            if ($exception instanceof \Illuminate\Auth\AuthenticationException) {
+                return redirect()->route('login')->with('error', 'Veuillez vous connecter pour accéder à cette page.');
+            }
+            return $response;
+        });
     })->create();
