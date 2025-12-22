@@ -1418,10 +1418,15 @@ use Illuminate\Support\Str;
                 
                 const url = '/api/orders/my-orders' + (params.toString() ? '?' + params.toString() : '');
                 
+                // Récupérer le token CSRF
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                
                 const response = await fetch(url, {
+                    method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
                     },
                     credentials: 'same-origin' // Important pour envoyer les cookies de session
                 });
@@ -1434,9 +1439,22 @@ use Illuminate\Support\Str;
                     let errorMessage = 'Erreur lors du chargement des commandes';
                     
                     if (response.status === 401) {
-                        // Ne pas rediriger automatiquement - afficher juste un message
-                        errorMessage = 'Vous devez être connecté pour voir vos commandes. Veuillez rafraîchir la page.';
-                        console.error('Erreur 401 - Session peut-être expirée');
+                        // Session expirée - proposer de se reconnecter
+                        errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+                        console.error('Erreur 401 - Session expirée');
+                        
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="text-center text-danger py-4">
+                                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">${errorMessage}</p>
+                                    <button class="btn btn-primary mt-3" onclick="window.location.href='{{ route('login') }}'">
+                                        <i class="bi bi-box-arrow-in-right me-2"></i>Se reconnecter
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        return;
                     }
                     
                     tbody.innerHTML = `
