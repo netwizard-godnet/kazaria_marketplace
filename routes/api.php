@@ -61,8 +61,12 @@ Route::prefix('favorites')->group(function () {
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
 // Routes de commande (protégées - support session web)
-// Le middleware web démarre la session, api.web.auth vérifie l'authentification et retourne JSON si non authentifié
-Route::middleware(['web', 'api.web.auth'])->group(function () {
+// Utiliser EnsureFrontendRequestsAreStateful pour démarrer la session correctement
+// puis api.web.auth pour vérifier l'authentification
+Route::middleware([
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    'api.web.auth'
+])->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
