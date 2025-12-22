@@ -20,8 +20,18 @@ class ApiWebAuth
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Ne pas démarrer manuellement la session - laisser les middlewares web le faire
-        // Cela évite les conflits avec la gestion normale de Laravel
+        // S'assurer que la session est démarrée pour les routes API depuis le frontend
+        // Cela permet de lire les cookies de session même si le middleware 'web' 
+        // n'a pas démarré la session correctement
+        if (!$request->hasSession() || !session()->isStarted()) {
+            // Démarrer la session manuellement pour lire les cookies
+            $session = app('session');
+            if (!$session->isStarted()) {
+                $session->start();
+            }
+            // Attacher la session à la requête
+            $request->setLaravelSession($session);
+        }
         
         // Vérifier l'authentification avec le guard web
         if (!Auth::guard('web')->check()) {
