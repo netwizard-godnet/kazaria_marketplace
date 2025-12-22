@@ -39,7 +39,16 @@ class HybridAuthMiddleware
             }
         }
 
-        // Aucune authentification valide trouvée, rediriger vers la page de connexion
+        // Aucune authentification valide trouvée
+        // Pour les requêtes API (JSON), retourner une réponse JSON 401
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+        
+        // Pour les requêtes web, rediriger vers la page de connexion
         return redirect()->route('login');
     }
 }

@@ -25,13 +25,13 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Route pour la photo de profil (support session et token)
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware(['web', 'hybrid.auth'])->group(function () {
     Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
 });
 
 // Routes protégées par authentification (suite)
 // Route pour l'activité récente (support session et token)
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware(['web', 'hybrid.auth'])->group(function () {
     Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
 });
 
@@ -60,8 +60,9 @@ Route::prefix('favorites')->group(function () {
 // Route de mise à jour produit (API - sans CSRF pour test)
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
-// Routes de commande (protégées)
-Route::middleware(['web', 'auth'])->group(function () {
+// Routes de commande (protégées - support session web et token API)
+// Appliquer les middlewares web pour permettre l'authentification par session
+Route::middleware(['web', 'hybrid.auth'])->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
