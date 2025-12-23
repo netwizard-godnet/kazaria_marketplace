@@ -102,15 +102,21 @@ class SocialAuthController extends Controller
             $user->update($userData);
         }
 
-        // Régénérer l'ID de session AVANT le login pour éviter les problèmes
-        request()->session()->regenerate();
+        // S'assurer que la session est démarrée
+        if (!request()->hasSession()) {
+            request()->setLaravelSession(app('session.store'));
+        }
         
-        // Créer une session web persistante
+        // Connecter l'utilisateur D'ABORD dans la session actuelle
         Auth::login($user, true);
         
         // Stocker explicitement le hash du mot de passe dans la session
         // pour éviter les problèmes avec AuthenticateSession
         request()->session()->put('password_hash_web', $user->getAuthPassword());
+        
+        // MAINTENANT régénérer l'ID de session APRÈS le login
+        // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
+        request()->session()->regenerate();
         
         // Régénérer le token CSRF
         request()->session()->regenerateToken();
