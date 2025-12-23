@@ -18,6 +18,18 @@ class RedirectIfNotAuthenticated
     {
         $guards = empty($guards) ? ['web'] : $guards;
 
+        // S'assurer que la session est démarrée pour les routes web
+        if (!$request->is('api/*')) {
+            if (!$request->hasSession()) {
+                $request->setLaravelSession(app('session.store'));
+            }
+            
+            $session = $request->session();
+            if (!$session->isStarted()) {
+                $session->start();
+            }
+        }
+
         // Vérifier l'authentification avec chaque guard
         foreach ($guards as $guard) {
             // Utiliser le guard explicite pour éviter les problèmes de session

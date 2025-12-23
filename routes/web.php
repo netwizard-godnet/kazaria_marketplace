@@ -273,9 +273,8 @@ Route::get('/reset-password/{token}', function($token) {
 })->name('reset-password');
 
 // Route profil utilisateur (authentification requise)
-// Utiliser auth.redirect qui ne fait pas la vérification stricte du hash de mot de passe
 Route::get('/profil', [App\Http\Controllers\ProfileController::class, 'index'])
-    ->middleware('auth.redirect')
+    ->middleware('auth')
     ->name('profil');
 
 // Routes pour le profil utilisateur (authentification par session)

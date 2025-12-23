@@ -107,22 +107,23 @@ class SocialAuthController extends Controller
             request()->setLaravelSession(app('session.store'));
         }
         
-        // Connecter l'utilisateur D'ABORD dans la session actuelle
+        $session = request()->session();
+        if (!$session->isStarted()) {
+            $session->start();
+        }
+        
+        // Connecter l'utilisateur dans la session
         Auth::login($user, true);
         
-        // Stocker explicitement le hash du mot de passe dans la session
-        // pour éviter les problèmes avec AuthenticateSession
-        request()->session()->put('password_hash_web', $user->getAuthPassword());
-        
-        // MAINTENANT régénérer l'ID de session APRÈS le login
-        // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
+        // Régénérer l'ID de session APRÈS le login pour la sécurité
         request()->session()->regenerate();
+        
+        // Stocker le hash du mot de passe dans la session APRÈS la régénération
+        // pour que AuthenticateSession puisse vérifier l'authenticité de la session
+        request()->session()->put('password_hash_web', $user->getAuthPassword());
         
         // Régénérer le token CSRF
         request()->session()->regenerateToken();
-        
-        // Forcer la sauvegarde de la session
-        request()->session()->save();
 
         // Rediriger vers l'accueil avec cache-busting pour forcer le rechargement
         return redirect(route('accueil') . '?login=' . time())
