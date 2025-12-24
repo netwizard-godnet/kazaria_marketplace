@@ -125,6 +125,9 @@ class SocialAuthController extends Controller
         // Régénérer le token CSRF
         request()->session()->regenerateToken();
 
+        // Fusionner le panier invité avec le panier utilisateur
+        $this->mergeGuestCart($user, request()->header('X-Session-ID'));
+
         // Rediriger vers l'accueil avec cache-busting pour forcer le rechargement
         return redirect(route('accueil') . '?login=' . time())
             ->with('success', "Bienvenue {$user->prenoms} !");
@@ -158,6 +161,64 @@ class SocialAuthController extends Controller
         $firstName = implode(' ', $parts);
 
         return [$lastName, $firstName];
+    }
+
+    /**
+     * Fusionner le panier invité avec le panier utilisateur lors de la connexion sociale
+     * 
+     * @param \App\Models\User $user L'utilisateur qui vient de se connecter
+     * @param string|null $guestSessionId L'ID de session invité (X-Session-ID header)
+     */
+    private function mergeGuestCart($user, $guestSessionId = null)
+    {
+        // Si pas de session invité, rien à fusionner
+        if (!$guestSessionId) {
+            return;
+        }
+
+        try {
+            // Récupérer les items du panier invité
+            $guestItems = \App\Models\CartItem::where('session_id', $guestSessionId)
+                ->whereNull('user_id')
+                ->get();
+
+            if ($guestItems->isEmpty()) {
+                return; // Pas d'items à fusionner
+            }
+
+            foreach ($guestItems as $item) {
+                // Vérifier si l'utilisateur a déjà ce produit dans son panier
+                $existingItem = \App\Models\CartItem::where('user_id', $user->id)
+                    ->where('product_id', $item->product_id)
+                    ->where('variation_id', $item->variation_id)
+                    ->where('attributes', $item->attributes)
+                    ->first();
+
+                if ($existingItem) {
+                    // Fusionner les quantités
+                    $existingItem->quantity += $item->quantity;
+                    $existingItem->save();
+                    // Supprimer l'item invité
+                    $item->delete();
+                } else {
+                    // Transférer l'item à l'utilisateur
+                    $item->user_id = $user->id;
+                    $item->session_id = null;
+                    $item->save();
+                }
+            }
+
+            \Log::info("Panier invité fusionné pour l'utilisateur {$user->id} (social auth)", [
+                'guest_session_id' => $guestSessionId,
+                'items_merged' => $guestItems->count()
+            ]);
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas bloquer la connexion
+            \Log::error("Erreur lors de la fusion du panier invité (social auth): " . $e->getMessage(), [
+                'user_id' => $user->id,
+                'guest_session_id' => $guestSessionId
+            ]);
+        }
     }
 
     private function downloadAvatar(?string $url, string $provider, string $socialId): ?string

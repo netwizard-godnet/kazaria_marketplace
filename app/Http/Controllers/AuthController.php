@@ -91,12 +91,12 @@ class AuthController extends Controller
             // URL de vérification
             $verificationUrl = route('verify-email', ['token' => $verificationToken]);
 
-            // Envoyer l'email de vérification
+            // Envoyer l'email de vérification (optionnel)
             Mail::to($user->email)->send(new VerifyEmailMail($user, $verificationUrl));
 
             return response()->json([
                 'success' => true,
-                'message' => 'Compte créé avec succès ! Un email de vérification a été envoyé à votre adresse email.',
+                'message' => 'Compte créé avec succès ! Vous pouvez maintenant vous connecter. Un email de vérification a été envoyé à votre adresse email pour devenir un utilisateur vérifié.',
                 'user' => $user->only(['id', 'nom', 'prenoms', 'email'])
             ]);
 
@@ -155,41 +155,61 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Détecter si c'est une requête API (mobile/Flutter)
+        $isApiRequest = $request->expectsJson() || $request->is('api/*');
+
         // Vérifier si l'authentification à deux facteurs est activée
         if (!$user->two_factor_enabled) {
             // Connexion directe sans code si le 2FA n'est pas activé
             try {
-                // S'assurer que la session est démarrée
-                if (!$request->hasSession()) {
-                    $request->setLaravelSession(app('session.store'));
-                }
-                
-                $session = $request->session();
-                if (!$session->isStarted()) {
-                    $session->start();
-                }
-                
-                // Connecter l'utilisateur dans la session
-                Auth::login($user, $request->has('remember'));
-                
-                // Régénérer l'ID de session APRÈS le login pour la sécurité
-                // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
-                $request->session()->regenerate();
-                
-                // Stocker le hash du mot de passe dans la session APRÈS la régénération
-                // pour que AuthenticateSession puisse vérifier l'authenticité de la session
-                $request->session()->put('password_hash_web', $user->getAuthPassword());
-                
-                // Régénérer le token CSRF
-                $request->session()->regenerateToken();
+                if ($isApiRequest) {
+                    // Pour les requêtes API (Flutter/mobile) : créer un token Sanctum
+                    $token = $user->createToken('mobile-app')->plainTextToken;
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Connexion réussie',
+                        'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                        'token' => $token,
+                        'requires_code' => false
+                    ]);
+                } else {
+                    // Pour les requêtes web : utiliser la session
+                    // S'assurer que la session est démarrée
+                    if (!$request->hasSession()) {
+                        $request->setLaravelSession(app('session.store'));
+                    }
+                    
+                    $session = $request->session();
+                    if (!$session->isStarted()) {
+                        $session->start();
+                    }
+                    
+                    // Connecter l'utilisateur dans la session
+                    Auth::login($user, $request->has('remember'));
+                    
+                    // Régénérer l'ID de session APRÈS le login pour la sécurité
+                    // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
+                    $request->session()->regenerate();
+                    
+                    // Stocker le hash du mot de passe dans la session APRÈS la régénération
+                    // pour que AuthenticateSession puisse vérifier l'authenticité de la session
+                    $request->session()->put('password_hash_web', $user->getAuthPassword());
+                    
+                    // Régénérer le token CSRF
+                    $request->session()->regenerateToken();
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Connexion réussie',
-                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
-                    'requires_code' => false,
-                    'redirect' => route('accueil')
-                ]);
+                    // Fusionner le panier invité avec le panier utilisateur
+                    $this->mergeGuestCart($user, $request->header('X-Session-ID'));
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Connexion réussie',
+                        'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                        'requires_code' => false,
+                        'redirect' => route('accueil')
+                    ]);
+                }
             } catch (\Exception $e) {
                 \Log::error('Erreur connexion directe: ' . $e->getMessage());
                 return response()->json([
@@ -223,7 +243,90 @@ class AuthController extends Controller
     }
 
     /**
-     * Vérification du code de connexion
+     * Vérification du code de connexion (API - pour Flutter/mobile)
+     */
+    public function verifyLoginCodeApi(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'code' => 'required|string|size:8',
+        ]);
+
+        if ($validator->fails()) {
+            $errors = $validator->errors();
+            $messages = [];
+            
+            if ($errors->has('email')) {
+                $messages[] = 'L\'adresse email est requise';
+            }
+            if ($errors->has('code')) {
+                if (strlen($request->code ?? '') !== 8) {
+                    $messages[] = 'Le code doit contenir exactement 8 chiffres';
+                } else {
+                    $messages[] = 'Le code de vérification est requis';
+                }
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => implode('. ', $messages) ?: 'Veuillez remplir tous les champs requis',
+                'errors' => $errors->messages()
+            ], 422);
+        }
+
+        $authCode = AuthCode::where('email', $request->email)
+                           ->where('code', $request->code)
+                           ->where('type', 'login')
+                           ->unused()
+                           ->notExpired()
+                           ->first();
+
+        if (!$authCode) {
+            // Vérifier si le code existe mais est expiré
+            $expiredCode = AuthCode::where('email', $request->email)
+                                 ->where('code', $request->code)
+                                 ->where('type', 'login')
+                                 ->first();
+            
+            if ($expiredCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce code a expiré. Veuillez demander un nouveau code de connexion.',
+                    'error_type' => 'code_expired'
+                ], 401);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Le code saisi est incorrect. Vérifiez votre boîte email et réessayez.',
+                'error_type' => 'invalid_code'
+            ], 401);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+
+        // Marquer le code comme utilisé
+        $authCode->markAsUsed();
+
+        // Créer un token Sanctum pour Flutter/mobile
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Connexion réussie',
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+            'token' => $token
+        ]);
+    }
+
+    /**
+     * Vérification du code de connexion (WEB - Sessions)
      */
     public function verifyLoginCode(Request $request)
     {
@@ -333,6 +436,9 @@ class AuthController extends Controller
         
         // Régénérer le token CSRF
         $request->session()->regenerateToken();
+
+        // Fusionner le panier invité avec le panier utilisateur
+        $this->mergeGuestCart($user, $request->header('X-Session-ID'));
 
         return response()->json([
             'success' => true,
@@ -562,6 +668,65 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Erreur lors de la déconnexion'
             ], 500);
+        }
+    }
+
+    /**
+     * Fusionner le panier invité avec le panier utilisateur lors de la connexion
+     * 
+     * @param \App\Models\User $user L'utilisateur qui vient de se connecter
+     * @param string|null $guestSessionId L'ID de session invité (X-Session-ID header)
+     */
+    private function mergeGuestCart($user, $guestSessionId = null)
+    {
+        // Si pas de session invité, rien à fusionner
+        if (!$guestSessionId) {
+            return;
+        }
+
+        try {
+            // Récupérer les items du panier invité
+            $guestItems = CartItem::where('session_id', $guestSessionId)
+                ->whereNull('user_id')
+                ->get();
+
+            if ($guestItems->isEmpty()) {
+                return; // Pas d'items à fusionner
+            }
+
+            foreach ($guestItems as $item) {
+                // Vérifier si l'utilisateur a déjà ce produit dans son panier
+                // Comparer par product_id, variation_id et attributes (JSON)
+                $existingItem = CartItem::where('user_id', $user->id)
+                    ->where('product_id', $item->product_id)
+                    ->where('variation_id', $item->variation_id)
+                    ->where('attributes', $item->attributes)
+                    ->first();
+
+                if ($existingItem) {
+                    // Fusionner les quantités
+                    $existingItem->quantity += $item->quantity;
+                    $existingItem->save();
+                    // Supprimer l'item invité
+                    $item->delete();
+                } else {
+                    // Transférer l'item à l'utilisateur
+                    $item->user_id = $user->id;
+                    $item->session_id = null; // Plus besoin de session_id pour les utilisateurs connectés
+                    $item->save();
+                }
+            }
+
+            \Log::info("Panier invité fusionné pour l'utilisateur {$user->id}", [
+                'guest_session_id' => $guestSessionId,
+                'items_merged' => $guestItems->count()
+            ]);
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas bloquer la connexion
+            \Log::error("Erreur lors de la fusion du panier invité: " . $e->getMessage(), [
+                'user_id' => $user->id,
+                'guest_session_id' => $guestSessionId
+            ]);
         }
     }
 }

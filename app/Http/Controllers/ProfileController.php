@@ -779,4 +779,98 @@ class ProfileController extends Controller
             'store_status' => $user->store ? $user->store->effective_kyc_status : null,
         ]);
     }
+
+    /**
+     * Demander l'envoi d'un email de vérification (WEB - Sessions)
+     */
+    public function requestEmailVerification(Request $request)
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        // Vérifier si l'email est déjà vérifié
+        if ($user->is_verified && $user->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Votre email est déjà vérifié.'
+            ], 422);
+        }
+
+        try {
+            // Créer un nouveau token de vérification
+            $verificationToken = \Illuminate\Support\Str::random(64);
+            $user->update(['email_verification_token' => $verificationToken]);
+
+            // URL de vérification
+            $verificationUrl = route('verify-email', ['token' => $verificationToken]);
+
+            // Envoyer l'email de vérification
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\VerifyEmailMail($user, $verificationUrl));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email de vérification envoyé avec succès. Veuillez vérifier votre boîte de réception.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur envoi email vérification: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'envoi de l\'email de vérification. Veuillez réessayer.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Demander l'envoi d'un email de vérification (API - Tokens)
+     */
+    public function requestEmailVerificationApi(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        // Vérifier si l'email est déjà vérifié
+        if ($user->is_verified && $user->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Votre email est déjà vérifié.'
+            ], 422);
+        }
+
+        try {
+            // Créer un nouveau token de vérification
+            $verificationToken = \Illuminate\Support\Str::random(64);
+            $user->update(['email_verification_token' => $verificationToken]);
+
+            // URL de vérification
+            $verificationUrl = route('verify-email', ['token' => $verificationToken]);
+
+            // Envoyer l'email de vérification
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\VerifyEmailMail($user, $verificationUrl));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email de vérification envoyé avec succès. Veuillez vérifier votre boîte de réception.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur envoi email vérification: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'envoi de l\'email de vérification. Veuillez réessayer.'
+            ], 500);
+        }
+    }
 }

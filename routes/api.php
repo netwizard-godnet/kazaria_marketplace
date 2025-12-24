@@ -8,7 +8,7 @@ use App\Http\Controllers\AuthController;
 // Routes d'authentification publiques
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-// Route verify-login-code déplacée vers web.php car elle utilise la session
+Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCodeApi']); // API pour Flutter/mobile
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
@@ -22,16 +22,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Routes API pour le profil (utilisent des tokens)
     Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'updateApi']);
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePasswordApi']);
-});
-
-// Route pour la photo de profil (support session et token)
-Route::middleware(['web', 'hybrid.auth'])->group(function () {
-    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
+    Route::post('/profile/request-email-verification', [App\Http\Controllers\ProfileController::class, 'requestEmailVerificationApi']);
 });
 
 // Routes protégées par authentification (suite)
-// Route pour l'activité récente (support session et token)
-Route::middleware(['web', 'hybrid.auth'])->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
+    // Route pour la photo de profil (API - Tokens pour Flutter)
+    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
+    // Route pour l'activité récente (API - Tokens pour Flutter)
     Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
 });
 
@@ -60,13 +58,8 @@ Route::prefix('favorites')->group(function () {
 // Route de mise à jour produit (API - sans CSRF pour test)
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
-// Routes de commande (protégées - support session web)
-// Utiliser EnsureFrontendRequestsAreStateful pour démarrer la session correctement
-// puis api.web.auth pour vérifier l'authentification
-Route::middleware([
-    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-    'api.web.auth'
-])->group(function () {
+// Routes de commande (API - Tokens pour Flutter)
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);

@@ -24,7 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.redirect' => \App\Http\Middleware\RedirectIfNotAuthenticated::class,
             'seller' => \App\Http\Middleware\RedirectIfNotSeller::class,
             'admin.redirect' => \App\Http\Middleware\RedirectIfNotAdmin::class,
-            'force.session' => \App\Http\Middleware\ForceSessionSave::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'landing.page' => \App\Http\Middleware\LandingPageMiddleware::class,
         ]);
@@ -44,8 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackPageVisits::class,
         ]);
         
-        // NE PAS appliquer ForceSessionSave car il modifie la session
-        // et invalide le token CSRF
         
         // Ne pas appliquer auth globalement pour éviter les boucles
         // L'authentification sera appliquée via les routes spécifiques

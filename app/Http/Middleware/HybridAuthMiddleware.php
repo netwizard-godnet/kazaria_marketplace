@@ -23,7 +23,8 @@ class HybridAuthMiddleware
             // Vérifier si la session existe mais n'est pas démarrée
             if (!$request->hasSession() || !session()->isStarted()) {
                 // Démarrer la session manuellement pour lire les cookies
-                $session = app('session');
+                // Utiliser session.store au lieu de session (correct)
+                $session = app('session.store');
                 if (!$session->isStarted()) {
                     $session->start();
                 }

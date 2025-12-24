@@ -13,30 +13,29 @@ class CartController extends Controller
 {
     /**
      * Obtenir l'ID utilisateur ou session (WEB - Sessions)
+     * 
+     * IMPORTANT : Il y a deux types de "session_id" différents :
+     * - Session Laravel ($request->session()->getId()) : Pour authentification, CSRF, données de session
+     * - Session invité (X-Session-ID header) : Pour panier/favoris des invités (stocké dans localStorage)
+     * 
+     * Pour les utilisateurs connectés : utiliser uniquement user_id (session_id = null)
+     * Pour les invités : utiliser uniquement X-Session-ID (guest session)
      */
     private function getUserOrSession(Request $request)
     {
-        // Pour les pages web, utiliser l'authentification par session
+        // Pour les utilisateurs connectés : utiliser uniquement user_id
+        // Le panier est identifié par user_id, pas par session_id
         if (auth()->check()) {
-            // Utilisateur connecté - utiliser l'ID utilisateur
-            // Prioriser le header X-Session-ID pour la cohérence avec le frontend
-            $sessionId = $request->header('X-Session-ID');
-            if (!$sessionId && $request->hasSession()) {
-                $sessionId = $request->session()->getId();
-            }
-            return ['user_id' => auth()->user()->id, 'session_id' => $sessionId];
+            return ['user_id' => auth()->user()->id, 'session_id' => null];
         }
         
-        // Pour les invités, prioriser le header X-Session-ID (celui utilisé par le frontend)
-        // car c'est celui qui est stocké dans localStorage et utilisé lors de l'ajout au panier
+        // Pour les invités : utiliser uniquement X-Session-ID (guest session)
+        // C'est l'ID stocké dans localStorage côté client, pas la session Laravel
         $sessionId = $request->header('X-Session-ID');
         
-        // Si pas de header, essayer la session Laravel
-        if (!$sessionId && $request->hasSession()) {
-            $sessionId = $request->session()->getId();
-        }
-        
-        // Si toujours pas de session_id, générer un nouvel ID (ne devrait pas arriver normalement)
+        // Si pas de header, générer un nouvel ID invité
+        // On ne doit PAS utiliser $request->session()->getId() car c'est la session Laravel,
+        // pas la session invité pour le panier
         if (!$sessionId) {
             $sessionId = uniqid('guest_', true);
         }

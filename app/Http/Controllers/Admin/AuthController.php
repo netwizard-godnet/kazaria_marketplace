@@ -50,10 +50,6 @@ class AuthController extends Controller
             return back()->withErrors(['password' => 'Mot de passe incorrect.']);
         }
         
-        if (!$user->is_verified) {
-            return back()->withErrors(['email' => 'Votre compte n\'est pas vérifié. Veuillez vérifier votre email.']);
-        }
-        
         // Connecter l'utilisateur
         Auth::login($user, $request->has('remember'));
         // Sécuriser la session contre la fixation
