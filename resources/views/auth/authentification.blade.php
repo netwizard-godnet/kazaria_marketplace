@@ -517,10 +517,11 @@
                     } else if (data.success) {
                         resetFieldErrors();
                         showMessage('loginAlert', data.message, 'success');
-                        // Rediriger vers la page d'accueil
+                        // Rediriger vers la page d'accueil avec cache-busting pour forcer le rechargement
                         setTimeout(() => {
-                            window.location.replace('{{ route("accueil") }}');
-                        }, 2000);
+                            const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
+                            window.location.replace(redirectUrl);
+                        }, 1000);
                     } else {
                         const errorMessage = data.message || 'Erreur lors de la connexion';
                         showMessage('loginAlert', errorMessage, 'danger', data.errors);
