@@ -499,8 +499,10 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
+                        credentials: 'same-origin', // Important : inclure les cookies dans la requête
                         body: JSON.stringify(object)
                     });
 

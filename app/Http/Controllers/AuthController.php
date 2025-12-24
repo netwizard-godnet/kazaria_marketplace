@@ -17,6 +17,40 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     /**
+     * Ajouter le cookie de session à une réponse JSON
+     * Nécessaire pour les routes API car le middleware StartSession n'est pas appliqué
+     * 
+     * @param \Illuminate\Http\JsonResponse $response
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function addSessionCookieToResponse($response, $request)
+    {
+        if (!$request->hasSession()) {
+            return $response;
+        }
+
+        $session = $request->session();
+        $sessionName = config('session.cookie');
+        $sessionId = $session->getId();
+        $sessionLifetime = config('session.lifetime') * 60; // Convertir en secondes
+        
+        $cookie = cookie(
+            $sessionName,
+            $sessionId,
+            $sessionLifetime,
+            config('session.path', '/'),
+            config('session.domain'),
+            config('session.secure', false),
+            config('session.http_only', true),
+            false,
+            config('session.same_site', 'lax')
+        );
+
+        return $response->withCookie($cookie);
+    }
+
+    /**
      * Inscription d'un nouvel utilisateur
      */
     public function register(Request $request)
@@ -156,7 +190,10 @@ class AuthController extends Controller
         }
 
         // Détecter si c'est une requête API (mobile/Flutter)
-        $isApiRequest = $request->expectsJson() || $request->is('api/*');
+        // Pour les requêtes depuis le frontend web, même si c'est /api/login, on doit utiliser la session
+        // Si X-Requested-With est présent, c'est une requête AJAX depuis le frontend web
+        $isApiRequest = ($request->expectsJson() || $request->is('api/*')) 
+            && !$request->header('X-Requested-With'); // Si X-Requested-With est présent, c'est une requête web
 
         // Vérifier si l'authentification à deux facteurs est activée
         if (!$user->two_factor_enabled) {
@@ -202,13 +239,22 @@ class AuthController extends Controller
                     // Fusionner le panier invité avec le panier utilisateur
                     $this->mergeGuestCart($user, $request->header('X-Session-ID'));
 
-                    return response()->json([
+                    // Sauvegarder la session pour s'assurer qu'elle est persistée
+                    $request->session()->save();
+
+                    // Créer la réponse JSON
+                    $response = response()->json([
                         'success' => true,
                         'message' => 'Connexion réussie',
                         'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
                         'requires_code' => false,
                         'redirect' => route('accueil')
                     ]);
+
+                    // Ajouter le cookie de session à la réponse
+                    // C'est nécessaire car les routes API n'ont pas le middleware StartSession
+                    // qui ajoute automatiquement le cookie
+                    return $this->addSessionCookieToResponse($response, $request);
                 }
             } catch (\Exception $e) {
                 \Log::error('Erreur connexion directe: ' . $e->getMessage());
@@ -440,12 +486,21 @@ class AuthController extends Controller
         // Fusionner le panier invité avec le panier utilisateur
         $this->mergeGuestCart($user, $request->header('X-Session-ID'));
 
-        return response()->json([
+        // Sauvegarder la session pour s'assurer qu'elle est persistée
+        $request->session()->save();
+
+        // Créer la réponse JSON
+        $response = response()->json([
             'success' => true,
             'message' => 'Connexion réussie',
             'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
             'redirect' => route('accueil')
         ]);
+
+        // Ajouter le cookie de session à la réponse
+        // C'est nécessaire car les routes API n'ont pas le middleware StartSession
+        // qui ajoute automatiquement le cookie
+        return $this->addSessionCookieToResponse($response, $request);
     }
 
     /**
