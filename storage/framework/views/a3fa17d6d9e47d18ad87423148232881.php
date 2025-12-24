@@ -501,8 +501,10 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
+                            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
+                        credentials: 'same-origin', // Important : inclure les cookies dans la requête
                         body: JSON.stringify(object)
                     });
 
@@ -519,10 +521,11 @@
                     } else if (data.success) {
                         resetFieldErrors();
                         showMessage('loginAlert', data.message, 'success');
-                        // Rediriger vers la page d'accueil
+                        // Rediriger vers la page d'accueil avec cache-busting pour forcer le rechargement
                         setTimeout(() => {
-                            window.location.replace('<?php echo e(route("accueil")); ?>');
-                        }, 2000);
+                            const redirectUrl = (data.redirect || '<?php echo e(route("accueil")); ?>') + '?login=' + Date.now();
+                            window.location.replace(redirectUrl);
+                        }, 1000);
                     } else {
                         const errorMessage = data.message || 'Erreur lors de la connexion';
                         showMessage('loginAlert', errorMessage, 'danger', data.errors);

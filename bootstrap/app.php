@@ -41,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SeoMiddleware::class,
             \App\Http\Middleware\LandingPageMiddleware::class,
             \App\Http\Middleware\TrackPageVisits::class,
+            \App\Http\Middleware\EnsurePasswordHashInSession::class, // S'assurer que password_hash_web est toujours présent
         ]);
         
         
