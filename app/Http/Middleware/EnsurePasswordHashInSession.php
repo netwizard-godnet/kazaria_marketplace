@@ -23,22 +23,52 @@ class EnsurePasswordHashInSession
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // ⚠️ IMPORTANT : S'assurer que password_hash_web est présent AVANT la requête
+        // pour éviter que AuthenticateSession ne déconnecte l'utilisateur
+        if ($request->hasSession()) {
+            $session = $request->session();
+            
+            // Vérifier si la session contient un user_id
+            $userId = $session->get('login_web_59ba36addc2b2f9401580f014c7f58ea4');
+            
+            if ($userId) {
+                // Charger l'utilisateur depuis la base de données
+                $user = \App\Models\User::find($userId);
+                
+                if ($user && $user->getAuthPassword()) {
+                    $passwordHashKey = 'password_hash_web';
+                    
+                    // Si password_hash_web n'existe pas ou ne correspond pas, le mettre à jour
+                    if (!$session->has($passwordHashKey) || 
+                        !hash_equals($session->get($passwordHashKey), $user->getAuthPassword())) {
+                        $session->put($passwordHashKey, $user->getAuthPassword());
+                        \Log::info('EnsurePasswordHashInSession: password_hash_web mis à jour AVANT la requête', [
+                            'user_id' => $user->id,
+                            'session_id' => $session->getId(),
+                            'had_hash' => $session->has($passwordHashKey),
+                        ]);
+                    }
+                }
+            }
+        }
+        
         $response = $next($request);
 
-        // Si l'utilisateur est connecté et que la session existe
+        // S'assurer aussi APRÈS la requête (au cas où l'utilisateur se connecte pendant la requête)
         if ($request->hasSession() && Auth::guard('web')->check()) {
             $user = Auth::guard('web')->user();
             
-            // S'assurer que password_hash_web est présent dans la session
-            // Cela évite que AuthenticateSession déconnecte l'utilisateur
             if ($user && $user->getAuthPassword()) {
                 $session = $request->session();
                 $passwordHashKey = 'password_hash_web';
                 
-                // Si password_hash_web n'existe pas ou ne correspond pas, le mettre à jour
                 if (!$session->has($passwordHashKey) || 
                     !hash_equals($session->get($passwordHashKey), $user->getAuthPassword())) {
                     $session->put($passwordHashKey, $user->getAuthPassword());
+                    \Log::info('EnsurePasswordHashInSession: password_hash_web mis à jour APRÈS la requête', [
+                        'user_id' => $user->id,
+                        'session_id' => $session->getId(),
+                    ]);
                 }
             }
         }

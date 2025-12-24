@@ -37,11 +37,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         
         // Appliquer les middlewares web globalement
+        // ⚠️ IMPORTANT : EnsurePasswordHashInSession doit s'exécuter AVANT AuthenticateSession
+        // pour éviter que AuthenticateSession ne déconnecte l'utilisateur
+        $middleware->web(prepend: [
+            \App\Http\Middleware\EnsurePasswordHashInSession::class, // AVANT AuthenticateSession
+        ]);
+        
         $middleware->web(append: [
             \App\Http\Middleware\SeoMiddleware::class,
             \App\Http\Middleware\LandingPageMiddleware::class,
             \App\Http\Middleware\TrackPageVisits::class,
-            \App\Http\Middleware\EnsurePasswordHashInSession::class, // S'assurer que password_hash_web est toujours présent
+            \App\Http\Middleware\LogAuthenticateSession::class, // Logging pour diagnostic (à supprimer après)
         ]);
         
         
