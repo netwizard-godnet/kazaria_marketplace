@@ -30,16 +30,44 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'termes_condition' => 'required|accepted',
             'newsletter' => 'boolean',
+        ], [
+            'nom.required' => 'Le nom est obligatoire',
+            'nom.max' => 'Le nom ne peut pas dépasser 255 caractères',
+            'prenoms.required' => 'Le prénom est obligatoire',
+            'prenoms.max' => 'Le prénom ne peut pas dépasser 255 caractères',
+            'email.required' => 'L\'adresse email est obligatoire',
+            'email.email' => 'Veuillez saisir une adresse email valide (exemple : nom@exemple.com)',
+            'email.unique' => 'Cette adresse email est déjà utilisée. Avez-vous déjà un compte ?',
+            'email.max' => 'L\'adresse email ne peut pas dépasser 255 caractères',
+            'telephone.required' => 'Le numéro de téléphone est obligatoire',
+            'telephone.max' => 'Le numéro de téléphone ne peut pas dépasser 20 caractères',
+            'password.required' => 'Le mot de passe est obligatoire',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères pour votre sécurité',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas. Veuillez vérifier votre saisie',
+            'termes_condition.required' => 'Vous devez accepter les conditions d\'utilisation',
+            'termes_condition.accepted' => 'Vous devez accepter les conditions d\'utilisation pour continuer',
         ]);
 
         if ($validator->fails()) {
             $errors = $validator->errors();
+            $formattedErrors = [];
+            
+            // Formater les erreurs par champ
+            foreach ($errors->messages() as $field => $messages) {
+                $formattedErrors[$field] = $messages;
+            }
+            
+            // Créer un message principal compréhensible
             $firstError = $errors->first();
+            $errorCount = $errors->count();
+            $mainMessage = $errorCount === 1 
+                ? $firstError 
+                : "Veuillez corriger {$errorCount} erreur(s) dans le formulaire";
             
             return response()->json([
                 'success' => false,
-                'message' => $firstError,
-                'errors' => $errors
+                'message' => $mainMessage,
+                'errors' => $formattedErrors
             ], 422);
         }
 
@@ -93,28 +121,86 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            $errors = $validator->errors();
+            $messages = [];
+            
+            if ($errors->has('email')) {
+                $messages[] = 'Veuillez saisir une adresse email valide';
+            }
+            if ($errors->has('password')) {
+                $messages[] = 'Le mot de passe est obligatoire';
+            }
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Email et mot de passe requis'
+                'message' => implode('. ', $messages) ?: 'Veuillez remplir tous les champs requis',
+                'errors' => $errors->messages()
             ], 422);
         }
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email ou mot de passe incorrect'
+                'message' => 'Aucun compte trouvé avec cette adresse email. Vérifiez votre saisie ou créez un compte.',
+                'error_type' => 'email_not_found'
             ], 401);
         }
 
-        if (!$user->is_verified) {
+        if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Veuillez d\'abord vérifier votre adresse email'
+                'message' => 'Le mot de passe est incorrect. Vérifiez votre saisie ou utilisez "Mot de passe oublié" si nécessaire.',
+                'error_type' => 'invalid_password'
             ], 401);
         }
 
+        // Vérifier si l'authentification à deux facteurs est activée
+        if (!$user->two_factor_enabled) {
+            // Connexion directe sans code si le 2FA n'est pas activé
+            try {
+                // S'assurer que la session est démarrée
+                if (!$request->hasSession()) {
+                    $request->setLaravelSession(app('session.store'));
+                }
+                
+                $session = $request->session();
+                if (!$session->isStarted()) {
+                    $session->start();
+                }
+                
+                // Connecter l'utilisateur dans la session
+                Auth::login($user, $request->has('remember'));
+                
+                // Régénérer l'ID de session APRÈS le login pour la sécurité
+                // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
+                $request->session()->regenerate();
+                
+                // Stocker le hash du mot de passe dans la session APRÈS la régénération
+                // pour que AuthenticateSession puisse vérifier l'authenticité de la session
+                $request->session()->put('password_hash_web', $user->getAuthPassword());
+                
+                // Régénérer le token CSRF
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                    'requires_code' => false,
+                    'redirect' => route('accueil')
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur connexion directe: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la connexion. Veuillez réessayer.'
+                ], 500);
+            }
+        }
+
+        // Si le 2FA est activé, envoyer le code de vérification
         try {
             // Générer et envoyer le code de connexion
             $authCode = AuthCode::createCode($user->email, 'login', $request);
@@ -149,9 +235,24 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            $errors = $validator->errors();
+            $messages = [];
+            
+            if ($errors->has('email')) {
+                $messages[] = 'L\'adresse email est requise';
+            }
+            if ($errors->has('code')) {
+                if (strlen($request->code ?? '') !== 8) {
+                    $messages[] = 'Le code doit contenir exactement 8 chiffres';
+                } else {
+                    $messages[] = 'Le code de vérification est requis';
+                }
+            }
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Code de 8 chiffres requis'
+                'message' => implode('. ', $messages) ?: 'Veuillez remplir tous les champs requis',
+                'errors' => $errors->messages()
             ], 422);
         }
 
@@ -164,9 +265,24 @@ class AuthController extends Controller
                            ->first();
 
         if (!$authCode) {
+            // Vérifier si le code existe mais est expiré
+            $expiredCode = AuthCode::where('email', $request->email)
+                                 ->where('code', $request->code)
+                                 ->where('type', 'login')
+                                 ->first();
+            
+            if ($expiredCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce code a expiré. Veuillez demander un nouveau code de connexion.',
+                    'error_type' => 'code_expired'
+                ], 401);
+            }
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Code invalide ou expiré'
+                'message' => 'Le code saisi est incorrect. Vérifiez votre boîte email et réessayez.',
+                'error_type' => 'invalid_code'
             ], 401);
         }
 
@@ -196,7 +312,6 @@ class AuthController extends Controller
                 
                 // Marquer le code comme utilisé seulement après succès
                 $authCode->markAsUsed();
-
                 return response()->json([
                     'success' => true,
                     'message' => 'Connexion réussie',
@@ -262,6 +377,36 @@ class AuthController extends Controller
                 'message' => 'Erreur lors de la connexion'
             ], 500);
         }
+        // S'assurer que la session est démarrée
+        if (!$request->hasSession()) {
+            $request->setLaravelSession(app('session.store'));
+        }
+        
+        $session = $request->session();
+        if (!$session->isStarted()) {
+            $session->start();
+        }
+        
+        // Connecter l'utilisateur dans la session
+        Auth::login($user, true);
+        
+        // Régénérer l'ID de session APRÈS le login pour la sécurité
+        $request->session()->regenerate();
+        
+        // Stocker le hash du mot de passe dans la session APRÈS la régénération
+        // pour que AuthenticateSession puisse vérifier l'authenticité de la session
+        $request->session()->put('password_hash_web', $user->getAuthPassword());
+        
+        // Régénérer le token CSRF
+        $request->session()->regenerateToken();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Connexion réussie',
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+            'redirect' => route('accueil')
+        ]);
+
     }
 
     /**

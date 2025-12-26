@@ -1407,5 +1407,63 @@ class MobileController extends Controller
         
         return [];
     }
+
+    /**
+     * Rechercher des boutiques
+     */
+    public function searchStores(Request $request)
+    {
+        try {
+            $search = $request->get('q', $request->get('search', ''));
+            
+            if (empty($search)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le terme de recherche est requis',
+                ], 400);
+            }
+
+            $stores = Store::where('status', 'active')
+                ->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('city', 'like', "%{$search}%");
+                })
+                ->with(['category', 'user'])
+                ->orderBy('is_verified', 'desc')
+                ->orderBy('name', 'asc')
+                ->limit(20)
+                ->get()
+                ->map(function ($store) {
+                    return [
+                        'id' => $store->id,
+                        'name' => $store->name,
+                        'slug' => $store->slug,
+                        'description' => $store->description,
+                        'logo' => $store->logo ? asset('storage/' . $store->logo) : null,
+                        'banner' => $store->banner ? asset('storage/' . $store->banner) : null,
+                        'is_verified' => $store->is_verified,
+                        'rating' => $store->rating ?? 0,
+                        'reviews_count' => $store->reviews_count ?? 0,
+                        'city' => $store->city,
+                        'category' => $store->category ? [
+                            'id' => $store->category->id,
+                            'name' => $store->category->name,
+                        ] : null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $stores,
+                'count' => $stores->count(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la recherche: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
 

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'seo' => \App\Http\Middleware\SeoMiddleware::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'hybrid.auth' => \App\Http\Middleware\HybridAuthMiddleware::class,
+            'api.web.auth' => \App\Http\Middleware\ApiWebAuth::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'auth.redirect' => \App\Http\Middleware\RedirectIfNotAuthenticated::class,
             'seller' => \App\Http\Middleware\RedirectIfNotSeller::class,
@@ -62,5 +63,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Configurer la redirection pour les utilisateurs non authentifiés
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $exception, \Illuminate\Http\Request $request) {
+            if ($exception instanceof \Illuminate\Auth\AuthenticationException) {
+                return redirect()->route('login')->with('error', 'Veuillez vous connecter pour accéder à cette page.');
+            }
+            return $response;
+        });
     })->create();

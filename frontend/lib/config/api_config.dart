@@ -46,6 +46,7 @@ class ApiConfig {
   // Endpoints commandes
   static const String createOrder = '$baseUrl/orders/create';
   static const String myOrders = '$baseUrl/orders/my-orders';
+  static const String ordersCount = '$baseUrl/orders/count';
   static const String getUserOrders = '$baseUrl/orders/my-orders';
   static const String orderDetails = '$baseUrl/orders';
   static const String trackOrder = '$baseUrl/track-order';

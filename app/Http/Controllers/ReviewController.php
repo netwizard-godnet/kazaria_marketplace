@@ -290,4 +290,74 @@ class ReviewController extends Controller
         }
     }
 
+    /**
+     * Obtenir les avis de l'utilisateur connecté (API - Tokens)
+     */
+    public function getMyReviews(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $reviews = Review::where('user_id', $user->id)
+            ->with(['product', 'order'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'reviews' => $reviews->map(function($review) {
+                return [
+                    'id' => $review->id,
+                    'product' => $review->product ? [
+                        'id' => $review->product->id,
+                        'name' => $review->product->name,
+                        'slug' => $review->product->slug,
+                        'image' => $review->product->image ? asset('storage/' . $review->product->image) : null,
+                    ] : null,
+                    'rating' => $review->rating,
+                    'title' => $review->title,
+                    'comment' => $review->comment,
+                    'is_verified_purchase' => $review->is_verified_purchase,
+                    'is_approved' => $review->is_approved,
+                    'helpful_count' => $review->helpful_count,
+                    'created_at' => $review->created_at->toISOString(),
+                ];
+            }),
+            'pagination' => [
+                'current_page' => $reviews->currentPage(),
+                'last_page' => $reviews->lastPage(),
+                'per_page' => $reviews->perPage(),
+                'total' => $reviews->total(),
+            ]
+        ]);
+    }
+
+    /**
+     * Obtenir le nombre d'avis de l'utilisateur connecté (API - Tokens)
+     */
+    public function getMyReviewsCount(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $count = Review::where('user_id', $user->id)->count();
+
+        return response()->json([
+            'success' => true,
+            'count' => $count
+        ]);
+    }
+
 }

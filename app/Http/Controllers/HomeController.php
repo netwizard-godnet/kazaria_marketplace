@@ -237,6 +237,9 @@ class HomeController extends Controller
             ->take(16)
             ->get();
         
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $dealsProducts = $this->reorganizeProducts($dealsProducts);
+        
         // Récupérer les sections de catégories/sous-catégories configurées pour la page d'accueil
         $homepageCategorySections = \App\Helpers\SettingHelper::get('homepage_category_sections', '');
         $categorySections = collect();
@@ -291,6 +294,9 @@ class HomeController extends Controller
                             ->take(12)
                             ->get();
                         
+                        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+                        $products = $this->reorganizeProducts($products);
+                        
                         if ($products->count() > 0) {
                             $categorySections->push([
                                 'category' => $subcategory->category,
@@ -315,6 +321,9 @@ class HomeController extends Controller
                             ->inStock()
                             ->take(12)
                             ->get();
+                        
+                        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+                        $products = $this->reorganizeProducts($products);
                         
                         if ($products->count() > 0) {
                             $categorySections->push([
@@ -349,6 +358,9 @@ class HomeController extends Controller
                         ->take(12)
                         ->get();
                     
+                    // Réorganiser les produits pour éviter que les mêmes produits se suivent
+                    $products = $this->reorganizeProducts($products);
+                    
                     if ($products->count() > 0) {
                         $categorySections->push([
                             'category' => $category,
@@ -369,6 +381,9 @@ class HomeController extends Controller
             ->take(12)
             ->get();
         
+        // Réorganiser les produits pour éviter que les mêmes produits se suivent
+        $trendingProducts = $this->reorganizeProducts($trendingProducts);
+        
         // Récupérer les 12 marques actives depuis la table brands
         $topBrands = \App\Models\Brand::active()
             ->ordered()
@@ -383,5 +398,68 @@ class HomeController extends Controller
             'countdownEndTime',
             'topBrands'
         ));
+    }
+
+    /**
+     * Réorganise les produits pour éviter que les mêmes produits se suivent
+     * Compare les produits par leur nom, marque et modèle plutôt que par ID
+     * 
+     * @param \Illuminate\Support\Collection $products
+     * @return \Illuminate\Support\Collection
+     */
+    private function reorganizeProducts($products)
+    {
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $reorganized = collect();
+        $remaining = $products->values();
+        $lastProductSignature = null;
+
+        // Fonction pour générer une signature unique d'un produit basée sur son nom et caractéristiques
+        $getProductSignature = function($product) {
+            $name = strtolower(trim($product->name ?? ''));
+            $brand = strtolower(trim($product->brand ?? ''));
+            $model = strtolower(trim($product->model ?? ''));
+            
+            // Créer une signature basée sur le nom, et optionnellement la marque et le modèle
+            $signature = $name;
+            if (!empty($brand)) {
+                $signature .= '|' . $brand;
+            }
+            if (!empty($model)) {
+                $signature .= '|' . $model;
+            }
+            
+            return $signature;
+        };
+
+        while ($remaining->isNotEmpty()) {
+            // Trouver le premier produit qui est différent du précédent
+            $found = false;
+            foreach ($remaining as $index => $product) {
+                $currentSignature = $getProductSignature($product);
+                
+                if ($currentSignature !== $lastProductSignature) {
+                    $reorganized->push($product);
+                    $lastProductSignature = $currentSignature;
+                    $remaining->forget($index);
+                    $found = true;
+                    break;
+                }
+            }
+
+            // Si aucun produit différent n'a été trouvé, prendre le premier disponible
+            // (cela peut arriver si tous les produits restants sont identiques)
+            if (!$found && $remaining->isNotEmpty()) {
+                $product = $remaining->first();
+                $reorganized->push($product);
+                $lastProductSignature = $getProductSignature($product);
+                $remaining->shift();
+            }
+        }
+
+        return $reorganized->values();
     }
 }

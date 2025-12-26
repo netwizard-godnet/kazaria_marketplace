@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PopupController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\Admin\InvoiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +145,34 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::post('/{payment}/mark-completed', [\App\Http\Controllers\Admin\PaymentController::class, 'markAsCompleted'])->name('mark-completed');
         Route::get('/stats/data', [\App\Http\Controllers\Admin\PaymentController::class, 'getStats'])->name('stats');
         Route::get('/export/csv', [\App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('export');
+    });
+    
+    // Invoices Management
+    Route::prefix('invoices')->name('invoices.')->middleware('permission:view_invoices')->group(function () {
+        Route::get('/', [InvoiceController::class, 'index'])->name('index');
+        
+        // Routes API pour la recherche de produits et récupération des items de commande
+        Route::get('/api/search-products', [InvoiceController::class, 'searchProducts'])->name('api.search-products');
+        Route::get('/api/order-items/{order}', [InvoiceController::class, 'getOrderItems'])->name('api.order-items');
+        
+        // Routes de création doivent être AVANT les routes avec paramètres
+        Route::middleware('permission:create_invoices')->group(function () {
+            Route::get('/create', [InvoiceController::class, 'create'])->name('create');
+            Route::post('/', [InvoiceController::class, 'store'])->name('store');
+        });
+        
+        // Routes avec paramètres {invoice} après les routes spécifiques
+        Route::get('/{invoice}', [InvoiceController::class, 'show'])->name('show');
+        Route::get('/{invoice}/download', [InvoiceController::class, 'download'])->name('download');
+        
+        Route::middleware('permission:edit_invoices')->group(function () {
+            Route::get('/{invoice}/edit', [InvoiceController::class, 'edit'])->name('edit');
+            Route::put('/{invoice}', [InvoiceController::class, 'update'])->name('update');
+        });
+        
+        Route::middleware('permission:delete_invoices')->group(function () {
+            Route::delete('/{invoice}', [InvoiceController::class, 'destroy'])->name('destroy');
+        });
     });
     
     // Reports

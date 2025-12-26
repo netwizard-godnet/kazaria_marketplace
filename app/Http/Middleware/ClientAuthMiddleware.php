@@ -15,19 +15,41 @@ class ClientAuthMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // S'assurer que la session est démarrée
+        if (!$request->hasSession() || !session()->isStarted()) {
+            $session = app('session');
+            if (!$session->isStarted()) {
+                $session->start();
+            }
+            $request->setLaravelSession($session);
+        }
+
+        // Vérifier d'abord l'authentification par session web
+        if (auth()->guard('web')->check()) {
+            return $next($request);
+        }
+
         // Vérifier si l'utilisateur est connecté via Sanctum
         if (auth('sanctum')->check()) {
             return $next($request);
         }
 
-        // Vérifier si l'utilisateur a un token valide dans la session
-        $token = $request->cookie('auth_token') ?? session('auth_token');
+        // Vérifier si l'utilisateur a un token Sanctum valide
+        $token = $request->bearerToken() ?? $request->cookie('auth_token') ?? session('auth_token') ?? $request->query('token');
         if ($token) {
-            // Vérifier si le token est valide
-            $user = \App\Models\User::where('remember_token', $token)->first();
-            if ($user) {
-                auth()->login($user);
-                return $next($request);
+            try {
+                // Vérifier le token avec Sanctum
+                $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+                if ($personalAccessToken && (!$personalAccessToken->expires_at || !$personalAccessToken->expires_at->isPast())) {
+                    $user = $personalAccessToken->tokenable;
+                    if ($user) {
+                        // Connecter l'utilisateur via session pour les routes web
+                        auth()->guard('web')->login($user);
+                        return $next($request);
+                    }
+                }
+            } catch (\Exception $e) {
+                // Token invalide, continuer vers la redirection
             }
         }
 

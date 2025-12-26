@@ -2486,6 +2486,11 @@ async function loadProducts() {
 // Charger les commandes
 async function loadOrders() {
     const container = document.getElementById('ordersContainer');
+    if (!container) {
+        console.warn('Conteneur ordersContainer introuvable, chargement ignoré.');
+        return;
+    }
+    
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
     
     try {
@@ -2608,13 +2613,21 @@ async function loadOrderStats() {
         
         if (data.success) {
             const stats = data.stats;
-            document.getElementById('statTotalOrders').textContent = stats.total_orders || 0;
-            document.getElementById('statPendingOrders').textContent = stats.pending_orders || 0;
-            document.getElementById('statProcessingOrders').textContent = stats.processing_orders || 0;
-            document.getElementById('statDeliveredOrders').textContent = stats.delivered_orders || 0;
-            document.getElementById('statCancelledOrders').textContent = stats.cancelled_orders || 0;
-            document.getElementById('statPendingPayment').textContent = stats.pending_payment || 0;
-            document.getElementById('statPaidOrders').textContent = stats.paid_orders || 0;
+            const statTotalOrders = document.getElementById('statTotalOrders');
+            const statPendingOrders = document.getElementById('statPendingOrders');
+            const statProcessingOrders = document.getElementById('statProcessingOrders');
+            const statDeliveredOrders = document.getElementById('statDeliveredOrders');
+            const statCancelledOrders = document.getElementById('statCancelledOrders');
+            const statPendingPayment = document.getElementById('statPendingPayment');
+            const statPaidOrders = document.getElementById('statPaidOrders');
+            
+            if (statTotalOrders) statTotalOrders.textContent = stats.total_orders || 0;
+            if (statPendingOrders) statPendingOrders.textContent = stats.pending_orders || 0;
+            if (statProcessingOrders) statProcessingOrders.textContent = stats.processing_orders || 0;
+            if (statDeliveredOrders) statDeliveredOrders.textContent = stats.delivered_orders || 0;
+            if (statCancelledOrders) statCancelledOrders.textContent = stats.cancelled_orders || 0;
+            if (statPendingPayment) statPendingPayment.textContent = stats.pending_payment || 0;
+            if (statPaidOrders) statPaidOrders.textContent = stats.paid_orders || 0;
         }
     } catch (error) {
         console.error('Erreur chargement stats commandes:', error);
@@ -2693,6 +2706,11 @@ function loadOrdersPage(page) {
 // Charger les commandes avec des paramètres spécifiques
 async function loadOrdersWithParams(params) {
     const container = document.getElementById('ordersContainer');
+    if (!container) {
+        console.warn('Conteneur ordersContainer introuvable, chargement ignoré.');
+        return;
+    }
+    
     container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
     
     try {

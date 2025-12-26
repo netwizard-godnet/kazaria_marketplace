@@ -15,13 +15,22 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Vérifier si l'utilisateur est connecté
-        if (!auth()->check()) {
+        // S'assurer que la session est démarrée
+        if (!$request->hasSession() || !session()->isStarted()) {
+            $session = app('session');
+            if (!$session->isStarted()) {
+                $session->start();
+            }
+            $request->setLaravelSession($session);
+        }
+
+        // Vérifier si l'utilisateur est connecté avec le guard web
+        if (!auth()->guard('web')->check()) {
             // Rediriger vers la page de connexion admin
             return redirect()->route('admin.login')->with('error', 'Vous devez être connecté pour accéder à cette page.');
         }
 
-        $user = auth()->user();
+        $user = auth()->guard('web')->user();
         
         // Charger la relation role
         $user->load('role');

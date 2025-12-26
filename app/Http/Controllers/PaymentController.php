@@ -186,4 +186,38 @@ class PaymentController extends Controller
             'invoice_url' => route('order-download', ['orderNumber' => 'CMD-' . str_pad($order->id, 6, '0', STR_PAD_LEFT)]),
         ];
     }
+
+    /**
+     * Obtenir les méthodes de paiement disponibles
+     */
+    public function getPaymentMethods(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'payment_methods' => [
+                [
+                    'id' => 'mobile_money',
+                    'name' => 'Mobile Money',
+                    'description' => 'Paiement via Orange Money, MTN Mobile Money ou Moov Money',
+                    'icon' => 'mobile_money',
+                    'available' => true,
+                    'providers' => ['orange', 'mtn', 'moov'],
+                ],
+                [
+                    'id' => 'cash_on_delivery',
+                    'name' => 'Paiement à la livraison',
+                    'description' => 'Payez lorsque vous recevez votre commande',
+                    'icon' => 'cash',
+                    'available' => true,
+                ],
+                [
+                    'id' => 'card',
+                    'name' => 'Carte bancaire',
+                    'description' => 'Paiement par carte bancaire (si disponible)',
+                    'icon' => 'credit_card',
+                    'available' => false, // À activer selon votre configuration
+                ],
+            ],
+        ]);
+    }
 }

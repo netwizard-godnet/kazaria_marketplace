@@ -47,7 +47,7 @@ class RoleController extends Controller
         ]);
 
         // Attacher les permissions au rôle
-        if ($request->has('permissions')) {
+        if ($request->filled('permissions') && is_array($request->permissions)) {
             $role->permissions()->attach($request->permissions);
         }
 
@@ -94,10 +94,11 @@ class RoleController extends Controller
         ]);
 
         // Mettre à jour les permissions
-        if ($request->has('permissions')) {
+        if ($request->filled('permissions') && is_array($request->permissions)) {
             $role->permissions()->sync($request->permissions);
         } else {
-            $role->permissions()->detach();
+            // Si aucune permission n'est sélectionnée, détacher toutes les permissions
+            $role->permissions()->sync([]);
         }
 
         return redirect()->route('admin.roles.index')

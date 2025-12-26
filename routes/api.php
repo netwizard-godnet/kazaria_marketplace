@@ -19,6 +19,7 @@ Route::post('/auth/social/{provider}', [App\Http\Controllers\Auth\SocialAuthCont
 
 // Route /me qui accepte à la fois tokens et sessions (pour compatibilité web/mobile)
 Route::middleware(['web', 'auth'])->get('/me', [AuthController::class, 'me']);
+Route::middleware('auth:sanctum')->get('/me', [AuthController::class, 'me']);
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
@@ -27,25 +28,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Routes API pour le profil (utilisent des tokens)
     Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'updateApi']);
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePasswordApi']);
-});
-
-// Route pour la photo de profil (API - Tokens Sanctum)
-Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
+    // Route pour l'activité récente
+    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
+    // Route pour la boîte de réception
+    Route::get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
 });
 
-// Routes protégées par authentification (suite)
-// Route pour l'activité récente (support session et token)
-Route::middleware(['web', 'auth'])->get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
-Route::middleware('auth:sanctum')->get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
-
-// Route pour la boîte de réception (support session et token)
-Route::middleware(['web', 'auth'])->get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
-Route::middleware('auth:sanctum')->get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
-
-Route::middleware('auth:sanctum')->group(function () {
-    // Autres routes API avec tokens uniquement
-});
+// Routes protégées par authentification web (support session) - Retirées car causent des conflits avec les routes API
+// Ces routes sont maintenant uniquement dans le groupe auth:sanctum ci-dessus
 
 // Route de déconnexion publique (pour les tokens stockés côté client)
 Route::post('/logout-client', [AuthController::class, 'logoutClient']);
@@ -71,13 +62,21 @@ Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\Produc
 // Routes de commande (protégées)
 // Pour mobile : utiliser auth:sanctum
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
+    Route::get('/orders/count', [App\Http\Controllers\OrderController::class, 'getOrdersCount']); // Nouvelle route pour le comptage
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
+// Routes de commande (support session web)
+Route::middleware([
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    'api.web.auth'
+])->group(function () {
+    Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
+    Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
+    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
 });
 
 // Routes des avis
@@ -96,6 +95,7 @@ Route::post('/coupons/apply', [CouponController::class, 'apply']);
 Route::post('/ai/query', [AIController::class, 'query']);
 Route::post('/ai/interaction', [AIController::class, 'logInteraction'])->name('ai.interaction');
 Route::get('/ai/suggestions', [AIController::class, 'getSuggestions'])->middleware('web');
+Route::get('/ai/suggested-questions', [AIController::class, 'getSuggestions']); // Alias pour mobile
 
 // Route pour vérifier le statut de vendeur
 Route::get('/check-seller-status', [App\Http\Controllers\ProfileController::class, 'checkSellerStatus'])->middleware('auth:sanctum');
@@ -210,3 +210,11 @@ Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
     Route::get('/stats', [App\Http\Controllers\Api\NotificationController::class, 'getStats'])->middleware('admin'); // Pour admin seulement
 });
 
+// Route pour le suivi de commande (publique)
+Route::post('/track-order', [App\Http\Controllers\OrderController::class, 'trackOrder']);
+
+// Route pour les méthodes de paiement disponibles (publique)
+Route::get('/payment-methods', [App\Http\Controllers\PaymentController::class, 'getPaymentMethods']);
+
+// Route pour la recherche de boutiques (publique)
+Route::get('/stores/search', [App\Http\Controllers\MobileController::class, 'searchStores']);

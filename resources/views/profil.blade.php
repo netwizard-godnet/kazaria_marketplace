@@ -367,20 +367,25 @@ use Illuminate\Support\Str;
                                             <h6 class="mb-3">Authentification à deux facteurs</h6>
                                             <div class="alert alert-info">
                                                 <i class="bi bi-info-circle me-2"></i>
-                                                Activez l'authentification à deux facteurs pour renforcer la sécurité de votre compte.
+                                                Activez l'authentification à deux facteurs pour renforcer la sécurité de votre compte. Un code de vérification sera envoyé par email à chaque connexion.
                                             </div>
                                             <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="twoFactorEnabled">
+                                                <input class="form-check-input" type="checkbox" id="twoFactorEnabled" {{ $user->two_factor_enabled ? 'checked' : '' }}>
                                                 <label class="form-check-label" for="twoFactorEnabled">
-                                                    Activer l'authentification à deux facteurs
+                                                    Activer l'authentification à deux facteurs (2FA)
                                                 </label>
                                             </div>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
-                                                <i class="bi bi-qr-code me-2"></i>Configurer avec une application
-                                            </button>
-                                            <p class="text-muted small mt-2">
-                                                <i class="bi bi-clock me-1"></i>Fonctionnalité à venir
-                                            </p>
+                                            @if($user->two_factor_enabled)
+                                            <div class="alert alert-success">
+                                                <i class="bi bi-shield-check me-2"></i>
+                                                L'authentification à deux facteurs est activée. Vous recevrez un code par email à chaque connexion.
+                                            </div>
+                                            @else
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-shield-exclamation me-2"></i>
+                                                L'authentification à deux facteurs est désactivée. Votre compte est moins sécurisé.
+                                            </div>
+                                            @endif
                                         </div>
                                     </div>
 
@@ -554,9 +559,12 @@ use Illuminate\Support\Str;
                                                 <option value="">Toutes les commandes (par défaut)</option>
                                                 <option value="pending">Commandes en cours</option>
                                                 <option value="pending">En cours de validation</option>
+                                                <option value="paid">Payée</option>
                                                 <option value="processing">En cours de livraison</option>
+                                                <option value="shipped">Expédiée</option>
                                                 <option value="delivered">Livrée</option>
                                                 <option value="cancelled">Annulée</option>
+                                                <option value="refunded">Remboursée</option>
                                                 <option value="all">Toutes les commandes</option>
                                             </select>
                                         </div>
@@ -1050,6 +1058,64 @@ use Illuminate\Support\Str;
                 });
             }
 
+            // Gestion du toggle de l'authentification à deux facteurs
+            const twoFactorToggle = document.getElementById('twoFactorEnabled');
+            
+            if (twoFactorToggle) {
+                twoFactorToggle.addEventListener('change', async function(e) {
+                    const isEnabled = e.target.checked;
+                    
+                    // Désactiver le toggle pendant la requête
+                    twoFactorToggle.disabled = true;
+                    
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                        
+                        const response = await fetch('/profile/update-two-factor', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                two_factor_enabled: isEnabled
+                            })
+                        });
+
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            showToast('error', 'Erreur lors du traitement de la réponse du serveur.');
+                            // Restaurer l'état précédent
+                            e.target.checked = !isEnabled;
+                            twoFactorToggle.disabled = false;
+                            return;
+                        }
+                        
+                        if (response.ok && data.success) {
+                            showToast('success', data.message);
+                            // Recharger la page pour mettre à jour l'interface
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            showToast('error', data.message || 'Erreur lors de la mise à jour de l\'authentification à deux facteurs.');
+                            // Restaurer l'état précédent
+                            e.target.checked = !isEnabled;
+                            twoFactorToggle.disabled = false;
+                        }
+                    } catch (error) {
+                        showToast('error', 'Erreur de connexion. Veuillez réessayer.');
+                        // Restaurer l'état précédent
+                        e.target.checked = !isEnabled;
+                        twoFactorToggle.disabled = false;
+                    }
+                });
+            }
+
             initTicketThreads();
 
             // Gestion du modal de changement de photo
@@ -1330,16 +1396,81 @@ use Illuminate\Support\Str;
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     credentials: 'include' // Important pour les cookies de session
+                const tbody = document.getElementById('ordersTableBody');
+                
+                // Afficher un indicateur de chargement
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Chargement...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Chargement des commandes...</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Récupérer les filtres avant de faire la requête
+                const filterDate = document.getElementById('filterDate')?.value || '';
+                const filterStatus = document.getElementById('filterStatus')?.value || '';
+                
+                // Construire l'URL avec les paramètres de filtre
+                // Toujours envoyer le paramètre status, même s'il est vide, pour que le serveur applique le filtre par défaut
+                const params = new URLSearchParams();
+                if (filterDate) {
+                    params.append('date', filterDate);
+                }
+                // Toujours envoyer le paramètre status
+                params.append('status', filterStatus || '');
+                
+                const url = '/api/orders/my-orders' + (params.toString() ? '?' + params.toString() : '');
+                
+                // Récupérer le token CSRF
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    credentials: 'same-origin' // Important pour envoyer les cookies de session
                 });
 
                 if (!response.ok) {
                     console.error('Erreur HTTP:', response.status);
+                    console.error('URL de la requête:', url);
+                    console.error('Filtre statut:', filterStatus);
                     const tbody = document.getElementById('ordersTableBody');
+                    let errorMessage = 'Erreur lors du chargement des commandes';
+                    
+                    if (response.status === 401) {
+                        // Session expirée - proposer de se reconnecter
+                        errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+                        console.error('Erreur 401 - Session expirée');
+                        
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="text-center text-danger py-4">
+                                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">${errorMessage}</p>
+                                    <button class="btn btn-primary mt-3" onclick="window.location.href='{{ route('login') }}'">
+                                        <i class="bi bi-box-arrow-in-right me-2"></i>Se reconnecter
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center text-danger py-4">
                                 <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
-                                <p class="mt-2">Erreur lors du chargement des commandes</p>
+                                <p class="mt-2">${errorMessage}</p>
                             </td>
                         </tr>
                     `;
@@ -1347,8 +1478,22 @@ use Illuminate\Support\Str;
                 }
 
                 const data = await response.json();
+                
+                if (!data.success) {
+                    console.error('Erreur API:', data.message);
+                    const tbody = document.getElementById('ordersTableBody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-danger py-4">
+                                <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                                <p class="mt-2">${data.message || 'Erreur lors du chargement des commandes'}</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
                 console.log('Données reçues:', data);
-                const tbody = document.getElementById('ordersTableBody');
                 
                 // Récupérer les filtres
                 const filterDate = document.getElementById('filterDate')?.value || '';
@@ -1400,6 +1545,8 @@ use Illuminate\Support\Str;
                         }
                     });
                 }
+                // Les commandes sont déjà filtrées côté serveur
+                const filteredOrders = data.orders || [];
                 
                 if (filteredOrders.length > 0) {
                     tbody.innerHTML = '';
@@ -1441,14 +1588,22 @@ use Illuminate\Support\Str;
                     // Mettre à jour le compteur de commandes
                     document.getElementById('totalOrders').textContent = filteredOrders.length;
                 } else {
+                    // Vérifier si des filtres sont actifs
+                    const hasActiveFilters = filterDate || (filterStatus && filterStatus !== '' && filterStatus !== 'all');
+                    const message = hasActiveFilters 
+                        ? 'Aucune commande ne correspond aux filtres sélectionnés'
+                        : 'Vous n\'avez pas encore de commande';
+                    
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                                <p class="mt-2">Vous n'avez pas encore de commande</p>
-                                <a href="/" class="btn btn-sm orange-bg text-white">
-                                    <i class="bi bi-shop me-1"></i>Commencer mes achats
-                                </a>
+                                <p class="mt-2">${message}</p>
+                                ${!hasActiveFilters ? `
+                                    <a href="/" class="btn btn-sm orange-bg text-white">
+                                        <i class="bi bi-shop me-1"></i>Commencer mes achats
+                                    </a>
+                                ` : ''}
                             </td>
                         </tr>
                     `;
@@ -1894,14 +2049,17 @@ use Illuminate\Support\Str;
             return methods[method] || method;
         }
 
-        // Calculer le pourcentage de progression (3 étapes: pending=33%, processing=66%, delivered=100%)
+        // Calculer le pourcentage de progression
         function getProgressPercentage(status) {
             switch (status) {
-                case 'pending': return 33;
-                case 'processing': return 66;
+                case 'pending': return 20;
+                case 'paid': return 40;
+                case 'processing': return 60;
+                case 'shipped': return 80;
                 case 'delivered': return 100;
                 case 'cancelled': return 0;
-                default: return 33;
+                case 'refunded': return 0;
+                default: return 20;
             }
         }
 
@@ -1909,9 +2067,12 @@ use Illuminate\Support\Str;
         function getStatusBadge(status) {
             const badges = {
                 'pending': { class: 'bg-warning', label: 'En cours de validation' },
+                'paid': { class: 'bg-success', label: 'Payée' },
                 'processing': { class: 'bg-info', label: 'En cours de livraison' },
+                'shipped': { class: 'bg-primary', label: 'Expédiée' },
                 'delivered': { class: 'bg-success', label: 'Livrée' },
-                'cancelled': { class: 'bg-danger', label: 'Annulée' }
+                'cancelled': { class: 'bg-danger', label: 'Annulée' },
+                'refunded': { class: 'bg-secondary', label: 'Remboursée' }
             };
             return badges[status] || { class: 'bg-secondary', label: status };
         }
@@ -2197,6 +2358,12 @@ use Illuminate\Support\Str;
         document.addEventListener('DOMContentLoaded', function() {
             const ordersTab = document.querySelector('a[href="#orders"]');
             if (ordersTab) {
+                // Vérifier si l'onglet orders est actif au chargement
+                const ordersPane = document.querySelector('#orders');
+                if (ordersPane && ordersPane.classList.contains('active')) {
+                    loadOrders();
+                }
+                
                 ordersTab.addEventListener('shown.bs.tab', function() {
                     loadOrders();
                     // Sauvegarder l'onglet actif

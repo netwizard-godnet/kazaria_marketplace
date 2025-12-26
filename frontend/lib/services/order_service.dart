@@ -51,6 +51,18 @@ class OrderService {
     }
   }
 
+  /// Obtenir le nombre total de commandes de l'utilisateur
+  Future<Map<String, dynamic>> getOrdersCount() async {
+    try {
+      return await _apiService.get(
+        ApiConfig.ordersCount,
+        requiresAuth: true,
+      );
+    } catch (e) {
+      return {'success': false, 'message': e.toString(), 'count': 0};
+    }
+  }
+
   /// Obtenir les détails d'une commande
   /// Note: Utilise orderNumber (string) au lieu de orderId (int)
   Future<Map<String, dynamic>> getOrderDetails(String orderNumber) async {

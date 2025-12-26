@@ -75,6 +75,12 @@ class PermissionSeeder extends Seeder
             
             // Attributes
             ['name' => 'Gérer les attributs', 'slug' => 'manage_attributes', 'description' => 'Peut gérer les attributs de produits', 'module' => 'attributes'],
+            
+            // Invoices Management
+            ['name' => 'Voir les factures', 'slug' => 'view_invoices', 'description' => 'Peut voir la liste des factures', 'module' => 'invoices'],
+            ['name' => 'Créer des factures', 'slug' => 'create_invoices', 'description' => 'Peut créer de nouvelles factures', 'module' => 'invoices'],
+            ['name' => 'Modifier les factures', 'slug' => 'edit_invoices', 'description' => 'Peut modifier les factures', 'module' => 'invoices'],
+            ['name' => 'Supprimer les factures', 'slug' => 'delete_invoices', 'description' => 'Peut supprimer des factures', 'module' => 'invoices'],
         ];
         
         foreach ($permissions as $permission) {

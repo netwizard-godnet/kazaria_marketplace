@@ -209,18 +209,83 @@
             let userEmail = '';
 
             // Fonction pour afficher un message
-            function showMessage(elementId, message, type = 'success') {
+            function showMessage(elementId, message, type = 'success', errors = null) {
                 const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
                 const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
                 
+                let errorList = '';
+                if (errors && Object.keys(errors).length > 0) {
+                    errorList = '<ul class="mb-0 mt-2">';
+                    Object.keys(errors).forEach(field => {
+                        errors[field].forEach(errorMsg => {
+                            errorList += `<li>${errorMsg}</li>`;
+                        });
+                    });
+                    errorList += '</ul>';
+                }
+                
                 document.getElementById(elementId).innerHTML = `
-                    <div class="alert ${alertClass}" role="alert">
-                        <i class="fa-solid ${icon} me-2"></i>${message}
+                    <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        <i class="fa-solid ${icon} me-2"></i><strong>${message}</strong>${errorList}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                     </div>
                 `;
                 
                 // Scroll vers le message d'erreur
                 document.getElementById(elementId).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Fonction pour mettre en évidence les champs en erreur
+            function highlightFieldErrors(errors) {
+                // Réinitialiser tous les champs
+                document.querySelectorAll('.form-control.is-invalid').forEach(el => {
+                    el.classList.remove('is-invalid');
+                });
+                document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+                if (!errors) return;
+
+                // Mapper les noms de champs du serveur vers les IDs des champs HTML
+                const fieldMapping = {
+                    'nom': 'registerLastName',
+                    'prenoms': 'registerFirstName',
+                    'email': 'registerEmail', // Par défaut pour l'inscription
+                    'telephone': 'registerPhone',
+                    'password': 'registerPassword',
+                    'password_confirmation': 'registerConfirmPassword',
+                    'termes_condition': 'acceptTerms',
+                    'code': 'verificationCode'
+                };
+
+                Object.keys(errors).forEach(field => {
+                    // Pour la connexion, utiliser loginEmail si le champ email est en erreur
+                    let fieldId;
+                    if (field === 'email' && document.getElementById('loginEmail')) {
+                        fieldId = 'loginEmail';
+                    } else {
+                        fieldId = fieldMapping[field] || field;
+                    }
+                    
+                    const input = document.getElementById(fieldId);
+                    
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        
+                        // Créer le message d'erreur sous le champ
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = errors[field][0];
+                        input.parentElement.appendChild(feedback);
+                    }
+                });
+            }
+
+            // Fonction pour réinitialiser les erreurs visuelles
+            function resetFieldErrors() {
+                document.querySelectorAll('.form-control.is-invalid').forEach(el => {
+                    el.classList.remove('is-invalid');
+                });
+                document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
             }
 
             // Fonction pour afficher le formulaire de code
@@ -288,15 +353,32 @@
                         body: JSON.stringify({ email: email, type: 'login' })
                     });
 
-                    const data = await response.json();
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        throw new Error('Réponse invalide du serveur');
+                    }
                     
                     if (data.success) {
-                        showMessage('codeAlert', 'Code renvoyé avec succès !', 'success');
+                        showMessage('codeAlert', 'Code renvoyé avec succès ! Vérifiez votre boîte email.', 'success');
                     } else {
-                        showMessage('codeAlert', data.message, 'danger');
+                        const errorMessage = data.message || 'Erreur lors du renvoi du code';
+                        showMessage('codeAlert', errorMessage, 'danger');
                     }
                 } catch (error) {
-                    showMessage('codeAlert', 'Erreur lors du renvoi du code', 'danger');
+                    console.error('Erreur renvoi code:', error);
+                    
+                    let errorMessage = 'Erreur lors du renvoi du code. ';
+                    if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+                        errorMessage += 'Vérifiez votre connexion internet et réessayez.';
+                    } else if (error.message.includes('Réponse invalide')) {
+                        errorMessage += 'Le serveur a renvoyé une réponse invalide. Veuillez réessayer.';
+                    } else {
+                        errorMessage += 'Veuillez réessayer dans quelques instants.';
+                    }
+                    
+                    showMessage('codeAlert', errorMessage, 'danger');
                 }
             }
 
@@ -324,6 +406,9 @@
 
                 console.log('Données envoyées:', formData); // Debug
 
+                // Réinitialiser les erreurs visuelles avant la soumission
+                resetFieldErrors();
+
                 try {
                     const response = await fetch('/api/register', {
                         method: 'POST',
@@ -335,10 +420,17 @@
                         body: JSON.stringify(formData)
                     });
 
-                    const data = await response.json();
-                    console.log('Réponse serveur:', data); // Debug
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        throw new Error('Réponse invalide du serveur');
+                    }
+
+                    console.log('Réponse serveur:', data);
                     
                     if (data.success) {
+                        resetFieldErrors();
                         showMessage('registerAlert', data.message, 'success');
                         
                         // Afficher un message de succès plus détaillé
@@ -356,17 +448,28 @@
                             `;
                         }, 2000);
                     } else {
-                        // Afficher les erreurs détaillées si disponibles
-                        let errorMessage = data.message;
+                        // Afficher les erreurs détaillées avec mise en évidence des champs
+                        const errorMessage = data.message || 'Veuillez corriger les erreurs dans le formulaire';
+                        showMessage('registerAlert', errorMessage, 'danger', data.errors);
+                        
+                        // Mettre en évidence les champs en erreur
                         if (data.errors) {
-                            const errorList = Object.values(data.errors).flat();
-                            errorMessage = errorList.join('<br>');
+                            highlightFieldErrors(data.errors);
                         }
-                        showMessage('registerAlert', errorMessage, 'danger');
                     }
                 } catch (error) {
-                    console.error('Erreur:', error); // Debug
-                    showMessage('registerAlert', 'Erreur de connexion. Veuillez réessayer.', 'danger');
+                    console.error('Erreur:', error);
+                    
+                    let errorMessage = 'Erreur de connexion au serveur. ';
+                    if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+                        errorMessage += 'Vérifiez votre connexion internet et réessayez.';
+                    } else if (error.message.includes('Réponse invalide')) {
+                        errorMessage += 'Le serveur a renvoyé une réponse invalide. Veuillez réessayer.';
+                    } else {
+                        errorMessage += 'Veuillez réessayer dans quelques instants.';
+                    }
+                    
+                    showMessage('registerAlert', errorMessage, 'danger');
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
@@ -387,33 +490,79 @@
                 let object = {};
                 formData.forEach((value, key) => {object[key] = value});
 
+                // Réinitialiser les erreurs visuelles avant la soumission
+                resetFieldErrors();
+
                 try {
                     const response = await fetch('/api/login', {
                         method: 'POST',
-                    headers: {
+                        headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify(object)
-                });
+                        },
+                        body: JSON.stringify(object)
+                    });
 
-                const data = await response.json();
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        throw new Error('Réponse invalide du serveur');
+                    }
                     
                     if (data.success && data.requires_code) {
+                        resetFieldErrors();
                         showCodeForm(data.email);
                     } else if (data.success) {
+                        resetFieldErrors();
                         showMessage('loginAlert', data.message, 'success');
                         // Rediriger vers la page d'accueil
                         setTimeout(() => {
                             window.location.replace('{{ route("accueil") }}');
                         }, 2000);
                     } else {
-                        showMessage('loginAlert', data.message || 'Erreur de connexion', 'danger');
+                        const errorMessage = data.message || 'Erreur lors de la connexion';
+                        showMessage('loginAlert', errorMessage, 'danger', data.errors);
+                        
+                        // Mettre en évidence les champs en erreur
+                        if (data.errors) {
+                            highlightFieldErrors(data.errors);
+                        } else if (data.error_type === 'email_not_found') {
+                            // Mettre en évidence le champ email
+                            const emailField = document.getElementById('loginEmail');
+                            if (emailField) {
+                                emailField.classList.add('is-invalid');
+                                const feedback = document.createElement('div');
+                                feedback.className = 'invalid-feedback';
+                                feedback.textContent = 'Aucun compte trouvé avec cette adresse email';
+                                emailField.parentElement.appendChild(feedback);
+                            }
+                        } else if (data.error_type === 'invalid_password') {
+                            // Mettre en évidence le champ mot de passe
+                            const passwordField = document.getElementById('loginPassword');
+                            if (passwordField) {
+                                passwordField.classList.add('is-invalid');
+                                const feedback = document.createElement('div');
+                                feedback.className = 'invalid-feedback';
+                                feedback.textContent = 'Mot de passe incorrect';
+                                passwordField.parentElement.appendChild(feedback);
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('Erreur connexion:', error);
-                    showMessage('loginAlert', 'Erreur de connexion. Veuillez réessayer.', 'danger');
+                    
+                    let errorMessage = 'Erreur de connexion au serveur. ';
+                    if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+                        errorMessage += 'Vérifiez votre connexion internet et réessayez.';
+                    } else if (error.message.includes('Réponse invalide')) {
+                        errorMessage += 'Le serveur a renvoyé une réponse invalide. Veuillez réessayer.';
+                    } else {
+                        errorMessage += 'Veuillez réessayer dans quelques instants.';
+                    }
+                    
+                    showMessage('loginAlert', errorMessage, 'danger');
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
@@ -435,6 +584,9 @@
                 let object = {};
                 formData.forEach((value, key) => {object[key] = value});
 
+                    // Réinitialiser les erreurs visuelles avant la soumission
+                    resetFieldErrors();
+
                     try {
                         // Utiliser la route web au lieu de /api/ pour avoir accès aux sessions
                         const response = await fetch('{{ route("web.verify-login-code") }}', {
@@ -451,6 +603,19 @@
                         const data = await response.json();
                         
                         if (data.success) {
+                            credentials: 'same-origin',
+                            body: JSON.stringify(object)
+                        });
+
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (parseError) {
+                            throw new Error('Réponse invalide du serveur');
+                        }
+                        
+                        if (data.success) {
+                            resetFieldErrors();
                             showMessage('codeAlert', 'Connexion réussie ! Redirection...', 'success');
                             
                             console.log('✅ Authentification réussie', data);
@@ -494,11 +659,43 @@
                                 }, 500);
                             });
                         } else {
-                            showMessage('codeAlert', data.message || 'Code invalide ou expiré', 'danger');
+                            const errorMessage = data.message || 'Code invalide ou expiré';
+                            showMessage('codeAlert', errorMessage, 'danger', data.errors);
+                            
+                            // Mettre en évidence le champ code si erreur
+                            if (data.errors && data.errors.code) {
+                                const codeField = document.getElementById('verificationCode');
+                                if (codeField) {
+                                    codeField.classList.add('is-invalid');
+                                    const feedback = document.createElement('div');
+                                    feedback.className = 'invalid-feedback';
+                                    feedback.textContent = data.errors.code[0];
+                                    codeField.parentElement.appendChild(feedback);
+                                }
+                            } else if (data.error_type === 'code_expired') {
+                                const codeField = document.getElementById('verificationCode');
+                                if (codeField) {
+                                    codeField.classList.add('is-invalid');
+                                    const feedback = document.createElement('div');
+                                    feedback.className = 'invalid-feedback';
+                                    feedback.textContent = 'Ce code a expiré. Veuillez demander un nouveau code.';
+                                    codeField.parentElement.appendChild(feedback);
+                                }
+                            }
                         }
                     } catch (error) {
                         console.error('Erreur validation code:', error);
-                        showMessage('codeAlert', 'Erreur lors de la vérification du code. Veuillez réessayer.', 'danger');
+                        
+                        let errorMessage = 'Erreur lors de la vérification du code. ';
+                        if (error.message === 'Failed to fetch' || error.message.includes('NetworkError')) {
+                            errorMessage += 'Vérifiez votre connexion internet et réessayez.';
+                        } else if (error.message.includes('Réponse invalide')) {
+                            errorMessage += 'Le serveur a renvoyé une réponse invalide. Veuillez réessayer.';
+                        } else {
+                            errorMessage += 'Veuillez réessayer dans quelques instants.';
+                        }
+                        
+                        showMessage('codeAlert', errorMessage, 'danger');
                     } finally {
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
@@ -512,6 +709,15 @@
                     e.target.value = e.target.value.replace(/\D/g, ''); // Seulement des chiffres
                     if (e.target.value.length === 8) {
                         e.target.form.querySelector('button[type="submit"]').focus();
+                    }
+                }
+                
+                // Réinitialiser l'erreur visuelle quand l'utilisateur commence à taper
+                if (e.target.classList.contains('is-invalid')) {
+                    e.target.classList.remove('is-invalid');
+                    const feedback = e.target.parentElement.querySelector('.invalid-feedback');
+                    if (feedback) {
+                        feedback.remove();
                     }
                 }
             });

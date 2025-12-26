@@ -40,7 +40,7 @@ class ProductController extends Controller
             $query->where('is_trending', $request->trending === 'yes');
         }
 
-        $products = $query->latest()->paginate(15)->withQueryString();
+        $products = $query->latest()->paginate(60)->withQueryString();
 
         return view('admin.products.index', compact('products'));
     }

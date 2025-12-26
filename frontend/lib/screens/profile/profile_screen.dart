@@ -93,30 +93,30 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       print('📊 [PROFILE] Chargement des statistiques...');
 
-      // Charger les commandes
-      final ordersResponse = await _orderService.getMyOrders();
-      print('📦 [PROFILE] Réponse API commandes:');
-      print('   - Success: ${ordersResponse['success']}');
-      print('   - Orders présent: ${ordersResponse['orders'] != null}');
-
-      if (ordersResponse['success'] && ordersResponse['orders'] != null) {
-        final ordersList = ordersResponse['orders'] as List;
-        _ordersCount = ordersList.length;
-        print('✅ [PROFILE] Nombre de commandes: $_ordersCount');
-
-        // Log détaillé de chaque commande
-        for (var order in ordersList) {
-          if (order is Map) {
-            print(
-              '   📦 ${order['order_number']}: status=${order['status']}, payment=${order['payment_status']}',
-            );
-          }
-        }
+      // Charger le nombre de commandes (endpoint dédié pour le comptage)
+      final countResponse = await _orderService.getOrdersCount();
+      if (countResponse['success'] == true && countResponse['count'] != null) {
+        _ordersCount = countResponse['count'] as int;
+        print('✅ [PROFILE] Nombre de commandes (via count): $_ordersCount');
       } else {
-        print(
-          '⚠️ [PROFILE] Pas de commandes trouvées ou erreur: ${ordersResponse['message']}',
-        );
-        _ordersCount = 0;
+        // Fallback : charger la liste complète et compter
+        print('⚠️ [PROFILE] Count endpoint échoué, fallback sur liste complète');
+        final ordersResponse = await _orderService.getMyOrders();
+        print('📦 [PROFILE] Réponse API commandes:');
+        print('   - Success: ${ordersResponse['success']}');
+        print('   - Orders présent: ${ordersResponse['orders'] != null}');
+
+        if (ordersResponse['success'] && ordersResponse['orders'] != null) {
+          final ordersList = ordersResponse['orders'] as List;
+          // Utiliser le total de l'API si disponible, sinon compter la liste
+          _ordersCount = ordersResponse['total'] ?? ordersList.length;
+          print('✅ [PROFILE] Nombre de commandes (via liste): $_ordersCount (liste: ${ordersList.length}, total API: ${ordersResponse['total']})');
+        } else {
+          print(
+            '⚠️ [PROFILE] Pas de commandes trouvées ou erreur: ${ordersResponse['message']}',
+          );
+          _ordersCount = 0;
+        }
       }
 
       // Charger les favoris

@@ -22,7 +22,7 @@ class ProfileController extends Controller
      */
     public function index(Request $request)
     {
-        // L'utilisateur est authentifié via le middleware auth:web
+        // L'utilisateur est authentifié via le middleware auth.redirect
         $user = auth()->user();
         
         if (!$user) {
@@ -177,6 +177,56 @@ class ProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour du mot de passe'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mettre à jour le statut de l'authentification à deux facteurs (WEB - Sessions)
+     */
+    public function updateTwoFactor(Request $request)
+    {
+        $user = auth()->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'two_factor_enabled' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user->update([
+                'two_factor_enabled' => $request->boolean('two_factor_enabled')
+            ]);
+
+            $message = $user->two_factor_enabled 
+                ? 'Authentification à deux facteurs activée avec succès'
+                : 'Authentification à deux facteurs désactivée avec succès';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'two_factor_enabled' => $user->two_factor_enabled
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur mise à jour 2FA: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de l\'authentification à deux facteurs'
             ], 500);
         }
     }
@@ -657,6 +707,9 @@ class ProfileController extends Controller
      */
     public function getInboxApi(Request $request)
     {
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
         // Support à la fois session et token
         $user = auth()->user() ?? $request->user();
         
@@ -664,7 +717,7 @@ class ProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Utilisateur non authentifié'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
 
         try {
@@ -707,13 +760,13 @@ class ProfileController extends Controller
                 'success' => true,
                 'tickets' => $tickets,
                 'count' => count($tickets)
-            ]);
+            ])->header('Content-Type', 'application/json');
         } catch (\Exception $e) {
             \Log::error('Erreur récupération tickets: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la récupération des messages'
-            ], 500);
+            ], 500)->header('Content-Type', 'application/json');
         }
     }
 
@@ -722,6 +775,9 @@ class ProfileController extends Controller
      */
     public function getRecentActivityApi(Request $request)
     {
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
         // Support à la fois session et token
         $user = auth()->user() ?? $request->user();
         
@@ -729,7 +785,7 @@ class ProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Utilisateur non authentifié'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
 
         // Récupérer les activités récentes
@@ -787,7 +843,7 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'activities' => $activities
-        ]);
+        ])->header('Content-Type', 'application/json');
     }
 
     /**

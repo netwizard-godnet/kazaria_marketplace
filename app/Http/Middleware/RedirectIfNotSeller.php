@@ -16,13 +16,22 @@ class RedirectIfNotSeller
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Vérifier si l'utilisateur est connecté
-        if (!Auth::check()) {
-            return redirect()->route('login');
+        // S'assurer que la session est démarrée
+        if (!$request->hasSession() || !session()->isStarted()) {
+            $session = app('session');
+            if (!$session->isStarted()) {
+                $session->start();
+            }
+            $request->setLaravelSession($session);
+        }
+
+        // Vérifier si l'utilisateur est connecté avec le guard web
+        if (!Auth::guard('web')->check()) {
+            return redirect()->route('login')->with('error', 'Veuillez vous connecter pour accéder à cette page.');
         }
 
         // Vérifier si l'utilisateur est un vendeur
-        if (!Auth::user()->is_seller) {
+        if (!Auth::guard('web')->user()->is_seller) {
             return redirect()->route('accueil')->with('error', 'Vous devez être vendeur pour accéder à cette page.');
         }
 

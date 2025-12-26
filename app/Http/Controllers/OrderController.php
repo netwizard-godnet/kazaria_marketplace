@@ -112,6 +112,9 @@ class OrderController extends Controller
      */
     public function createOrder(Request $request)
     {
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
         // Support à la fois pour les tokens (API) et les sessions (WEB)
         $user = $request->user() ?? auth()->user();
         
@@ -119,7 +122,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Utilisateur non authentifié'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
         
         $validator = Validator::make($request->all(), [
@@ -139,7 +142,7 @@ class OrderController extends Controller
                 'success' => false,
                 'message' => 'Erreur de validation',
                 'errors' => $validator->errors()
-            ], 422);
+            ], 422)->header('Content-Type', 'application/json');
         }
 
         try {
@@ -152,7 +155,7 @@ class OrderController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Votre panier est vide'
-                ], 400);
+                ], 400)->header('Content-Type', 'application/json');
             }
             
             // Calculer les montants
@@ -371,7 +374,7 @@ class OrderController extends Controller
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'redirect' => $redirectUrl
-            ]);
+            ])->header('Content-Type', 'application/json');
             
         } catch (\Exception $e) {
             DB::rollBack();
@@ -380,7 +383,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la création de la commande: ' . $e->getMessage()
-            ], 500);
+            ], 500)->header('Content-Type', 'application/json');
         }
     }
 
@@ -446,6 +449,9 @@ class OrderController extends Controller
      */
     public function myOrders(Request $request)
     {
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
         // Support à la fois pour session et token
         $user = auth()->user() ?? $request->user();
         
@@ -453,56 +459,137 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Utilisateur non authentifié'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
         
         try {
-            // Compter le total de commandes pour cet utilisateur
-            $totalOrders = Order::forUser($user->id)->count();
-            \Log::info("Total commandes pour user {$user->id} ({$user->email}): {$totalOrders}");
+            \Log::info("📦 [MY_ORDERS] User ID: {$user->id}, Email: {$user->email}");
             
-            $orders = Order::forUser($user->id)
-                ->recent()
-                ->with('items.product')
-                ->get();
+            $query = Order::forUser($user->id)
+                ->with(['orderItems.product', 'orderItems.variation']);
             
-            \Log::info("Commandes chargées: " . $orders->count());
+            // Compter le total AVANT filtres
+            $totalBeforeFilter = $query->count();
+            \Log::info("📦 [MY_ORDERS] Total commandes avant filtres: {$totalBeforeFilter}");
             
-            $orders = $orders->map(function ($order) {
-                    return [
-                        'id' => $order->id,
-                        'order_number' => $order->order_number,
-                        'status' => $order->status,
-                        'payment_status' => $order->payment_status,
-                        'total' => (float) $order->total,
-                        'subtotal' => (float) $order->subtotal,
-                        'shipping_cost' => (float) $order->shipping_cost,
-                        'created_at' => $order->created_at->toISOString(),
-                        'created_at_formatted' => $order->created_at->format('d/m/Y H:i'),
-                        'items_count' => $order->items->count(),
-                        'items' => $order->items->map(function ($item) {
-                            return [
-                                'id' => $item->id,
-                                'product_name' => $item->product_name,
-                                'quantity' => $item->quantity,
-                                'price' => (float) $item->price,
-                                'subtotal' => (float) $item->total,
-                                'product_image' => $item->product_image ? asset('storage/' . $item->product_image) : ($item->product->image ? asset('storage/' . $item->product->image) : null),
-                            ];
-                        }),
-                    ];
-                });
+            // Filtrer par statut
+            $status = $request->input('status');
+            \Log::info("📦 [MY_ORDERS] Filtre statut demandé: " . ($status ?? 'null'));
+            
+            // Liste des statuts valides
+            $validStatuses = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+            
+            // Par défaut, afficher TOUTES les commandes si aucun filtre n'est spécifié
+            if ($status && $status !== '' && $status !== 'all' && in_array($status, $validStatuses)) {
+                // Filtrer par le statut spécifié si c'est un statut valide
+                $query->where('status', $status);
+                \Log::info("📦 [MY_ORDERS] Filtre appliqué: status = {$status}");
+            } else {
+                \Log::info("📦 [MY_ORDERS] Pas de filtre de statut - affichage de toutes les commandes");
+            }
+            // Si status === 'all' ou status est vide/null, on affiche toutes les commandes (pas de filtre)
+            
+            // Filtrer par date
+            $dateFilter = $request->input('date');
+            if ($dateFilter) {
+                $now = now();
+                switch ($dateFilter) {
+                    case 'today':
+                        $query->whereDate('created_at', $now->toDateString());
+                        break;
+                    case 'week':
+                        $query->where('created_at', '>=', $now->copy()->subWeek());
+                        break;
+                    case 'month':
+                        $query->whereMonth('created_at', $now->month)
+                              ->whereYear('created_at', $now->year);
+                        break;
+                    case '3months':
+                        $query->where('created_at', '>=', $now->copy()->subMonths(3));
+                        break;
+                    case 'year':
+                        $query->whereYear('created_at', $now->year);
+                        break;
+                }
+            }
+            
+            $orders = $query->recent()->get();
+            
+            \Log::info("📦 [MY_ORDERS] Commandes après filtres: {$orders->count()}");
+            
+            $formattedOrders = $orders->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'user_id' => $order->user_id,
+                    'shipping_name' => $order->shipping_name ?? '',
+                    'shipping_email' => $order->shipping_email ?? '',
+                    'shipping_phone' => $order->shipping_phone ?? '',
+                    'shipping_address' => $order->shipping_address ?? '',
+                    'shipping_city' => $order->shipping_city ?? '',
+                    'shipping_postal_code' => $order->shipping_postal_code,
+                    'shipping_country' => $order->shipping_country ?? 'CI',
+                    'status' => $order->status,
+                    'payment_status' => $order->payment_status,
+                    'payment_method' => $order->payment_method,
+                    'payment_reference' => $order->payment_reference,
+                    'total' => (float) $order->total,
+                    'subtotal' => (float) $order->subtotal,
+                    'shipping_cost' => (float) $order->shipping_cost,
+                    'tax' => (float) ($order->tax ?? 0),
+                    'discount' => (float) ($order->discount ?? 0),
+                    'invoice_path' => $order->invoice_path,
+                    'customer_notes' => $order->customer_notes,
+                    'admin_notes' => $order->admin_notes,
+                    'paid_at' => $order->paid_at?->toISOString(),
+                    'shipped_at' => $order->shipped_at?->toISOString(),
+                    'delivered_at' => $order->delivered_at?->toISOString(),
+                    'created_at' => $order->created_at->toISOString(),
+                    'updated_at' => $order->updated_at->toISOString(),
+                    'created_at_formatted' => $order->created_at->format('d/m/Y H:i'),
+                    'items_count' => $order->orderItems->count(),
+                    'items' => $order->orderItems->map(function ($item) {
+                        // Gérer les attributs (peuvent être null, string JSON, ou objet)
+                        $attributes = $item->attributes ?? [];
+                        if (is_string($attributes)) {
+                            $decoded = json_decode($attributes, true);
+                            $attributes = $decoded ?? [];
+                        }
+                        if (!is_array($attributes)) {
+                            $attributes = [];
+                        }
+                        
+                        return [
+                            'id' => $item->id,
+                            'order_id' => $item->order_id,
+                            'product_id' => $item->product_id,
+                            'product_name' => $item->product_name,
+                            'quantity' => (int) $item->quantity,
+                            'price' => (float) $item->price,
+                            'total' => (float) $item->total,
+                            'subtotal' => (float) $item->total,
+                            'product_image' => $item->product_image ? asset('storage/' . $item->product_image) : ($item->product && $item->product->image ? asset('storage/' . $item->product->image) : null),
+                            'attributes' => $attributes,
+                        ];
+                    })->values()->all(),
+                ];
+            });
+            
+            $ordersArray = $formattedOrders->values()->all();
+            \Log::info("📦 [MY_ORDERS] Nombre de commandes formatées: " . count($ordersArray));
             
             return response()->json([
                 'success' => true,
-                'orders' => $orders
-            ]);
+                'orders' => $ordersArray,
+                'total' => count($ordersArray) // Ajouter le total pour faciliter le comptage côté client
+            ])->header('Content-Type', 'application/json');
+            
         } catch (\Exception $e) {
             \Log::error('Erreur lors du chargement des commandes: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors du chargement des commandes: ' . $e->getMessage()
-            ], 500);
+            ], 500)->header('Content-Type', 'application/json');
         }
     }
 
@@ -511,6 +598,9 @@ class OrderController extends Controller
      */
     public function cancelOrder(Request $request, $orderNumber)
     {
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
         // Support à la fois pour session et token
         $user = auth()->user() ?? $request->user();
         
@@ -518,7 +608,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Utilisateur non authentifié'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
         
         $order = Order::where('order_number', $orderNumber)
@@ -529,7 +619,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Commande non trouvée'
-            ], 404);
+            ], 404)->header('Content-Type', 'application/json');
         }
         
         // Vérifier que la commande peut être annulée (seulement si statut = pending)
@@ -537,7 +627,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Cette commande ne peut plus être annulée. Elle est déjà en cours de livraison ou a été livrée.'
-            ], 422);
+            ], 422)->header('Content-Type', 'application/json');
         }
         
         try {
@@ -548,13 +638,50 @@ class OrderController extends Controller
                 'success' => true,
                 'message' => 'Commande annulée avec succès. Le stock a été libéré.',
                 'order' => $order->fresh()
-            ]);
+            ])->header('Content-Type', 'application/json');
         } catch (\Exception $e) {
             \Log::error('Erreur lors de l\'annulation de la commande: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'annulation de la commande: ' . $e->getMessage()
-            ], 500);
+            ], 500)->header('Content-Type', 'application/json');
+        }
+    }
+
+    /**
+     * Obtenir le nombre total de commandes de l'utilisateur (API)
+     */
+    public function getOrdersCount(Request $request)
+    {
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
+        // Support à la fois pour session et token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401)->header('Content-Type', 'application/json');
+        }
+        
+        try {
+            $count = Order::forUser($user->id)->count();
+            
+            \Log::info("📦 [ORDERS_COUNT] User ID: {$user->id}, Total commandes: {$count}");
+            
+            return response()->json([
+                'success' => true,
+                'count' => $count
+            ])->header('Content-Type', 'application/json');
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors du comptage des commandes: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du comptage des commandes: ' . $e->getMessage(),
+                'count' => 0
+            ], 500)->header('Content-Type', 'application/json');
         }
     }
 
@@ -563,7 +690,18 @@ class OrderController extends Controller
      */
     public function getOrderDetails($orderNumber, Request $request)
     {
-        $user = $request->user();
+        // Forcer la réponse JSON pour les requêtes API
+        $request->headers->set('Accept', 'application/json');
+        
+        // Support à la fois pour session et token
+        $user = auth()->user() ?? $request->user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur non authentifié'
+            ], 401)->header('Content-Type', 'application/json');
+        }
         
         $order = Order::where('order_number', $orderNumber)
             ->with(['orderItems.product', 'orderItems.variation.attributeValues.attribute'])
@@ -573,7 +711,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Commande non trouvée'
-            ], 404);
+            ], 404)->header('Content-Type', 'application/json');
         }
         
         // Vérifier que la commande appartient à l'utilisateur
@@ -581,13 +719,51 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Accès non autorisé'
-            ], 403);
+            ], 403)->header('Content-Type', 'application/json');
         }
+        
+        // Formater la commande pour l'API
+        $formattedOrder = [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'payment_status' => $order->payment_status,
+            'payment_method' => $order->payment_method,
+            'total' => (float) $order->total,
+            'subtotal' => (float) $order->subtotal,
+            'shipping_cost' => (float) $order->shipping_cost,
+            'discount' => (float) ($order->discount ?? 0),
+            'shipping_name' => $order->shipping_name,
+            'shipping_email' => $order->shipping_email,
+            'shipping_phone' => $order->shipping_phone,
+            'shipping_address' => $order->shipping_address,
+            'shipping_city' => $order->shipping_city,
+            'shipping_country' => $order->shipping_country,
+            'created_at' => $order->created_at->toISOString(),
+            'created_at_formatted' => $order->created_at->format('d/m/Y H:i'),
+            'items' => $order->orderItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'quantity' => $item->quantity,
+                    'price' => (float) $item->price,
+                    'subtotal' => (float) $item->total,
+                    'product_image' => $item->product_image ? asset('storage/' . $item->product_image) : ($item->product && $item->product->image ? asset('storage/' . $item->product->image) : null),
+                    'attributes' => $item->attributes ?? [],
+                    'product' => $item->product ? [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                    ] : null,
+                ];
+            }),
+        ];
         
         return response()->json([
             'success' => true,
-            'order' => $order
-        ]);
+            'order' => $formattedOrder
+        ])->header('Content-Type', 'application/json');
     }
 
     /**
