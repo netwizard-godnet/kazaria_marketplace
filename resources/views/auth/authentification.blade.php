@@ -208,6 +208,16 @@
             let currentStep = 'login'; // 'login', 'code', 'register'
             let userEmail = '';
 
+            // Fonction pour obtenir l'ID de session invité depuis localStorage
+            function getSessionId() {
+                let sessionId = localStorage.getItem('guest_session_id');
+                if (!sessionId) {
+                    sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('guest_session_id', sessionId);
+                }
+                return sessionId;
+            }
+
             // Fonction pour afficher un message
             function showMessage(elementId, message, type = 'success', errors = null) {
                 const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
@@ -500,7 +510,8 @@
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Session-ID': getSessionId() // ⚠️ IMPORTANT : Envoyer l'ID de session invité pour fusionner le panier
                         },
                         credentials: 'same-origin', // Important : inclure les cookies dans la requête
                         body: JSON.stringify(object)
@@ -597,7 +608,8 @@
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'X-Requested-With': 'XMLHttpRequest'
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-Session-ID': getSessionId() // ⚠️ IMPORTANT : Envoyer l'ID de session invité pour fusionner le panier
                             },
                             credentials: 'same-origin',
                             body: JSON.stringify(object)

@@ -33,6 +33,12 @@ class RedirectIfNotAuthenticated
             
             $session = $request->session();
             if (!$session->isStarted()) {
+                // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+                // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+                $sessionId = $request->cookies->get($session->getName());
+                if ($sessionId) {
+                    $session->setId($sessionId);
+                }
                 $session->start();
             }
         }

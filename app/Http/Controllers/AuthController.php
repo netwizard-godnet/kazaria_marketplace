@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\AuthCode;
+use App\Models\CartItem;
 use App\Mail\AuthCodeMail;
 use App\Mail\VerifyEmailMail;
 use App\Mail\ResetPasswordMail;
@@ -31,20 +32,20 @@ class AuthController extends Controller
         }
 
         $session = $request->session();
-        $sessionName = config('session.cookie');
-        $sessionId = $session->getId();
-        $sessionLifetime = config('session.lifetime') * 60; // Convertir en secondes
+        $sessionName = (string)config('session.cookie');
+        $sessionId = (string)$session->getId();
+        $sessionLifetime = (int)config('session.lifetime') * 60; // Convertir en secondes
         
         $cookie = cookie(
             $sessionName,
             $sessionId,
             $sessionLifetime,
-            config('session.path', '/'),
-            config('session.domain'),
-            config('session.secure', false),
-            config('session.http_only', true),
+            (string)config('session.path', '/'),
+            (string)(config('session.domain') ?? ''),
+            (bool)config('session.secure', false),
+            (bool)config('session.http_only', true),
             false,
-            config('session.same_site', 'lax')
+            (string)(config('session.same_site', 'lax') ?? 'lax')
         );
 
         return $response->withCookie($cookie);
@@ -219,6 +220,12 @@ class AuthController extends Controller
                     
                     $session = $request->session();
                     if (!$session->isStarted()) {
+                        // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+                        // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+                        $sessionId = $request->cookies->get($session->getName());
+                        if ($sessionId) {
+                            $session->setId($sessionId);
+                        }
                         $session->start();
                     }
                     
@@ -237,7 +244,20 @@ class AuthController extends Controller
                     $request->session()->regenerateToken();
 
                     // Fusionner le panier invité avec le panier utilisateur
-                    $this->mergeGuestCart($user, $request->header('X-Session-ID'));
+                    try {
+                        $guestSessionId = $request->header('X-Session-ID');
+                        // S'assurer que c'est une chaîne de caractères
+                        if ($guestSessionId !== null) {
+                            $guestSessionId = is_array($guestSessionId) ? ($guestSessionId[0] ?? null) : (string)$guestSessionId;
+                            $this->mergeGuestCart($user, $guestSessionId ?: null);
+                        }
+                    } catch (\Exception $e) {
+                        // Ne pas bloquer la connexion si la fusion du panier échoue
+                        \Log::error('Erreur lors de la fusion du panier invité: ' . $e->getMessage(), [
+                            'user_id' => $user->id,
+                            'exception' => $e
+                        ]);
+                    }
 
                     // Sauvegarder la session pour s'assurer qu'elle est persistée
                     $request->session()->save();
@@ -467,6 +487,12 @@ class AuthController extends Controller
         
         $session = $request->session();
         if (!$session->isStarted()) {
+            // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+            // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+            $sessionId = $request->cookies->get($session->getName());
+            if ($sessionId) {
+                $session->setId($sessionId);
+            }
             $session->start();
         }
         
@@ -484,7 +510,20 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         // Fusionner le panier invité avec le panier utilisateur
-        $this->mergeGuestCart($user, $request->header('X-Session-ID'));
+        try {
+            $guestSessionId = $request->header('X-Session-ID');
+            // S'assurer que c'est une chaîne de caractères
+            if ($guestSessionId !== null) {
+                $guestSessionId = is_array($guestSessionId) ? ($guestSessionId[0] ?? null) : (string)$guestSessionId;
+                $this->mergeGuestCart($user, $guestSessionId ?: null);
+            }
+        } catch (\Exception $e) {
+            // Ne pas bloquer la connexion si la fusion du panier échoue
+            \Log::error('Erreur lors de la fusion du panier invité: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'exception' => $e
+            ]);
+        }
 
         // Sauvegarder la session pour s'assurer qu'elle est persistée
         $request->session()->save();
@@ -736,6 +775,9 @@ class AuthController extends Controller
     {
         // Si pas de session invité, rien à fusionner
         if (!$guestSessionId) {
+            \Log::info('mergeGuestCart: Pas de session invité fournie', [
+                'user_id' => $user->id ?? null
+            ]);
             return;
         }
 
@@ -745,17 +787,40 @@ class AuthController extends Controller
                 ->whereNull('user_id')
                 ->get();
 
+            \Log::info('mergeGuestCart: Items invités trouvés', [
+                'user_id' => $user->id,
+                'guest_session_id' => $guestSessionId,
+                'items_count' => $guestItems->count()
+            ]);
+
             if ($guestItems->isEmpty()) {
+                \Log::info('mergeGuestCart: Aucun item invité à fusionner');
                 return; // Pas d'items à fusionner
             }
 
             foreach ($guestItems as $item) {
                 // Vérifier si l'utilisateur a déjà ce produit dans son panier
                 // Comparer par product_id, variation_id et attributes (JSON)
+                // Normaliser les attributs pour la comparaison
+                $itemAttributes = is_string($item->attributes) ? $item->attributes : json_encode($item->attributes ?? []);
+                
                 $existingItem = CartItem::where('user_id', $user->id)
                     ->where('product_id', $item->product_id)
                     ->where('variation_id', $item->variation_id)
-                    ->where('attributes', $item->attributes)
+                    ->where(function($query) use ($itemAttributes) {
+                        // Comparer les attributs JSON
+                        if (empty($itemAttributes) || $itemAttributes === '[]' || $itemAttributes === '{}' || $itemAttributes === 'null') {
+                            $query->where(function($q) {
+                                $q->whereNull('attributes')
+                                  ->orWhere('attributes', '[]')
+                                  ->orWhere('attributes', '{}')
+                                  ->orWhere('attributes', '');
+                            });
+                        } else {
+                            $query->where('attributes', $itemAttributes)
+                                  ->orWhereRaw('JSON_CONTAINS(attributes, ?) AND JSON_CONTAINS(?, attributes)', [$itemAttributes, $itemAttributes]);
+                        }
+                    })
                     ->first();
 
                 if ($existingItem) {
@@ -774,7 +839,15 @@ class AuthController extends Controller
 
             \Log::info("Panier invité fusionné pour l'utilisateur {$user->id}", [
                 'guest_session_id' => $guestSessionId,
-                'items_merged' => $guestItems->count()
+                'items_merged' => $guestItems->count(),
+                'user_id' => $user->id
+            ]);
+            
+            // Vérifier que les items ont bien été transférés
+            $userCartCount = CartItem::where('user_id', $user->id)->count();
+            \Log::info('mergeGuestCart: Panier utilisateur après fusion', [
+                'user_id' => $user->id,
+                'cart_count' => $userCartCount
             ]);
         } catch (\Exception $e) {
             // Log l'erreur mais ne pas bloquer la connexion

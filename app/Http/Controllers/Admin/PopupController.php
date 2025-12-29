@@ -12,22 +12,23 @@ use Illuminate\Support\Str;
 class PopupController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Afficher la liste des popups
      */
     public function index()
     {
         $popups = Popup::orderByDesc('is_active')
             ->orderByDesc('priority')
             ->latest('updated_at')
-            ->paginate(15);
+            ->paginate(20);
 
-        return view('admin.popups.index', array_merge([
+        return view('admin.popups.index', [
             'popups' => $popups,
-        ], $this->formOptions()));
+            'frequencies' => $this->getFrequencies(),
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Afficher le formulaire de création
      */
     public function create()
     {
@@ -36,38 +37,32 @@ class PopupController extends Controller
             'delay_seconds' => 0,
             'priority' => 0,
             'is_active' => false,
-            'layout' => 'left-right',
+            'layout' => 'stacked',
+            'width' => 300,
+            'height' => 300,
         ]);
 
-        return view('admin.popups.create', $this->formOptions(compact('popup')));
+        return view('admin.popups.form', [
+            'popup' => $popup,
+            'frequencies' => $this->getFrequencies(),
+            'devices' => $this->getDevices(),
+            'layouts' => $this->getLayouts(),
+            'pagePresets' => $this->getPagePresets(),
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Enregistrer une nouvelle popup
      */
     public function store(PopupRequest $request)
     {
-        $data = $request->validated();
-        $data['title'] = !empty($data['title']) ? $data['title'] : null;
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'] ?? null);
-        $data['frequency'] = $data['frequency'] ?? 'once_per_session';
-        $data['delay_seconds'] = $data['delay_seconds'] ?? 0;
-        $data['display_pages'] = $this->resolvePages(
-            $data['display_pages'] ?? [],
-            $data['display_pages_custom'] ?? null
-        );
-        $data['display_devices'] = $data['display_devices'] ?? [];
-        $data['is_active'] = $request->boolean('is_active');
+        $data = $this->prepareData($request);
         $data['created_by'] = auth()->id();
         $data['updated_by'] = auth()->id();
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('popups', 'public');
-        } elseif (!empty($data['image_path'] ?? null)) {
-            $data['image'] = $data['image_path'];
         }
-
-        unset($data['image_path'], $data['display_pages_custom']);
 
         Popup::create($data);
 
@@ -77,54 +72,40 @@ class PopupController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Afficher le formulaire d'édition
      */
     public function edit(Popup $popup)
     {
-        return view('admin.popups.edit', $this->formOptions(compact('popup')));
+        return view('admin.popups.form', [
+            'popup' => $popup,
+            'frequencies' => $this->getFrequencies(),
+            'devices' => $this->getDevices(),
+            'layouts' => $this->getLayouts(),
+            'pagePresets' => $this->getPagePresets(),
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Mettre à jour une popup
      */
     public function update(PopupRequest $request, Popup $popup)
     {
-        $data = $request->validated();
-        // Si le titre est vide, le mettre à null (pas de valeur par défaut)
-        if (isset($data['title']) && empty(trim($data['title']))) {
-            $data['title'] = null;
-        } else {
-            $data['title'] = $data['title'] ?? $popup->title;
-        }
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'] ?? null, $popup->id);
-        $data['frequency'] = $data['frequency'] ?? $popup->frequency ?? 'once_per_session';
-        $data['delay_seconds'] = $data['delay_seconds'] ?? $popup->delay_seconds ?? 0;
-        $data['display_pages'] = $this->resolvePages(
-            $data['display_pages'] ?? [],
-            $data['display_pages_custom'] ?? null
-        );
-        $data['display_devices'] = $data['display_devices'] ?? [];
-        $data['is_active'] = $request->boolean('is_active');
+        $data = $this->prepareData($request);
         $data['updated_by'] = auth()->id();
 
+        // Gestion de l'image
         if ($request->hasFile('image')) {
+            // Supprimer l'ancienne image
             if ($popup->image && Storage::disk('public')->exists($popup->image)) {
                 Storage::disk('public')->delete($popup->image);
             }
-
             $data['image'] = $request->file('image')->store('popups', 'public');
-        } elseif (!empty($data['image_path'] ?? null)) {
-            $data['image'] = $data['image_path'];
         } elseif ($request->boolean('remove_image')) {
             if ($popup->image && Storage::disk('public')->exists($popup->image)) {
                 Storage::disk('public')->delete($popup->image);
             }
             $data['image'] = null;
-        } else {
-            $data['image'] = $popup->image;
         }
-
-        unset($data['image_path'], $data['display_pages_custom']);
 
         $popup->update($data);
 
@@ -134,7 +115,7 @@ class PopupController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Supprimer une popup
      */
     public function destroy(Popup $popup)
     {
@@ -149,6 +130,9 @@ class PopupController extends Controller
             ->with('success', 'Popup supprimée avec succès.');
     }
 
+    /**
+     * Activer/Désactiver une popup
+     */
     public function toggle(Popup $popup)
     {
         $popup->update([
@@ -158,51 +142,57 @@ class PopupController extends Controller
 
         return redirect()
             ->route('admin.popups.index')
-            ->with('success', 'Statut mis à jour.');
+            ->with('success', 'Statut de la popup mis à jour.');
     }
 
-    protected function formOptions(array $data = []): array
+    /**
+     * Préparer les données pour la sauvegarde
+     */
+    protected function prepareData(Request $request): array
     {
-        $frequencies = [
-            'once_per_session' => 'Une fois par session',
-            'once_per_day' => 'Une fois par jour',
-            'once_per_visit' => 'À chaque visite',
-            'always' => 'Toujours',
-        ];
+        $data = $request->validated();
 
-        $devices = [
-            'desktop' => 'Ordinateur',
-            'tablet' => 'Tablette',
-            'mobile' => 'Mobile',
-        ];
+        // Slug
+        $data['slug'] = $this->generateSlug(
+            $data['slug'] ?? null,
+            $data['title'] ?? null,
+            $request->route('popup')?->id ?? null
+        );
 
-        $pagePresets = [
-            'home' => 'Page d\'accueil',
-            'category' => 'Pages catégories',
-            'product' => 'Pages produits',
-            'cart' => 'Panier',
-            'checkout' => 'Checkout',
-            'custom' => 'URL personnalisée',
-        ];
+        // Valeurs par défaut
+        $data['frequency'] = $data['frequency'] ?? 'once_per_session';
+        $data['delay_seconds'] = (int) ($data['delay_seconds'] ?? 0);
+        $data['priority'] = (int) ($data['priority'] ?? 0);
+        $data['width'] = (int) ($data['width'] ?? 300);
+        $data['height'] = (int) ($data['height'] ?? 300);
+        $data['layout'] = $data['layout'] ?? 'stacked';
+        $data['is_active'] = $request->boolean('is_active', false);
 
-        $layouts = [
-            'stacked' => 'Superposé (Image au-dessus, contenu en dessous)',
-            'left-right' => 'Image à gauche, contenu à droite',
-            'right-left' => 'Image à droite, contenu à gauche',
-            'top-bottom' => 'Image en haut, contenu en bas',
-        ];
+        // Pages d'affichage
+        $data['display_pages'] = $this->resolvePages(
+            $data['display_pages'] ?? [],
+            $data['display_pages_custom'] ?? null
+        );
 
-        return array_merge($data, [
-            'frequencies' => $frequencies,
-            'devices' => $devices,
-            'pagePresets' => $pagePresets,
-            'layouts' => $layouts,
-        ]);
+        // Appareils
+        $data['display_devices'] = $data['display_devices'] ?? [];
+
+        // Dates
+        $data['display_start'] = $data['display_start'] ?? null;
+        $data['display_end'] = $data['display_end'] ?? null;
+
+        // Nettoyer
+        unset($data['display_pages_custom']);
+
+        return $data;
     }
 
+    /**
+     * Générer un slug unique
+     */
     protected function generateSlug(?string $slug, ?string $title, ?int $ignoreId = null): string
     {
-        $base = Str::slug($slug ?: ($title ?? 'popup-sans-titre'));
+        $base = Str::slug($slug ?: ($title ?? 'popup-' . time()));
         $candidate = $base;
         $counter = 1;
 
@@ -217,6 +207,9 @@ class PopupController extends Controller
         return $candidate;
     }
 
+    /**
+     * Résoudre les pages d'affichage
+     */
     protected function resolvePages(array $pages, ?string $custom = null): array
     {
         $extra = collect(explode(',', (string) $custom))
@@ -229,5 +222,58 @@ class PopupController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Options de fréquence
+     */
+    protected function getFrequencies(): array
+    {
+        return [
+            'once_per_session' => 'Une fois par session',
+            'once_per_day' => 'Une fois par jour',
+            'once_per_visit' => 'À chaque visite',
+            'always' => 'Toujours afficher',
+        ];
+    }
+
+    /**
+     * Options d'appareils
+     */
+    protected function getDevices(): array
+    {
+        return [
+            'desktop' => 'Ordinateur',
+            'tablet' => 'Tablette',
+            'mobile' => 'Mobile',
+        ];
+    }
+
+    /**
+     * Options de layout
+     */
+    protected function getLayouts(): array
+    {
+        return [
+            'stacked' => 'Superposé (Image en arrière-plan)',
+            'left-right' => 'Image à gauche, contenu à droite',
+            'right-left' => 'Image à droite, contenu à gauche',
+            'top-bottom' => 'Image en haut, contenu en bas',
+        ];
+    }
+
+    /**
+     * Presets de pages
+     */
+    protected function getPagePresets(): array
+    {
+        return [
+            'home' => 'Page d\'accueil',
+            'category' => 'Pages catégories',
+            'product' => 'Pages produits',
+            'cart' => 'Panier',
+            'checkout' => 'Checkout',
+            'custom' => 'URL personnalisée',
+        ];
     }
 }

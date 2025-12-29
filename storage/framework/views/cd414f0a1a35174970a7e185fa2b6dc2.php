@@ -25,98 +25,124 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0">Popups configurées</h4>
-                    <a href="<?php echo e(route('admin.popups.create')); ?>" class="btn btn-primary btn-sm">
+                    <h4 class="card-title mb-0">
+                        <i class="fa fa-window-restore me-2"></i>
+                        Popups configurées
+                    </h4>
+                    <a href="<?php echo e(route('admin.popups.create')); ?>" class="btn btn-primary">
                         <i class="fa fa-plus me-1"></i> Nouvelle popup
                     </a>
                 </div>
                 <div class="card-body">
                     <?php if(session('success')): ?>
-                        <div class="alert alert-success"><?php echo e(session('success')); ?></div>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fa fa-check-circle me-2"></i>
+                            <?php echo e(session('success')); ?>
+
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
                     <?php endif; ?>
 
                     <?php if($popups->isEmpty()): ?>
                         <div class="text-center py-5">
-                            <i class="fa fa-window-restore fa-3x text-muted"></i>
+                            <i class="fa fa-window-restore fa-4x text-muted mb-3"></i>
                             <h5 class="mt-3 text-muted">Aucune popup configurée</h5>
-                            <p class="text-muted">Créez votre première popup marketing pour communiquer avec vos visiteurs.</p>
-                            <a href="<?php echo e(route('admin.popups.create')); ?>" class="btn btn-primary btn-sm">
+                            <p class="text-muted mb-4">Créez votre première popup marketing pour communiquer avec vos visiteurs.</p>
+                            <a href="<?php echo e(route('admin.popups.create')); ?>" class="btn btn-primary">
                                 <i class="fa fa-plus me-1"></i> Créer une popup
                             </a>
                         </div>
                     <?php else: ?>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
-                                <thead>
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Popup</th>
-                                        <th>Planning</th>
-                                        <th>Affichage</th>
-                                        <th>Fréquence</th>
-                                        <th>Priorité</th>
-                                        <th class="text-center">Statut</th>
-                                        <th>Modifiée le</th>
-                                        <th class="text-end">Actions</th>
+                                        <th style="width: 200px;">Popup</th>
+                                        <th style="width: 150px;">Planning</th>
+                                        <th style="width: 150px;">Affichage</th>
+                                        <th style="width: 120px;">Fréquence</th>
+                                        <th style="width: 80px;" class="text-center">Priorité</th>
+                                        <th style="width: 100px;" class="text-center">Statut</th>
+                                        <th style="width: 120px;">Modifiée</th>
+                                        <th style="width: 120px;" class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php $__currentLoopData = $popups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $popup): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <tr>
                                             <td>
-                                                <div class="fw-bold"><?php echo e($popup->title); ?></div>
-                                                <small class="text-muted">Slug : <?php echo e($popup->slug); ?></small>
-                                                <?php if($popup->image): ?>
+                                                <div class="d-flex align-items-center">
+                                                    <?php if($popup->image): ?>
+                                                        <img src="<?php echo e(asset('storage/' . $popup->image)); ?>" 
+                                                             alt="<?php echo e($popup->title); ?>" 
+                                                             class="me-2 rounded" 
+                                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <?php else: ?>
+                                                        <div class="bg-light rounded d-flex align-items-center justify-content-center me-2" 
+                                                             style="width: 50px; height: 50px;">
+                                                            <i class="fa fa-image text-muted"></i>
+                                                        </div>
+                                                    <?php endif; ?>
                                                     <div>
-                                                        <small class="text-muted">Image : <?php echo e($popup->image); ?></small>
+                                                        <div class="fw-bold"><?php echo e($popup->title ?: 'Sans titre'); ?></div>
+                                                        <small class="text-muted"><?php echo e($popup->slug); ?></small>
                                                     </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <?php if($popup->display_start): ?>
+                                                    <small class="d-block text-muted">
+                                                        <i class="fa fa-calendar text-primary me-1"></i>
+                                                        <?php echo e($popup->display_start->format('d/m/Y H:i')); ?>
+
+                                                    </small>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary">Immédiat</span>
+                                                <?php endif; ?>
+                                                <?php if($popup->display_end): ?>
+                                                    <small class="d-block text-muted mt-1">
+                                                        <i class="fa fa-calendar-check text-danger me-1"></i>
+                                                        <?php echo e($popup->display_end->format('d/m/Y H:i')); ?>
+
+                                                    </small>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary mt-1">Sans fin</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <small class="text-muted d-block">
-                                                    <?php if($popup->display_start): ?>
-                                                        <i class="fa fa-calendar me-1"></i>
-                                                        Du <?php echo e($popup->display_start->format('d/m/Y H:i')); ?>
-
-                                                    <?php else: ?>
-                                                        <span class="badge bg-secondary">Dès activation</span>
-                                                    <?php endif; ?>
-                                                </small>
-                                                <small class="text-muted d-block">
-                                                    <?php if($popup->display_end): ?>
-                                                        <i class="fa fa-calendar-check me-1"></i>
-                                                        Au <?php echo e($popup->display_end->format('d/m/Y H:i')); ?>
-
-                                                    <?php else: ?>
-                                                        <span class="badge bg-secondary">Sans fin</span>
-                                                    <?php endif; ?>
-                                                </small>
-                                            </td>
-                                            <td>
                                                 <div class="mb-1">
-                                                    <small class="text-muted">Pages :</small>
+                                                    <small class="text-muted d-block mb-1">Pages :</small>
                                                     <?php if(!empty($popup->display_pages)): ?>
-                                                        <span class="badge bg-light text-dark border">
-                                                            <?php echo e(implode(', ', $popup->display_pages)); ?>
+                                                        <?php $__currentLoopData = array_slice($popup->display_pages, 0, 2); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $page): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                            <span class="badge bg-info-subtle text-info me-1 mb-1">
+                                                                <?php echo e($page); ?>
 
-                                                        </span>
+                                                            </span>
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                        <?php if(count($popup->display_pages) > 2): ?>
+                                                            <span class="badge bg-secondary">+<?php echo e(count($popup->display_pages) - 2); ?></span>
+                                                        <?php endif; ?>
                                                     <?php else: ?>
-                                                        <span class="badge bg-secondary">Toutes</span>
+                                                        <span class="badge bg-success-subtle text-success">Toutes</span>
                                                     <?php endif; ?>
                                                 </div>
                                                 <div>
-                                                    <small class="text-muted">Appareils :</small>
+                                                    <small class="text-muted d-block mb-1">Appareils :</small>
                                                     <?php if(!empty($popup->display_devices)): ?>
                                                         <?php $__currentLoopData = $popup->display_devices; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $device): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                            <span class="badge bg-light text-dark border text-capitalize"><?php echo e($device); ?></span>
+                                                            <span class="badge bg-light text-dark border me-1 text-capitalize">
+                                                                <?php echo e($device); ?>
+
+                                                            </span>
                                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                     <?php else: ?>
-                                                        <span class="badge bg-secondary">Tous</span>
+                                                        <span class="badge bg-success-subtle text-success">Tous</span>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge bg-primary-subtle text-primary">
-                                                    <?php echo e($frequencies[$popup->frequency] ?? ucfirst(str_replace('_', ' ', $popup->frequency))); ?>
+                                                <span class="badge bg-primary-subtle text-primary mb-1">
+                                                    <?php echo e($frequencies[$popup->frequency] ?? $popup->frequency); ?>
 
                                                 </span>
                                                 <div>
@@ -126,19 +152,21 @@
                                                 </div>
                                                 <?php if($popup->max_impressions): ?>
                                                     <small class="text-muted d-block">
-                                                        Max. affichages : <?php echo e($popup->max_impressions); ?>
+                                                        Max : <?php echo e($popup->max_impressions); ?>
 
                                                     </small>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
-                                                <span class="badge bg-info text-dark">#<?php echo e($popup->priority); ?></span>
+                                            <td class="text-center">
+                                                <span class="badge bg-info text-dark fs-6">#<?php echo e($popup->priority); ?></span>
                                             </td>
                                             <td class="text-center">
-                                                <form action="<?php echo e(route('admin.popups.toggle', $popup)); ?>" method="POST">
+                                                <form action="<?php echo e(route('admin.popups.toggle', $popup)); ?>" method="POST" class="d-inline">
                                                     <?php echo csrf_field(); ?>
-                                                    <button type="submit" class="btn btn-sm <?php echo e($popup->is_active ? 'btn-success' : 'btn-outline-secondary'); ?>">
-                                                        <i class="fa <?php echo e($popup->is_active ? 'fa-toggle-on' : 'fa-toggle-off'); ?> me-1"></i>
+                                                    <button type="submit" 
+                                                            class="btn btn-sm <?php echo e($popup->is_active ? 'btn-success' : 'btn-outline-secondary'); ?>"
+                                                            title="<?php echo e($popup->is_active ? 'Désactiver' : 'Activer'); ?>">
+                                                        <i class="fa <?php echo e($popup->is_active ? 'fa-toggle-on' : 'fa-toggle-off'); ?>"></i>
                                                         <?php echo e($popup->is_active ? 'Actif' : 'Inactif'); ?>
 
                                                     </button>
@@ -146,21 +174,30 @@
                                             </td>
                                             <td>
                                                 <small class="text-muted">
-                                                    <?php echo e($popup->updated_at?->format('d/m/Y H:i') ?? '—'); ?>
-
+                                                    <?php echo e($popup->updated_at->format('d/m/Y')); ?><br>
+                                                    <span class="text-muted"><?php echo e($popup->updated_at->format('H:i')); ?></span>
                                                 </small>
                                             </td>
                                             <td class="text-end">
-                                                <a href="<?php echo e(route('admin.popups.edit', $popup)); ?>" class="btn btn-sm btn-outline-primary me-1">
-                                                    <i class="fa fa-edit"></i>
-                                                </a>
-                                                <form action="<?php echo e(route('admin.popups.destroy', $popup)); ?>" method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette popup ?');">
-                                                    <?php echo csrf_field(); ?>
-                                                    <?php echo method_field('DELETE'); ?>
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <div class="btn-group" role="group">
+                                                    <a href="<?php echo e(route('admin.popups.edit', $popup)); ?>" 
+                                                       class="btn btn-sm btn-outline-primary" 
+                                                       title="Modifier">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
+                                                    <form action="<?php echo e(route('admin.popups.destroy', $popup)); ?>" 
+                                                          method="POST" 
+                                                          class="d-inline" 
+                                                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette popup ?');">
+                                                        <?php echo csrf_field(); ?>
+                                                        <?php echo method_field('DELETE'); ?>
+                                                        <button type="submit" 
+                                                                class="btn btn-sm btn-outline-danger" 
+                                                                title="Supprimer">
+                                                            <i class="fa fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -179,6 +216,5 @@
     </div>
 </div>
 <?php $__env->stopSection(); ?>
-
 
 <?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\admin\popups\index.blade.php ENDPATH**/ ?>

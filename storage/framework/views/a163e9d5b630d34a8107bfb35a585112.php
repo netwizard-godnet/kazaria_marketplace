@@ -1,617 +1,409 @@
-<div id="popup-launcher-root" data-popups='<?php echo json_encode($payload, JSON_UNESCAPED_UNICODE, 512) ?>'></div>
+<div id="popup-launcher-root" data-version="<?php echo e($version); ?>"></div>
+<script type="application/json" id="popup-launcher-data"><?php echo json_encode($payload, 15, 512) ?></script>
 
-<div class="modal fade popup-launcher-modal" id="popupLauncherModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" style="backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; z-index: 9999999999 !important;">
-    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-        <div class="modal-content border-0" style="background: transparent!important;">
-            <div class="modal-body p-0" data-popup-body>
-                <div class="row g-0 position-relative" data-popup-row>
-                    <div class="popup-launcher-image-wrapper d-none" data-popup-image-wrapper>
-                        <!-- Close button -->
-                         <div class="" style="z-index: 9999999999 !important;">
-                            <button type="button" class="btn-close popup-close-btn" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                         </div>
-                        <!-- End Close button -->
-                        <img src="" alt="" class="w-100 h-100" data-popup-image>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-center" data-popup-content-wrapper>
-                        <div class="p-4 w-100" data-popup-content-inner>
-                            <h3 class="fw-bold mb-3 text-center" data-popup-title></h3>
-                            <div class="popup-launcher-content mb-3 text-center" data-popup-content></div>
-                            <div class="d-flex flex-wrap gap-2 justify-content-center" data-popup-actions></div>
-                        </div>
-                    </div>
-                </div>
+<!-- Modal Bootstrap pour les popups -->
+<div class="modal fade" id="popupModal" tabindex="-1" aria-labelledby="popupModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="true" style="z-index: 999999999 !important; backdrop-filter: blur(8px) !important;">
+    <div class="modal-dialog modal-dialog-centered" id="popupModalDialog">
+        <div class="modal-content" style="max-width: 100%; max-height: 100%;">
+            <div class="modal-body position-relative" id="popupModalBody">
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Fermer" style="z-index: 10;"></button>
+                <!-- Contenu du popup sera injecté ici -->
+            </div>
+            <div class="modal-footer justify-content-center align-items-center" id="popupModalFooter" style="display: none;">
+                <!-- Boutons d'action seront injectés ici -->
             </div>
         </div>
     </div>
 </div>
 
-<?php $__env->startPush('styles'); ?>
-<style>
-    /* Flou de l'arrière-plan de la modal */
-    .modal-backdrop.show {
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-        background-color: rgba(0, 0, 0, 0.5) !important;
-    }
-    
-    /* Cibler spécifiquement le backdrop quand la popup est ouverte */
-    body.modal-open .modal-backdrop {
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-    }
-
-    /* Règle globale pour toutes les images - object-fit contain obligatoire */
-    .popup-launcher-modal img[data-popup-image],
-    .popup-launcher-modal [data-popup-image-wrapper] img,
-    .popup-launcher-modal .popup-launcher-image-wrapper img {
-        object-fit: contain !important;
-        object-position: center !important;
-        min-height: 450px !important;
-    }
-    
-    .popup-launcher-modal .modal-dialog {
-        max-width: 90%;
-        max-height: 90vh;
-        height: auto;
-        margin: 1.75rem auto;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-    }
-
-    .popup-launcher-modal .modal-content {
-        border-radius: 0;
-        max-height: 90vh;
-        overflow: hidden;
-        position: relative;
-        padding: 0 !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-    }
-
-    .popup-launcher-modal .modal-body {
-        max-height: 90vh;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-    }
-
-    .popup-launcher-modal .popup-launcher-image-wrapper {
-        overflow: hidden;
-        min-height: 450px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-        padding: 0;
-    }
-    
-    /* S'assurer que le wrapper a une hauteur pour object-fit contain */
-    .popup-launcher-modal .popup-launcher-image-wrapper:not(.d-none) {
-        height: auto;
-    }
-
-    /* Image fixe pour les layouts horizontaux */
-    .popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 {
-        position: sticky;
-        left: 0;
-        z-index: 10;
-        align-self: flex-start;
-        height: 100%;
-    }
-    
-    /* Images pour layouts horizontaux (left-right, right-left) */
-    .popup-launcher-modal .popup-launcher-image-wrapper.col-md-7 img[data-popup-image] {
-        width: 100% !important;
-        height: 100% !important;
-        min-height: 450px !important;
-        object-fit: contain !important;
-        object-position: center !important;
-    }
-    
-    /* Pour les layouts horizontaux, aligner l'image et le contenu en haut */
-    .popup-launcher-modal .row:not(.layout-stacked):not(.layout-top-bottom) {
-        align-items: flex-start;
-    }
-    
-    .popup-launcher-modal .row:not(.layout-stacked):not(.layout-top-bottom) [data-popup-content-wrapper] {
-        align-self: stretch;
-    }
-
-    /* Règle générale pour toutes les images - object-fit contain */
-    .popup-launcher-modal img[data-popup-image] {
-        object-fit: contain !important;
-        object-position: center !important;
-        min-height: 450px !important;
-        display: block !important;
-    }
-
-
-    /* Layout superposé (overlay) */
-    .popup-launcher-modal [data-popup-row].layout-stacked {
-        position: relative;
-    }
-
-    .popup-launcher-modal [data-popup-row].layout-stacked .popup-launcher-image-wrapper {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-        /* Pas de sticky pour stacked, c'est un overlay */
-    }
-    
-    /* Images pour layout stacked */
-    .popup-launcher-modal [data-popup-row].layout-stacked img[data-popup-image] {
-        width: 100% !important;
-        height: 100% !important;
-        min-height: 450px !important;
-        object-fit: contain !important;
-        object-position: center !important;
-    }
-
-    .popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-wrapper] {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 2;
-        background: transparent;
-    }
-
-    .popup-launcher-modal [data-popup-row].layout-stacked [data-popup-content-inner] {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 0.5rem;
-        padding: 2rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        max-width: 90%;
-        margin: 0 auto;
-    }
-
-    /* Masquer le fond blanc si pas de contenu texte */
-    .popup-launcher-modal [data-popup-content-inner].d-none {
-        display: none !important;
-        background: transparent !important;
-        padding: 0 !important;
-    }
-
-    .popup-launcher-modal [data-popup-content-inner]:has([data-popup-title].d-none):has([data-popup-content].d-none) {
-        background: transparent !important;
-        padding: 0 !important;
-    }
-
-    /* Masquer le wrapper parent si pas de contenu texte */
-    .popup-launcher-modal [data-popup-content-wrapper]:has([data-popup-content-inner][style*="display: none"]) {
-        background: transparent !important;
-    }
-
-    .popup-launcher-modal .row:not(.layout-top-bottom) {
-        /*min-height: 200px;*/
-    }
-
-    .popup-launcher-modal [data-popup-row] {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-
-    .popup-launcher-modal .layout-top-bottom {
-        /*min-height: 200px;*/
-    }
-
-    /* Pour la disposition top-bottom, permettre le scroll vertical sur le modal */
-    .popup-launcher-modal .modal-content.layout-top-bottom {
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-
-    /* Pour top-bottom, l'image doit pouvoir scroller horizontalement */
-    .popup-launcher-modal .layout-top-bottom .popup-launcher-image-wrapper {
-        overflow-x: auto;
-        overflow-y: hidden;
-    }
-
-    /* Images pour layout top-bottom */
-    .popup-launcher-modal .layout-top-bottom img[data-popup-image] {
-        width: 100% !important;
-        max-width: 100% !important;
-        max-height: 70vh !important;
-        height: auto !important;
-        min-height: 450px !important;
-        object-fit: contain !important;
-        object-position: center !important;
-    }
-    
-    /* Images sans layout spécifique (fallback) */
-    .popup-launcher-modal .popup-launcher-image-wrapper img[data-popup-image] {
-        width: 100% !important;
-        height: auto !important;
-        max-height: 70vh !important;
-        min-height: 450px !important;
-        object-fit: contain !important;
-        object-position: center !important;
-    }
-
-    .popup-launcher-modal [data-popup-content-wrapper].col-md-5 {
-        /*min-height: 200px;*/
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .popup-launcher-modal [data-popup-content-inner] {
-        width: 100%;
-        max-height: 70vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .popup-launcher-modal .popup-cta-btn {
-        background-color: var(--main-color) !important;
-        color: white !important;
-        border: none !important;
-    }
-
-    .popup-launcher-modal .popup-cta-btn:hover {
-        background-color: #d93e1f !important;
-        color: white !important;
-    }
-
-    .popup-launcher-modal .popup-close-btn {
-        position: absolute;
-        top: 0;
-        right: 0;
-        z-index: 10;
-        margin: 0;
-        padding: 0.5rem;
-        background-color: rgba(255, 255, 255, 0.8);
-        border-radius: 0 0 0 50%;
-        opacity: 0.8;
-        transition: opacity 0.2s ease;
-    }
-
-    .popup-launcher-modal .popup-close-btn:hover {
-        opacity: 1;
-        background-color: rgba(255, 255, 255, 1);
-    }
-
-    @media (max-width: 768px) {
-        .popup-launcher-modal .modal-content {
-            border-radius: 14px;
-        }
-
-        .popup-launcher-modal .popup-launcher-image-wrapper {
-            /*min-height: 200px;
-            max-height: 250px;*/
-        }
-
-        .popup-launcher-modal .row {
-            min-height: auto;
-        }
-
-        .popup-launcher-modal .col-md-5 {
-            min-height: auto;
-        }
-
-        .popup-launcher-modal .col-md-5 .p-4 {
-            padding: 1.5rem !important;
-        }
-    }
-</style>
-<?php $__env->stopPush(); ?>
-
 <?php $__env->startPush('scripts'); ?>
 <script>
+// Popup System v<?php echo e($version ?? 'dev'); ?> - Cache busting
 (function() {
-    // Vérifier que document est disponible
     if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
-        console.error('[Popups] Document ou addEventListener non disponible');
         return;
     }
     
-document.addEventListener('DOMContentLoaded', function() {
-    const root = document.getElementById('popup-launcher-root');
-    const modalElement = document.getElementById('popupLauncherModal');
+    // Fonction d'initialisation
+    function initPopups() {
+        const root = document.getElementById('popup-launcher-root');
+        const modalElement = document.getElementById('popupModal');
 
-    if (!root || !modalElement) {
-        return;
-    }
-
-    if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-        console.warn('[Popups] Bootstrap Modal indisponible');
-        return;
-    }
-
-    let popups = [];
-    try {
-        popups = JSON.parse(root.dataset.popups ?? '[]');
-    } catch (e) {
-        console.error('[Popups] impossible de parser les données', e);
-        return;
-    }
-
-    if (!Array.isArray(popups) || popups.length === 0) {
-        console.info('[Popups] aucune popup active');
-        return;
-    }
-
-    const modal = new bootstrap.Modal(modalElement, {
-        backdrop: 'static',
-        keyboard: false,
-    });
-
-    const titleEl = modalElement.querySelector('[data-popup-title]');
-    const contentEl = modalElement.querySelector('[data-popup-content]');
-    const imageWrapper = modalElement.querySelector('[data-popup-image-wrapper]');
-    const imageEl = modalElement.querySelector('[data-popup-image]');
-    const actionsEl = modalElement.querySelector('[data-popup-actions]');
-    const contentWrapper = modalElement.querySelector('[data-popup-content-wrapper]');
-    const popupRow = modalElement.querySelector('[data-popup-row]');
-    const modalContent = modalElement.querySelector('.modal-content');
-    const modalBody = modalElement.querySelector('.modal-body');
-
-    const storageKey = 'kazaria_popup_stats';
-    const sessionKeyPrefix = 'kazaria_popup_seen_session_';
-    const state = {
-        active: false,
-        queue: [],
-        stats: {},
-        visitSeen: new Set(),
-    };
-
-    try {
-        state.stats = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
-    } catch (e) {
-        state.stats = {};
-    }
-
-    const frequencyChecks = {
-        once_per_session: (popup) => {
-            const key = sessionKeyPrefix + popup.slug;
-            if (sessionStorage.getItem(key)) {
-                return false;
-            }
-            sessionStorage.setItem(key, '1');
-            return true;
-        },
-        once_per_day: (popup, stats) => {
-            const lastShown = stats?.lastShown ?? 0;
-            return Date.now() - lastShown >= 24 * 60 * 60 * 1000;
-        },
-        once_per_visit: (popup) => {
-            if (state.visitSeen.has(popup.slug)) {
-                return false;
-            }
-            state.visitSeen.add(popup.slug);
-            return true;
-        },
-        always: () => true,
-    };
-
-    function canDisplay(popup) {
-
-        const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
-
-        if (popup.max_impressions && stats.count >= popup.max_impressions) {
-            return false;
+        if (!root || !modalElement) {
+            console.error('[Popups] Éléments DOM manquants');
+            return;
         }
 
-        const checker = frequencyChecks[popup.frequency] || frequencyChecks.always;
-        return checker(popup, stats);
-    }
+        // Vérifier la version pour forcer le rechargement si nécessaire
+        const currentVersion = root.getAttribute('data-version');
+        if (currentVersion) {
+            const storedVersion = sessionStorage.getItem('popup_system_version');
+            if (storedVersion && storedVersion !== currentVersion) {
+                // Version différente détectée - les popups ont changé
+                // Vider les stats en cache
+                sessionStorage.removeItem('kazaria_popup_stats');
+                // Vider aussi toutes les clés de session liées aux popups
+                Object.keys(sessionStorage).forEach(key => {
+                    if (key.startsWith('kazaria_popup_seen_session_')) {
+                        sessionStorage.removeItem(key);
+                    }
+                });
+                console.log('[Popups] Nouvelle version détectée, cache vidé');
+            }
+            sessionStorage.setItem('popup_system_version', currentVersion);
+        }
 
-    function updateStats(popup) {
-        const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
-        stats.count += 1;
-        stats.lastShown = Date.now();
-        state.stats[popup.slug] = stats;
+        let popups = [];
         try {
-            localStorage.setItem(storageKey, JSON.stringify(state.stats));
-        } catch (e) {
-            console.warn('[Popups] impossible de sauvegarder les stats', e);
-        }
-    }
-
-    function buildActions(popup) {
-        actionsEl.innerHTML = '';
-
-        if (popup.cta_text && popup.cta_url) {
-            const cta = document.createElement('a');
-            cta.href = popup.cta_url;
-            cta.target = '_blank';
-            cta.rel = 'noopener noreferrer';
-            cta.className = 'btn popup-cta-btn';
-            cta.textContent = popup.cta_text;
-            cta.setAttribute('data-bs-dismiss', 'modal');
-            actionsEl.appendChild(cta);
-        }
-    }
-
-    function applyLayout(layout, hasImage) {
-        if (!popupRow || !imageWrapper || !contentWrapper) return;
-
-        // Réinitialiser toutes les classes
-        imageWrapper.className = 'popup-launcher-image-wrapper';
-        contentWrapper.className = 'd-flex align-items-center justify-content-center';
-        popupRow.className = 'row g-0 position-relative';
-        if (modalContent) {
-            modalContent.classList.remove('layout-top-bottom');
-        }
-        if (modalBody) {
-            modalBody.classList.remove('layout-top-bottom');
-        }
-
-        if (!hasImage) {
-            imageWrapper.classList.add('d-none');
-            contentWrapper.classList.add('col-12');
-            return;
-        }
-
-        imageWrapper.classList.remove('d-none');
-        
-        // Layout superposé (overlay)
-        if (layout === 'stacked') {
-            popupRow.classList.add('layout-stacked');
-            imageWrapper.classList.add('col-12');
-            contentWrapper.classList.add('col-12');
-            return;
-        }
-
-        const layoutConfig = {
-            'left-right': {
-                row: 'row',
-                image: 'col-md-7',
-                content: 'col-md-5'
-            },
-            'right-left': {
-                row: 'row flex-row-reverse',
-                image: 'col-md-7',
-                content: 'col-md-5'
-            },
-            'top-bottom': {
-                row: 'flex-column',
-                image: 'col-12',
-                content: 'col-12'
+            const dataScript = document.getElementById('popup-launcher-data');
+            if (dataScript) {
+                popups = JSON.parse(dataScript.textContent);
+                console.log('[Popups] Popups chargés:', popups.length);
+            } else {
+                console.error('[Popups] Script de données introuvable');
+                return;
             }
+        } catch (e) {
+            console.error('[Popups] Erreur de parsing JSON:', e);
+            return;
+        }
+
+        if (!Array.isArray(popups) || popups.length === 0) {
+            console.log('[Popups] Aucun popup à afficher');
+            return;
+        }
+
+        const storageKey = 'kazaria_popup_stats';
+        const sessionKeyPrefix = 'kazaria_popup_seen_session_';
+        const state = {
+            active: false,
+            queue: [],
+            stats: {},
+            visitSeen: new Set(),
         };
 
-        const config = layoutConfig[layout] || layoutConfig['left-right'];
-        
-        if (config.row === 'flex-column') {
-            popupRow.classList.add('layout-top-bottom');
-            // Pour top-bottom, ajouter la classe sur modal-content pour activer le scroll
-            if (layout === 'top-bottom' && modalContent) {
-                modalContent.classList.add('layout-top-bottom');
+        try {
+            state.stats = JSON.parse(localStorage.getItem(storageKey) ?? '{}');
+        } catch (e) {
+            state.stats = {};
+        }
+
+        const frequencyChecks = {
+            once_per_session: (popup) => {
+                const key = sessionKeyPrefix + popup.slug;
+                if (sessionStorage.getItem(key)) {
+                    return false;
+                }
+                sessionStorage.setItem(key, '1');
+                return true;
+            },
+            once_per_day: (popup, stats) => {
+                const lastShown = stats?.lastShown ?? 0;
+                return Date.now() - lastShown >= 24 * 60 * 60 * 1000;
+            },
+            once_per_visit: (popup) => {
+                if (state.visitSeen.has(popup.slug)) {
+                    return false;
+                }
+                state.visitSeen.add(popup.slug);
+                return true;
+            },
+            always: () => true,
+        };
+
+        function canDisplay(popup) {
+            if (!popup || !popup.slug) {
+                return false;
             }
-            if (layout === 'top-bottom' && modalBody) {
-                modalBody.classList.add('layout-top-bottom');
+            
+            const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
+
+            if (popup.max_impressions && stats.count >= popup.max_impressions) {
+                return false;
             }
-        } else {
-            popupRow.classList.add('row');
-            if (config.row.includes('flex-row-reverse')) {
-                popupRow.classList.add('flex-row-reverse');
-            }
-            // Retirer la classe si ce n'est pas top-bottom
-            if (modalContent) {
-                modalContent.classList.remove('layout-top-bottom');
-            }
-            if (modalBody) {
-                modalBody.classList.remove('layout-top-bottom');
+
+            const checker = frequencyChecks[popup.frequency] || frequencyChecks.always;
+            return checker(popup, stats);
+        }
+
+        function updateStats(popup) {
+            if (!popup || !popup.slug) return;
+            
+            const stats = state.stats[popup.slug] ?? { count: 0, lastShown: 0 };
+            stats.count += 1;
+            stats.lastShown = Date.now();
+            state.stats[popup.slug] = stats;
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(state.stats));
+            } catch (e) {
+                console.warn('[Popups] Erreur de sauvegarde', e);
             }
         }
 
-        imageWrapper.classList.add(config.image);
-        contentWrapper.classList.add(config.content);
-    }
-
-    function showPopup(popup) {
-        const hasTitle = popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0;
-        const hasContent = popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0;
-        const hasTextContent = hasTitle || hasContent;
-
-        if (titleEl) {
-            titleEl.textContent = popup.title || '';
-            titleEl.classList.toggle('d-none', !hasTitle);
-        }
-
-        if (contentEl) {
-            contentEl.innerHTML = popup.content || '';
-            contentEl.classList.toggle('d-none', !hasContent);
-        }
-
-        const contentInner = modalElement.querySelector('[data-popup-content-inner]');
-        const contentWrapperEl = modalElement.querySelector('[data-popup-content-wrapper]');
-        
-        // Masquer le wrapper de contenu si ni titre ni contenu
-        if (!hasTextContent) {
-            if (contentInner) {
-                contentInner.style.display = 'none';
-                contentInner.style.background = 'transparent';
-                contentInner.style.padding = '0';
-            }
-            if (contentWrapperEl) {
-                contentWrapperEl.style.display = 'none';
-            }
-        } else {
-            if (contentInner) {
-                contentInner.style.display = '';
-                contentInner.style.background = '';
-                contentInner.style.padding = '';
-            }
-            if (contentWrapperEl) {
-                contentWrapperEl.style.display = '';
-            }
-        }
-
-        const layout = popup.layout || 'left-right';
-        const hasImage = !!popup.image;
-
-        if (hasImage) {
-            imageEl.src = popup.image;
-            imageEl.alt = popup.title || 'Popup';
-        } else {
-            imageEl.removeAttribute('src');
-        }
-
-        applyLayout(layout, hasImage);
-
-        buildActions(popup);
-        updateStats(popup);
-        modal.show();
-    }
-
-    modalElement.addEventListener('hidden.bs.modal', () => {
-        state.active = false;
-        processQueue();
-    });
-
-    function processQueue() {
-        if (state.active) {
-            console.info('[Popups] modal déjà actif, attente…');
-            return;
-        }
-
-        const next = state.queue.shift();
-        if (!next) {
-            console.info('[Popups] file vide');
-            return;
-        }
-
-        console.info('[Popups] affichage modal', next.slug);
-        state.active = true;
-        showPopup(next);
-    }
-
-    console.info('[Popups] détectées :', popups);
-    console.info('[Popups] nombre de popups:', popups.length);
-
-    popups.forEach((popup) => {
-        console.info('[Popups] traitement popup:', {
-            slug: popup.slug,
-            title: popup.title,
-            content: popup.content ? (popup.content.substring(0, 50) + '...') : 'vide',
-            hasTitle: popup.title && typeof popup.title === 'string' && popup.title.trim().length > 0,
-            hasContent: popup.content && typeof popup.content === 'string' && popup.content.trim().length > 0
-        });
-        const delay = Math.max(0, Number(popup.delay) || 0);
-        setTimeout(() => {
-            if (canDisplay(popup)) {
-                console.info('[Popups] ajout à la file', popup.slug, 'delay', delay);
-                state.queue.push(popup);
-                processQueue();
+        // Fonction helper pour appliquer les dimensions
+        function applyDimensions(modalDialog, modalBody, modalContent, modalFooter, width, height) {
+            if (!modalDialog || !modalBody) return;
+            
+            // Largeur - responsive avec max-width 100%
+            if (width) {
+                const w = parseInt(width);
+                const maxW = Math.min(w, window.innerWidth);
+                modalDialog.style.maxWidth = maxW + 'px';
+                modalDialog.style.width = '100%';
+                if (modalContent) {
+                    modalContent.style.width = '100%';
+                    modalContent.style.maxWidth = '100%';
+                }
+                modalBody.style.width = '100%';
+                modalBody.style.maxWidth = '100%';
             } else {
-                console.info('[Popups] filtrée par fréquence/limite ou titre/contenu', popup.slug);
+                modalDialog.style.maxWidth = '100%';
+                modalDialog.style.width = '100%';
+                if (modalContent) {
+                    modalContent.style.width = '100%';
+                    modalContent.style.maxWidth = '100%';
+                }
+                modalBody.style.width = '100%';
+                modalBody.style.maxWidth = '100%';
             }
-        }, delay * 1000);
-    });
-    });
+            
+            // Hauteur - responsive avec max-height 100%
+            if (height && modalContent) {
+                const maxScreenHeight = window.innerHeight * 0.95;
+                const h = Math.min(parseInt(height), maxScreenHeight);
+                modalContent.style.height = h + 'px';
+                modalContent.style.maxHeight = '100%';
+                
+                // Calculer la hauteur du body (hauteur totale - footer)
+                const footerHeight = modalFooter && modalFooter.style.display !== 'none' ? modalFooter.offsetHeight : 0;
+                const bodyHeight = Math.max(100, h - footerHeight - 2);
+                modalBody.style.height = bodyHeight + 'px';
+                modalBody.style.maxHeight = '100%';
+                modalBody.style.overflowY = 'auto';
+                modalBody.style.boxSizing = 'border-box';
+            } else if (modalContent) {
+                modalContent.style.height = '';
+                modalContent.style.maxHeight = '100%';
+                modalBody.style.height = '';
+                modalBody.style.maxHeight = '100%';
+                modalBody.style.overflowY = '';
+            }
+        }
+
+        function showPopup(popup) {
+            const modalBody = document.getElementById('popupModalBody');
+            const modalFooter = document.getElementById('popupModalFooter');
+            const modalDialog = document.getElementById('popupModalDialog');
+            const modalContent = modalDialog ? modalDialog.querySelector('.modal-content') : null;
+
+            if (!modalBody || !modalDialog) {
+                console.error('[Popups] Éléments DOM manquants');
+                return;
+            }
+
+            // Réinitialiser les styles du modalBody
+            modalBody.className = 'modal-body position-relative';
+            modalBody.style.backgroundImage = '';
+            modalBody.style.backgroundSize = '';
+            modalBody.style.backgroundPosition = '';
+            modalBody.style.backgroundRepeat = '';
+            modalBody.style.minHeight = '';
+
+            const layout = popup.layout || 'top-bottom';
+            const hasImage = !!popup.image;
+            const hasTitle = !!popup.title;
+            const hasContent = !!popup.content;
+
+            // Construire le contenu HTML selon le layout
+            let bodyContent = '';
+            const closeButtonHtml = '<button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Fermer" style="z-index: 10;"></button>';
+
+            if (layout === 'stacked' && hasImage) {
+                // Layout stacked : image en arrière-plan
+                modalBody.className = 'modal-body position-relative p-0';
+                modalBody.style.backgroundImage = `url(${popup.image})`;
+                modalBody.style.backgroundSize = 'cover';
+                modalBody.style.backgroundPosition = 'center';
+                modalBody.style.backgroundRepeat = 'no-repeat';
+                modalBody.style.minHeight = '300px';
+                
+                // Overlay semi-transparent pour améliorer la lisibilité
+                bodyContent = '<div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,0,0,0.4);"></div>';
+                let stackedContent = '<div class="position-relative p-4 text-white" style="z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: center;">';
+                if (hasTitle) {
+                    stackedContent += `<h5 class="modal-title mb-3">${popup.title}</h5>`;
+                }
+                if (hasContent) {
+                    stackedContent += `<div>${popup.content}</div>`;
+                }
+                stackedContent += '</div>';
+                
+                // Si image_url existe, rendre toute la zone cliquable
+                if (popup.image_url) {
+                    bodyContent += `<a href="${popup.image_url}" target="_blank" rel="noopener noreferrer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: block;">${stackedContent}</a>`;
+                } else {
+                    bodyContent += stackedContent;
+                }
+            } else if (layout === 'left-right' && hasImage) {
+                // Layout left-right : image à gauche, contenu à droite
+                modalBody.className = 'modal-body position-relative p-0';
+                bodyContent = '<div class="d-flex flex-row" style="height: 100%;">';
+                const imageLeft = `<img src="${popup.image}" alt="${popup.title || 'Popup'}" class="img-fluid h-100" style="object-fit: cover; width: 100%; height: 100%;">`;
+                if (popup.image_url) {
+                    bodyContent += `<div class="flex-shrink-0" style="width: 40%; min-width: 200px;"><a href="${popup.image_url}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; height: 100%;">${imageLeft}</a></div>`;
+                } else {
+                    bodyContent += `<div class="flex-shrink-0" style="width: 40%; min-width: 200px;">${imageLeft}</div>`;
+                }
+                bodyContent += '<div class="flex-grow-1 p-4 d-flex flex-column justify-content-center">';
+                if (hasTitle) {
+                    bodyContent += `<h5 class="modal-title mb-3">${popup.title}</h5>`;
+                }
+                if (hasContent) {
+                    bodyContent += `<div>${popup.content}</div>`;
+                }
+                bodyContent += '</div></div>';
+            } else if (layout === 'right-left' && hasImage) {
+                // Layout right-left : image à droite, contenu à gauche
+                modalBody.className = 'modal-body position-relative p-0';
+                bodyContent = '<div class="d-flex flex-row" style="height: 100%;">';
+                bodyContent += '<div class="flex-grow-1 p-4 d-flex flex-column justify-content-center">';
+                if (hasTitle) {
+                    bodyContent += `<h5 class="modal-title mb-3">${popup.title}</h5>`;
+                }
+                if (hasContent) {
+                    bodyContent += `<div>${popup.content}</div>`;
+                }
+                bodyContent += '</div>';
+                const imageRight = `<img src="${popup.image}" alt="${popup.title || 'Popup'}" class="img-fluid h-100" style="object-fit: cover; width: 100%; height: 100%;">`;
+                if (popup.image_url) {
+                    bodyContent += `<div class="flex-shrink-0" style="width: 40%; min-width: 200px;"><a href="${popup.image_url}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; height: 100%;">${imageRight}</a></div>`;
+                } else {
+                    bodyContent += `<div class="flex-shrink-0" style="width: 40%; min-width: 200px;">${imageRight}</div>`;
+                }
+                bodyContent += '</div>';
+            } else {
+                // Layout top-bottom (par défaut) : image en haut, contenu en bas
+                // Si pas d'image, on utilise aussi ce layout
+                modalBody.className = 'modal-body position-relative';
+                if (hasImage) {
+                    const imageTop = `<img src="${popup.image}" alt="${popup.title || 'Popup'}" class="img-fluid rounded" style="max-height: 300px; width: 100%; object-fit: cover;">`;
+                    if (popup.image_url) {
+                        bodyContent += `<div class="text-center mb-3"><a href="${popup.image_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block;">${imageTop}</a></div>`;
+                    } else {
+                        bodyContent += `<div class="text-center mb-3">${imageTop}</div>`;
+                    }
+                }
+                if (hasTitle) {
+                    bodyContent += `<h5 class="modal-title mb-3">${popup.title}</h5>`;
+                }
+                if (hasContent) {
+                    bodyContent += `<div>${popup.content}</div>`;
+                }
+            }
+
+            // Injecter le contenu
+            modalBody.innerHTML = closeButtonHtml + bodyContent;
+
+            // Appliquer les dimensions (sans hauteur du footer pour l'instant)
+            applyDimensions(modalDialog, modalBody, modalContent, null, popup.width, popup.height);
+
+            // Boutons d'action - masquer le footer s'il n'y a pas de CTA
+            if (modalFooter) {
+                modalFooter.innerHTML = '';
+                if (popup.cta_text && popup.cta_url) {
+                    const ctaButton = document.createElement('a');
+                    ctaButton.href = popup.cta_url;
+                    ctaButton.target = '_blank';
+                    ctaButton.rel = 'noopener noreferrer';
+                    ctaButton.className = 'btn btn-primary';
+                    ctaButton.textContent = popup.cta_text;
+                    ctaButton.addEventListener('click', function() {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) modal.hide();
+                    });
+                    modalFooter.appendChild(ctaButton);
+                    modalFooter.style.display = 'flex';
+                } else {
+                    // Masquer le footer s'il est vide (fonctionne pour tous les layouts)
+                    modalFooter.style.display = 'none';
+                }
+            }
+
+            // Réajuster la hauteur maintenant que le footer est configuré
+            if (popup.height) {
+                applyDimensions(modalDialog, modalBody, modalContent, modalFooter, popup.width, popup.height);
+            }
+
+            // Afficher le modal
+            if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modal.show();
+                updateStats(popup);
+                state.active = true;
+                
+                // Réajuster la hauteur après l'affichage pour les dimensions réelles
+                if (popup.height) {
+                    setTimeout(() => {
+                        applyDimensions(modalDialog, modalBody, modalContent, modalFooter, popup.width, popup.height);
+                    }, 50);
+                }
+                
+                // Gérer la fermeture
+                modalElement.addEventListener('hidden.bs.modal', function onHidden() {
+                    modalElement.removeEventListener('hidden.bs.modal', onHidden);
+                    state.active = false;
+                    processQueue();
+                }, { once: true });
+            } else {
+                console.error('[Popups] Bootstrap Modal n\'est pas disponible');
+            }
+        }
+
+        function processQueue() {
+            if (state.active) return;
+
+            const next = state.queue.shift();
+            if (!next) return;
+
+            showPopup(next);
+        }
+
+        // Traiter les popups
+        console.log('[Popups] Traitement de', popups.length, 'popups');
+        popups.forEach((popup, index) => {
+            const delay = Math.max(0, Number(popup.delay) || 0);
+            console.log('[Popups] Popup', index, ':', popup.slug, 'delay:', delay);
+            setTimeout(() => {
+                console.log('[Popups] Tentative d\'affichage:', popup.slug);
+                if (canDisplay(popup)) {
+                    console.log('[Popups] Popup ajouté à la queue:', popup.slug);
+                    state.queue.push(popup);
+                    processQueue();
+                } else {
+                    console.log('[Popups] Popup non affiché (filtre):', popup.slug);
+                }
+            }, delay * 1000);
+        });
+
+        // Fonction d'urgence pour fermer le popup
+        window.forceClosePopup = function() {
+            if (typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
+            state.active = false;
+            state.queue = [];
+        };
+    }
+    
+    // Initialiser immédiatement si le DOM est déjà chargé, sinon attendre DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPopups);
+    } else {
+        // Le DOM est déjà chargé, initialiser immédiatement
+        initPopups();
+    }
 })();
 </script>
-<?php $__env->stopPush(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\components\popup-launcher.blade.php ENDPATH**/ ?>
+<?php $__env->stopPush(); ?>
+<?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\components\popup-launcher.blade.php ENDPATH**/ ?>

@@ -316,15 +316,17 @@
                     </div>
                     
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div>
-                            Affichage de <?php echo e($users->firstItem() ?? 0); ?> à <?php echo e($users->lastItem() ?? 0); ?> sur <?php echo e($users->total() ?? 0); ?> résultats
+                    <?php if($users->hasPages()): ?>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Affichage de <?php echo e($users->firstItem()); ?> à <?php echo e($users->lastItem()); ?> sur <?php echo e($users->total()); ?> résultats
                         </div>
-                        <div>
-                            <?php echo e($users->links() ?? ''); ?>
+                        <div class="pagination-wrapper">
+                            <?php echo e($users->appends(request()->query())->links('pagination.bootstrap-4')); ?>
 
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -852,6 +854,64 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     });
 });
 </script>
+
+<?php $__env->startPush('styles'); ?>
+<style>
+/* Styles pour la pagination */
+.pagination-wrapper {
+    margin-top: 0;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.pagination .page-link {
+    color: #007bff;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    color: #0056b3;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    transform: none;
+    box-shadow: none;
+}
+</style>
+<?php $__env->stopPush(); ?>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('admin.layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\kazaria laravel v0\resources\views\admin\users\index.blade.php ENDPATH**/ ?>
