@@ -3,7 +3,7 @@
 
 <!-- Modal Bootstrap pour les popups -->
 <div class="modal fade" id="popupModal" tabindex="-1" aria-labelledby="popupModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="true" style="z-index: 999999999 !important; backdrop-filter: blur(8px) !important;">
-    <div class="modal-dialog modal-dialog-centered" id="popupModalDialog">
+    <div class="modal-dialog modal-dialog-centered mx-auto" id="popupModalDialog">
         <div class="modal-content" style="max-width: 100%; max-height: 100%;">
             <div class="modal-body position-relative" id="popupModalBody">
                 <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Fermer" style="z-index: 10;"></button>
@@ -227,8 +227,12 @@
                 modalBody.style.backgroundRepeat = 'no-repeat';
                 modalBody.style.minHeight = '300px';
                 
-                // Overlay semi-transparent pour améliorer la lisibilité
-                bodyContent = '<div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,0,0,0.4);"></div>';
+                bodyContent = '';
+                // Overlay semi-transparent uniquement s'il y a du contenu (titre ou texte)
+                if (hasTitle || hasContent) {
+                    bodyContent = '<div class="position-absolute top-0 start-0 w-100 h-100" style="background: rgba(0,0,0,0.4);"></div>';
+                }
+                
                 let stackedContent = '<div class="position-relative p-4 text-white" style="z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: center;">';
                 if (hasTitle) {
                     stackedContent += `<h5 class="modal-title mb-3">${popup.title}</h5>`;
