@@ -768,18 +768,6 @@
                                                         <span class="text-muted ms-2">({{ $product->reviews_count }} avis)</span>
                                                     </td>
                                                 </tr>
-                                                @if(isset($product->views) && $product->views > 0)
-                                                <tr>
-                                                    <th>Vues</th>
-                                                    <td>{{ number_format($product->views, 0, ',', ' ') }}</td>
-                                                </tr>
-                                                @endif
-                                                @if(isset($product->views_count) && $product->views_count > 0)
-                                                <tr>
-                                                    <th>Vues</th>
-                                                    <td>{{ number_format($product->views_count, 0, ',', ' ') }}</td>
-                                                </tr>
-                                                @endif
                                             </tbody>
                                         </table>
 
@@ -868,10 +856,6 @@
                                                     <td><span class="badge bg-danger">Meilleure Offre</span></td>
                                                 </tr>
                                                 @endif
-                                                <tr>
-                                                    <th>Date d'ajout</th>
-                                                    <td>{{ $product->created_at->format('d/m/Y') }}</td>
-                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
