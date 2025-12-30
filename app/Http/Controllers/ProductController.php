@@ -14,6 +14,7 @@ class ProductController extends Controller
         // Charger le produit avec ses relations
         $product = Product::where('slug', $slug)
             ->with([
+                'store',
                 'categories', 
                 'subcategories', 
                 'category', 
