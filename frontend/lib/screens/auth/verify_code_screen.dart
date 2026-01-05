@@ -1,4 +1,10 @@
+// ⚠️ ÉCRAN DÉSACTIVÉ - Le code de vérification n'est plus obligatoire
+// Cet écran est conservé pour une utilisation future si nécessaire
+// Pour le réactiver, décommenter le code ci-dessous et modifier login_screen.dart
+
 import 'package:flutter/material.dart';
+
+/*
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
@@ -231,4 +237,30 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
     );
   }
 }
+*/
 
+// Classe minimale pour éviter les erreurs de compilation
+// Cet écran est désactivé - redirige automatiquement vers l'écran principal
+class VerifyCodeScreen extends StatelessWidget {
+  final String email;
+
+  const VerifyCodeScreen({
+    super.key,
+    required this.email,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Rediriger immédiatement vers l'écran principal
+    // Cet écran est désactivé
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pushReplacementNamed('/');
+    });
+    
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}

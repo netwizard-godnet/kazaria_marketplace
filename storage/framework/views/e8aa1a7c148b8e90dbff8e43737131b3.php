@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        @php
+        <?php
             $siteFavicon = \App\Models\Setting::get('site_favicon');
             $faviconUrl = $siteFavicon ? asset('storage/' . ltrim($siteFavicon, '/')) : asset('favicon.png');
-        @endphp
-        <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
+        ?>
+        <link rel="icon" type="image/png" href="<?php echo e($faviconUrl); ?>">
 
-        <title>{{ config('app.name', 'KAZARIA Connexion') }}</title>
+        <title><?php echo e(config('app.name', 'KAZARIA Connexion')); ?></title>
 
         <!-- Bootstrap CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,12 +21,12 @@
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
         <!-- SLICK -->
-        <!-- <link rel="stylesheet" href="{{ asset('slick/slick.css') }}"> -->
-        <!-- <link rel="stylesheet" href="{{ asset('slick/slick-theme.css') }}"> -->
+        <!-- <link rel="stylesheet" href="<?php echo e(asset('slick/slick.css')); ?>"> -->
+        <!-- <link rel="stylesheet" href="<?php echo e(asset('slick/slick-theme.css')); ?>"> -->
         <!-- CUSTOM CSS -->
-        <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-        <!-- <link rel="stylesheet" href="{{ asset('css/profil.css') }}"> -->
-        <link rel="stylesheet" href="{{ asset('css/carousel.css') }}">
+        <link rel="stylesheet" href="<?php echo e(asset('css/style.css')); ?>">
+        <!-- <link rel="stylesheet" href="<?php echo e(asset('css/profil.css')); ?>"> -->
+        <link rel="stylesheet" href="<?php echo e(asset('css/carousel.css')); ?>">
         <!-- FONTS -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,7 @@
     <body>
         <main class="container-fluid py-3">
             <div class="text-center mb-3">
-                <img src="{{ asset('images/logo-orange.png') }}" class="logo-size-header" alt="">
+                <img src="<?php echo e(asset('images/logo-orange.png')); ?>" class="logo-size-header" alt="">
                 <p class="mb-0 fw-bold fs-7">Bienvenue chez KAZARIA</p>
                 <p class="mb-0 fs-8">Veuillez connecter ou inscrivez-vous si vous n'avez pas de compte</p>
             </div>
@@ -45,18 +45,20 @@
                 <div class="w-100" style="max-width: 450px;">
                     <div class="card shadow-lg border-0">
                         <div class="card-body p-4 p-md-5">
-                            @if (session('error'))
+                            <?php if(session('error')): ?>
                                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                    {{ session('error') }}
+                                    <?php echo e(session('error')); ?>
+
                                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                                 </div>
-                            @endif
-                            @if (session('success'))
+                            <?php endif; ?>
+                            <?php if(session('success')): ?>
                                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                    {{ session('success') }}
+                                    <?php echo e(session('success')); ?>
+
                                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                                 </div>
-                            @endif
+                            <?php endif; ?>
                             <!-- Navigation Tabs -->
                             <ul class="nav nav-pills nav-fill mb-3" id="authTabs" role="tablist">
                                 <li class="nav-item" role="presentation">
@@ -76,7 +78,7 @@
                                 <!-- Login Form -->
                                 <div class="tab-pane fade show active" id="login" role="tabpanel">
                                     <form id="loginForm">
-                                        @csrf
+                                        <?php echo csrf_field(); ?>
                                         <div id="loginAlert"></div>
                                         <div class="form-floating mb-4">
                                             <input type="email" class="form-control form-control-sm" id="loginEmail" placeholder="name@example.com" name="email" required>
@@ -95,7 +97,7 @@
                                                     Se souvenir de moi
                                                 </label>
                                             </div>
-                                            <a href="{{ route('forgot-password') }}" class="text-decoration-none small">Mot de passe oublié ?</a>
+                                            <a href="<?php echo e(route('forgot-password')); ?>" class="text-decoration-none small">Mot de passe oublié ?</a>
                                         </div>
                                         
                                         <button type="submit" class="btn orange-bg text-white w-100 mb-4">
@@ -107,10 +109,10 @@
                                         </div>
                                         
                                         <div class="d-grid gap-3">
-                                            <a href="{{ route('social.redirect', ['provider' => 'google']) }}" class="btn btn-outline-danger fs-6">
+                                            <a href="<?php echo e(route('social.redirect', ['provider' => 'google'])); ?>" class="btn btn-outline-danger fs-6">
                                                 <i class="bi bi-google me-1 h4"></i>Google
                                             </a>
-                                            <a href="{{ route('social.redirect', ['provider' => 'facebook']) }}" class="btn btn-outline-primary fs-6">
+                                            <a href="<?php echo e(route('social.redirect', ['provider' => 'facebook'])); ?>" class="btn btn-outline-primary fs-6">
                                                 <i class="bi bi-facebook me-1 h4"></i>Facebook
                                             </a>
                                         </div>
@@ -120,7 +122,7 @@
                                 <!-- Register Form -->
                                 <div class="tab-pane fade" id="register" role="tabpanel">
                                     <form id="registerForm">
-                                        @csrf
+                                        <?php echo csrf_field(); ?>
                                         <div id="registerAlert">
                                             
                                         </div>
@@ -183,10 +185,10 @@
                                         </div>
                                         
                                         <div class="d-grid gap-3">
-                                            <a href="{{ route('social.redirect', ['provider' => 'google']) }}" class="btn btn-outline-danger">
+                                            <a href="<?php echo e(route('social.redirect', ['provider' => 'google'])); ?>" class="btn btn-outline-danger">
                                                 <i class="bi bi-google me-1 h4"></i>Google
                                             </a>
-                                            <a href="{{ route('social.redirect', ['provider' => 'facebook']) }}" class="btn btn-outline-primary">
+                                            <a href="<?php echo e(route('social.redirect', ['provider' => 'facebook'])); ?>" class="btn btn-outline-primary">
                                                 <i class="bi bi-facebook me-1 h4"></i>Facebook
                                             </a>
                                         </div>
@@ -200,7 +202,7 @@
             <!-- SECTION FORM END -->
             <div class="text-center mt-3">
                 <p class="mb-0 fs-8">Si besoin d'aide, merci de vous référer au Centre d'Assistance ou de contacter notre service client.</p>
-                <img src="{{ asset('images/Favicon.png') }}" class="logo-size-header" alt="">
+                <img src="<?php echo e(asset('images/Favicon.png')); ?>" class="logo-size-header" alt="">
             </div>
         </main>
 
@@ -301,7 +303,7 @@
                     </div>
                     
                     <form id="codeForm">
-                        @csrf
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="email" value="${email}">
                         
                         <div id="codeAlert"></div>
@@ -348,7 +350,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
                         },
                         body: JSON.stringify({ email: email, type: 'login' })
                     });
@@ -415,7 +417,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>'
                         },
                         body: JSON.stringify(formData)
                     });
@@ -441,7 +443,7 @@
                                     <h4 class="text-success">Inscription réussie !</h4>
                                     <p class="text-muted">${data.message}</p>
                                     <p class="text-muted">Vérifiez votre boîte email et cliquez sur le lien de vérification.</p>
-                                    <a href="{{ route('login') }}" class="btn blue-bg text-white">
+                                    <a href="<?php echo e(route('login')); ?>" class="btn blue-bg text-white">
                                         <i class="fa-solid fa-sign-in-alt me-1"></i>Se connecter
                                     </a>
                                 </div>
@@ -508,7 +510,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         credentials: 'same-origin', // Important pour les cookies de session
@@ -542,7 +544,7 @@
                         // Forcer le rechargement complet de la page pour s'assurer que la session est chargée
                         // Utiliser window.location.href avec un paramètre pour forcer le rechargement
                         setTimeout(() => {
-                            const redirectUrl = data.redirect || '{{ route("accueil") }}';
+                            const redirectUrl = data.redirect || '<?php echo e(route("accueil")); ?>';
                             const separator = redirectUrl.includes('?') ? '&' : '?';
                             const finalUrl = redirectUrl + separator + '_t=' + Date.now();
                             console.log('🔐 [LOGIN] Redirection vers:', finalUrl);
@@ -617,11 +619,11 @@
 
                     try {
                         // Utiliser la route web au lieu de /api/ pour avoir accès aux sessions
-                        const response = await fetch('{{ route("web.verify-login-code") }}', {
+                        const response = await fetch('<?php echo e(route("web.verify-login-code")); ?>', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'X-CSRF-TOKEN': '<?php echo e(csrf_token()); ?>',
                                 'X-Requested-With': 'XMLHttpRequest'
                             },
                             credentials: 'include', // CRITIQUE : inclure les cookies de session
@@ -661,7 +663,7 @@
                             // Utiliser window.location.href pour forcer le rechargement complet
                             setTimeout(() => {
                                 console.log('✅ [CODE] Redirection vers accueil...');
-                                window.location.href = '{{ route("accueil") }}';
+                                window.location.href = '<?php echo e(route("accueil")); ?>';
                             }, 1000);
                         } else {
                             const errorMessage = data.message || 'Code invalide ou expiré';
@@ -735,4 +737,4 @@
     integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
     crossorigin="anonymous"></script>
 </body>
-</html>
+</html><?php /**PATH /Users/israa/Desktop/kazaria_marketplace/resources/views/auth/authentification.blade.php ENDPATH**/ ?>

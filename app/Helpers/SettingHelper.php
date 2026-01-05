@@ -35,7 +35,7 @@ class SettingHelper
      */
     public static function getShippingCost()
     {
-        return self::get('shipping_cost', 5000);
+        return self::get('shipping_cost', 1500);
     }
 
     /**

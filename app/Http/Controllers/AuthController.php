@@ -115,6 +115,20 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        // S'assurer que la session est démarrée pour les requêtes web
+        if (!$request->hasSession()) {
+            try {
+                $session = app('session');
+                if (!$session->isStarted()) {
+                    $session->start();
+                }
+                $request->setLaravelSession($session);
+                \Log::info('✅ [LOGIN] Session démarrée manuellement');
+            } catch (\Exception $e) {
+                \Log::warning('⚠️ [LOGIN] Impossible de démarrer la session: ' . $e->getMessage());
+            }
+        }
+        
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string',
@@ -145,7 +159,7 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Aucun compte trouvé avec cette adresse email. Vérifiez votre saisie ou créez un compte.',
                 'error_type' => 'email_not_found'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
 
         if (!Hash::check($request->password, $user->password)) {
@@ -153,7 +167,7 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Le mot de passe est incorrect. Vérifiez votre saisie ou utilisez "Mot de passe oublié" si nécessaire.',
                 'error_type' => 'invalid_password'
-            ], 401);
+            ], 401)->header('Content-Type', 'application/json');
         }
 
         // Vérifier si l'authentification à deux facteurs est activée
@@ -170,8 +184,9 @@ class AuthController extends Controller
                     $session->start();
                 }
                 
-                // Connecter l'utilisateur dans la session
-                Auth::login($user, $request->has('remember'));
+                // Connecter l'utilisateur dans la session avec "remember" si demandé
+                $remember = $request->has('remember') || $request->input('remember') === true || $request->input('remember') === 'true';
+                Auth::login($user, $remember);
                 
                 // Régénérer l'ID de session APRÈS le login pour la sécurité
                 // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
@@ -183,14 +198,29 @@ class AuthController extends Controller
                 
                 // Régénérer le token CSRF
                 $request->session()->regenerateToken();
+                
+                // Forcer la sauvegarde de la session pour s'assurer qu'elle persiste
+                $request->session()->save();
+                
+                \Log::info('✅ [LOGIN] Session sauvegardée pour user: ' . $user->email . ', Session ID: ' . $request->session()->getId() . ', Remember: ' . ($remember ? 'Oui' : 'Non'));
 
-                return response()->json([
+                // Créer un token pour les appels API depuis le web/mobile
+                $token = $user->createToken('web-app')->plainTextToken;
+                
+                // Créer une réponse JSON avec les cookies de session
+                $response = response()->json([
                     'success' => true,
                     'message' => 'Connexion réussie',
-                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
-                    'requires_code' => false,
-                    'redirect' => route('accueil')
-                ]);
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled', 'is_verified', 'is_seller']),
+                    'token' => $token, // Token pour les appels API
+                    'requires_code' => false, // Pas de code requis si 2FA désactivé
+                    'redirect' => route('accueil'),
+                    'session_id' => $request->session()->getId()
+                ])->header('Content-Type', 'application/json');
+                
+                // S'assurer que les cookies de session sont envoyés avec la réponse
+                // La session sera automatiquement attachée via le middleware StartSession
+                return $response;
             } catch (\Exception $e) {
                 \Log::error('Erreur connexion directe: ' . $e->getMessage());
                 return response()->json([
@@ -213,7 +243,7 @@ class AuthController extends Controller
                 'message' => 'Code de connexion envoyé à votre email',
                 'email' => $user->email,
                 'requires_code' => true
-            ]);
+            ])->header('Content-Type', 'application/json');
         } catch (\Exception $e) {
             Log::error('Erreur envoi code connexion: ' . $e->getMessage());
             return response()->json([
@@ -351,11 +381,19 @@ class AuthController extends Controller
             // Créer une session web persistante
             Auth::login($user, true);
             
+            // Régénérer l'ID de session APRÈS le login
+            $request->session()->regenerate();
+            
+            // Stocker le hash du mot de passe dans la session
+            $request->session()->put('password_hash_web', $user->getAuthPassword());
+            
             // Régénérer le token CSRF
             $request->session()->regenerateToken();
             
             // Forcer la sauvegarde de la session
             $request->session()->save();
+            
+            \Log::info('✅ [VERIFY_CODE] Session sauvegardée pour user: ' . $user->email . ', Session ID: ' . $request->session()->getId());
 
             // Créer aussi un token pour les appels API depuis le web
             $token = $user->createToken('web-app')->plainTextToken;
@@ -369,44 +407,14 @@ class AuthController extends Controller
                     ['has_store' => $user->store()->exists()]
                 ),
                 'redirect' => route('accueil')
-            ]);
+            ])->header('Content-Type', 'application/json');
         } catch (\Exception $e) {
             Log::error('Erreur connexion web: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la connexion'
-            ], 500);
+            ], 500)->header('Content-Type', 'application/json');
         }
-        // S'assurer que la session est démarrée
-        if (!$request->hasSession()) {
-            $request->setLaravelSession(app('session.store'));
-        }
-        
-        $session = $request->session();
-        if (!$session->isStarted()) {
-            $session->start();
-        }
-        
-        // Connecter l'utilisateur dans la session
-        Auth::login($user, true);
-        
-        // Régénérer l'ID de session APRÈS le login pour la sécurité
-        $request->session()->regenerate();
-        
-        // Stocker le hash du mot de passe dans la session APRÈS la régénération
-        // pour que AuthenticateSession puisse vérifier l'authenticité de la session
-        $request->session()->put('password_hash_web', $user->getAuthPassword());
-        
-        // Régénérer le token CSRF
-        $request->session()->regenerateToken();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Connexion réussie',
-            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
-            'redirect' => route('accueil')
-        ]);
-
     }
 
     /**

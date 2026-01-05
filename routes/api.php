@@ -7,7 +7,8 @@ use App\Http\Controllers\AuthController;
 
 // Routes d'authentification publiques
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Route login avec middleware web pour démarrer la session si nécessaire
+Route::post('/login', [AuthController::class, 'login'])->middleware('web');
 Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);

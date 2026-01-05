@@ -5,7 +5,8 @@ import '../screens/auth/welcome_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
-import '../screens/auth/verify_code_screen.dart';
+// import '../screens/auth/verify_code_screen.dart'; // Désactivé - code de vérification non obligatoire
+import '../screens/auth/verify_code_screen.dart'; // Import minimal pour éviter erreurs de compilation
 import '../models/category_model.dart';
 import '../models/product_model.dart';
 import '../models/store_model.dart';
@@ -200,10 +201,14 @@ class AppRouter {
       login: (context) => const LoginScreen(),
       register: (context) => const RegisterScreen(),
       forgotPassword: (context) => const ForgotPasswordScreen(),
+      // ⚠️ Écran de vérification désactivé - voir verify_code_screen.dart
       verifyCode: (context) {
-        final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-        return VerifyCodeScreen(
-          email: args?['email'] ?? '',
+        // Rediriger vers l'écran principal si quelqu'un essaie d'accéder à cet écran
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacementNamed('/');
+        });
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
         );
       },
       

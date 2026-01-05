@@ -31,8 +31,8 @@ class PoliciesSection extends StatelessWidget {
               Expanded(
                 child: _PolicyCard(
                   icon: Icons.local_shipping_outlined,
-                  title: 'Livraison Gratuite',
-                  subtitle: '',
+                  title: 'Livraison possible',
+                  subtitle: '1500 FCFA',
                   color: AppColors.success,
                 ),
               ),

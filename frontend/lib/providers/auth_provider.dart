@@ -110,13 +110,39 @@ class AuthProvider with ChangeNotifier {
 
       if (response['success']) {
         print('✅ [AUTH_PROVIDER] Login API réussi');
-        if (response['user'] != null) {
-          print('👤 [AUTH_PROVIDER] User data reçu: ${response['user']}');
-          print(
-            '🔑 [AUTH_PROVIDER] Token reçu: ${response['token'] != null ? "OUI" : "NON"}',
-          );
+        print('📊 [AUTH_PROVIDER] Requires code: ${response['requires_code'] ?? false}');
+        
+        // Si pas de code requis, traiter la connexion comme complète
+        if (response['requires_code'] != true) {
+          print('✅ [AUTH_PROVIDER] Connexion directe sans code');
+          
+          if (response['user'] != null) {
+            _user = UserModel.fromJson(response['user']);
+            print('✅ [AUTH_PROVIDER] User sauvegardé: ${_user!.email}');
+          }
+          
+          if (response['token'] != null) {
+            print('✅ [AUTH_PROVIDER] Token reçu et sauvegardé');
+            // Le token est déjà sauvegardé par AuthService
+            
+            // Rafraîchir les données utilisateur depuis le serveur
+            try {
+              final meResponse = await _authService.getMe();
+              if (meResponse['success'] && meResponse['user'] != null) {
+                _user = UserModel.fromJson(meResponse['user']);
+                print('✅ [AUTH_PROVIDER] Données utilisateur rafraîchies depuis /api/me');
+              }
+            } catch (e) {
+              print('⚠️ [AUTH_PROVIDER] Erreur lors du rafraîchissement: $e');
+            }
+            
+            // Envoyer le token FCM pending s'il existe
+            await _sendPendingFcmToken();
+          }
+          
+          _isAuthenticated = true;
         } else {
-          print('⚠️ [AUTH_PROVIDER] Pas de user data dans la réponse');
+          print('📧 [AUTH_PROVIDER] Code de vérification requis');
         }
       } else {
         print('❌ [AUTH_PROVIDER] Login API échoué');

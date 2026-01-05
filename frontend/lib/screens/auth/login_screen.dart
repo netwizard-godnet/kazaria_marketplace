@@ -5,7 +5,7 @@ import '../../utils/constants.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import 'verify_code_screen.dart';
+// import 'verify_code_screen.dart'; // Désactivé - code de vérification non obligatoire
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../seller/seller_login_screen.dart';
@@ -43,13 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (response['success']) {
-      // Le backend envoie un code de vérification
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VerifyCodeScreen(email: _emailController.text.trim()),
-        ),
-      );
+      // ⚠️ Code de vérification désactivé - Connexion directe
+      // Si requires_code est true, on ignore et on redirige quand même vers l'écran principal
+      // L'écran de vérification est désactivé (voir verify_code_screen.dart)
+      Navigator.pushReplacementNamed(context, '/');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

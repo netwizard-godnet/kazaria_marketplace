@@ -46,7 +46,15 @@ class AuthService {
       'password': password,
     });
 
-    // Le backend envoie un code de vérification, pas de token immédiatement
+    // Si la connexion est réussie et qu'un token est fourni (connexion directe sans code)
+    if (response['success'] && response['token'] != null) {
+      await _storageService.saveToken(response['token']);
+      if (response['user'] != null) {
+        await _storageService.saveUser(response['user']);
+      }
+    }
+    // Si requires_code est true, le token sera sauvegardé après la vérification du code
+
     return response;
   }
 

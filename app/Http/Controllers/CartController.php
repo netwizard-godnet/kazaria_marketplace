@@ -247,14 +247,27 @@ class CartController extends Controller
     {
         $identifier = $this->getUserOrSessionApi($request);
         $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
-        $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
+        $subtotal = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
+        
+        // Récupérer les paramètres de livraison depuis la base de données
+        $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 1500);
+        $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 50000);
+        
+        // Calculer le coût de livraison
+        $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
+        
+        // Calculer le total avec livraison
+        $total = $subtotal + $shippingCost;
 
         return response()->json([
             'success' => true,
-            'cart_items' => $cartItems,
+            'items' => $cartItems,
+            'cart_items' => $cartItems, // Pour compatibilité
+            'subtotal' => $subtotal,
+            'shipping_cost' => $shippingCost,
             'total' => $total,
             'count' => $cartItems->count()
-        ]);
+        ])->header('Content-Type', 'application/json');
     }
 
     /**
@@ -558,15 +571,27 @@ class CartController extends Controller
     {
         $identifier = $this->getUserOrSession($request);
         $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
-        $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
+        $subtotal = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
         $count = CartItem::getCartCount($identifier['user_id'], $identifier['session_id']);
+        
+        // Récupérer les paramètres de livraison depuis la base de données
+        $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 1500);
+        $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 50000);
+        
+        // Calculer le coût de livraison
+        $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
+        
+        // Calculer le total avec livraison
+        $total = $subtotal + $shippingCost;
 
         return response()->json([
             'success' => true,
             'items' => $cartItems,
+            'subtotal' => $subtotal,
+            'shipping_cost' => $shippingCost,
             'total' => $total,
             'count' => $count
-        ]);
+        ])->header('Content-Type', 'application/json');
     }
 
     /**
