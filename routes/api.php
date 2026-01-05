@@ -7,37 +7,35 @@ use App\Http\Controllers\AuthController;
 
 // Routes d'authentification publiques
 Route::post('/register', [AuthController::class, 'register']);
-// Route login avec middleware web pour démarrer la session si nécessaire
-Route::post('/login', [AuthController::class, 'login'])->middleware('web');
-Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCode']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-login-code', [AuthController::class, 'verifyLoginCodeApi']); // API pour Flutter/mobile
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
-
-// Routes d'authentification sociale pour mobile
-Route::post('/auth/social/{provider}', [App\Http\Controllers\Auth\SocialAuthController::class, 'mobileAuth'])
-    ->whereIn('provider', ['google', 'facebook']);
-
-// Route /me qui accepte à la fois tokens et sessions (pour compatibilité web/mobile)
-Route::middleware(['web', 'auth'])->get('/me', [AuthController::class, 'me']);
-Route::middleware('auth:sanctum')->get('/me', [AuthController::class, 'me']);
+// Route de vérification d'email supprimée - utilise la route web
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all-devices', [AuthController::class, 'logoutAllDevices']);
+    Route::get('/me', [AuthController::class, 'me']);
     // Routes API pour le profil (utilisent des tokens)
     Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'updateApi']);
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePasswordApi']);
-    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
-    // Route pour l'activité récente
-    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
-    // Route pour la boîte de réception
-    Route::get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
+    Route::post('/profile/request-email-verification', [App\Http\Controllers\ProfileController::class, 'requestEmailVerificationApi']);
 });
 
-// Routes protégées par authentification web (support session) - Retirées car causent des conflits avec les routes API
-// Ces routes sont maintenant uniquement dans le groupe auth:sanctum ci-dessus
+// Routes protégées par authentification (suite)
+Route::middleware('auth:sanctum')->group(function () {
+    // Route pour la photo de profil (API - Tokens pour Flutter)
+    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
+    // Route pour l'activité récente (API - Tokens pour Flutter)
+    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Autres routes API avec tokens uniquement
+});
 
 // Route de déconnexion publique (pour les tokens stockés côté client)
 Route::post('/logout-client', [AuthController::class, 'logoutClient']);
@@ -60,32 +58,21 @@ Route::prefix('favorites')->group(function () {
 // Route de mise à jour produit (API - sans CSRF pour test)
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
-// Routes de commande (protégées)
-// Pour mobile : utiliser auth:sanctum
+// Routes de commande (API - Tokens pour Flutter)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
-    Route::get('/orders/count', [App\Http\Controllers\OrderController::class, 'getOrdersCount']); // Nouvelle route pour le comptage
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
 });
 
-// Routes de commande (support session web)
-Route::middleware([
-    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-    'api.web.auth'
-])->group(function () {
-    Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
-    Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
-    Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
 });
 
 // Routes des avis
 Route::get('/products/{productId}/reviews', [App\Http\Controllers\ReviewController::class, 'getProductReviews']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store']);
-    Route::get('/reviews/my-reviews', [App\Http\Controllers\ReviewController::class, 'getMyReviews']);
-    Route::get('/reviews/my-reviews-count', [App\Http\Controllers\ReviewController::class, 'getMyReviewsCount']);
 });
 Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::class, 'vote']);
 
@@ -96,7 +83,6 @@ Route::post('/coupons/apply', [CouponController::class, 'apply']);
 Route::post('/ai/query', [AIController::class, 'query']);
 Route::post('/ai/interaction', [AIController::class, 'logInteraction'])->name('ai.interaction');
 Route::get('/ai/suggestions', [AIController::class, 'getSuggestions'])->middleware('web');
-Route::get('/ai/suggested-questions', [AIController::class, 'getSuggestions']); // Alias pour mobile
 
 // Route pour vérifier le statut de vendeur
 Route::get('/check-seller-status', [App\Http\Controllers\ProfileController::class, 'checkSellerStatus'])->middleware('auth:sanctum');
@@ -106,7 +92,6 @@ Route::post('/contact', [App\Http\Controllers\ContactController::class, 'sendMes
 
 // Routes API pour le dashboard vendeur
 Route::middleware('auth:sanctum')->prefix('store')->group(function () {
-    Route::get('/info', [App\Http\Controllers\StoreController::class, 'getStoreInfo']);
     Route::get('/stats', [App\Http\Controllers\StoreController::class, 'getStats']);
     Route::get('/recent-orders', [App\Http\Controllers\StoreController::class, 'getRecentOrders']);
     Route::get('/products', [App\Http\Controllers\StoreController::class, 'getProducts']);
@@ -142,80 +127,3 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
 // Route pour récupérer les sous-catégories d'une catégorie
 Route::get('/categories/{categoryId}/subcategories', [App\Http\Controllers\Admin\CategoryController::class, 'getSubcategories']);
 
-// Routes API mobiles
-Route::prefix('mobile')->group(function () {
-    Route::get('/home-data', [App\Http\Controllers\MobileController::class, 'getHomeData']);
-    Route::get('/categories', [App\Http\Controllers\MobileController::class, 'getCategories']);
-    Route::get('/products', [App\Http\Controllers\MobileController::class, 'getProducts']);
-    Route::get('/products/{id}', [App\Http\Controllers\MobileController::class, 'getProductDetails']);
-    Route::get('/banners', [App\Http\Controllers\MobileController::class, 'getBanners']);
-    Route::get('/stores', [App\Http\Controllers\MobileController::class, 'getStores']);
-    Route::get('/stores/verified', [App\Http\Controllers\MobileController::class, 'getVerifiedStores']);
-    Route::get('/stores/popular', [App\Http\Controllers\MobileController::class, 'getPopularStores']);
-    Route::get('/stores/best-offers', [App\Http\Controllers\MobileController::class, 'getBestOffersStores']);
-    Route::get('/stores/new-products', [App\Http\Controllers\MobileController::class, 'getNewProductsStores']);
-    Route::get('/stores/boutique-pub-banners', [App\Http\Controllers\MobileController::class, 'getBoutiquePubBanners']);
-    Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
-    Route::get('/stores/{id}/products', [App\Http\Controllers\MobileController::class, 'getStoreProducts']);
-    Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);
-    Route::get('/brands', [App\Http\Controllers\MobileController::class, 'getBrands']);
-});
-
-// Routes de comparaison de produits
-Route::prefix('comparison')->group(function () {
-    // Comparer des produits (sans sauvegarder)
-    Route::post('/compare', [App\Http\Controllers\ComparisonController::class, 'compare']);
-    
-    // Routes nécessitant authentification (ou session)
-    Route::post('/', [App\Http\Controllers\ComparisonController::class, 'create']);
-    Route::get('/', [App\Http\Controllers\ComparisonController::class, 'index']);
-    Route::get('/{id}', [App\Http\Controllers\ComparisonController::class, 'show']);
-    Route::post('/{id}/add-product', [App\Http\Controllers\ComparisonController::class, 'addProduct']);
-    Route::delete('/{id}/remove-product', [App\Http\Controllers\ComparisonController::class, 'removeProduct']);
-    Route::delete('/{id}', [App\Http\Controllers\ComparisonController::class, 'destroy']);
-});
-
-// Routes des wishlists (nécessitent authentification)
-Route::middleware('auth:sanctum')->prefix('wishlists')->group(function () {
-    Route::get('/', [App\Http\Controllers\WishlistController::class, 'index']);
-    Route::post('/', [App\Http\Controllers\WishlistController::class, 'store']);
-    Route::get('/{id}', [App\Http\Controllers\WishlistController::class, 'show']);
-    Route::put('/{id}', [App\Http\Controllers\WishlistController::class, 'update']);
-    Route::delete('/{id}', [App\Http\Controllers\WishlistController::class, 'destroy']);
-    Route::post('/{id}/products', [App\Http\Controllers\WishlistController::class, 'addProduct']);
-    Route::delete('/{id}/products/{productId}', [App\Http\Controllers\WishlistController::class, 'removeProduct']);
-});
-
-// Route publique pour voir une wishlist partagée
-Route::get('/wishlists/shared/{token}', [App\Http\Controllers\WishlistController::class, 'showByToken']);
-
-// Routes des alertes de prix (nécessitent authentification)
-Route::middleware('auth:sanctum')->prefix('price-alerts')->group(function () {
-    Route::get('/', [App\Http\Controllers\WishlistController::class, 'getPriceAlerts']);
-    Route::post('/', [App\Http\Controllers\WishlistController::class, 'createPriceAlert']);
-    Route::delete('/{id}', [App\Http\Controllers\WishlistController::class, 'deletePriceAlert']);
-});
-
-// Routes de l'historique des paiements et factures (nécessitent authentification)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/payments/history', [App\Http\Controllers\PaymentController::class, 'getPaymentHistory']);
-    Route::get('/payments/{id}', [App\Http\Controllers\PaymentController::class, 'getPaymentDetails']);
-    Route::get('/invoices/history', [App\Http\Controllers\PaymentController::class, 'getInvoiceHistory']);
-    Route::get('/invoices/{orderNumber}/download', [App\Http\Controllers\PaymentController::class, 'downloadInvoice']);
-});
-
-// Routes pour les notifications Firebase (nécessitent authentification)
-Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
-    Route::post('/register-token', [App\Http\Controllers\Api\NotificationController::class, 'registerToken']);
-    Route::post('/unregister-token', [App\Http\Controllers\Api\NotificationController::class, 'unregisterToken']);
-    Route::get('/stats', [App\Http\Controllers\Api\NotificationController::class, 'getStats'])->middleware('admin'); // Pour admin seulement
-});
-
-// Route pour le suivi de commande (publique)
-Route::post('/track-order', [App\Http\Controllers\OrderController::class, 'trackOrder']);
-
-// Route pour les méthodes de paiement disponibles (publique)
-Route::get('/payment-methods', [App\Http\Controllers\PaymentController::class, 'getPaymentMethods']);
-
-// Route pour la recherche de boutiques (publique)
-Route::get('/stores/search', [App\Http\Controllers\MobileController::class, 'searchStores']);

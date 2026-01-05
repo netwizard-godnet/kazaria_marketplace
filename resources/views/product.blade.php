@@ -658,17 +658,26 @@
                                         @endif
                                     </div>
                                     <div class="tab-pane fade" id="nav-ficheTech" role="tabpanel" aria-labelledby="nav-ficheTech-tab" tabindex="0">
-                                        <h5 class="fw-bold mb-3">Fiche Technique</h5>
-                                        <table class="table table-striped">
+                                        <h5 class="fw-bold mb-4">Fiche Technique</h5>
+                                        
+                                        <!-- Informations générales -->
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Informations Générales</h6>
+                                        <table class="table table-striped table-hover mb-4">
                                             <tbody>
                                                 <tr>
-                                                    <th>Nom</th>
+                                                    <th style="width: 35%;">Nom du produit</th>
                                                     <td>{{ $product->name }}</td>
                                                 </tr>
                                                 @if($product->brand)
                                                 <tr>
                                                     <th>Marque</th>
                                                     <td>{{ $product->brand }}</td>
+                                                </tr>
+                                                @endif
+                                                @if($product->model)
+                                                <tr>
+                                                    <th>Modèle</th>
+                                                    <td>{{ $product->model }}</td>
                                                 </tr>
                                                 @endif
                                                 @if($product->category || ($product->categories && $product->categories->count() > 0))
@@ -683,24 +692,170 @@
                                                     </td>
                                                 </tr>
                                                 @endif
-                                                @if($product->subcategory)
+                                                @if($product->subcategories && $product->subcategories->count() > 0)
+                                                <tr>
+                                                    <th>Sous-catégories</th>
+                                                    <td>{{ $product->subcategories->pluck('name')->implode(', ') }}</td>
+                                                </tr>
+                                                @elseif($product->subcategory)
                                                 <tr>
                                                     <th>Sous-catégorie</th>
                                                     <td>{{ $product->subcategory->name }}</td>
                                                 </tr>
                                                 @endif
+                                                @if($product->store)
                                                 <tr>
-                                                    <th>Prix</th>
-                                                    <td>{{ number_format($product->price, 0, ',', ' ') }} FCFA</td>
+                                                    <th>Boutique</th>
+                                                    <td>{{ $product->store->name }}</td>
                                                 </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Informations commerciales -->
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Informations Commerciales</h6>
+                                        <table class="table table-striped table-hover mb-4">
+                                            <tbody>
+                                                <tr>
+                                                    <th style="width: 35%;">Prix actuel</th>
+                                                    <td>
+                                                        <span class="fw-bold fs-5 orange-color">{{ number_format($product->price, 0, ',', ' ') }} FCFA</span>
+                                                        @if($product->old_price && $product->old_price > $product->price)
+                                                            <br><small class="text-decoration-line-through text-muted">{{ number_format($product->old_price, 0, ',', ' ') }} FCFA</small>
+                                                            @php
+                                                                $discountAmount = $product->old_price - $product->price;
+                                                                $discountPercent = round(($discountAmount / $product->old_price) * 100);
+                                                            @endphp
+                                                            <span class="badge bg-danger ms-2">-{{ $discountPercent }}%</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                @if($product->old_price && $product->old_price > $product->price)
+                                                <tr>
+                                                    <th>Prix avant réduction</th>
+                                                    <td>{{ number_format($product->old_price, 0, ',', ' ') }} FCFA</td>
+                                                </tr>
+                                                @endif
+                                                @if($product->discount_percentage && $product->discount_percentage > 0)
+                                                <tr>
+                                                    <th>Réduction</th>
+                                                    <td><span class="badge bg-danger">{{ $product->discount_percentage }}%</span></td>
+                                                </tr>
+                                                @endif
                                                 <tr>
                                                     <th>Disponibilité</th>
-                                                    <td>{{ $product->stock > 0 ? number_format($product->stock, 0, ',', ' ') . ' en stock' : 'Rupture de stock' }}</td>
+                                                    <td>
+                                                        @if($product->stock > 0)
+                                                            <span class="badge bg-success">{{ number_format($product->stock, 0, ',', ' ') }} en stock</span>
+                                                        @else
+                                                            <span class="badge bg-danger">Rupture de stock</span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
+                                                @if($product->warranty)
                                                 <tr>
-                                                    <th>Note</th>
-                                                    <td>{{ $product->rating }}/5 ({{ $product->reviews_count }} avis)</td>
+                                                    <th>Garantie</th>
+                                                    <td>{{ $product->warranty }}</td>
                                                 </tr>
+                                                @endif
+                                                <tr>
+                                                    <th>Note moyenne</th>
+                                                    <td>
+                                                        <span class="fw-bold">{{ number_format($product->rating, 1) }}/5</span>
+                                                        @for($i = 1; $i <= 5; $i++)
+                                                            <i class="fa-solid fa-star {{ $i <= floor($product->rating) ? 'text-warning' : 'text-secondary' }} fs-7"></i>
+                                                        @endfor
+                                                        <span class="text-muted ms-2">({{ $product->reviews_count }} avis)</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Attributs techniques -->
+                                        @if($product->attributeValues && $product->attributeValues->count() > 0)
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Caractéristiques Techniques</h6>
+                                        <table class="table table-striped table-hover mb-4">
+                                            <tbody>
+                                                @php
+                                                    $groupedAttributes = $product->attributeValues->groupBy(function($item) {
+                                                        return $item->attribute->name ?? 'Autres';
+                                                    });
+                                                @endphp
+                                                @foreach($groupedAttributes as $attributeName => $values)
+                                                    <tr>
+                                                        <th style="width: 35%;">{{ $attributeName }}</th>
+                                                        <td>
+                                                            @foreach($values as $value)
+                                                                <span class="badge bg-primary me-1 mb-1">{{ $value->value }}</span>
+                                                            @endforeach
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
+
+                                        <!-- Attributs JSON (si disponibles) -->
+                                        @if($product->attributes && is_array($product->attributes) && count($product->attributes) > 0)
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Caractéristiques Supplémentaires</h6>
+                                        <table class="table table-striped table-hover mb-4">
+                                            <tbody>
+                                                @foreach($product->attributes as $key => $value)
+                                                    @if($value !== null && $value !== '')
+                                                        <tr>
+                                                            <th style="width: 35%;">{{ ucfirst(str_replace('_', ' ', $key)) }}</th>
+                                                            <td>
+                                                                @if(is_array($value))
+                                                                    {{ implode(', ', $value) }}
+                                                                @else
+                                                                    {{ $value }}
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endif
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
+
+                                        <!-- Tags -->
+                                        @if($product->tags && is_array($product->tags) && count($product->tags) > 0)
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Tags</h6>
+                                        <div class="mb-4">
+                                            @foreach($product->tags as $tag)
+                                                <span class="badge bg-secondary me-1 mb-1">{{ $tag }}</span>
+                                            @endforeach
+                                        </div>
+                                        @endif
+
+                                        <!-- Informations complémentaires -->
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Informations Complémentaires</h6>
+                                        <table class="table table-striped table-hover">
+                                            <tbody>
+                                                @if($product->is_featured)
+                                                <tr>
+                                                    <th style="width: 35%;">Boutique</th>
+                                                    <td><span class="badge blue-bg text-white">Boutique Officielle</span></td>
+                                                </tr>
+                                                @endif
+                                                @if($product->is_new)
+                                                <tr>
+                                                    <th>Statut</th>
+                                                    <td><span class="badge bg-info">Nouveau</span></td>
+                                                </tr>
+                                                @endif
+                                                @if($product->is_trending)
+                                                <tr>
+                                                    <th>Tendance</th>
+                                                    <td><span class="badge bg-warning text-dark">Tendance</span></td>
+                                                </tr>
+                                                @endif
+                                                @if($product->is_best_offer)
+                                                <tr>
+                                                    <th>Offre</th>
+                                                    <td><span class="badge bg-danger">Meilleure Offre</span></td>
+                                                </tr>
+                                                @endif
                                             </tbody>
                                         </table>
                                     </div>

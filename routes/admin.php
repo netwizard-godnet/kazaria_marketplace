@@ -181,6 +181,7 @@ Route::prefix('admin')->name('admin.')->middleware(['admin'])->group(function ()
         Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
         Route::get('/users', [ReportController::class, 'users'])->name('users');
         Route::get('/products', [ReportController::class, 'products'])->name('products');
+        Route::get('/invoices', [ReportController::class, 'invoices'])->name('invoices');
         
         Route::middleware('permission:export_reports')->group(function () {
             Route::get('/export/{type}', [ReportController::class, 'export'])->name('export');

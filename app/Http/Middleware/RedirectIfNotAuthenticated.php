@@ -21,11 +21,24 @@ class RedirectIfNotAuthenticated
         // S'assurer que la session est démarrée pour les routes web
         if (!$request->is('api/*')) {
             if (!$request->hasSession()) {
-                $request->setLaravelSession(app('session.store'));
+                $session = app('session.store');
+                // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+                // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+                $sessionId = $request->cookies->get($session->getName());
+                if ($sessionId) {
+                    $session->setId($sessionId);
+                }
+                $request->setLaravelSession($session);
             }
             
             $session = $request->session();
             if (!$session->isStarted()) {
+                // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+                // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+                $sessionId = $request->cookies->get($session->getName());
+                if ($sessionId) {
+                    $session->setId($sessionId);
+                }
                 $session->start();
             }
         }

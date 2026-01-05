@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\AuthCode;
+use App\Models\CartItem;
 use App\Mail\AuthCodeMail;
 use App\Mail\VerifyEmailMail;
 use App\Mail\ResetPasswordMail;
@@ -12,11 +13,44 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    /**
+     * Ajouter le cookie de session à une réponse JSON
+     * Nécessaire pour les routes API car le middleware StartSession n'est pas appliqué
+     * 
+     * @param \Illuminate\Http\JsonResponse $response
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function addSessionCookieToResponse($response, $request)
+    {
+        if (!$request->hasSession()) {
+            return $response;
+        }
+
+        $session = $request->session();
+        $sessionName = (string)config('session.cookie');
+        $sessionId = (string)$session->getId();
+        $sessionLifetime = (int)config('session.lifetime') * 60; // Convertir en secondes
+        
+        $cookie = cookie(
+            $sessionName,
+            $sessionId,
+            $sessionLifetime,
+            (string)config('session.path', '/'),
+            (string)(config('session.domain') ?? ''),
+            (bool)config('session.secure', false),
+            (bool)config('session.http_only', true),
+            false,
+            (string)(config('session.same_site', 'lax') ?? 'lax')
+        );
+
+        return $response->withCookie($cookie);
+    }
+
     /**
      * Inscription d'un nouvel utilisateur
      */
@@ -92,12 +126,12 @@ class AuthController extends Controller
             // URL de vérification
             $verificationUrl = route('verify-email', ['token' => $verificationToken]);
 
-            // Envoyer l'email de vérification
+            // Envoyer l'email de vérification (optionnel)
             Mail::to($user->email)->send(new VerifyEmailMail($user, $verificationUrl));
 
             return response()->json([
                 'success' => true,
-                'message' => 'Compte créé avec succès ! Un email de vérification a été envoyé à votre adresse email.',
+                'message' => 'Compte créé avec succès ! Vous pouvez maintenant vous connecter. Un email de vérification a été envoyé à votre adresse email pour devenir un utilisateur vérifié.',
                 'user' => $user->only(['id', 'nom', 'prenoms', 'email'])
             ]);
 
@@ -115,20 +149,6 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        // S'assurer que la session est démarrée pour les requêtes web
-        if (!$request->hasSession()) {
-            try {
-                $session = app('session');
-                if (!$session->isStarted()) {
-                    $session->start();
-                }
-                $request->setLaravelSession($session);
-                \Log::info('✅ [LOGIN] Session démarrée manuellement');
-            } catch (\Exception $e) {
-                \Log::warning('⚠️ [LOGIN] Impossible de démarrer la session: ' . $e->getMessage());
-            }
-        }
-        
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string',
@@ -159,7 +179,7 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Aucun compte trouvé avec cette adresse email. Vérifiez votre saisie ou créez un compte.',
                 'error_type' => 'email_not_found'
-            ], 401)->header('Content-Type', 'application/json');
+            ], 401);
         }
 
         if (!Hash::check($request->password, $user->password)) {
@@ -167,60 +187,95 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Le mot de passe est incorrect. Vérifiez votre saisie ou utilisez "Mot de passe oublié" si nécessaire.',
                 'error_type' => 'invalid_password'
-            ], 401)->header('Content-Type', 'application/json');
+            ], 401);
         }
+
+        // Détecter si c'est une requête API (mobile/Flutter)
+        // Pour les requêtes depuis le frontend web, même si c'est /api/login, on doit utiliser la session
+        // Si X-Requested-With est présent, c'est une requête AJAX depuis le frontend web
+        $isApiRequest = ($request->expectsJson() || $request->is('api/*')) 
+            && !$request->header('X-Requested-With'); // Si X-Requested-With est présent, c'est une requête web
 
         // Vérifier si l'authentification à deux facteurs est activée
         if (!$user->two_factor_enabled) {
             // Connexion directe sans code si le 2FA n'est pas activé
             try {
-                // S'assurer que la session est démarrée
-                if (!$request->hasSession()) {
-                    $request->setLaravelSession(app('session.store'));
-                }
-                
-                $session = $request->session();
-                if (!$session->isStarted()) {
-                    $session->start();
-                }
-                
-                // Connecter l'utilisateur dans la session avec "remember" si demandé
-                $remember = $request->has('remember') || $request->input('remember') === true || $request->input('remember') === 'true';
-                Auth::login($user, $remember);
-                
-                // Régénérer l'ID de session APRÈS le login pour la sécurité
-                // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
-                $request->session()->regenerate();
-                
-                // Stocker le hash du mot de passe dans la session APRÈS la régénération
-                // pour que AuthenticateSession puisse vérifier l'authenticité de la session
-                $request->session()->put('password_hash_web', $user->getAuthPassword());
-                
-                // Régénérer le token CSRF
-                $request->session()->regenerateToken();
-                
-                // Forcer la sauvegarde de la session pour s'assurer qu'elle persiste
-                $request->session()->save();
-                
-                \Log::info('✅ [LOGIN] Session sauvegardée pour user: ' . $user->email . ', Session ID: ' . $request->session()->getId() . ', Remember: ' . ($remember ? 'Oui' : 'Non'));
+                if ($isApiRequest) {
+                    // Pour les requêtes API (Flutter/mobile) : créer un token Sanctum
+                    $token = $user->createToken('mobile-app')->plainTextToken;
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Connexion réussie',
+                        'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                        'token' => $token,
+                        'requires_code' => false
+                    ]);
+                } else {
+                    // Pour les requêtes web : utiliser la session
+                    // S'assurer que la session est démarrée
+                    if (!$request->hasSession()) {
+                        $request->setLaravelSession(app('session.store'));
+                    }
+                    
+                    $session = $request->session();
+                    if (!$session->isStarted()) {
+                        // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+                        // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+                        $sessionId = $request->cookies->get($session->getName());
+                        if ($sessionId) {
+                            $session->setId($sessionId);
+                        }
+                        $session->start();
+                    }
+                    
+                    // Connecter l'utilisateur dans la session
+                    Auth::login($user, $request->has('remember'));
+                    
+                    // Régénérer l'ID de session APRÈS le login pour la sécurité
+                    // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
+                    $request->session()->regenerate();
+                    
+                    // Stocker le hash du mot de passe dans la session APRÈS la régénération
+                    // pour que AuthenticateSession puisse vérifier l'authenticité de la session
+                    $request->session()->put('password_hash_web', $user->getAuthPassword());
+                    
+                    // Régénérer le token CSRF
+                    $request->session()->regenerateToken();
 
-                // Créer un token pour les appels API depuis le web/mobile
-                $token = $user->createToken('web-app')->plainTextToken;
-                
-                // Créer une réponse JSON avec les cookies de session
-                $response = response()->json([
-                    'success' => true,
-                    'message' => 'Connexion réussie',
-                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled', 'is_verified', 'is_seller']),
-                    'token' => $token, // Token pour les appels API
-                    'requires_code' => false, // Pas de code requis si 2FA désactivé
-                    'redirect' => route('accueil'),
-                    'session_id' => $request->session()->getId()
-                ])->header('Content-Type', 'application/json');
-                
-                // S'assurer que les cookies de session sont envoyés avec la réponse
-                // La session sera automatiquement attachée via le middleware StartSession
-                return $response;
+                    // Fusionner le panier invité avec le panier utilisateur
+                    try {
+                        $guestSessionId = $request->header('X-Session-ID');
+                        // S'assurer que c'est une chaîne de caractères
+                        if ($guestSessionId !== null) {
+                            $guestSessionId = is_array($guestSessionId) ? ($guestSessionId[0] ?? null) : (string)$guestSessionId;
+                            $this->mergeGuestCart($user, $guestSessionId ?: null);
+                        }
+                    } catch (\Exception $e) {
+                        // Ne pas bloquer la connexion si la fusion du panier échoue
+                        \Log::error('Erreur lors de la fusion du panier invité: ' . $e->getMessage(), [
+                            'user_id' => $user->id,
+                            'exception' => $e
+                        ]);
+                    }
+
+                    // Sauvegarder la session pour s'assurer qu'elle est persistée
+                    $request->session()->save();
+
+                    // Créer la réponse JSON
+                    $response = response()->json([
+                        'success' => true,
+                        'message' => 'Connexion réussie',
+                        'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                        'requires_code' => false,
+                        'redirect' => route('accueil')
+                    ]);
+
+                    // Ajouter le cookie de session à la réponse
+                    // C'est nécessaire car les routes API n'ont pas le middleware StartSession
+                    // qui ajoute automatiquement le cookie
+                    return $this->addSessionCookieToResponse($response, $request);
+                }
             } catch (\Exception $e) {
                 \Log::error('Erreur connexion directe: ' . $e->getMessage());
                 return response()->json([
@@ -243,9 +298,9 @@ class AuthController extends Controller
                 'message' => 'Code de connexion envoyé à votre email',
                 'email' => $user->email,
                 'requires_code' => true
-            ])->header('Content-Type', 'application/json');
+            ]);
         } catch (\Exception $e) {
-            Log::error('Erreur envoi code connexion: ' . $e->getMessage());
+            \Log::error('Erreur envoi code connexion: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'envoi du code. Veuillez réessayer.'
@@ -254,11 +309,10 @@ class AuthController extends Controller
     }
 
     /**
-     * Vérification du code de connexion
+     * Vérification du code de connexion (API - pour Flutter/mobile)
      */
-    public function verifyLoginCode(Request $request)
+    public function verifyLoginCodeApi(Request $request)
     {
-        // Validation des données
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'code' => 'required|string|size:8',
@@ -286,7 +340,6 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Vérifier le code d'authentification
         $authCode = AuthCode::where('email', $request->email)
                            ->where('code', $request->code)
                            ->where('type', 'login')
@@ -316,7 +369,6 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Récupérer l'utilisateur
         $user = User::where('email', $request->email)->first();
         if (!$user) {
             return response()->json([
@@ -325,96 +377,169 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Détecter si c'est une requête API (mobile) ou web
-        $isApiRoute = $request->is('api/*');
-        
-        // Vérifier si c'est une vraie app mobile
-        $userAgent = $request->header('User-Agent', '');
-        $isMobileApp = strpos($userAgent, 'Dart') !== false 
-            || strpos($userAgent, 'Flutter') !== false
-            || $request->header('X-Mobile-App') === 'true';
-        
-        // Pour les routes API mobiles, utiliser les tokens Sanctum (pas de session)
-        if ($isApiRoute || $isMobileApp) {
-            try {
-                // Créer le token AVANT de marquer le code comme utilisé
-                $token = $user->createToken('mobile-app')->plainTextToken;
-                
-                // Marquer le code comme utilisé seulement après succès
-                $authCode->markAsUsed();
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Connexion réussie',
-                    'token' => $token,
-                    'token_type' => 'Bearer',
-                    'user' => array_merge(
-                        $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
-                        ['has_store' => $user->store()->exists()]
-                    )
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Erreur création token mobile: ' . $e->getMessage());
+        // Marquer le code comme utilisé
+        $authCode->markAsUsed();
+
+        // Créer un token Sanctum pour Flutter/mobile
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Connexion réussie',
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+            'token' => $token
+        ]);
+    }
+
+    /**
+     * Vérification du code de connexion (WEB - Sessions)
+     */
+    public function verifyLoginCode(Request $request)
+    {
+        // Vérifier que la session est disponible
+        try {
+            if (!$request->hasSession()) {
+                \Log::error('Session store not set on request for verifyLoginCode');
                 return response()->json([
                     'success' => false,
-                    'message' => 'Erreur lors de la connexion'
+                    'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
                 ], 500);
             }
-        }
-
-        // Pour les routes web, utiliser les sessions
-        // Vérifier que la session est disponible pour le web
-        if (!$request->hasSession()) {
-            Log::error('Session store not set on request for web verifyLoginCode');
+        } catch (\Exception $e) {
+            \Log::error('Erreur session verifyLoginCode: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur de session. Veuillez rafraîchir la page et réessayer.'
             ], 500);
         }
 
-        try {
-            // Marquer le code comme utilisé
-            $authCode->markAsUsed();
-            
-            // Régénérer l'ID de session AVANT le login pour éviter les problèmes
-            $request->session()->regenerate();
-            
-            // Créer une session web persistante
-            Auth::login($user, true);
-            
-            // Régénérer l'ID de session APRÈS le login
-            $request->session()->regenerate();
-            
-            // Stocker le hash du mot de passe dans la session
-            $request->session()->put('password_hash_web', $user->getAuthPassword());
-            
-            // Régénérer le token CSRF
-            $request->session()->regenerateToken();
-            
-            // Forcer la sauvegarde de la session
-            $request->session()->save();
-            
-            \Log::info('✅ [VERIFY_CODE] Session sauvegardée pour user: ' . $user->email . ', Session ID: ' . $request->session()->getId());
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'code' => 'required|string|size:8',
+        ]);
 
-            // Créer aussi un token pour les appels API depuis le web
-            $token = $user->createToken('web-app')->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Connexion réussie',
-                'token' => $token, // Token pour les appels API
-                'user' => array_merge(
-                    $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
-                    ['has_store' => $user->store()->exists()]
-                ),
-                'redirect' => route('accueil')
-            ])->header('Content-Type', 'application/json');
-        } catch (\Exception $e) {
-            Log::error('Erreur connexion web: ' . $e->getMessage());
+        if ($validator->fails()) {
+            $errors = $validator->errors();
+            $messages = [];
+            
+            if ($errors->has('email')) {
+                $messages[] = 'L\'adresse email est requise';
+            }
+            if ($errors->has('code')) {
+                if (strlen($request->code ?? '') !== 8) {
+                    $messages[] = 'Le code doit contenir exactement 8 chiffres';
+                } else {
+                    $messages[] = 'Le code de vérification est requis';
+                }
+            }
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la connexion'
-            ], 500)->header('Content-Type', 'application/json');
+                'message' => implode('. ', $messages) ?: 'Veuillez remplir tous les champs requis',
+                'errors' => $errors->messages()
+            ], 422);
         }
+
+        $authCode = AuthCode::where('email', $request->email)
+                           ->where('code', $request->code)
+                           ->where('type', 'login')
+                           ->unused()
+                           ->notExpired()
+                           ->first();
+
+        if (!$authCode) {
+            // Vérifier si le code existe mais est expiré
+            $expiredCode = AuthCode::where('email', $request->email)
+                                 ->where('code', $request->code)
+                                 ->where('type', 'login')
+                                 ->first();
+            
+            if ($expiredCode) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce code a expiré. Veuillez demander un nouveau code de connexion.',
+                    'error_type' => 'code_expired'
+                ], 401);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Le code saisi est incorrect. Vérifiez votre boîte email et réessayez.',
+                'error_type' => 'invalid_code'
+            ], 401);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Utilisateur introuvable'
+            ], 404);
+        }
+
+        // Marquer le code comme utilisé
+        $authCode->markAsUsed();
+
+        // S'assurer que la session est démarrée
+        if (!$request->hasSession()) {
+            $request->setLaravelSession(app('session.store'));
+        }
+        
+        $session = $request->session();
+        if (!$session->isStarted()) {
+            // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+            // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+            $sessionId = $request->cookies->get($session->getName());
+            if ($sessionId) {
+                $session->setId($sessionId);
+            }
+            $session->start();
+        }
+        
+        // Connecter l'utilisateur dans la session
+        Auth::login($user, true);
+        
+        // Régénérer l'ID de session APRÈS le login pour la sécurité
+        $request->session()->regenerate();
+        
+        // Stocker le hash du mot de passe dans la session APRÈS la régénération
+        // pour que AuthenticateSession puisse vérifier l'authenticité de la session
+        $request->session()->put('password_hash_web', $user->getAuthPassword());
+        
+        // Régénérer le token CSRF
+        $request->session()->regenerateToken();
+
+        // Fusionner le panier invité avec le panier utilisateur
+        try {
+            $guestSessionId = $request->header('X-Session-ID');
+            // S'assurer que c'est une chaîne de caractères
+            if ($guestSessionId !== null) {
+                $guestSessionId = is_array($guestSessionId) ? ($guestSessionId[0] ?? null) : (string)$guestSessionId;
+                $this->mergeGuestCart($user, $guestSessionId ?: null);
+            }
+        } catch (\Exception $e) {
+            // Ne pas bloquer la connexion si la fusion du panier échoue
+            \Log::error('Erreur lors de la fusion du panier invité: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'exception' => $e
+            ]);
+        }
+
+        // Sauvegarder la session pour s'assurer qu'elle est persistée
+        $request->session()->save();
+
+        // Créer la réponse JSON
+        $response = response()->json([
+            'success' => true,
+            'message' => 'Connexion réussie',
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+            'redirect' => route('accueil')
+        ]);
+
+        // Ajouter le cookie de session à la réponse
+        // C'est nécessaire car les routes API n'ont pas le middleware StartSession
+        // qui ajoute automatiquement le cookie
+        return $this->addSessionCookieToResponse($response, $request);
     }
 
     /**
@@ -450,9 +575,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Email de réinitialisation envoyé',
-            'token' => $resetToken, // ✅ Retourner le token pour l'app mobile
-            'email' => $user->email, // ✅ Retourner l'email pour faciliter la réinitialisation
+            'message' => 'Email de réinitialisation envoyé'
         ]);
     }
 
@@ -583,42 +706,10 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        // D'abord essayer avec le token (API mobile)
-        $user = $request->user();
-        
-        // Si pas d'utilisateur via token, essayer avec la session (web)
-        if (!$user && Auth::check()) {
-            $user = Auth::user();
-        }
-        
-        if (!$user) {
         return response()->json([
-                'success' => false,
-                'message' => 'Non authentifié'
-            ], 401);
-        }
-        
-        // Si l'utilisateur est connecté via session mais n'a pas de token, en créer un
-        $token = $request->bearerToken();
-        if (!$token && Auth::check()) {
-            // Créer un token pour les appels API depuis le web
-            $token = $user->createToken('web-app')->plainTextToken;
-        }
-        
-        $response = [
             'success' => true,
-            'user' => array_merge(
-                $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
-                ['has_store' => $user->store()->exists()]
-            )
-        ];
-        
-        // Inclure le token si créé
-        if ($token) {
-            $response['token'] = $token;
-        }
-        
-        return response()->json($response);
+            'user' => $request->user()->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
+        ]);
     }
 
     /**
@@ -666,11 +757,104 @@ class AuthController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la déconnexion de tous les appareils: ' . $e->getMessage());
+            \Log::error('Erreur lors de la déconnexion de tous les appareils: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la déconnexion'
             ], 500);
+        }
+    }
+
+    /**
+     * Fusionner le panier invité avec le panier utilisateur lors de la connexion
+     * 
+     * @param \App\Models\User $user L'utilisateur qui vient de se connecter
+     * @param string|null $guestSessionId L'ID de session invité (X-Session-ID header)
+     */
+    private function mergeGuestCart($user, $guestSessionId = null)
+    {
+        // Si pas de session invité, rien à fusionner
+        if (!$guestSessionId) {
+            \Log::info('mergeGuestCart: Pas de session invité fournie', [
+                'user_id' => $user->id ?? null
+            ]);
+            return;
+        }
+
+        try {
+            // Récupérer les items du panier invité
+            $guestItems = CartItem::where('session_id', $guestSessionId)
+                ->whereNull('user_id')
+                ->get();
+
+            \Log::info('mergeGuestCart: Items invités trouvés', [
+                'user_id' => $user->id,
+                'guest_session_id' => $guestSessionId,
+                'items_count' => $guestItems->count()
+            ]);
+
+            if ($guestItems->isEmpty()) {
+                \Log::info('mergeGuestCart: Aucun item invité à fusionner');
+                return; // Pas d'items à fusionner
+            }
+
+            foreach ($guestItems as $item) {
+                // Vérifier si l'utilisateur a déjà ce produit dans son panier
+                // Comparer par product_id, variation_id et attributes (JSON)
+                // Normaliser les attributs pour la comparaison
+                $itemAttributes = is_string($item->attributes) ? $item->attributes : json_encode($item->attributes ?? []);
+                
+                $existingItem = CartItem::where('user_id', $user->id)
+                    ->where('product_id', $item->product_id)
+                    ->where('variation_id', $item->variation_id)
+                    ->where(function($query) use ($itemAttributes) {
+                        // Comparer les attributs JSON
+                        if (empty($itemAttributes) || $itemAttributes === '[]' || $itemAttributes === '{}' || $itemAttributes === 'null') {
+                            $query->where(function($q) {
+                                $q->whereNull('attributes')
+                                  ->orWhere('attributes', '[]')
+                                  ->orWhere('attributes', '{}')
+                                  ->orWhere('attributes', '');
+                            });
+                        } else {
+                            $query->where('attributes', $itemAttributes)
+                                  ->orWhereRaw('JSON_CONTAINS(attributes, ?) AND JSON_CONTAINS(?, attributes)', [$itemAttributes, $itemAttributes]);
+                        }
+                    })
+                    ->first();
+
+                if ($existingItem) {
+                    // Fusionner les quantités
+                    $existingItem->quantity += $item->quantity;
+                    $existingItem->save();
+                    // Supprimer l'item invité
+                    $item->delete();
+                } else {
+                    // Transférer l'item à l'utilisateur
+                    $item->user_id = $user->id;
+                    $item->session_id = null; // Plus besoin de session_id pour les utilisateurs connectés
+                    $item->save();
+                }
+            }
+
+            \Log::info("Panier invité fusionné pour l'utilisateur {$user->id}", [
+                'guest_session_id' => $guestSessionId,
+                'items_merged' => $guestItems->count(),
+                'user_id' => $user->id
+            ]);
+            
+            // Vérifier que les items ont bien été transférés
+            $userCartCount = CartItem::where('user_id', $user->id)->count();
+            \Log::info('mergeGuestCart: Panier utilisateur après fusion', [
+                'user_id' => $user->id,
+                'cart_count' => $userCartCount
+            ]);
+        } catch (\Exception $e) {
+            // Log l'erreur mais ne pas bloquer la connexion
+            \Log::error("Erreur lors de la fusion du panier invité: " . $e->getMessage(), [
+                'user_id' => $user->id,
+                'guest_session_id' => $guestSessionId
+            ]);
         }
     }
 }

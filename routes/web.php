@@ -285,6 +285,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/profile/change-password', [App\Http\Controllers\ProfileController::class, 'changePassword'])->name('profile.change-password');
     Route::post('/profile/update-two-factor', [App\Http\Controllers\ProfileController::class, 'updateTwoFactor'])->name('profile.update-two-factor');
     Route::post('/profile/logout-all-devices', [App\Http\Controllers\ProfileController::class, 'logoutAllDevices'])->name('profile.logout-all-devices');
+    Route::post('/profile/request-email-verification', [App\Http\Controllers\ProfileController::class, 'requestEmailVerification'])->name('profile.request-email-verification');
 });
 
 // Route panier

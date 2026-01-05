@@ -24,7 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.redirect' => \App\Http\Middleware\RedirectIfNotAuthenticated::class,
             'seller' => \App\Http\Middleware\RedirectIfNotSeller::class,
             'admin.redirect' => \App\Http\Middleware\RedirectIfNotAdmin::class,
-            'force.session' => \App\Http\Middleware\ForceSessionSave::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'landing.page' => \App\Http\Middleware\LandingPageMiddleware::class,
         ]);
@@ -38,14 +37,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         
         // Appliquer les middlewares web globalement
+        // ⚠️ IMPORTANT : EnsurePasswordHashInSession doit s'exécuter AVANT AuthenticateSession
+        // pour éviter que AuthenticateSession ne déconnecte l'utilisateur
+        $middleware->web(prepend: [
+            \App\Http\Middleware\EnsurePasswordHashInSession::class, // AVANT AuthenticateSession
+        ]);
+        
         $middleware->web(append: [
             \App\Http\Middleware\SeoMiddleware::class,
             \App\Http\Middleware\LandingPageMiddleware::class,
             \App\Http\Middleware\TrackPageVisits::class,
+            \App\Http\Middleware\LogAuthenticateSession::class, // Logging pour diagnostic (à supprimer après)
         ]);
         
-        // NE PAS appliquer ForceSessionSave car il modifie la session
-        // et invalide le token CSRF
         
         // Ne pas appliquer auth globalement pour éviter les boucles
         // L'authentification sera appliquée via les routes spécifiques

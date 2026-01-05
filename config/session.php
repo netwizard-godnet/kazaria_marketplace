@@ -47,7 +47,7 @@ return [
     |
     */
 
-    'encrypt' => false, // Désactivé temporairement pour debug
+    'encrypt' => env('SESSION_ENCRYPT', true), // Encryption activée pour la sécurité
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +169,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('SESSION_SECURE_COOKIE', null), // null = auto-détection (true en HTTPS, false en HTTP)
 
     /*
     |--------------------------------------------------------------------------

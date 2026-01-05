@@ -8,36 +8,34 @@ use App\Models\Product;
 use App\Models\ProductVariation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
     /**
      * Obtenir l'ID utilisateur ou session (WEB - Sessions)
+     * 
+     * IMPORTANT : Il y a deux types de "session_id" différents :
+     * - Session Laravel ($request->session()->getId()) : Pour authentification, CSRF, données de session
+     * - Session invité (X-Session-ID header) : Pour panier/favoris des invités (stocké dans localStorage)
+     * 
+     * Pour les utilisateurs connectés : utiliser uniquement user_id (session_id = null)
+     * Pour les invités : utiliser uniquement X-Session-ID (guest session)
      */
     private function getUserOrSession(Request $request)
     {
-        // Pour les pages web, utiliser l'authentification par session
-        if (Auth::check()) {
-            // Utilisateur connecté - utiliser l'ID utilisateur
-            // Prioriser le header X-Session-ID pour la cohérence avec le frontend
-            $sessionId = $request->header('X-Session-ID');
-            if (!$sessionId && $request->hasSession()) {
-                $sessionId = $request->session()->getId();
-            }
-            return ['user_id' => Auth::user()->id, 'session_id' => $sessionId];
+        // Pour les utilisateurs connectés : utiliser uniquement user_id
+        // Le panier est identifié par user_id, pas par session_id
+        if (auth()->check()) {
+            return ['user_id' => auth()->user()->id, 'session_id' => null];
         }
         
-        // Pour les invités, prioriser le header X-Session-ID (celui utilisé par le frontend)
-        // car c'est celui qui est stocké dans localStorage et utilisé lors de l'ajout au panier
+        // Pour les invités : utiliser uniquement X-Session-ID (guest session)
+        // C'est l'ID stocké dans localStorage côté client, pas la session Laravel
         $sessionId = $request->header('X-Session-ID');
         
-        // Si pas de header, essayer la session Laravel
-        if (!$sessionId && $request->hasSession()) {
-            $sessionId = $request->session()->getId();
-        }
-        
-        // Si toujours pas de session_id, générer un nouvel ID (ne devrait pas arriver normalement)
+        // Si pas de header, générer un nouvel ID invité
+        // On ne doit PAS utiliser $request->session()->getId() car c'est la session Laravel,
+        // pas la session invité pour le panier
         if (!$sessionId) {
             $sessionId = uniqid('guest_', true);
         }
@@ -95,15 +93,15 @@ class CartController extends Controller
         ];
         
         // Debug: Log des paramètres récupérés
-        Log::info('Paramètres de livraison récupérés:', $shippingSettings);
-        Log::info('Vérification des clés:', array_keys($shippingSettings));
-        Log::info('shipping_cost existe:', ['exists' => isset($shippingSettings['shipping_cost']) ? 'OUI' : 'NON']);
+        \Log::info('Paramètres de livraison récupérés:', $shippingSettings);
+        \Log::info('Vérification des clés:', array_keys($shippingSettings));
+        \Log::info('shipping_cost existe:', ['exists' => isset($shippingSettings['shipping_cost']) ? 'OUI' : 'NON']);
         
         // Vérifications supplémentaires
-        Log::info('$shippingSettings existe:', ['exists' => isset($shippingSettings) ? 'OUI' : 'NON']);
-        Log::info('$shippingSettings est un array:', ['is_array' => is_array($shippingSettings) ? 'OUI' : 'NON']);
-        Log::info('Type de $shippingSettings:', ['type' => gettype($shippingSettings)]);
-        Log::info('Contenu de $shippingSettings:', ['content' => $shippingSettings]);
+        \Log::info('$shippingSettings existe:', ['exists' => isset($shippingSettings) ? 'OUI' : 'NON']);
+        \Log::info('$shippingSettings est un array:', ['is_array' => is_array($shippingSettings) ? 'OUI' : 'NON']);
+        \Log::info('Type de $shippingSettings:', ['type' => gettype($shippingSettings)]);
+        \Log::info('Contenu de $shippingSettings:', ['content' => $shippingSettings]);
         
         return view('cart', compact('cartItems', 'total', 'shippingSettings'));
     }
@@ -185,11 +183,6 @@ class CartController extends Controller
             ->first();
 
         if ($existingItem) {
-            // Si le prix est 0 ou null, mettre à jour avec le prix actuel du produit
-            if (!$existingItem->price || $existingItem->price == 0) {
-                $existingItem->price = $product->price;
-                $existingItem->save();
-            }
             $existingItem->increment('quantity', $quantity);
         } else {
             // Déterminer le prix à utiliser
@@ -212,15 +205,6 @@ class CartController extends Controller
             // S'assurer que les attributs sont toujours stockés comme un objet, même s'ils sont vides
             // Convertir en objet si c'est un tableau
             $attributesToStore = empty($attributes) ? (object)[] : (is_array($attributes) ? (object)$attributes : $attributes);
-            
-            // Déterminer le prix à utiliser (prix actuel du produit)
-            // Utiliser le prix promo si disponible, sinon le prix normal
-            $priceToUse = $product->price;
-            if ($product->old_price && $product->old_price > $product->price) {
-                // Si old_price est plus élevé, c'est probablement une promotion
-                // Dans ce cas, utiliser le prix actuel (qui est le prix promo)
-                $priceToUse = $product->price;
-            }
             
             CartItem::create([
                 'product_id' => $product->id,
@@ -247,27 +231,14 @@ class CartController extends Controller
     {
         $identifier = $this->getUserOrSessionApi($request);
         $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
-        $subtotal = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
-        
-        // Récupérer les paramètres de livraison depuis la base de données
-        $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 1500);
-        $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 50000);
-        
-        // Calculer le coût de livraison
-        $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
-        
-        // Calculer le total avec livraison
-        $total = $subtotal + $shippingCost;
+        $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
 
         return response()->json([
             'success' => true,
-            'items' => $cartItems,
-            'cart_items' => $cartItems, // Pour compatibilité
-            'subtotal' => $subtotal,
-            'shipping_cost' => $shippingCost,
+            'cart_items' => $cartItems,
             'total' => $total,
             'count' => $cartItems->count()
-        ])->header('Content-Type', 'application/json');
+        ]);
     }
 
     /**
@@ -314,7 +285,7 @@ class CartController extends Controller
         }
         
         // Debug: Log des attributs reçus
-        Log::info('=== AJOUT AU PANIER ===', [
+        \Log::info('=== AJOUT AU PANIER ===', [
             'product_id' => $request->input('product_id'),
             'quantity' => $request->input('quantity'),
             'variation_id' => $variationId,
@@ -543,7 +514,7 @@ class CartController extends Controller
                 }
             })->delete();
 
-            Log::info('Panier vidé', [
+            \Log::info('Panier vidé', [
                 'user_id' => $identifier['user_id'],
                 'session_id' => $identifier['session_id'],
                 'deleted_count' => $deleted
@@ -556,7 +527,7 @@ class CartController extends Controller
                 'cart_total' => 0
             ]);
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la suppression du panier: ' . $e->getMessage());
+            \Log::error('Erreur lors de la suppression du panier: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la suppression du panier: ' . $e->getMessage()
@@ -571,46 +542,15 @@ class CartController extends Controller
     {
         $identifier = $this->getUserOrSession($request);
         $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
-        $subtotal = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
+        $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
         $count = CartItem::getCartCount($identifier['user_id'], $identifier['session_id']);
-        
-        // Récupérer les paramètres de livraison depuis la base de données
-        $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 1500);
-        $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 50000);
-        
-        // Calculer le coût de livraison
-        $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
-        
-        // Calculer le total avec livraison
-        $total = $subtotal + $shippingCost;
 
         return response()->json([
             'success' => true,
             'items' => $cartItems,
-            'subtotal' => $subtotal,
-            'shipping_cost' => $shippingCost,
             'total' => $total,
             'count' => $count
-        ])->header('Content-Type', 'application/json');
-    }
-
-    /**
-     * Obtenir l'identifiant utilisateur (détecte automatiquement API ou Web)
-     */
-    private function getIdentifier(Request $request)
-    {
-        // D'abord vérifier si c'est une requête API avec token
-        $token = $request->bearerToken();
-        if ($token) {
-            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-            if ($personalAccessToken) {
-                // API avec token - utiliser uniquement user_id
-                return ['user_id' => $personalAccessToken->tokenable->id, 'session_id' => null];
-            }
-        }
-        
-        // Sinon, utiliser la méthode web (sessions)
-        return $this->getUserOrSession($request);
+        ]);
     }
 
     /**
@@ -622,20 +562,23 @@ class CartController extends Controller
             'product_id' => 'required|exists:products,id'
         ]);
 
-        $identifier = $this->getIdentifier($request);
+        $identifier = $this->getUserOrSession($request);
         
-        // Pour les utilisateurs authentifiés, chercher uniquement par user_id (peu importe la session)
-        // Pour les invités, chercher par session_id
-        if ($identifier['user_id']) {
         $favorite = Favorite::where('product_id', $request->product_id)
-                ->where('user_id', $identifier['user_id'])
-                ->first();
+            ->where(function($query) use ($identifier) {
+                if ($identifier['user_id'] && $identifier['session_id']) {
+                    // Utilisateur connecté avec session_id - chercher par les deux
+                    $query->where('user_id', $identifier['user_id'])
+                          ->where('session_id', $identifier['session_id']);
+                } elseif ($identifier['user_id']) {
+                    // Utilisateur connecté sans session_id - chercher par user_id seulement
+                    $query->where('user_id', $identifier['user_id']);
                 } else {
-            $favorite = Favorite::where('product_id', $request->product_id)
-                ->where('session_id', $identifier['session_id'])
-                ->whereNull('user_id')
+                    // Utilisateur non connecté - chercher par session_id seulement
+                    $query->where('session_id', $identifier['session_id']);
+                }
+            })
             ->first();
-        }
 
         if ($favorite) {
             // Retirer des favoris
@@ -644,24 +587,16 @@ class CartController extends Controller
             $message = 'Retiré des favoris';
         } else {
             // Ajouter aux favoris
-            // Pour les utilisateurs authentifiés, ne pas utiliser session_id
             Favorite::create([
                 'user_id' => $identifier['user_id'],
-                'session_id' => $identifier['user_id'] ? null : $identifier['session_id'],
+                'session_id' => $identifier['session_id'],
                 'product_id' => $request->product_id
             ]);
             $isFavorite = true;
             $message = 'Ajouté aux favoris';
         }
 
-        // Compter les favoris selon le type d'utilisateur
-        if ($identifier['user_id']) {
-            $favoritesCount = Favorite::where('user_id', $identifier['user_id'])->count();
-        } else {
-            $favoritesCount = Favorite::where('session_id', $identifier['session_id'])
-                ->whereNull('user_id')
-                ->count();
-        }
+        $favoritesCount = Favorite::getFavoritesCount($identifier['user_id'], $identifier['session_id']);
 
         return response()->json([
             'success' => true,
@@ -676,90 +611,12 @@ class CartController extends Controller
      */
     public function getFavorites(Request $request)
     {
-        $identifier = $this->getIdentifier($request);
-        
-        // Pour les utilisateurs authentifiés, récupérer tous les favoris de l'utilisateur
-        // Pour les invités, récupérer uniquement ceux de la session
-        if ($identifier['user_id']) {
-            $favoritesQuery = Favorite::where('user_id', $identifier['user_id'])
-                ->with('product');
-        } else {
-            $favoritesQuery = Favorite::where('session_id', $identifier['session_id'])
-                ->whereNull('user_id')
-                ->with('product');
-        }
-        
-        $favorites = $favoritesQuery->get();
-        
-        // Filtrer les favoris qui ont un produit valide (non supprimé)
-        $validFavorites = $favorites->filter(function($favorite) {
-            return $favorite->product !== null;
-        });
-        
-        \Log::info('Favoris récupérés:', [
-            'total' => $favorites->count(),
-            'valides' => $validFavorites->count(),
-            'user_id' => $identifier['user_id'],
-            'session_id' => $identifier['session_id']
-        ]);
-        
-        // Format pour le web : tableau d'objets avec structure {product: {...}}
-        $favoritesForWeb = $validFavorites->map(function($favorite) {
-            $product = $favorite->product;
-            // Créer un tableau avec tous les attributs nécessaires
-            $productArray = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'description' => $product->description,
-                'price' => (float) $product->price,
-                'old_price' => $product->old_price ? (float) $product->old_price : null,
-                'discount_percentage' => $product->discount_percentage,
-                'image' => $product->image,
-                'images' => $product->images,
-                'rating' => $product->rating ? (float) $product->rating : 0,
-                'reviews_count' => $product->reviews_count ?? 0,
-                'stock' => $product->stock,
-                'is_active' => $product->is_active,
-                'store_id' => $product->store_id,
-                'category_id' => $product->category_id,
-            ];
-            
-            return [
-                'id' => $favorite->id,
-                'product_id' => $favorite->product_id,
-                'product' => $productArray
-            ];
-        })->values()->toArray();
-        
-        \Log::info('Favoris formatés pour le web:', ['count' => count($favoritesForWeb)]);
-        
-        // Format pour le mobile : tableau direct de produits
-        $favoritesForMobile = $validFavorites->map(function($favorite) {
-            $product = $favorite->product;
-            // Utiliser toArray() si disponible, sinon créer manuellement
-            if (method_exists($product, 'toArray')) {
-                return $product->toArray();
-            }
-            // Fallback : créer le tableau manuellement
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'description' => $product->description,
-                'price' => (float) $product->price,
-                'old_price' => $product->old_price ? (float) $product->old_price : null,
-                'image' => $product->image,
-                'images' => $product->images,
-                'rating' => $product->rating ? (float) $product->rating : 0,
-                'reviews_count' => $product->reviews_count ?? 0,
-            ];
-        })->values()->toArray();
+        $identifier = $this->getUserOrSession($request);
+        $favorites = Favorite::getFavorites($identifier['user_id'], $identifier['session_id']);
 
         return response()->json([
             'success' => true,
-            'favorites' => $favoritesForWeb, // Format attendu par le web (avec structure favorite.product)
-            'data' => $favoritesForMobile // Format attendu par le mobile (produits directs)
+            'favorites' => $favorites
         ]);
     }
 

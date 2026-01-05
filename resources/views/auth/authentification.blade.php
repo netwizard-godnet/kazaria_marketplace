@@ -21,11 +21,11 @@
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
         <!-- SLICK -->
-        <!-- <link rel="stylesheet" href="{{ asset('slick/slick.css') }}"> -->
-        <!-- <link rel="stylesheet" href="{{ asset('slick/slick-theme.css') }}"> -->
+        <link rel="stylesheet" href="{{ asset('slick/slick.css') }}">
+        <link rel="stylesheet" href="{{ asset('slick/slick-theme.css') }}">
         <!-- CUSTOM CSS -->
         <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-        <!-- <link rel="stylesheet" href="{{ asset('css/profil.css') }}"> -->
+        <link rel="stylesheet" href="{{ asset('css/profil.css') }}">
         <link rel="stylesheet" href="{{ asset('css/carousel.css') }}">
         <!-- FONTS -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -207,6 +207,16 @@
         <script>
             let currentStep = 'login'; // 'login', 'code', 'register'
             let userEmail = '';
+
+            // Fonction pour obtenir l'ID de session invité depuis localStorage
+            function getSessionId() {
+                let sessionId = localStorage.getItem('guest_session_id');
+                if (!sessionId) {
+                    sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('guest_session_id', sessionId);
+                }
+                return sessionId;
+            }
 
             // Fonction pour afficher un message
             function showMessage(elementId, message, type = 'success', errors = null) {
@@ -489,67 +499,43 @@
                 let formData = new FormData(this);
                 let object = {};
                 formData.forEach((value, key) => {object[key] = value});
-                
-                // Ajouter le champ "remember" si la checkbox est cochée
-                const rememberMe = document.getElementById('rememberMe');
-                if (rememberMe && rememberMe.checked) {
-                    object.remember = true;
-                }
 
                 // Réinitialiser les erreurs visuelles avant la soumission
                 resetFieldErrors();
 
                 try {
-                    console.log('🔐 [LOGIN] Envoi de la requête de connexion...');
-                    console.log('🔐 [LOGIN] Données:', object);
-                    
                     const response = await fetch('/api/login', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Session-ID': getSessionId() // ⚠️ IMPORTANT : Envoyer l'ID de session invité pour fusionner le panier
                         },
-                        credentials: 'same-origin', // Important pour les cookies de session
+                        credentials: 'same-origin', // Important : inclure les cookies dans la requête
                         body: JSON.stringify(object)
                     });
 
-                    console.log('🔐 [LOGIN] Status HTTP:', response.status);
-                    console.log('🔐 [LOGIN] Headers:', response.headers);
-
                     let data;
                     try {
-                        const responseText = await response.text();
-                        console.log('🔐 [LOGIN] Réponse brute:', responseText);
-                        data = JSON.parse(responseText);
-                        console.log('🔐 [LOGIN] Données parsées:', data);
+                        data = await response.json();
                     } catch (parseError) {
-                        console.error('🔐 [LOGIN] Erreur parsing JSON:', parseError);
-                        throw new Error('Réponse invalide du serveur: ' + parseError.message);
+                        throw new Error('Réponse invalide du serveur');
                     }
                     
                     if (data.success && data.requires_code) {
-                        console.log('🔐 [LOGIN] Code requis, affichage du formulaire de code');
                         resetFieldErrors();
                         showCodeForm(data.email);
                     } else if (data.success) {
-                        console.log('🔐 [LOGIN] Connexion réussie, redirection...');
-                        console.log('🔐 [LOGIN] User data:', data.user);
                         resetFieldErrors();
                         showMessage('loginAlert', data.message, 'success');
-                        
-                        // Forcer le rechargement complet de la page pour s'assurer que la session est chargée
-                        // Utiliser window.location.href avec un paramètre pour forcer le rechargement
+                        // Rediriger vers la page d'accueil avec cache-busting pour forcer le rechargement
                         setTimeout(() => {
-                            const redirectUrl = data.redirect || '{{ route("accueil") }}';
-                            const separator = redirectUrl.includes('?') ? '&' : '?';
-                            const finalUrl = redirectUrl + separator + '_t=' + Date.now();
-                            console.log('🔐 [LOGIN] Redirection vers:', finalUrl);
-                            window.location.href = finalUrl;
-                        }, 500);
+                            const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
+                            window.location.replace(redirectUrl);
+                        }, 1000);
                     } else {
-                        console.error('🔐 [LOGIN] Erreur de connexion:', data);
                         const errorMessage = data.message || 'Erreur lors de la connexion';
                         showMessage('loginAlert', errorMessage, 'danger', data.errors);
                         
@@ -616,52 +602,36 @@
                     resetFieldErrors();
 
                     try {
-                        // Utiliser la route web au lieu de /api/ pour avoir accès aux sessions
-                        const response = await fetch('{{ route("web.verify-login-code") }}', {
+                        const response = await fetch('/verify-login-code', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
+                                'Accept': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                'X-Requested-With': 'XMLHttpRequest'
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-Session-ID': getSessionId() // ⚠️ IMPORTANT : Envoyer l'ID de session invité pour fusionner le panier
                             },
-                            credentials: 'include', // CRITIQUE : inclure les cookies de session
+                            credentials: 'same-origin',
                             body: JSON.stringify(object)
                         });
 
                         let data;
                         try {
-                            const responseText = await response.text();
-                            console.log('🔐 [CODE] Réponse brute:', responseText);
-                            data = JSON.parse(responseText);
-                            console.log('🔐 [CODE] Données parsées:', data);
+                            data = await response.json();
                         } catch (parseError) {
-                            console.error('🔐 [CODE] Erreur parsing JSON:', parseError);
-                            throw new Error('Réponse invalide du serveur: ' + parseError.message);
+                            throw new Error('Réponse invalide du serveur');
                         }
                         
                         if (data.success) {
                             resetFieldErrors();
                             showMessage('codeAlert', 'Connexion réussie ! Redirection...', 'success');
                             
-                            console.log('✅ [CODE] Authentification réussie', data);
-                            console.log('✅ [CODE] User:', data.user);
-                            
-                            // Stocker le token dans localStorage pour les appels API
-                            if (data.token) {
-                                localStorage.setItem('auth_token', data.token);
-                                console.log('✅ [CODE] Token stocké dans localStorage');
-                            }
-                            
-                            // Stocker les données utilisateur
-                            if (data.user) {
-                                localStorage.setItem('user_data', JSON.stringify(data.user));
-                            }
-                            
-                            // Rediriger immédiatement vers l'accueil
-                            // Utiliser window.location.href pour forcer le rechargement complet
+                            // Rediriger vers la page d'accueil avec session
                             setTimeout(() => {
-                                console.log('✅ [CODE] Redirection vers accueil...');
-                                window.location.href = '{{ route("accueil") }}';
+                                // Ajouter un paramètre de cache-busting pour forcer le rechargement
+                                const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
+                                // Utiliser replace pour éviter de garder la page d'auth dans l'historique
+                                window.location.replace(redirectUrl);
                             }, 1000);
                         } else {
                             const errorMessage = data.message || 'Code invalide ou expiré';

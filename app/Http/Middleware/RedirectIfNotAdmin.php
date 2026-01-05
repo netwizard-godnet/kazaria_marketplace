@@ -18,7 +18,13 @@ class RedirectIfNotAdmin
     {
         // S'assurer que la session est démarrée
         if (!$request->hasSession() || !session()->isStarted()) {
-            $session = app('session');
+            $session = app('session.store');
+            // ⚠️ IMPORTANT : Lire l'ID de session depuis les cookies AVANT de démarrer
+            // Sinon, une nouvelle session sera créée et l'utilisateur sera déconnecté
+            $sessionId = $request->cookies->get($session->getName());
+            if ($sessionId) {
+                $session->setId($sessionId);
+            }
             if (!$session->isStarted()) {
                 $session->start();
             }

@@ -315,14 +315,16 @@
                     </div>
                     
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div>
-                            Affichage de {{ $users->firstItem() ?? 0 }} à {{ $users->lastItem() ?? 0 }} sur {{ $users->total() ?? 0 }} résultats
+                    @if($users->hasPages())
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Affichage de {{ $users->firstItem() }} à {{ $users->lastItem() }} sur {{ $users->total() }} résultats
                         </div>
-                        <div>
-                            {{ $users->links() ?? '' }}
+                        <div class="pagination-wrapper">
+                            {{ $users->appends(request()->query())->links('pagination.bootstrap-4') }}
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -850,4 +852,62 @@ document.getElementById('createUserForm').addEventListener('submit', function(e)
     });
 });
 </script>
+
+@push('styles')
+<style>
+/* Styles pour la pagination */
+.pagination-wrapper {
+    margin-top: 0;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.pagination .page-link {
+    color: #007bff;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination .page-link:hover {
+    color: #0056b3;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pagination .page-item.disabled .page-link:hover {
+    transform: none;
+    box-shadow: none;
+}
+</style>
+@endpush
 @endsection
