@@ -658,17 +658,26 @@
                                         <?php endif; ?>
                                     </div>
                                     <div class="tab-pane fade" id="nav-ficheTech" role="tabpanel" aria-labelledby="nav-ficheTech-tab" tabindex="0">
-                                        <h5 class="fw-bold mb-3">Fiche Technique</h5>
-                                        <table class="table table-striped">
+                                        <h5 class="fw-bold mb-4">Fiche Technique</h5>
+                                        
+                                        <!-- Informations générales -->
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Informations Générales</h6>
+                                        <table class="table table-striped table-hover mb-4">
                                             <tbody>
                                                 <tr>
-                                                    <th>Nom</th>
+                                                    <th style="width: 35%;">Nom du produit</th>
                                                     <td><?php echo e($product->name); ?></td>
                                                 </tr>
                                                 <?php if($product->brand): ?>
                                                 <tr>
                                                     <th>Marque</th>
                                                     <td><?php echo e($product->brand); ?></td>
+                                                </tr>
+                                                <?php endif; ?>
+                                                <?php if($product->model): ?>
+                                                <tr>
+                                                    <th>Modèle</th>
+                                                    <td><?php echo e($product->model); ?></td>
                                                 </tr>
                                                 <?php endif; ?>
                                                 <?php if($product->category || ($product->categories && $product->categories->count() > 0)): ?>
@@ -685,24 +694,172 @@
                                                     </td>
                                                 </tr>
                                                 <?php endif; ?>
-                                                <?php if($product->subcategory): ?>
+                                                <?php if($product->subcategories && $product->subcategories->count() > 0): ?>
+                                                <tr>
+                                                    <th>Sous-catégories</th>
+                                                    <td><?php echo e($product->subcategories->pluck('name')->implode(', ')); ?></td>
+                                                </tr>
+                                                <?php elseif($product->subcategory): ?>
                                                 <tr>
                                                     <th>Sous-catégorie</th>
                                                     <td><?php echo e($product->subcategory->name); ?></td>
                                                 </tr>
                                                 <?php endif; ?>
+                                                <?php if($product->store): ?>
                                                 <tr>
-                                                    <th>Prix</th>
-                                                    <td><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</td>
+                                                    <th>Boutique</th>
+                                                    <td><?php echo e($product->store->name); ?></td>
                                                 </tr>
+                                                <?php endif; ?>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Informations commerciales -->
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Informations Commerciales</h6>
+                                        <table class="table table-striped table-hover mb-4">
+                                            <tbody>
+                                                <tr>
+                                                    <th style="width: 35%;">Prix actuel</th>
+                                                    <td>
+                                                        <span class="fw-bold fs-5 orange-color"><?php echo e(number_format($product->price, 0, ',', ' ')); ?> FCFA</span>
+                                                        <?php if($product->old_price && $product->old_price > $product->price): ?>
+                                                            <br><small class="text-decoration-line-through text-muted"><?php echo e(number_format($product->old_price, 0, ',', ' ')); ?> FCFA</small>
+                                                            <?php
+                                                                $discountAmount = $product->old_price - $product->price;
+                                                                $discountPercent = round(($discountAmount / $product->old_price) * 100);
+                                                            ?>
+                                                            <span class="badge bg-danger ms-2">-<?php echo e($discountPercent); ?>%</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <?php if($product->old_price && $product->old_price > $product->price): ?>
+                                                <tr>
+                                                    <th>Prix avant réduction</th>
+                                                    <td><?php echo e(number_format($product->old_price, 0, ',', ' ')); ?> FCFA</td>
+                                                </tr>
+                                                <?php endif; ?>
+                                                <?php if($product->discount_percentage && $product->discount_percentage > 0): ?>
+                                                <tr>
+                                                    <th>Réduction</th>
+                                                    <td><span class="badge bg-danger"><?php echo e($product->discount_percentage); ?>%</span></td>
+                                                </tr>
+                                                <?php endif; ?>
                                                 <tr>
                                                     <th>Disponibilité</th>
-                                                    <td><?php echo e($product->stock > 0 ? number_format($product->stock, 0, ',', ' ') . ' en stock' : 'Rupture de stock'); ?></td>
+                                                    <td>
+                                                        <?php if($product->stock > 0): ?>
+                                                            <span class="badge bg-success"><?php echo e(number_format($product->stock, 0, ',', ' ')); ?> en stock</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-danger">Rupture de stock</span>
+                                                        <?php endif; ?>
+                                                    </td>
                                                 </tr>
+                                                <?php if($product->warranty): ?>
                                                 <tr>
-                                                    <th>Note</th>
-                                                    <td><?php echo e($product->rating); ?>/5 (<?php echo e($product->reviews_count); ?> avis)</td>
+                                                    <th>Garantie</th>
+                                                    <td><?php echo e($product->warranty); ?></td>
                                                 </tr>
+                                                <?php endif; ?>
+                                                <tr>
+                                                    <th>Note moyenne</th>
+                                                    <td>
+                                                        <span class="fw-bold"><?php echo e(number_format($product->rating, 1)); ?>/5</span>
+                                                        <?php for($i = 1; $i <= 5; $i++): ?>
+                                                            <i class="fa-solid fa-star <?php echo e($i <= floor($product->rating) ? 'text-warning' : 'text-secondary'); ?> fs-7"></i>
+                                                        <?php endfor; ?>
+                                                        <span class="text-muted ms-2">(<?php echo e($product->reviews_count); ?> avis)</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Attributs techniques -->
+                                        <?php if($product->attributeValues && $product->attributeValues->count() > 0): ?>
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Caractéristiques Techniques</h6>
+                                        <table class="table table-striped table-hover mb-4">
+                                            <tbody>
+                                                <?php
+                                                    $groupedAttributes = $product->attributeValues->groupBy(function($item) {
+                                                        return $item->attribute->name ?? 'Autres';
+                                                    });
+                                                ?>
+                                                <?php $__currentLoopData = $groupedAttributes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attributeName => $values): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <tr>
+                                                        <th style="width: 35%;"><?php echo e($attributeName); ?></th>
+                                                        <td>
+                                                            <?php $__currentLoopData = $values; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                                <span class="badge bg-primary me-1 mb-1"><?php echo e($value->value); ?></span>
+                                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            </tbody>
+                                        </table>
+                                        <?php endif; ?>
+
+                                        <!-- Attributs JSON (si disponibles) -->
+                                        <?php if($product->attributes && is_array($product->attributes) && count($product->attributes) > 0): ?>
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Caractéristiques Supplémentaires</h6>
+                                        <table class="table table-striped table-hover mb-4">
+                                            <tbody>
+                                                <?php $__currentLoopData = $product->attributes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <?php if($value !== null && $value !== ''): ?>
+                                                        <tr>
+                                                            <th style="width: 35%;"><?php echo e(ucfirst(str_replace('_', ' ', $key))); ?></th>
+                                                            <td>
+                                                                <?php if(is_array($value)): ?>
+                                                                    <?php echo e(implode(', ', $value)); ?>
+
+                                                                <?php else: ?>
+                                                                    <?php echo e($value); ?>
+
+                                                                <?php endif; ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endif; ?>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            </tbody>
+                                        </table>
+                                        <?php endif; ?>
+
+                                        <!-- Tags -->
+                                        <?php if($product->tags && is_array($product->tags) && count($product->tags) > 0): ?>
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Tags</h6>
+                                        <div class="mb-4">
+                                            <?php $__currentLoopData = $product->tags; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tag): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <span class="badge bg-secondary me-1 mb-1"><?php echo e($tag); ?></span>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </div>
+                                        <?php endif; ?>
+
+                                        <!-- Informations complémentaires -->
+                                        <h6 class="fw-bold mb-3 text-uppercase" style="color: var(--main-color); font-size: 0.9rem;">Informations Complémentaires</h6>
+                                        <table class="table table-striped table-hover">
+                                            <tbody>
+                                                <?php if($product->is_featured): ?>
+                                                <tr>
+                                                    <th style="width: 35%;">Boutique</th>
+                                                    <td><span class="badge blue-bg text-white">Boutique Officielle</span></td>
+                                                </tr>
+                                                <?php endif; ?>
+                                                <?php if($product->is_new): ?>
+                                                <tr>
+                                                    <th>Statut</th>
+                                                    <td><span class="badge bg-info">Nouveau</span></td>
+                                                </tr>
+                                                <?php endif; ?>
+                                                <?php if($product->is_trending): ?>
+                                                <tr>
+                                                    <th>Tendance</th>
+                                                    <td><span class="badge bg-warning text-dark">Tendance</span></td>
+                                                </tr>
+                                                <?php endif; ?>
+                                                <?php if($product->is_best_offer): ?>
+                                                <tr>
+                                                    <th>Offre</th>
+                                                    <td><span class="badge bg-danger">Meilleure Offre</span></td>
+                                                </tr>
+                                                <?php endif; ?>
                                             </tbody>
                                         </table>
                                     </div>
