@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
@@ -233,7 +232,7 @@ Route::get('/authentification', function () {
 // Route web pour vérifier le code de connexion (avec session)
 Route::post('/verify-login-code', [App\Http\Controllers\AuthController::class, 'verifyLoginCode'])
     ->middleware('web')
-    ->name('web.verify-login-code');
+    ->name('verify-login-code');
 
 Route::middleware('guest')->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
@@ -306,7 +305,7 @@ Route::middleware(['web', \Illuminate\Foundation\Http\Middleware\ValidateCsrfTok
 
 // Route favoris - Redirige vers l'onglet favoris du profil
 Route::get('/favoris', function() {
-    return redirect()->to(route('profil') . '#favorites');
+    return redirect()->route('profil') . '#favorites';
 })->name('favorites');
 
 // Routes avis (WEB - Sessions + API - Tokens)

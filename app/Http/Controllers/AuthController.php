@@ -106,11 +106,23 @@ class AuthController extends Controller
         }
 
         try {
-            // Créer l'utilisateur
+            // Normaliser l'email (trim + lowercase) avant de créer l'utilisateur
+            $email = strtolower(trim($request->email));
+            
+            // Vérifier à nouveau l'unicité avec l'email normalisé
+            if (User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cette adresse email est déjà utilisée. Avez-vous déjà un compte ?',
+                    'errors' => ['email' => ['Cette adresse email est déjà utilisée. Avez-vous déjà un compte ?']]
+                ], 422);
+            }
+            
+            // Créer l'utilisateur avec l'email normalisé
             $user = User::create([
                 'nom' => $request->nom,
                 'prenoms' => $request->prenoms,
-                'email' => $request->email,
+                'email' => $email,
                 'telephone' => $request->telephone,
                 'password' => Hash::make($request->password),
                 'termes_condition' => $request->boolean('termes_condition'),
@@ -172,7 +184,11 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        // Normaliser l'email (trim + lowercase) pour éviter les problèmes de casse
+        $email = strtolower(trim($request->email));
+        
+        // Recherche insensible à la casse de l'utilisateur
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
 
         if (!$user) {
             return response()->json([
@@ -340,7 +356,10 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $authCode = AuthCode::where('email', $request->email)
+        // Normaliser l'email (trim + lowercase) pour éviter les problèmes de casse
+        $email = strtolower(trim($request->email));
+        
+        $authCode = AuthCode::whereRaw('LOWER(TRIM(email)) = ?', [$email])
                            ->where('code', $request->code)
                            ->where('type', 'login')
                            ->unused()
@@ -349,7 +368,7 @@ class AuthController extends Controller
 
         if (!$authCode) {
             // Vérifier si le code existe mais est expiré
-            $expiredCode = AuthCode::where('email', $request->email)
+            $expiredCode = AuthCode::whereRaw('LOWER(TRIM(email)) = ?', [$email])
                                  ->where('code', $request->code)
                                  ->where('type', 'login')
                                  ->first();
@@ -369,7 +388,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -377,18 +396,46 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Marquer le code comme utilisé
-        $authCode->markAsUsed();
+        // Détecter si c'est une requête API (mobile) ou web
+        // Les routes web ont toujours accès aux sessions via le middleware 'web'
+        // Les routes API n'ont pas de sessions et utilisent des tokens
+        $isApiRoute = $request->is('api/*');
+        
+        // Vérifier si c'est une vraie app mobile
+        $userAgent = $request->header('User-Agent', '');
+        $isMobileApp = strpos($userAgent, 'Dart') !== false 
+            || strpos($userAgent, 'Flutter') !== false
+            || $request->header('X-Mobile-App') === 'true';
+        
+        // Pour les routes API mobiles, utiliser les tokens Sanctum (pas de session)
+        if ($isApiRoute && $isMobileApp) {
+            try {
+                // Créer le token AVANT de marquer le code comme utilisé
+                $token = $user->createToken('mobile-app')->plainTextToken;
+                
+                // Marquer le code comme utilisé seulement après succès
+                $authCode->markAsUsed();
 
-        // Créer un token Sanctum pour Flutter/mobile
-        $token = $user->createToken('mobile-app')->plainTextToken;
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
+                    'token' => $token
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur création token dans verifyLoginCodeApi: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la création du token: ' . $e->getMessage()
+                ], 500);
+            }
+        }
 
+        // Si on arrive ici, ce n'est pas une route API mobile, retourner une erreur
         return response()->json([
-            'success' => true,
-            'message' => 'Connexion réussie',
-            'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
-            'token' => $token
-        ]);
+            'success' => false,
+            'message' => 'Cette route est réservée aux applications mobiles'
+        ], 403);
     }
 
     /**
@@ -440,7 +487,10 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $authCode = AuthCode::where('email', $request->email)
+        // Normaliser l'email (trim + lowercase) pour éviter les problèmes de casse
+        $email = strtolower(trim($request->email));
+        
+        $authCode = AuthCode::whereRaw('LOWER(TRIM(email)) = ?', [$email])
                            ->where('code', $request->code)
                            ->where('type', 'login')
                            ->unused()
@@ -449,7 +499,7 @@ class AuthController extends Controller
 
         if (!$authCode) {
             // Vérifier si le code existe mais est expiré
-            $expiredCode = AuthCode::where('email', $request->email)
+            $expiredCode = AuthCode::whereRaw('LOWER(TRIM(email)) = ?', [$email])
                                  ->where('code', $request->code)
                                  ->where('type', 'login')
                                  ->first();
@@ -469,7 +519,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -540,6 +590,68 @@ class AuthController extends Controller
         // C'est nécessaire car les routes API n'ont pas le middleware StartSession
         // qui ajoute automatiquement le cookie
         return $this->addSessionCookieToResponse($response, $request);
+
+        // Route web : utiliser les sessions (route web a toujours accès aux sessions)
+        try {
+            // La route web a toujours accès aux sessions via le middleware 'web'
+            // Régénérer la session AVANT le login pour éviter les problèmes
+            $request->session()->regenerate();
+            
+            // Connecter l'utilisateur avec "remember" pour une session persistante
+            Auth::login($user, true);
+            
+            // Régénérer le token CSRF
+            $request->session()->regenerateToken();
+            $request->session()->save();
+
+            // Marquer le code comme utilisé après succès
+            $authCode->markAsUsed();
+
+            // Vérifier que l'utilisateur est bien connecté
+            \Log::info('Utilisateur connecté via session web: ' . Auth::id());
+            \Log::info('Session ID: ' . $request->session()->getId());
+            \Log::info('Auth check: ' . (Auth::check() ? 'true' : 'false'));
+
+            // Si c'est une requête AJAX, retourner JSON pour redirection JavaScript
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone']),
+                    'redirect' => route('accueil'),
+                    'authenticated' => Auth::check(),
+                    'session_id' => $request->session()->getId()
+                ]);
+            }
+            
+            // Sinon, redirection HTTP directe
+            return redirect()->route('accueil')
+                ->with('success', 'Connexion réussie ! Bienvenue ' . $user->prenoms);
+        } catch (\Exception $e) {
+            // Si la session échoue, utiliser un token comme fallback
+            \Log::warning('Erreur session dans verifyLoginCode, utilisation du token: ' . $e->getMessage());
+            
+            try {
+                $token = $user->createToken('web-app')->plainTextToken;
+                
+                // Marquer le code comme utilisé après succès
+                $authCode->markAsUsed();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                    'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
+                ]);
+            } catch (\Exception $tokenError) {
+                \Log::error('Erreur création token de fallback: ' . $tokenError->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la connexion: ' . $tokenError->getMessage()
+                ], 500);
+            }
+        }
     }
 
     /**
@@ -558,7 +670,16 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        // Normaliser l'email (trim + lowercase) pour éviter les problèmes de casse
+        $email = strtolower(trim($request->email));
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun compte trouvé avec cette adresse email.'
+            ], 404);
+        }
         
         // Créer un token de réinitialisation
         $resetToken = Str::random(64);
@@ -667,7 +788,9 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        // Normaliser l'email (trim + lowercase) pour éviter les problèmes de casse
+        $email = strtolower(trim($request->email));
+        $user = User::whereRaw('LOWER(TRIM(email)) = ?', [$email])->first();
         
         if (!$user) {
             return response()->json([
@@ -706,9 +829,14 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        $user = $request->user();
+        
         return response()->json([
             'success' => true,
-            'user' => $request->user()->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified'])
+            'user' => array_merge(
+                $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'is_verified', 'is_seller']),
+                ['has_store' => $user->store()->exists()]
+            )
         ]);
     }
 

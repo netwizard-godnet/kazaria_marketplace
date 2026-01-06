@@ -59,6 +59,7 @@ Route::prefix('favorites')->group(function () {
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
 // Routes de commande (API - Tokens pour Flutter)
+// Pour mobile : utiliser auth:sanctum
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
@@ -92,6 +93,7 @@ Route::post('/contact', [App\Http\Controllers\ContactController::class, 'sendMes
 
 // Routes API pour le dashboard vendeur
 Route::middleware('auth:sanctum')->prefix('store')->group(function () {
+    Route::get('/info', [App\Http\Controllers\StoreController::class, 'getStoreInfo']);
     Route::get('/stats', [App\Http\Controllers\StoreController::class, 'getStats']);
     Route::get('/recent-orders', [App\Http\Controllers\StoreController::class, 'getRecentOrders']);
     Route::get('/products', [App\Http\Controllers\StoreController::class, 'getProducts']);
@@ -126,4 +128,22 @@ Route::middleware('auth:sanctum')->prefix('store')->group(function () {
 
 // Route pour récupérer les sous-catégories d'une catégorie
 Route::get('/categories/{categoryId}/subcategories', [App\Http\Controllers\Admin\CategoryController::class, 'getSubcategories']);
+
+// Routes API mobiles
+Route::prefix('mobile')->group(function () {
+    Route::get('/home-data', [App\Http\Controllers\MobileController::class, 'getHomeData']);
+    Route::get('/categories', [App\Http\Controllers\MobileController::class, 'getCategories']);
+    Route::get('/products', [App\Http\Controllers\MobileController::class, 'getProducts']);
+    Route::get('/products/{id}', [App\Http\Controllers\MobileController::class, 'getProductDetails']);
+    Route::get('/banners', [App\Http\Controllers\MobileController::class, 'getBanners']);
+    Route::get('/stores', [App\Http\Controllers\MobileController::class, 'getStores']);
+    Route::get('/stores/verified', [App\Http\Controllers\MobileController::class, 'getVerifiedStores']);
+    Route::get('/stores/popular', [App\Http\Controllers\MobileController::class, 'getPopularStores']);
+    Route::get('/stores/best-offers', [App\Http\Controllers\MobileController::class, 'getBestOffersStores']);
+    Route::get('/stores/new-products', [App\Http\Controllers\MobileController::class, 'getNewProductsStores']);
+    Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
+    Route::get('/stores/{id}/products', [App\Http\Controllers\MobileController::class, 'getStoreProducts']);
+    Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);
+    Route::get('/brands', [App\Http\Controllers\MobileController::class, 'getBrands']);
+});
 
