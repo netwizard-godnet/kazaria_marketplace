@@ -72,11 +72,16 @@ class AuthController extends Controller
             (string)(config('session.same_site', 'lax') ?? 'lax')
         );
 
-        \Log::info('addSessionCookieToResponse: Cookie de session créé', [
+        \Log::info('🍪 [SESSION COOKIE] Cookie de session créé et envoyé', [
             'session_name' => $sessionName,
+            'session_id' => substr($sessionId, 0, 15) . '...',
             'session_id_length' => strlen($sessionId),
+            'lifetime_minutes' => config('session.lifetime'),
             'secure' => $secure,
-            'same_site' => config('session.same_site', 'lax')
+            'same_site' => config('session.same_site', 'lax'),
+            'path' => config('session.path', '/'),
+            'domain' => config('session.domain'),
+            'timestamp' => now()->toDateTimeString(),
         ]);
 
         return $response->withCookie($cookie);
@@ -266,9 +271,14 @@ class AuthController extends Controller
                         $session->start();
                     }
                     
-                    \Log::info('Login: Session démarrée', [
-                        'session_id' => substr($session->getId(), 0, 10) . '...',
-                        'user_id' => $user->id
+                    \Log::info('🔐 [LOGIN] Session démarrée pour connexion', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'session_id' => substr($session->getId(), 0, 15) . '...',
+                        'session_started' => $session->isStarted(),
+                        'cookie_present' => $request->cookies->has($session->getName()),
+                        'remember' => $request->has('remember'),
+                        'timestamp' => now()->toDateTimeString(),
                     ]);
                     
                     // Connecter l'utilisateur dans la session
@@ -280,10 +290,12 @@ class AuthController extends Controller
                     $request->session()->regenerate();
                     $newSessionId = $session->getId();
                     
-                    \Log::info('Login: Session régénérée', [
-                        'old_session_id' => substr($oldSessionId, 0, 10) . '...',
-                        'new_session_id' => substr($newSessionId, 0, 10) . '...',
-                        'user_id' => $user->id
+                    \Log::info('🔄 [LOGIN] Session régénérée après connexion', [
+                        'user_id' => $user->id,
+                        'old_session_id' => substr($oldSessionId, 0, 15) . '...',
+                        'new_session_id' => substr($newSessionId, 0, 15) . '...',
+                        'password_hash_stored' => $request->session()->has('password_hash_web'),
+                        'timestamp' => now()->toDateTimeString(),
                     ]);
                     
                     // Stocker le hash du mot de passe dans la session APRÈS la régénération
@@ -319,10 +331,14 @@ class AuthController extends Controller
                     // Sauvegarder la session pour s'assurer qu'elle est persistée
                     $request->session()->save();
                     
-                    \Log::info('Login: Session sauvegardée', [
-                        'session_id' => substr($session->getId(), 0, 10) . '...',
+                    \Log::info('✅ [LOGIN] Connexion réussie - Session sauvegardée', [
                         'user_id' => $user->id,
-                        'auth_check' => Auth::check()
+                        'user_email' => $user->email,
+                        'session_id' => substr($session->getId(), 0, 15) . '...',
+                        'auth_check' => Auth::check(),
+                        'password_hash_present' => $request->session()->has('password_hash_web'),
+                        'session_started' => $session->isStarted(),
+                        'timestamp' => now()->toDateTimeString(),
                     ]);
 
                     // Créer la réponse JSON
@@ -565,9 +581,12 @@ class AuthController extends Controller
             $session->start();
         }
         
-        \Log::info('verifyLoginCode: Session démarrée', [
-            'session_id' => substr($session->getId(), 0, 10) . '...',
-            'user_id' => $user->id
+        \Log::info('🔐 [VERIFY CODE] Session démarrée pour vérification code', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'session_id' => substr($session->getId(), 0, 15) . '...',
+            'session_started' => $session->isStarted(),
+            'timestamp' => now()->toDateTimeString(),
         ]);
         
         // Connecter l'utilisateur dans la session
@@ -578,10 +597,12 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $newSessionId = $session->getId();
         
-        \Log::info('verifyLoginCode: Session régénérée', [
-            'old_session_id' => substr($oldSessionId, 0, 10) . '...',
-            'new_session_id' => substr($newSessionId, 0, 10) . '...',
-            'user_id' => $user->id
+        \Log::info('🔄 [VERIFY CODE] Session régénérée après vérification', [
+            'user_id' => $user->id,
+            'old_session_id' => substr($oldSessionId, 0, 15) . '...',
+            'new_session_id' => substr($newSessionId, 0, 15) . '...',
+            'password_hash_stored' => $request->session()->has('password_hash_web'),
+            'timestamp' => now()->toDateTimeString(),
         ]);
         
         // Stocker le hash du mot de passe dans la session APRÈS la régénération
@@ -617,10 +638,14 @@ class AuthController extends Controller
         // Sauvegarder la session pour s'assurer qu'elle est persistée
         $request->session()->save();
         
-        \Log::info('verifyLoginCode: Session sauvegardée', [
-            'session_id' => substr($session->getId(), 0, 10) . '...',
+        \Log::info('✅ [VERIFY CODE] Connexion réussie après vérification - Session sauvegardée', [
             'user_id' => $user->id,
-            'auth_check' => Auth::check()
+            'user_email' => $user->email,
+            'session_id' => substr($session->getId(), 0, 15) . '...',
+            'auth_check' => Auth::check(),
+            'password_hash_present' => $request->session()->has('password_hash_web'),
+            'session_started' => $session->isStarted(),
+            'timestamp' => now()->toDateTimeString(),
         ]);
 
         // Créer la réponse JSON
