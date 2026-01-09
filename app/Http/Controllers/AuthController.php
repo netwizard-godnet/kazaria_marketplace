@@ -40,6 +40,22 @@ class AuthController extends Controller
             return $response;
         }
         
+        // ⚠️ CRITIQUE : S'assurer que password_hash_web est présent si l'utilisateur est connecté
+        // Cela évite que AuthenticateSession ne déconnecte l'utilisateur après l'envoi du cookie
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            if ($user && $user->getAuthPassword()) {
+                if (!$session->has('password_hash_web') || 
+                    !hash_equals($session->get('password_hash_web'), $user->getAuthPassword())) {
+                    $session->put('password_hash_web', $user->getAuthPassword());
+                    \Log::warning('🔧 [SESSION COOKIE] password_hash_web ajouté avant envoi cookie', [
+                        'user_id' => $user->id,
+                        'session_id' => substr($session->getId(), 0, 15) . '...',
+                    ]);
+                }
+            }
+        }
+        
         // Sauvegarder la session pour s'assurer qu'elle est persistée
         $session->save();
         
@@ -735,9 +751,30 @@ class AuthController extends Controller
             'password_reset_expires_at' => null,
         ]);
 
+        // ⚠️ CRITIQUE : Invalider toutes les sessions existantes après changement de mot de passe
+        // Cela force l'utilisateur à se reconnecter avec le nouveau mot de passe
+        // et évite que les anciennes sessions (avec l'ancien password_hash) ne restent actives
+        if ($request->hasSession()) {
+            $session = $request->session();
+            // Si l'utilisateur est connecté, le déconnecter
+            if (Auth::check() && Auth::id() === $user->id) {
+                Auth::logout();
+                $session->invalidate();
+                $session->regenerateToken();
+            }
+        }
+        
+        // Supprimer tous les tokens Sanctum de l'utilisateur pour forcer la reconnexion
+        $user->tokens()->delete();
+        
+        \Log::info('✅ [PASSWORD RESET] Mot de passe réinitialisé - Sessions invalidées', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+        ]);
+
         return response()->json([
             'success' => true,
-            'message' => 'Mot de passe réinitialisé avec succès'
+            'message' => 'Mot de passe réinitialisé avec succès. Veuillez vous reconnecter.'
         ]);
     }
 
@@ -813,7 +850,21 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Supprimer le token Sanctum si présent
+        if ($request->user()) {
+            $request->user()->currentAccessToken()?->delete();
+        }
+        
+        // Si c'est une requête web avec session, déconnecter aussi la session
+        if ($request->hasSession() && Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            \Log::info('✅ [LOGOUT] Déconnexion session web', [
+                'user_id' => Auth::id(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,

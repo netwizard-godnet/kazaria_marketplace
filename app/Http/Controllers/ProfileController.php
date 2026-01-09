@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Product;
@@ -164,16 +165,44 @@ class ProfileController extends Controller
         }
 
         try {
+            $oldPasswordHash = $user->getAuthPassword();
+            
+            // Mettre à jour le mot de passe
             $user->update([
                 'password' => Hash::make($request->new_password)
+            ]);
+            
+            // ⚠️ CRITIQUE : Mettre à jour password_hash_web dans la session actuelle
+            // pour éviter que AuthenticateSession ne déconnecte l'utilisateur
+            if ($request->hasSession()) {
+                $request->session()->put('password_hash_web', $user->getAuthPassword());
+                $request->session()->save();
+                
+                \Log::info('✅ [PASSWORD CHANGE] Mot de passe changé - Session actuelle mise à jour', [
+                    'user_id' => $user->id,
+                    'session_id' => substr($request->session()->getId(), 0, 15) . '...',
+                ]);
+            }
+            
+            // Supprimer tous les tokens Sanctum pour forcer la reconnexion sur les autres appareils
+            // La session actuelle reste active car password_hash_web a été mis à jour
+            $user->tokens()->delete();
+            
+            \Log::info('✅ [PASSWORD CHANGE] Tous les tokens invalidés', [
+                'user_id' => $user->id,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mot de passe mis à jour avec succès'
+                'message' => 'Mot de passe mis à jour avec succès. Tous vos autres appareils ont été déconnectés pour des raisons de sécurité.'
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('❌ [PASSWORD CHANGE] Erreur lors du changement de mot de passe', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour du mot de passe'
@@ -307,8 +336,8 @@ class ProfileController extends Controller
                 $old = $user->profile_pic_url;
                 if ($old && !preg_match('/^https?:\/\//i', $old)) {
                     $oldPath = public_path($old);
-                    if (is_file($oldPath)) {
-                        @unlink($oldPath);
+                    if ($old && File::exists($oldPath)) {
+                        File::delete($oldPath);
                     }
                 }
                 
@@ -590,16 +619,31 @@ class ProfileController extends Controller
         }
 
         try {
+            // Mettre à jour le mot de passe
             $user->update([
                 'password' => Hash::make($request->new_password)
+            ]);
+            
+            // ⚠️ CRITIQUE : Pour les requêtes API avec token, on ne peut pas mettre à jour la session
+            // car il n'y a pas de session web. On supprime simplement tous les tokens.
+            // L'utilisateur devra se reconnecter avec le nouveau mot de passe.
+            $user->tokens()->delete();
+            
+            \Log::info('✅ [PASSWORD CHANGE API] Mot de passe changé - Tous les tokens invalidés', [
+                'user_id' => $user->id,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mot de passe mis à jour avec succès'
+                'message' => 'Mot de passe mis à jour avec succès. Veuillez vous reconnecter avec votre nouveau mot de passe.'
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('❌ [PASSWORD CHANGE API] Erreur lors du changement de mot de passe', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la mise à jour du mot de passe'

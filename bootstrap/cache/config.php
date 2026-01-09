@@ -752,11 +752,8 @@
     'stateful' => 
     array (
       0 => 'localhost',
-      1 => 'localhost:3000',
-      2 => '127.0.0.1',
-      3 => '127.0.0.1:8000',
-      4 => '::1',
-      5 => 'kazaria-ci.com',
+      1 => '127.0.0.1',
+      2 => 'kazaria-ci.com',
     ),
     'guard' => 
     array (

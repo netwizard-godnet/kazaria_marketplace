@@ -93,8 +93,20 @@
                             
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>
-                                <span class="text-success fw-bold">Gratuite</span>
+                                <?php if(($shippingCost ?? 0) > 0): ?>
+                                    <span class="fw-bold"><?php echo e(number_format($shippingCost, 0, ',', ' ')); ?> FCFA</span>
+                                <?php else: ?>
+                                    <span class="text-success fw-bold">Gratuite</span>
+                                <?php endif; ?>
                             </div>
+                            
+                            <?php if(isset($freeThreshold) && $freeThreshold > 0 && $subtotal < $freeThreshold): ?>
+                            <div class="small text-muted mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Livraison gratuite à partir de <?php echo e(number_format($freeThreshold, 0, ',', ' ')); ?> FCFA
+                                (<?php echo e(number_format($freeThreshold - $subtotal, 0, ',', ' ')); ?> FCFA restants)
+                            </div>
+                            <?php endif; ?>
                             
                             <hr>
                             

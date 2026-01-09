@@ -97,9 +97,23 @@ class ProfileController extends Controller
         $user->update([
             'password' => Hash::make($request->password),
         ]);
+        
+        // ⚠️ CRITIQUE : Mettre à jour password_hash_web dans la session actuelle
+        // pour éviter que AuthenticateSession ne déconnecte l'utilisateur
+        if ($request->hasSession()) {
+            $request->session()->put('password_hash_web', $user->getAuthPassword());
+            $request->session()->save();
+        }
+        
+        // Supprimer tous les tokens Sanctum pour forcer la reconnexion sur les autres appareils
+        $user->tokens()->delete();
+        
+        \Log::info('✅ [ADMIN PASSWORD CHANGE] Mot de passe admin changé', [
+            'user_id' => $user->id,
+        ]);
 
         return redirect()->route('admin.profile.index')
-            ->with('success', 'Mot de passe mis à jour avec succès.');
+            ->with('success', 'Mot de passe mis à jour avec succès. Tous vos autres appareils ont été déconnectés pour des raisons de sécurité.');
     }
 
     /**

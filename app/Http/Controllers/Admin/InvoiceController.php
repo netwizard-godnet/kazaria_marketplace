@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
 
 class InvoiceController extends Controller
@@ -304,11 +305,8 @@ class InvoiceController extends Controller
         }
 
         // Supprimer le fichier PDF associé s'il existe
-        if ($invoice->pdf_path) {
-            $pdfPath = storage_path('app/public/' . $invoice->pdf_path);
-            if (file_exists($pdfPath)) {
-                @unlink($pdfPath);
-            }
+        if ($invoice->pdf_path && File::exists(storage_path('app/public/' . $invoice->pdf_path))) {
+            File::delete(storage_path('app/public/' . $invoice->pdf_path));
         }
 
         $invoice->delete();

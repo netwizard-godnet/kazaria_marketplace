@@ -56,6 +56,19 @@ class HybridAuthMiddleware
                 if ($user) {
                     // Connecter l'utilisateur via session pour les routes web
                     Auth::guard('web')->login($user);
+                    
+                    // ⚠️ CRITIQUE : Stocker password_hash_web dans la session
+                    // pour que AuthenticateSession ne déconnecte pas l'utilisateur
+                    if ($request->hasSession()) {
+                        $request->session()->put('password_hash_web', $user->getAuthPassword());
+                        $request->session()->save();
+                        
+                        \Log::info('✅ [HYBRID AUTH] Utilisateur connecté via token - password_hash stocké', [
+                            'user_id' => $user->id,
+                            'session_id' => substr($request->session()->getId(), 0, 15) . '...',
+                        ]);
+                    }
+                    
                     return $next($request);
                 }
             } catch (\Exception $e) {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class BannerController extends Controller
 {
@@ -215,8 +216,8 @@ class BannerController extends Controller
             $banner->is_active = true;
         }
 
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            @unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         $image = $request->file('image');
@@ -253,8 +254,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -291,8 +292,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -329,8 +330,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -367,8 +368,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -405,8 +406,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -443,8 +444,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -481,8 +482,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -519,8 +520,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -557,8 +558,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -595,8 +596,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -655,8 +656,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'image du serveur
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Supprimer de la base de données
@@ -680,8 +681,8 @@ class BannerController extends Controller
         ], $this->bannerMetaRules()));
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -718,8 +719,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -756,8 +757,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -794,8 +795,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -832,8 +833,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -870,8 +871,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -908,8 +909,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -946,8 +947,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -984,8 +985,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -1022,8 +1023,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
@@ -1059,8 +1060,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
