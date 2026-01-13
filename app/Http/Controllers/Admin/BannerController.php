@@ -222,9 +222,7 @@ class BannerController extends Controller
 
         $image = $request->file('image');
         $imageName = 'header_gif_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->is_active = $request->has('is_active') ? (bool) $request->is_active : true;
         $banner->save();
@@ -261,9 +259,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'homepage_banner_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -299,9 +295,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'homepage_banner_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -337,9 +331,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -375,9 +367,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -413,9 +403,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -451,9 +439,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_4_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -489,9 +475,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_5_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -527,9 +511,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -565,9 +547,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -603,9 +583,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -636,9 +614,7 @@ class BannerController extends Controller
         // Sauvegarder l'image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_' . $nextNumber . '_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -688,9 +664,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = $banner->banner_type . '_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -726,9 +700,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -764,9 +736,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -802,9 +772,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -840,9 +808,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_4_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -878,9 +844,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_5_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -916,9 +880,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -954,9 +916,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -992,9 +952,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -1030,9 +988,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_4_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 4 mise à jour avec succès.');
@@ -1067,9 +1023,7 @@ class BannerController extends Controller
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_5_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 5 mise à jour avec succès.');
@@ -1089,5 +1043,66 @@ class BannerController extends Controller
         $banner->link_url = $request->input('link_url');
         $banner->show_on_desktop = $request->boolean('show_on_desktop', true);
         $banner->show_on_mobile = $request->boolean('show_on_mobile', true);
+    }
+
+    /**
+     * S'assure que le répertoire public/images existe et est accessible en écriture
+     * 
+     * @throws \Exception Si le répertoire ne peut pas être créé ou n'est pas accessible en écriture
+     */
+    private function ensureImagesDirectoryExists(): void
+    {
+        $imagesDir = public_path('images');
+        
+        // Créer le répertoire s'il n'existe pas
+        if (!File::exists($imagesDir)) {
+            try {
+                File::makeDirectory($imagesDir, 0755, true);
+                \Log::info('Dossier images créé', ['path' => $imagesDir]);
+            } catch (\Exception $e) {
+                \Log::error('Impossible de créer le dossier images', [
+                    'path' => $imagesDir,
+                    'error' => $e->getMessage()
+                ]);
+                throw new \Exception('Impossible de créer le répertoire images. Veuillez vérifier les permissions du répertoire public.');
+            }
+        }
+        
+        // Vérifier les permissions d'écriture
+        if (!is_writable($imagesDir)) {
+            \Log::error('Le dossier images n\'est pas accessible en écriture', [
+                'path' => $imagesDir,
+                'permissions' => substr(sprintf('%o', fileperms($imagesDir)), -4)
+            ]);
+            throw new \Exception('Le répertoire images n\'est pas accessible en écriture. Veuillez contacter l\'administrateur pour corriger les permissions.');
+        }
+    }
+
+    /**
+     * Déplace un fichier image vers le répertoire public/images de manière sécurisée
+     * 
+     * @param \Illuminate\Http\UploadedFile $image Le fichier à déplacer
+     * @param string $imageName Le nom du fichier
+     * @return string Le chemin relatif du fichier
+     * @throws \Exception Si le déplacement échoue
+     */
+    private function moveImageToPublicDirectory($image, string $imageName): string
+    {
+        // S'assurer que le répertoire existe et est accessible
+        $this->ensureImagesDirectoryExists();
+        
+        $imagesDir = public_path('images');
+        $destination = $imagesDir . '/' . $imageName;
+        
+        try {
+            $image->move($imagesDir, $imageName);
+            return 'images/' . $imageName;
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors du déplacement de l\'image', [
+                'destination' => $destination,
+                'error' => $e->getMessage()
+            ]);
+            throw new \Exception('Impossible de sauvegarder l\'image. Veuillez vérifier les permissions du répertoire images.');
+        }
     }
 }
