@@ -46,7 +46,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   List<ProductModel> _similarProducts = [];
   bool _loadingSimilar = false;
   Map<String, String> _selectedAttributes = {}; // ✅ Attributs sélectionnés
-  
+
   // ✅ Gestion des variations
   ProductVariation? _selectedVariation;
   double? _currentPrice; // Prix dynamique selon la variation
@@ -61,22 +61,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   /// Construire l'URL complète de l'image
   String _buildImageUrl(String imagePath) {
     if (imagePath.isEmpty) return '';
-    
+
     // Si l'URL est déjà complète et correcte
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-    
+
     // ✅ CORRECTION : Si c'est "http:" sans "//" (erreur commune)
     if (imagePath.startsWith('http:') && !imagePath.startsWith('http://')) {
       return imagePath.replaceFirst('http:', 'http://');
     }
-    
+
     // ✅ CORRECTION : Si c'est "https:" sans "//"
     if (imagePath.startsWith('https:') && !imagePath.startsWith('https://')) {
       return imagePath.replaceFirst('https:', 'https://');
     }
-    
+
     // Ajouter le base URL si c'est un chemin relatif
     if (imagePath.startsWith('storage/')) {
       return '${ApiConfig.imageBaseUrl}/$imagePath';
@@ -89,13 +89,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     super.initState();
     _pageController = PageController();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // ✅ Pré-remplir les attributs sélectionnés si le produit vient du panier
     if (widget.selectedAttributes != null) {
       _selectedAttributes = Map<String, String>.from(widget.selectedAttributes!);
       print('✅ [PRODUCT_DETAILS] Attributs pré-sélectionnés: $_selectedAttributes');
     }
-    
+
     // Ajouter immédiatement aux produits récents (pas de Provider)
     _addToRecentProducts();
 
@@ -117,7 +117,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       }
     });
   }
-  
+
   /// ✅ Charger les détails complets du produit depuis l'API (avec variations)
   Future<void> _loadFullProductDetails() async {
     setState(() {
@@ -131,17 +131,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       if (mounted && response['success'] == true) {
         final productData = response['data']?['product'];
         final similarProductsData = response['data']?['similar_products'] as List?;
-        
+
         if (productData != null) {
           setState(() {
             _fullProduct = ProductModel.fromJson(productData as Map<String, dynamic>);
             _isLoadingFullProduct = false;
-            
+
             print('✅ [PRODUCT_DETAILS] Produit complet chargé');
             print('   📊 hasVariations: ${_fullProduct!.hasVariations}');
             print('   📊 variations count: ${_fullProduct!.variations?.length ?? 0}');
             print('   📊 productAttributes count: ${_fullProduct!.productAttributes?.length ?? 0}');
-            
+
             // Log détaillé des attributs et variations
             if (_fullProduct!.productAttributes != null) {
               for (var attr in _fullProduct!.productAttributes!) {
@@ -151,7 +151,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 }
               }
             }
-            
+
             if (_fullProduct!.variations != null) {
               for (var variation in _fullProduct!.variations!) {
                 print('   🔄 Variation ${variation.id}: Prix=${variation.price}, Stock=${variation.stock}');
@@ -160,7 +160,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 }
               }
             }
-            
+
             // ✅ Charger les produits similaires depuis la même réponse
             if (similarProductsData != null && similarProductsData.isNotEmpty) {
               _similarProducts = similarProductsData
@@ -170,10 +170,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
               _loadingSimilar = false;
               print('✅ [SIMILAR] ${_similarProducts.length} produits similaires chargés depuis getProductDetails');
             }
-            
+
             // ✅ Sélectionner la variation par défaut si elle existe
-            if (_fullProduct!.hasVariations && 
-                _fullProduct!.defaultVariationId != null && 
+            if (_fullProduct!.hasVariations &&
+                _fullProduct!.defaultVariationId != null &&
                 _fullProduct!.variations != null) {
               final defaultVar = _fullProduct!.variations!.firstWhere(
                 (v) => v.id == _fullProduct!.defaultVariationId,
@@ -229,7 +229,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         _currentOldPrice = variation.oldPrice;
         _currentStock = variation.stock;
         // _currentImage = variation.image; // TODO: utiliser pour changer l'image affichée
-        
+
         print('✅ [PRODUCT_DETAILS] Variation changée: ID=${variation.id}, Prix=${variation.price}, Stock=${variation.stock}');
       } else {
         // Remettre les valeurs du produit de base
@@ -237,7 +237,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         _currentOldPrice = null;
         _currentStock = null;
         // _currentImage = null;
-        
+
         print('ℹ️ [PRODUCT_DETAILS] Aucune variation sélectionnée');
       }
       });
@@ -249,19 +249,19 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     final product = _fullProduct ?? widget.product;
     return _currentPrice ?? product.price;
   }
-  
+
   /// ✅ Obtenir l'ancien prix affiché
   double? get _displayOldPrice {
     final product = _fullProduct ?? widget.product;
     return _currentOldPrice ?? product.oldPrice;
   }
-  
+
   /// ✅ Obtenir le stock affiché
   int get _displayStock {
     final product = _fullProduct ?? widget.product;
     return _currentStock ?? product.stock;
   }
-  
+
   /// ✅ Vérifie si il y a une réduction
   bool get _hasDiscount => _displayOldPrice != null && _displayOldPrice! > _displayPrice;
 
@@ -368,7 +368,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   Widget _buildSliverAppBar(List<String> images) {
     // ✅ Utiliser le produit complet chargé depuis l'API si disponible
     final product = _fullProduct ?? widget.product;
-    
+
     return SliverAppBar(
       expandedHeight: 350,
       pinned: true,
@@ -634,7 +634,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   Widget _buildMainInfo() {
     // ✅ Utiliser le produit complet chargé depuis l'API si disponible
     final product = _fullProduct ?? widget.product;
-    
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1046,7 +1046,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           _buildDeliveryOption(
             icon: Icons.delivery_dining,
             title: 'Livraison standard',
-            description: 'Livraison gratuite dès 50 000 FCFA',
+            description: 'Livraison a partir de 1000 FCFA',
             color: AppColors.success,
           ),
           const SizedBox(height: 12),
@@ -1223,7 +1223,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   /// 🎯 Alerte de stock visuelle (banner) - utilise le stock dynamique
   Widget _buildStockAlert() {
     final stock = _displayStock; // ✅ Utiliser le stock dynamique
-    
+
     String message;
     Color bgColor;
     Color textColor;
@@ -1293,7 +1293,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     final isInCart = cartProvider.isInCart(product.id);
     final quantityInCart = cartProvider.getProductQuantity(product.id);
     final stock = _displayStock; // ✅ Utiliser le stock dynamique
-    
+
     // ✅ Vérifier si on vient du panier (attributs pré-sélectionnés)
     final isFromCart = widget.selectedAttributes != null && widget.selectedAttributes!.isNotEmpty;
 

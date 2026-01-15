@@ -30,13 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Routes protégées par authentification (suite)
-// Route pour l'activité récente (support session et token)
-Route::middleware(['web', 'auth'])->group(function () {
-    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
-});
-
 Route::middleware('auth:sanctum')->group(function () {
-    // Autres routes API avec tokens uniquement
+    // Route pour la photo de profil (API - Tokens pour Flutter)
+    Route::post('/profile/update-photo', [App\Http\Controllers\ProfileController::class, 'updatePhotoApi']);
+    // Route pour l'activité récente (API - Tokens pour Flutter)
+    Route::get('/activity/recent', [App\Http\Controllers\ProfileController::class, 'getRecentActivityApi']);
 });
 
 // Route de déconnexion publique (pour les tokens stockés côté client)
@@ -60,9 +58,11 @@ Route::prefix('favorites')->group(function () {
 // Route de mise à jour produit (API - sans CSRF pour test)
 Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\ProductController::class, 'updateProduct'])->name('store.api.products.edit');
 
-// Routes de commande (protégées)
-Route::middleware(['web', 'auth'])->group(function () {
+// Routes de commande (API - Tokens pour Flutter)
+// Pour mobile : utiliser auth:sanctum
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
+    Route::get('/orders/count', [App\Http\Controllers\OrderController::class, 'getOrdersCount']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
 });
@@ -75,6 +75,8 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/products/{productId}/reviews', [App\Http\Controllers\ReviewController::class, 'getProductReviews']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store']);
+    Route::get('/reviews/my-reviews', [App\Http\Controllers\ReviewController::class, 'getMyReviews']);
+    Route::get('/reviews/my-reviews-count', [App\Http\Controllers\ReviewController::class, 'getMyReviewsCount']);
 });
 Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::class, 'vote']);
 
@@ -137,6 +139,7 @@ Route::prefix('mobile')->group(function () {
     Route::get('/banners', [App\Http\Controllers\MobileController::class, 'getBanners']);
     Route::get('/stores', [App\Http\Controllers\MobileController::class, 'getStores']);
     Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
+    Route::get('/stores/boutique-pub-banners', [App\Http\Controllers\MobileController::class, 'getBoutiquePubBanners']);
     Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);
 });
 

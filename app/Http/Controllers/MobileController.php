@@ -8,6 +8,7 @@ use App\Models\Store;
 use App\Models\Banner;
 use App\Models\CarouselSlide;
 use App\Models\Brand;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -37,6 +38,7 @@ class MobileController extends Controller
                         'description' => $category->description,
                         'is_active' => $category->is_active ?? true,
                         'order' => $category->order ?? 0,
+                        'custom_banners' => $this->formatCategoryBanners($category->custom_banners),
                         'subcategories' => $category->subcategories->map(function ($subcategory) {
                             return [
                                 'id' => $subcategory->id,
@@ -439,6 +441,53 @@ class MobileController extends Controller
     }
 
     /**
+     * Récupérer les détails d'une catégorie avec ses bannières personnalisées
+     */
+    public function getCategoryDetails($id, Request $request)
+    {
+        try {
+            $category = Category::where('id', $id)
+                ->where('is_active', true)
+                ->with(['subcategories' => function ($query) {
+                    $query->where('is_active', true)->orderBy('order', 'asc');
+                }])
+                ->firstOrFail();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                    'image' => $category->image ? asset('storage/' . $category->image) : null,
+                    'icon' => $category->icon,
+                    'description' => $category->description,
+                    'is_active' => $category->is_active ?? true,
+                    'order' => $category->order ?? 0,
+                    'custom_banners' => $this->formatCategoryBanners($category->custom_banners),
+                    'subcategories' => $category->subcategories->map(function ($subcategory) {
+                        return [
+                            'id' => $subcategory->id,
+                            'category_id' => $subcategory->category_id,
+                            'name' => $subcategory->name,
+                            'slug' => $subcategory->slug,
+                            'image' => $subcategory->image ? asset('storage/' . $subcategory->image) : null,
+                            'icon' => $subcategory->icon,
+                            'is_active' => $subcategory->is_active ?? true,
+                            'order' => $subcategory->order ?? 0,
+                        ];
+                    }),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Catégorie introuvable: ' . $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
      * Récupérer les produits pour mobile
      */
     public function getProducts(Request $request)
@@ -446,9 +495,19 @@ class MobileController extends Controller
         try {
             $query = Product::active()->inStock()->with(['category', 'store']);
 
+            // Variable pour stocker les bannières de catégorie si on filtre par category_id
+            $categoryBanners = [];
+
             // Filtres
             if ($request->has('category_id')) {
-                $query->where('category_id', $request->category_id);
+                $categoryId = $request->category_id;
+                $query->where('category_id', $categoryId);
+                
+                // Récupérer les bannières personnalisées de la catégorie
+                $category = Category::find($categoryId);
+                if ($category) {
+                    $categoryBanners = $this->formatCategoryBanners($category->custom_banners);
+                }
             }
 
             if ($request->has('store_id')) {
@@ -531,7 +590,7 @@ class MobileController extends Controller
             $perPage = $request->get('limit', 20);
             $products = $query->paginate($perPage);
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'data' => collect($products->items())->map(function ($product) {
                     return $this->formatProduct($product);
@@ -542,7 +601,14 @@ class MobileController extends Controller
                     'per_page' => $products->perPage(),
                     'total' => $products->total(),
                 ],
-            ]);
+            ];
+
+            // Ajouter les bannières de catégorie si disponibles
+            if (!empty($categoryBanners)) {
+                $response['category_banners'] = $categoryBanners;
+            }
+
+            return response()->json($response);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1334,6 +1400,30 @@ class MobileController extends Controller
     }
 
     /**
+     * Formater les bannières personnalisées d'une catégorie
+     */
+    private function formatCategoryBanners($customBanners): array
+    {
+        if (!$customBanners || !is_array($customBanners)) {
+            return [];
+        }
+
+        return collect($customBanners)
+            ->map(function ($banner) {
+                return [
+                    'id' => $banner['id'] ?? null,
+                    'title' => $banner['title'] ?? null,
+                    'image' => isset($banner['image']) ? asset('storage/' . $banner['image']) : null,
+                    'link_url' => $banner['link_url'] ?? null,
+                    'sort_order' => $banner['sort_order'] ?? 0,
+                ];
+            })
+            ->sortBy('sort_order')
+            ->values()
+            ->all();
+    }
+
+    /**
      * Helper pour obtenir l'URL correcte d'une image de bannière
      * Gère les cas où l'image est dans public/images/ ou storage/
      */
@@ -1462,6 +1552,84 @@ class MobileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la recherche: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupérer la configuration de l'application
+     */
+    public function getAppConfig(Request $request)
+    {
+        try {
+            $config = [
+                'site_name' => Setting::get('site_name', 'KAZARIA'),
+                'site_email' => Setting::get('site_email', 'contact@kazaria.ci'),
+                'site_phone' => Setting::get('site_phone', '+225 XX XX XX XX XX'),
+                'site_address' => Setting::get('site_address', 'Côte d\'Ivoire'),
+                'currency' => Setting::get('currency', 'XOF'),
+                'currency_symbol' => Setting::get('currency_symbol', 'FCFA'),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'config' => $config
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement de la configuration: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupérer le logo de l'application
+     */
+    public function getAppLogo(Request $request)
+    {
+        try {
+            $logoPath = Setting::get('site_logo', null);
+            $logoUrl = $logoPath ? asset('storage/' . $logoPath) : null;
+
+            return response()->json([
+                'success' => true,
+                'logo_url' => $logoUrl
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement du logo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupérer les informations de contact de l'application
+     */
+    public function getAppContact(Request $request)
+    {
+        try {
+            $contact = [
+                'email' => Setting::get('site_email', 'contact@kazaria.ci'),
+                'phone' => Setting::get('site_phone', '+225 XX XX XX XX XX'),
+                'address' => Setting::get('site_address', 'Côte d\'Ivoire'),
+                'social_links' => [
+                    'facebook' => Setting::get('facebook_url', null),
+                    'twitter' => Setting::get('twitter_url', null),
+                    'instagram' => Setting::get('instagram_url', null),
+                    'youtube' => Setting::get('youtube_url', null),
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'contact' => $contact
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des informations de contact: ' . $e->getMessage()
             ], 500);
         }
     }

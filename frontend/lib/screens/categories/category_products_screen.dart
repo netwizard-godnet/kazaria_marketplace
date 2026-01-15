@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/category_model.dart';
 import '../../models/product_model.dart';
 import '../../providers/product_provider.dart';
@@ -244,6 +246,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         children: [
           // Breadcrumb
           _buildBreadcrumb(),
+          
+          // ✅ Bannières personnalisées de la catégorie
+          _buildCategoryBanners(),
           
           // ✅ Chips de filtres actifs
           ActiveFiltersChips(
@@ -528,6 +533,108 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         ],
       ),
     );
+  }
+
+  /// Construire les bannières personnalisées de la catégorie
+  Widget _buildCategoryBanners() {
+    // Récupérer les bannières depuis le provider ou la catégorie
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    List<Map<String, dynamic>> banners = [];
+    
+    // Priorité 1: Bannières depuis le provider (chargées avec les produits)
+    if (productProvider.categoryBanners.isNotEmpty) {
+      banners = productProvider.categoryBanners;
+    }
+    // Priorité 2: Bannières depuis le modèle de catégorie
+    else if (widget.category.customBanners != null && widget.category.customBanners!.isNotEmpty) {
+      banners = widget.category.customBanners!.map((banner) => {
+        'id': banner.id,
+        'title': banner.title,
+        'image': banner.image,
+        'link_url': banner.linkUrl,
+        'sort_order': banner.sortOrder,
+      }).toList();
+    }
+
+    // Si aucune bannière, ne rien afficher
+    if (banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      height: 180,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: PageView.builder(
+        itemCount: banners.length,
+        itemBuilder: (context, index) {
+          final banner = banners[index];
+          final imageUrl = banner['image'] as String?;
+          
+          if (imageUrl == null || imageUrl.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return GestureDetector(
+            onTap: () {
+              final linkUrl = banner['link_url'] as String?;
+              if (linkUrl != null && linkUrl.isNotEmpty) {
+                _handleBannerTap(linkUrl);
+              }
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CachedNetworkImage(
+                  imageUrl: ImageUrlHelper.fixImageUrl(imageUrl),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (context, url) => Container(
+                    color: AppColors.grey100,
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: AppColors.grey100,
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: AppColors.textLight,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Gérer le clic sur une bannière
+  void _handleBannerTap(String linkUrl) async {
+    try {
+      final uri = Uri.parse(linkUrl);
+      
+      // Si c'est une URL externe, l'ouvrir
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        print('❌ [CATEGORY_BANNERS] Impossible d\'ouvrir: $linkUrl');
+      }
+    } catch (e) {
+      print('❌ [CATEGORY_BANNERS] Erreur: $e');
+    }
   }
 
   Widget _buildSubcategoryChip(String label, int? subcategoryId, bool isSelected) {

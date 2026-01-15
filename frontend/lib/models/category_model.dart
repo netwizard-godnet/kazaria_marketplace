@@ -1,3 +1,29 @@
+class CategoryBanner {
+  final int? id;
+  final String? title;
+  final String? image;
+  final String? linkUrl;
+  final int sortOrder;
+
+  CategoryBanner({
+    this.id,
+    this.title,
+    this.image,
+    this.linkUrl,
+    this.sortOrder = 0,
+  });
+
+  factory CategoryBanner.fromJson(Map<String, dynamic> json) {
+    return CategoryBanner(
+      id: json['id'],
+      title: json['title'],
+      image: json['image'],
+      linkUrl: json['link_url'],
+      sortOrder: json['sort_order'] ?? 0,
+    );
+  }
+}
+
 class CategoryModel {
   final int id;
   final String name;
@@ -8,6 +34,7 @@ class CategoryModel {
   final bool isActive;
   final int order;
   final List<SubcategoryModel>? subcategories;
+  final List<CategoryBanner>? customBanners;
 
   CategoryModel({
     required this.id,
@@ -19,6 +46,7 @@ class CategoryModel {
     required this.isActive,
     required this.order,
     this.subcategories,
+    this.customBanners,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +62,11 @@ class CategoryModel {
       subcategories: json['subcategories'] != null
           ? (json['subcategories'] as List)
               .map((e) => SubcategoryModel.fromJson(e))
+              .toList()
+          : null,
+      customBanners: json['custom_banners'] != null
+          ? (json['custom_banners'] as List)
+              .map((e) => CategoryBanner.fromJson(e))
               .toList()
           : null,
     );

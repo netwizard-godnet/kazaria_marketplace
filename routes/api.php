@@ -62,6 +62,7 @@ Route::post('/store/api/products/{id}/edit', [App\Http\Controllers\Seller\Produc
 // Pour mobile : utiliser auth:sanctum
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/my-orders', [App\Http\Controllers\OrderController::class, 'myOrders']);
+    Route::get('/orders/count', [App\Http\Controllers\OrderController::class, 'getOrdersCount']);
     Route::get('/orders/{orderNumber}', [App\Http\Controllers\OrderController::class, 'getOrderDetails']);
     Route::post('/orders/{orderNumber}/cancel', [App\Http\Controllers\OrderController::class, 'cancelOrder']);
 });
@@ -70,10 +71,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder']);
 });
 
+// Route de suivi de commande (publique)
+Route::post('/track-order', [App\Http\Controllers\OrderController::class, 'trackOrder']);
+
 // Routes des avis
 Route::get('/products/{productId}/reviews', [App\Http\Controllers\ReviewController::class, 'getProductReviews']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reviews', [App\Http\Controllers\ReviewController::class, 'store']);
+    Route::get('/reviews/my-reviews', [App\Http\Controllers\ReviewController::class, 'getMyReviews']);
+    Route::get('/reviews/my-reviews-count', [App\Http\Controllers\ReviewController::class, 'getMyReviewsCount']);
 });
 Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::class, 'vote']);
 
@@ -133,6 +139,7 @@ Route::get('/categories/{categoryId}/subcategories', [App\Http\Controllers\Admin
 Route::prefix('mobile')->group(function () {
     Route::get('/home-data', [App\Http\Controllers\MobileController::class, 'getHomeData']);
     Route::get('/categories', [App\Http\Controllers\MobileController::class, 'getCategories']);
+    Route::get('/categories/{id}', [App\Http\Controllers\MobileController::class, 'getCategoryDetails']);
     Route::get('/products', [App\Http\Controllers\MobileController::class, 'getProducts']);
     Route::get('/products/{id}', [App\Http\Controllers\MobileController::class, 'getProductDetails']);
     Route::get('/banners', [App\Http\Controllers\MobileController::class, 'getBanners']);
@@ -143,7 +150,57 @@ Route::prefix('mobile')->group(function () {
     Route::get('/stores/new-products', [App\Http\Controllers\MobileController::class, 'getNewProductsStores']);
     Route::get('/stores/{id}', [App\Http\Controllers\MobileController::class, 'getStoreDetails']);
     Route::get('/stores/{id}/products', [App\Http\Controllers\MobileController::class, 'getStoreProducts']);
+    Route::get('/stores/boutique-pub-banners', [App\Http\Controllers\MobileController::class, 'getBoutiquePubBanners']);
     Route::get('/flash-sales', [App\Http\Controllers\MobileController::class, 'getFlashSales']);
     Route::get('/brands', [App\Http\Controllers\MobileController::class, 'getBrands']);
 });
+
+// Routes wishlists (Listes de souhaits)
+Route::middleware('auth:sanctum')->prefix('wishlists')->group(function () {
+    Route::get('/', [App\Http\Controllers\WishlistController::class, 'index']);
+    Route::post('/', [App\Http\Controllers\WishlistController::class, 'store']);
+    Route::get('/{id}', [App\Http\Controllers\WishlistController::class, 'show']);
+    Route::put('/{id}', [App\Http\Controllers\WishlistController::class, 'update']);
+    Route::delete('/{id}', [App\Http\Controllers\WishlistController::class, 'destroy']);
+    Route::post('/{id}/products', [App\Http\Controllers\WishlistController::class, 'addProduct']);
+    Route::delete('/{id}/products/{productId}', [App\Http\Controllers\WishlistController::class, 'removeProduct']);
+    Route::post('/{id}/share', [App\Http\Controllers\WishlistController::class, 'share']);
+});
+
+// Route wishlist partagée (publique)
+Route::get('/wishlists/shared/{token}', [App\Http\Controllers\WishlistController::class, 'getSharedWishlist']);
+
+// Routes comparaison de produits
+Route::middleware('auth:sanctum')->prefix('comparison')->group(function () {
+    Route::post('/compare', [App\Http\Controllers\ComparisonController::class, 'compare']);
+    Route::get('/', [App\Http\Controllers\ComparisonController::class, 'index']);
+    Route::get('/{id}', [App\Http\Controllers\ComparisonController::class, 'show']);
+    Route::delete('/{id}', [App\Http\Controllers\ComparisonController::class, 'destroy']);
+});
+
+// Routes alertes de prix
+Route::middleware('auth:sanctum')->prefix('price-alerts')->group(function () {
+    Route::post('/', [App\Http\Controllers\WishlistController::class, 'createPriceAlert']);
+    Route::get('/', [App\Http\Controllers\WishlistController::class, 'getPriceAlerts']);
+    Route::delete('/{id}', [App\Http\Controllers\WishlistController::class, 'deletePriceAlert']);
+});
+
+// Routes historique paiements et factures
+Route::middleware('auth:sanctum')->prefix('payments')->group(function () {
+    Route::get('/history', [App\Http\Controllers\PaymentController::class, 'getPaymentHistory']);
+    Route::get('/{id}', [App\Http\Controllers\PaymentController::class, 'getPaymentDetails']);
+});
+
+Route::middleware('auth:sanctum')->prefix('invoices')->group(function () {
+    Route::get('/history', [App\Http\Controllers\PaymentController::class, 'getInvoiceHistory']);
+    Route::get('/{id}', [App\Http\Controllers\PaymentController::class, 'downloadInvoice']);
+});
+
+// Route inbox (messages/notifications)
+Route::middleware('auth:sanctum')->get('/inbox', [App\Http\Controllers\ProfileController::class, 'getInboxApi']);
+
+// Routes configuration application
+Route::get('/app/config', [App\Http\Controllers\MobileController::class, 'getAppConfig']);
+Route::get('/app/logo', [App\Http\Controllers\MobileController::class, 'getAppLogo']);
+Route::get('/app/contact', [App\Http\Controllers\MobileController::class, 'getAppContact']);
 

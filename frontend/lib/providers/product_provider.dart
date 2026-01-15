@@ -27,6 +27,7 @@ class ProductProvider with ChangeNotifier {
   Map<String, dynamic>? _dealsSettings;
   Map<String, dynamic> _promotions = {};
   Map<String, List<ProductModel>> _categoryProducts = {}; // Produits par catégorie
+  List<Map<String, dynamic>> _categoryBanners = []; // Bannières de la catégorie actuelle
 
   bool _isLoading = false;
   String? _error;
@@ -54,6 +55,7 @@ class ProductProvider with ChangeNotifier {
   Map<String, dynamic>? get dealsSettings => _dealsSettings;
   Map<String, dynamic> get promotions => _promotions;
   Map<String, List<ProductModel>> get categoryProducts => _categoryProducts;
+  List<Map<String, dynamic>> get categoryBanners => _categoryBanners;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasData => _homeDataLoaded;
@@ -406,6 +408,14 @@ class ProductProvider with ChangeNotifier {
           print(
             '✅ [PRODUCT_PROVIDER] ${_allProducts.length} produits dans _allProducts',
           );
+
+          // ✅ Extraire les bannières de catégorie si disponibles
+          if (response['category_banners'] != null && response['category_banners'] is List) {
+            _categoryBanners = List<Map<String, dynamic>>.from(response['category_banners']);
+            print('✅ [PRODUCT_PROVIDER] ${_categoryBanners.length} bannières de catégorie chargées');
+          } else {
+            _categoryBanners = [];
+          }
         } else {
           print('❌ [PRODUCT_PROVIDER] products n\'est pas une List!');
           _error = 'Format de données invalide';
