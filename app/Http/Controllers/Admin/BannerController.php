@@ -1070,11 +1070,47 @@ class BannerController extends Controller
         
         // Vérifier les permissions d'écriture
         if (!is_writable($imagesDir)) {
+            $currentPerms = substr(sprintf('%o', fileperms($imagesDir)), -4);
+            
+            // Essayer de corriger les permissions automatiquement (uniquement sur Linux/Unix)
+            if (PHP_OS_FAMILY !== 'Windows') {
+                try {
+                    @chmod($imagesDir, 0755);
+                    // Vérifier à nouveau après la tentative de correction
+                    if (is_writable($imagesDir)) {
+                        \Log::info('Permissions du dossier images corrigées automatiquement', [
+                            'path' => $imagesDir,
+                            'anciennes_permissions' => $currentPerms,
+                            'nouvelles_permissions' => substr(sprintf('%o', fileperms($imagesDir)), -4)
+                        ]);
+                        return; // Succès, on peut continuer
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Impossible de corriger automatiquement les permissions', [
+                        'path' => $imagesDir,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Si on arrive ici, les permissions n'ont pas pu être corrigées
             \Log::error('Le dossier images n\'est pas accessible en écriture', [
                 'path' => $imagesDir,
-                'permissions' => substr(sprintf('%o', fileperms($imagesDir)), -4)
+                'permissions' => $currentPerms,
+                'os' => PHP_OS_FAMILY
             ]);
-            throw new \Exception('Le répertoire images n\'est pas accessible en écriture. Veuillez contacter l\'administrateur pour corriger les permissions.');
+            
+            $errorMessage = "Le répertoire images n'est pas accessible en écriture.\n\n";
+            $errorMessage .= "Chemin: {$imagesDir}\n";
+            $errorMessage .= "Permissions actuelles: {$currentPerms}\n\n";
+            $errorMessage .= "Pour corriger ce problème, exécutez sur le serveur:\n";
+            $errorMessage .= "chmod 755 {$imagesDir}\n";
+            $errorMessage .= "ou\n";
+            $errorMessage .= "chmod 775 {$imagesDir}\n\n";
+            $errorMessage .= "Si le problème persiste, vérifiez que le propriétaire du répertoire est correct:\n";
+            $errorMessage .= "chown -R " . get_current_user() . " {$imagesDir}";
+            
+            throw new \Exception($errorMessage);
         }
     }
 
