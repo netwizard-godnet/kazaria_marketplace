@@ -50,7 +50,8 @@ class SearchAutocomplete {
 
         // Fermer les suggestions en cliquant ailleurs
         document.addEventListener('click', (e) => {
-            if (!form.contains(e.target)) {
+            // Ne pas masquer si on clique sur une suggestion
+            if (!form.contains(e.target) && !suggestions.contains(e.target)) {
                 this.hideSuggestions(suggestions);
             }
         });
@@ -99,10 +100,12 @@ class SearchAutocomplete {
     handleBlur(e, suggestions) {
         // Attendre un peu avant de masquer pour permettre les clics
         setTimeout(() => {
-            if (!suggestions.contains(document.activeElement)) {
+            // Ne pas masquer si une suggestion est en cours de clic ou si le focus est sur une suggestion
+            const isClickingSuggestion = e.relatedTarget && suggestions.contains(e.relatedTarget);
+            if (!isClickingSuggestion && !suggestions.contains(document.activeElement)) {
                 this.hideSuggestions(suggestions);
             }
-        }, 200);
+        }, 250);
     }
 
     async fetchSuggestions(query, suggestions) {
@@ -149,11 +152,35 @@ class SearchAutocomplete {
         suggestionsContainer.innerHTML = html;
         this.showSuggestions(suggestionsContainer);
 
-        // Ajouter les événements de clic
+        // Ajouter les événements de clic - utiliser mousedown pour éviter le conflit avec blur
         suggestionsContainer.querySelectorAll('.suggestion-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
-                this.selectedIndex = index;
-                this.selectSuggestion(suggestionsContainer);
+            // Utiliser mousedown au lieu de click pour éviter le conflit avec blur
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Empêcher le blur de l'input
+                e.stopPropagation(); // Empêcher la propagation
+                const url = item.getAttribute('data-url');
+                const type = item.getAttribute('data-type');
+                
+                if (url) {
+                    this.selectedIndex = index;
+                    // Rediriger directement vers l'URL
+                    if (type === 'product' || type === 'category' || type === 'subcategory') {
+                        window.location.href = url;
+                    } else {
+                        // Pour les marques et mots-clés, remplir l'input et soumettre
+                        const text = item.querySelector('.fw-medium')?.textContent || '';
+                        const desktopInput = document.getElementById('searchInput');
+                        const mobileInput = document.getElementById('mobileSearchInput');
+                        
+                        if (desktopInput) {
+                            desktopInput.value = text;
+                            document.getElementById('searchForm')?.submit();
+                        } else if (mobileInput) {
+                            mobileInput.value = text;
+                            document.getElementById('mobileSearchForm')?.submit();
+                        }
+                    }
+                }
             });
             
             item.addEventListener('mouseenter', () => {
