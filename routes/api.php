@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Auth\SocialAuthController;
 
 // Routes d'authentification publiques
 Route::post('/register', [AuthController::class, 'register']);
@@ -13,6 +14,9 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
 // Route de vérification d'email supprimée - utilise la route web
+
+// Route d'authentification sociale pour mobile
+Route::post('/auth/social/{provider}', [SocialAuthController::class, 'mobileAuth'])->where('provider', 'google|facebook');
 
 // Routes protégées par authentification
 Route::middleware('auth:sanctum')->group(function () {

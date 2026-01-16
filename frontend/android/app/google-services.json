@@ -12,7 +12,20 @@
           "package_name": "com.example.kazaria_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1020161722823-v3tfee226b8rsrelo1uf0ha79c8m5mnl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kazaria_app",
+            "certificate_hash": "01aa8ae960dfa6748e90e4e1ebee8e65c5fa6315"
+          }
+        },
+        {
+          "client_id": "1020161722823-75husp9qvd3uk2c523t6u5s20obcgqmj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDI1fAJcLh49fOWYp8sYvXJDcU053c4-ow"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1020161722823-75husp9qvd3uk2c523t6u5s20obcgqmj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1020161722823-3ui3653cg7jgj3dhcic23ll4ahtaqssu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kazariaApp"
+              }
+            }
+          ]
         }
       }
     }
