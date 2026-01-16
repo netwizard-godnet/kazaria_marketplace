@@ -50,7 +50,8 @@ class SearchAutocomplete {
 
         // Fermer les suggestions en cliquant ailleurs
         document.addEventListener('click', (e) => {
-            if (!form.contains(e.target)) {
+            // Ne pas masquer si on clique sur une suggestion
+            if (!form.contains(e.target) && !suggestions.contains(e.target)) {
                 this.hideSuggestions(suggestions);
             }
         });
@@ -99,10 +100,12 @@ class SearchAutocomplete {
     handleBlur(e, suggestions) {
         // Attendre un peu avant de masquer pour permettre les clics
         setTimeout(() => {
-            if (!suggestions.contains(document.activeElement)) {
+            // Ne pas masquer si une suggestion est en cours de clic ou si le focus est sur une suggestion
+            const isClickingSuggestion = e.relatedTarget && suggestions.contains(e.relatedTarget);
+            if (!isClickingSuggestion && !suggestions.contains(document.activeElement)) {
                 this.hideSuggestions(suggestions);
             }
-        }, 200);
+        }, 250);
     }
 
     async fetchSuggestions(query, suggestions) {
@@ -134,8 +137,9 @@ class SearchAutocomplete {
                 <div class="suggestion-item p-2 border-bottom cursor-pointer ${isSelected}" 
                      data-index="${index}" 
                      data-url="${suggestion.url}"
-                     data-type="${suggestion.type}">
-                    <div class="d-flex align-items-center">
+                     data-type="${suggestion.type}"
+                     style="width: 100%; display: block; text-decoration: none; color: inherit;">
+                    <div class="d-flex align-items-center" style="width: 100%; pointer-events: none;">
                         <i class="${suggestion.icon} text-muted me-2"></i>
                         <div class="flex-grow-1">
                             <div class="fw-medium text-dark">${this.highlightMatch(suggestion.text, this.getCurrentQuery())}</div>
@@ -149,11 +153,65 @@ class SearchAutocomplete {
         suggestionsContainer.innerHTML = html;
         this.showSuggestions(suggestionsContainer);
 
-        // Ajouter les événements de clic
+        // Ajouter les événements de clic - utiliser mousedown pour éviter le conflit avec blur
         suggestionsContainer.querySelectorAll('.suggestion-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
-                this.selectedIndex = index;
-                this.selectSuggestion(suggestionsContainer);
+            // S'assurer que toute la zone est cliquable
+            item.style.cursor = 'pointer';
+            item.style.userSelect = 'none';
+            
+            // Utiliser mousedown pour éviter le conflit avec blur
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Empêcher le blur de l'input
+                e.stopPropagation(); // Empêcher la propagation
+                const url = item.getAttribute('data-url');
+                const type = item.getAttribute('data-type');
+                
+                if (url) {
+                    this.selectedIndex = index;
+                    // Rediriger directement vers l'URL
+                    if (type === 'product' || type === 'category' || type === 'subcategory') {
+                        window.location.href = url;
+                    } else {
+                        // Pour les marques et mots-clés, remplir l'input et soumettre
+                        const text = item.querySelector('.fw-medium')?.textContent || '';
+                        const desktopInput = document.getElementById('searchInput');
+                        const mobileInput = document.getElementById('mobileSearchInput');
+                        
+                        if (desktopInput) {
+                            desktopInput.value = text;
+                            document.getElementById('searchForm')?.submit();
+                        } else if (mobileInput) {
+                            mobileInput.value = text;
+                            document.getElementById('mobileSearchForm')?.submit();
+                        }
+                    }
+                }
+            });
+            
+            // Ajouter aussi un gestionnaire click en plus de mousedown pour plus de compatibilité
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const url = item.getAttribute('data-url');
+                const type = item.getAttribute('data-type');
+                
+                if (url) {
+                    if (type === 'product' || type === 'category' || type === 'subcategory') {
+                        window.location.href = url;
+                    } else {
+                        const text = item.querySelector('.fw-medium')?.textContent || '';
+                        const desktopInput = document.getElementById('searchInput');
+                        const mobileInput = document.getElementById('mobileSearchInput');
+                        
+                        if (desktopInput) {
+                            desktopInput.value = text;
+                            document.getElementById('searchForm')?.submit();
+                        } else if (mobileInput) {
+                            mobileInput.value = text;
+                            document.getElementById('mobileSearchForm')?.submit();
+                        }
+                    }
+                }
             });
             
             item.addEventListener('mouseenter', () => {
