@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class BannerController extends Controller
 {
@@ -215,15 +216,13 @@ class BannerController extends Controller
             $banner->is_active = true;
         }
 
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            @unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         $image = $request->file('image');
         $imageName = 'header_gif_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->is_active = $request->has('is_active') ? (bool) $request->is_active : true;
         $banner->save();
@@ -253,16 +252,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'homepage_banner_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -291,16 +288,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'homepage_banner_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -329,16 +324,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -367,16 +360,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -405,16 +396,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -443,16 +432,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_4_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -481,16 +468,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'publicite_5_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -519,16 +504,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -557,16 +540,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -595,16 +576,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -635,9 +614,7 @@ class BannerController extends Controller
         // Sauvegarder l'image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_carousel_' . $nextNumber . '_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -655,8 +632,8 @@ class BannerController extends Controller
         }
 
         // Supprimer l'image du serveur
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Supprimer de la base de données
@@ -680,16 +657,14 @@ class BannerController extends Controller
         ], $this->bannerMetaRules()));
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = $banner->banner_type . '_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -718,16 +693,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -756,16 +729,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -794,16 +765,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -832,16 +801,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_4_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -870,16 +837,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'boutique_pub_5_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -908,16 +873,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_1_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -946,16 +909,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_2_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -984,16 +945,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_3_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $this->applyBannerMeta($banner, $request);
         $banner->save();
 
@@ -1022,16 +981,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_4_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 4 mise à jour avec succès.');
@@ -1059,16 +1016,14 @@ class BannerController extends Controller
         }
 
         // Supprimer l'ancienne image si elle existe
-        if ($banner->image_path && file_exists(public_path($banner->image_path))) {
-            unlink(public_path($banner->image_path));
+        if ($banner->image_path && File::exists(public_path($banner->image_path))) {
+            File::delete(public_path($banner->image_path));
         }
 
         // Sauvegarder la nouvelle image dans le dossier public/images
         $image = $request->file('image');
         $imageName = 'categorie_pub_5_' . time() . '.' . $image->getClientOriginalExtension();
-        $image->move(public_path('images'), $imageName);
-        
-        $banner->image_path = 'images/' . $imageName;
+        $banner->image_path = $this->moveImageToPublicDirectory($image, $imageName);
         $banner->save();
 
         return redirect()->back()->with('success', 'Catégorie Pub 5 mise à jour avec succès.');
@@ -1088,5 +1043,102 @@ class BannerController extends Controller
         $banner->link_url = $request->input('link_url');
         $banner->show_on_desktop = $request->boolean('show_on_desktop', true);
         $banner->show_on_mobile = $request->boolean('show_on_mobile', true);
+    }
+
+    /**
+     * S'assure que le répertoire public/images existe et est accessible en écriture
+     * 
+     * @throws \Exception Si le répertoire ne peut pas être créé ou n'est pas accessible en écriture
+     */
+    private function ensureImagesDirectoryExists(): void
+    {
+        $imagesDir = public_path('images');
+        
+        // Créer le répertoire s'il n'existe pas
+        if (!File::exists($imagesDir)) {
+            try {
+                File::makeDirectory($imagesDir, 0755, true);
+                \Log::info('Dossier images créé', ['path' => $imagesDir]);
+            } catch (\Exception $e) {
+                \Log::error('Impossible de créer le dossier images', [
+                    'path' => $imagesDir,
+                    'error' => $e->getMessage()
+                ]);
+                throw new \Exception('Impossible de créer le répertoire images. Veuillez vérifier les permissions du répertoire public.');
+            }
+        }
+        
+        // Vérifier les permissions d'écriture
+        if (!is_writable($imagesDir)) {
+            $currentPerms = substr(sprintf('%o', fileperms($imagesDir)), -4);
+            
+            // Essayer de corriger les permissions automatiquement (uniquement sur Linux/Unix)
+            if (PHP_OS_FAMILY !== 'Windows') {
+                try {
+                    @chmod($imagesDir, 0755);
+                    // Vérifier à nouveau après la tentative de correction
+                    if (is_writable($imagesDir)) {
+                        \Log::info('Permissions du dossier images corrigées automatiquement', [
+                            'path' => $imagesDir,
+                            'anciennes_permissions' => $currentPerms,
+                            'nouvelles_permissions' => substr(sprintf('%o', fileperms($imagesDir)), -4)
+                        ]);
+                        return; // Succès, on peut continuer
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Impossible de corriger automatiquement les permissions', [
+                        'path' => $imagesDir,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+            
+            // Si on arrive ici, les permissions n'ont pas pu être corrigées
+            \Log::error('Le dossier images n\'est pas accessible en écriture', [
+                'path' => $imagesDir,
+                'permissions' => $currentPerms,
+                'os' => PHP_OS_FAMILY
+            ]);
+            
+            $errorMessage = "Le répertoire images n'est pas accessible en écriture.\n\n";
+            $errorMessage .= "Chemin: {$imagesDir}\n";
+            $errorMessage .= "Permissions actuelles: {$currentPerms}\n\n";
+            $errorMessage .= "Pour corriger ce problème, exécutez sur le serveur:\n";
+            $errorMessage .= "chmod 755 {$imagesDir}\n";
+            $errorMessage .= "ou\n";
+            $errorMessage .= "chmod 775 {$imagesDir}\n\n";
+            $errorMessage .= "Si le problème persiste, vérifiez que le propriétaire du répertoire est correct:\n";
+            $errorMessage .= "chown -R " . get_current_user() . " {$imagesDir}";
+            
+            throw new \Exception($errorMessage);
+        }
+    }
+
+    /**
+     * Déplace un fichier image vers le répertoire public/images de manière sécurisée
+     * 
+     * @param \Illuminate\Http\UploadedFile $image Le fichier à déplacer
+     * @param string $imageName Le nom du fichier
+     * @return string Le chemin relatif du fichier
+     * @throws \Exception Si le déplacement échoue
+     */
+    private function moveImageToPublicDirectory($image, string $imageName): string
+    {
+        // S'assurer que le répertoire existe et est accessible
+        $this->ensureImagesDirectoryExists();
+        
+        $imagesDir = public_path('images');
+        $destination = $imagesDir . '/' . $imageName;
+        
+        try {
+            $image->move($imagesDir, $imageName);
+            return 'images/' . $imageName;
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors du déplacement de l\'image', [
+                'destination' => $destination,
+                'error' => $e->getMessage()
+            ]);
+            throw new \Exception('Impossible de sauvegarder l\'image. Veuillez vérifier les permissions du répertoire images.');
+        }
     }
 }

@@ -28,13 +28,53 @@ class AuthController extends Controller
     private function addSessionCookieToResponse($response, $request)
     {
         if (!$request->hasSession()) {
+            \Log::warning('addSessionCookieToResponse: Pas de session disponible');
             return $response;
         }
 
         $session = $request->session();
+        
+        // S'assurer que la session est sauvegardée avant de créer le cookie
+        if (!$session->isStarted()) {
+            \Log::warning('addSessionCookieToResponse: Session non démarrée');
+            return $response;
+        }
+        
+        // ⚠️ CRITIQUE : S'assurer que password_hash_web est présent si l'utilisateur est connecté
+        // Cela évite que AuthenticateSession ne déconnecte l'utilisateur après l'envoi du cookie
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            if ($user && $user->getAuthPassword()) {
+                if (!$session->has('password_hash_web') || 
+                    !hash_equals($session->get('password_hash_web'), $user->getAuthPassword())) {
+                    $session->put('password_hash_web', $user->getAuthPassword());
+                    \Log::warning('🔧 [SESSION COOKIE] password_hash_web ajouté avant envoi cookie', [
+                        'user_id' => $user->id,
+                        'session_id' => substr($session->getId(), 0, 15) . '...',
+                    ]);
+                }
+            }
+        }
+        
+        // Sauvegarder la session pour s'assurer qu'elle est persistée
+        $session->save();
+        
         $sessionName = (string)config('session.cookie');
         $sessionId = (string)$session->getId();
+        
+        if (empty($sessionId)) {
+            \Log::error('addSessionCookieToResponse: ID de session vide');
+            return $response;
+        }
+        
         $sessionLifetime = (int)config('session.lifetime') * 60; // Convertir en secondes
+        
+        // Récupérer la configuration de sécurité
+        $secure = config('session.secure');
+        if ($secure === null) {
+            // Auto-détection : true si HTTPS, false sinon
+            $secure = $request->secure();
+        }
         
         $cookie = cookie(
             $sessionName,
@@ -42,11 +82,23 @@ class AuthController extends Controller
             $sessionLifetime,
             (string)config('session.path', '/'),
             (string)(config('session.domain') ?? ''),
-            (bool)config('session.secure', false),
+            (bool)$secure,
             (bool)config('session.http_only', true),
-            false,
+            (bool)config('session.partitioned', false),
             (string)(config('session.same_site', 'lax') ?? 'lax')
         );
+
+        \Log::info('🍪 [SESSION COOKIE] Cookie de session créé et envoyé', [
+            'session_name' => $sessionName,
+            'session_id' => substr($sessionId, 0, 15) . '...',
+            'session_id_length' => strlen($sessionId),
+            'lifetime_minutes' => config('session.lifetime'),
+            'secure' => $secure,
+            'same_site' => config('session.same_site', 'lax'),
+            'path' => config('session.path', '/'),
+            'domain' => config('session.domain'),
+            'timestamp' => now()->toDateTimeString(),
+        ]);
 
         return $response->withCookie($cookie);
     }
@@ -231,7 +283,13 @@ class AuthController extends Controller
                     // Pour les requêtes web : utiliser la session
                     // S'assurer que la session est démarrée
                     if (!$request->hasSession()) {
-                        $request->setLaravelSession(app('session.store'));
+                        $sessionStore = app('session.store');
+                        // Lire l'ID de session depuis les cookies si disponible
+                        $sessionId = $request->cookies->get($sessionStore->getName());
+                        if ($sessionId) {
+                            $sessionStore->setId($sessionId);
+                        }
+                        $request->setLaravelSession($sessionStore);
                     }
                     
                     $session = $request->session();
@@ -245,12 +303,32 @@ class AuthController extends Controller
                         $session->start();
                     }
                     
+                    \Log::info('🔐 [LOGIN] Session démarrée pour connexion', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'session_id' => substr($session->getId(), 0, 15) . '...',
+                        'session_started' => $session->isStarted(),
+                        'cookie_present' => $request->cookies->has($session->getName()),
+                        'remember' => $request->has('remember'),
+                        'timestamp' => now()->toDateTimeString(),
+                    ]);
+                    
                     // Connecter l'utilisateur dans la session
                     Auth::login($user, $request->has('remember'));
                     
                     // Régénérer l'ID de session APRÈS le login pour la sécurité
                     // Cela crée une nouvelle session avec l'utilisateur déjà authentifié
+                    $oldSessionId = $session->getId();
                     $request->session()->regenerate();
+                    $newSessionId = $session->getId();
+                    
+                    \Log::info('🔄 [LOGIN] Session régénérée après connexion', [
+                        'user_id' => $user->id,
+                        'old_session_id' => substr($oldSessionId, 0, 15) . '...',
+                        'new_session_id' => substr($newSessionId, 0, 15) . '...',
+                        'password_hash_stored' => $request->session()->has('password_hash_web'),
+                        'timestamp' => now()->toDateTimeString(),
+                    ]);
                     
                     // Stocker le hash du mot de passe dans la session APRÈS la régénération
                     // pour que AuthenticateSession puisse vérifier l'authenticité de la session
@@ -275,8 +353,25 @@ class AuthController extends Controller
                         ]);
                     }
 
+                    // Vérifier que l'utilisateur est bien authentifié avant de sauvegarder
+                    if (!Auth::check()) {
+                        \Log::error('Login: Utilisateur non authentifié après Auth::login()', [
+                            'user_id' => $user->id
+                        ]);
+                    }
+
                     // Sauvegarder la session pour s'assurer qu'elle est persistée
                     $request->session()->save();
+                    
+                    \Log::info('✅ [LOGIN] Connexion réussie - Session sauvegardée', [
+                        'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'session_id' => substr($session->getId(), 0, 15) . '...',
+                        'auth_check' => Auth::check(),
+                        'password_hash_present' => $request->session()->has('password_hash_web'),
+                        'session_started' => $session->isStarted(),
+                        'timestamp' => now()->toDateTimeString(),
+                    ]);
 
                     // Créer la réponse JSON
                     $response = response()->json([
@@ -532,7 +627,13 @@ class AuthController extends Controller
 
         // S'assurer que la session est démarrée
         if (!$request->hasSession()) {
-            $request->setLaravelSession(app('session.store'));
+            $sessionStore = app('session.store');
+            // Lire l'ID de session depuis les cookies si disponible
+            $sessionId = $request->cookies->get($sessionStore->getName());
+            if ($sessionId) {
+                $sessionStore->setId($sessionId);
+            }
+            $request->setLaravelSession($sessionStore);
         }
         
         $session = $request->session();
@@ -546,11 +647,29 @@ class AuthController extends Controller
             $session->start();
         }
         
+        \Log::info('🔐 [VERIFY CODE] Session démarrée pour vérification code', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'session_id' => substr($session->getId(), 0, 15) . '...',
+            'session_started' => $session->isStarted(),
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+        
         // Connecter l'utilisateur dans la session
         Auth::login($user, true);
         
         // Régénérer l'ID de session APRÈS le login pour la sécurité
+        $oldSessionId = $session->getId();
         $request->session()->regenerate();
+        $newSessionId = $session->getId();
+        
+        \Log::info('🔄 [VERIFY CODE] Session régénérée après vérification', [
+            'user_id' => $user->id,
+            'old_session_id' => substr($oldSessionId, 0, 15) . '...',
+            'new_session_id' => substr($newSessionId, 0, 15) . '...',
+            'password_hash_stored' => $request->session()->has('password_hash_web'),
+            'timestamp' => now()->toDateTimeString(),
+        ]);
         
         // Stocker le hash du mot de passe dans la session APRÈS la régénération
         // pour que AuthenticateSession puisse vérifier l'authenticité de la session
@@ -575,8 +694,25 @@ class AuthController extends Controller
             ]);
         }
 
+        // Vérifier que l'utilisateur est bien authentifié avant de sauvegarder
+        if (!Auth::check()) {
+            \Log::error('verifyLoginCode: Utilisateur non authentifié après Auth::login()', [
+                'user_id' => $user->id
+            ]);
+        }
+
         // Sauvegarder la session pour s'assurer qu'elle est persistée
         $request->session()->save();
+        
+        \Log::info('✅ [VERIFY CODE] Connexion réussie après vérification - Session sauvegardée', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'session_id' => substr($session->getId(), 0, 15) . '...',
+            'auth_check' => Auth::check(),
+            'password_hash_present' => $request->session()->has('password_hash_web'),
+            'session_started' => $session->isStarted(),
+            'timestamp' => now()->toDateTimeString(),
+        ]);
 
         // Créer la réponse JSON
         $response = response()->json([
@@ -736,9 +872,30 @@ class AuthController extends Controller
             'password_reset_expires_at' => null,
         ]);
 
+        // ⚠️ CRITIQUE : Invalider toutes les sessions existantes après changement de mot de passe
+        // Cela force l'utilisateur à se reconnecter avec le nouveau mot de passe
+        // et évite que les anciennes sessions (avec l'ancien password_hash) ne restent actives
+        if ($request->hasSession()) {
+            $session = $request->session();
+            // Si l'utilisateur est connecté, le déconnecter
+            if (Auth::check() && Auth::id() === $user->id) {
+                Auth::logout();
+                $session->invalidate();
+                $session->regenerateToken();
+            }
+        }
+        
+        // Supprimer tous les tokens Sanctum de l'utilisateur pour forcer la reconnexion
+        $user->tokens()->delete();
+        
+        \Log::info('✅ [PASSWORD RESET] Mot de passe réinitialisé - Sessions invalidées', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+        ]);
+
         return response()->json([
             'success' => true,
-            'message' => 'Mot de passe réinitialisé avec succès'
+            'message' => 'Mot de passe réinitialisé avec succès. Veuillez vous reconnecter.'
         ]);
     }
 
@@ -816,7 +973,21 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Supprimer le token Sanctum si présent
+        if ($request->user()) {
+            $request->user()->currentAccessToken()?->delete();
+        }
+        
+        // Si c'est une requête web avec session, déconnecter aussi la session
+        if ($request->hasSession() && Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            \Log::info('✅ [LOGOUT] Déconnexion session web', [
+                'user_id' => Auth::id(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,

@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // ⚠️ IMPORTANT : EnsurePasswordHashInSession doit s'exécuter AVANT AuthenticateSession
         // pour éviter que AuthenticateSession ne déconnecte l'utilisateur
         $middleware->web(prepend: [
+            \App\Http\Middleware\LogSessionActivity::class, // Logging des activités de session (en premier)
             \App\Http\Middleware\EnsurePasswordHashInSession::class, // AVANT AuthenticateSession
         ]);
         

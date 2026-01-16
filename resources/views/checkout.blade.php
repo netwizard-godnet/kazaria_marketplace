@@ -92,8 +92,20 @@
                             
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Livraison:</span>
-                                <span class="text-success fw-bold">Gratuite</span>
+                                @if(($shippingCost ?? 0) > 0)
+                                    <span class="fw-bold">{{ number_format($shippingCost, 0, ',', ' ') }} FCFA</span>
+                                @else
+                                    <span class="text-success fw-bold">Gratuite</span>
+                                @endif
                             </div>
+                            
+                            @if(isset($freeThreshold) && $freeThreshold > 0 && $subtotal < $freeThreshold)
+                            <div class="small text-muted mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Livraison gratuite à partir de {{ number_format($freeThreshold, 0, ',', ' ') }} FCFA
+                                ({{ number_format($freeThreshold - $subtotal, 0, ',', ' ') }} FCFA restants)
+                            </div>
+                            @endif
                             
                             <hr>
                             

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Attribute;
@@ -147,8 +148,8 @@ class ProductController extends Controller
                 if (isset($currentImages[$index])) {
                     // Supprimer le fichier du storage
                     $imagePath = storage_path('app/public/' . $currentImages[$index]);
-                    if (file_exists($imagePath)) {
-                        unlink($imagePath);
+                    if (File::exists($imagePath)) {
+                        File::delete($imagePath);
                     }
                     // Retirer du tableau
                     unset($currentImages[$index]);
@@ -481,8 +482,8 @@ class ProductController extends Controller
         if (isset($images[$index])) {
             // Supprimer le fichier du storage
             $imagePath = storage_path('app/public/' . $images[$index]);
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
+            if (File::exists($imagePath)) {
+                File::delete($imagePath);
             }
             
             // Retirer du tableau

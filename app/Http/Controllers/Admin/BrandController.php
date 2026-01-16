@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class BrandController extends Controller
 {
@@ -56,8 +57,8 @@ class BrandController extends Controller
 
         if ($request->hasFile('image')) {
             // Supprimer l'ancienne image si elle existe
-            if ($brand->image_path && file_exists(public_path($brand->image_path))) {
-                unlink(public_path($brand->image_path));
+            if ($brand->image_path && File::exists(public_path($brand->image_path))) {
+                File::delete(public_path($brand->image_path));
             }
             
             $image = $request->file('image');
@@ -77,8 +78,8 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand)
     {
-        if ($brand->image_path && file_exists(public_path($brand->image_path))) {
-            unlink(public_path($brand->image_path));
+        if ($brand->image_path && File::exists(public_path($brand->image_path))) {
+            File::delete(public_path($brand->image_path));
         }
         $brand->delete();
         return redirect()->back()->with('success', 'Marque supprimée avec succès.');

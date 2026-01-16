@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -135,7 +136,29 @@ class SocialAuthController extends Controller
         request()->session()->regenerateToken();
 
         // Fusionner le panier invité avec le panier utilisateur
-        $this->mergeGuestCart($user, request()->header('X-Session-ID'));
+        try {
+            $guestSessionId = request()->header('X-Session-ID');
+            if ($guestSessionId) {
+                $guestSessionId = is_array($guestSessionId) ? ($guestSessionId[0] ?? null) : (string)$guestSessionId;
+                $this->mergeGuestCart($user, $guestSessionId ?: null);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la fusion du panier invité (social auth): ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'exception' => $e
+            ]);
+        }
+
+        // Sauvegarder la session pour garantir la persistance
+        request()->session()->save();
+        
+        \Log::info('✅ [SOCIAL AUTH] Connexion sociale réussie', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'provider' => $provider,
+            'session_id' => substr(request()->session()->getId(), 0, 15) . '...',
+            'password_hash_present' => request()->session()->has('password_hash_web'),
+        ]);
 
         // Rediriger vers l'accueil avec cache-busting pour forcer le rechargement
         return redirect(route('accueil') . '?login=' . time())
@@ -279,8 +302,8 @@ class SocialAuthController extends Controller
     private function deleteLocalAvatar(string $path): void
     {
         $fullPath = public_path($path);
-        if (is_file($fullPath)) {
-            @unlink($fullPath);
+        if ($path && File::exists($fullPath)) {
+            File::delete($fullPath);
         }
     }
 

@@ -40,15 +40,23 @@ class OrderController extends Controller
         }
         
         $subtotal = CartItem::getCartTotal($user->id, null);
+        
         // Appliquer remise promo éventuelle (affichage checkout)
         $promo = session('promo');
         $discount = 0;
         if ($promo && isset($promo['percent'])) {
             $discount = round($subtotal * ((int)$promo['percent']) / 100);
         }
-        $total = max(0, $subtotal - $discount); // livraison gérée plus tard
         
-        return view('checkout', compact('user', 'cartItems', 'total', 'subtotal', 'discount', 'promo'));
+        // Calculer le coût de livraison (comme dans shipping())
+        $shippingCostSetting = Setting::get('shipping_cost', 0);
+        $freeThreshold = Setting::get('free_shipping_threshold', 0);
+        $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
+        
+        // Calculer le total avec livraison
+        $total = max(0, $subtotal - $discount) + $shippingCost;
+        
+        return view('checkout', compact('user', 'cartItems', 'total', 'subtotal', 'discount', 'promo', 'shippingCost', 'freeThreshold'));
     }
 
     /**
@@ -171,7 +179,9 @@ class OrderController extends Controller
             if ($promo && isset($promo['percent'])) {
                 $discount = round($subtotal * ((int)$promo['percent']) / 100);
             }
-            $total = $subtotal + $shippingCost + $tax - $discount;
+            // Calculer le total de manière cohérente avec checkout() et shipping()
+            // max(0, ...) évite les totaux négatifs si le discount est supérieur au subtotal
+            $total = max(0, $subtotal - $discount) + $shippingCost + $tax;
             
             // Vérifier la disponibilité du stock
             $stockErrors = StockService::checkStockAvailability($cartItems);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Store;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
@@ -748,8 +749,8 @@ class StoreController extends Controller
                 }
                 
                 // Supprimer l'ancien logo si il existe
-                if ($store->logo && file_exists(storage_path('app/public/' . $store->logo))) {
-                    unlink(storage_path('app/public/' . $store->logo));
+                if ($store->logo && File::exists(storage_path('app/public/' . $store->logo))) {
+                    File::delete(storage_path('app/public/' . $store->logo));
                 }
                 
                 // Déplacer le fichier
@@ -831,8 +832,8 @@ class StoreController extends Controller
                 }
                 
                 // Supprimer l'ancienne bannière si elle existe
-                if ($store->banner && file_exists(storage_path('app/public/' . $store->banner))) {
-                    unlink(storage_path('app/public/' . $store->banner));
+                if ($store->banner && File::exists(storage_path('app/public/' . $store->banner))) {
+                    File::delete(storage_path('app/public/' . $store->banner));
                 }
                 
                 // Déplacer le fichier
@@ -983,20 +984,20 @@ class StoreController extends Controller
 
         try {
             // Supprimer les fichiers de la boutique
-            if ($store->logo && file_exists(storage_path('app/public/' . $store->logo))) {
-                unlink(storage_path('app/public/' . $store->logo));
+            if ($store->logo && File::exists(storage_path('app/public/' . $store->logo))) {
+                File::delete(storage_path('app/public/' . $store->logo));
             }
             
-            if ($store->banner && file_exists(storage_path('app/public/' . $store->banner))) {
-                unlink(storage_path('app/public/' . $store->banner));
+            if ($store->banner && File::exists(storage_path('app/public/' . $store->banner))) {
+                File::delete(storage_path('app/public/' . $store->banner));
             }
 
             // Supprimer les produits et leurs images
             foreach ($store->products as $product) {
                 if ($product->images && is_array($product->images)) {
                     foreach ($product->images as $image) {
-                        if (strpos($image, 'products/') === 0 && file_exists(storage_path('app/public/' . $image))) {
-                            unlink(storage_path('app/public/' . $image));
+                        if (strpos($image, 'products/') === 0 && File::exists(storage_path('app/public/' . $image))) {
+                            File::delete(storage_path('app/public/' . $image));
                         }
                     }
                 }
