@@ -1,11 +1,11 @@
 class ApiConfig {
   // URL de base de votre API Laravel
   // Changez cette URL selon votre environnement
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  static const String baseUrl = 'https://www.kazaria-ci.com/api';
   // Pour Android Emulator utiliser: http://10.0.2.2:8000/api
   // Pour appareil physique utiliser: http://YOUR_LOCAL_IP:8000/api
 
-  static const String imageBaseUrl = 'http://10.0.2.2:8000';
+  static const String imageBaseUrl = 'https://www.kazaria-ci.com';
 
   // Assistant IA
   static const String aiQuery = '$baseUrl/ai/query';
