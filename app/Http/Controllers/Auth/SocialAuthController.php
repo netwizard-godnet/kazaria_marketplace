@@ -149,13 +149,25 @@ class SocialAuthController extends Controller
         // Sauvegarder la session pour garantir la persistance
         request()->session()->save();
         
+        // Vérifier si l'utilisateur a des articles dans son panier
+        $cartItems = \App\Models\CartItem::getCartItems($user->id, null);
+        $hasCartItems = $cartItems->isNotEmpty();
+        
         \Log::info('✅ [SOCIAL AUTH] Connexion sociale réussie', [
             'user_id' => $user->id,
             'user_email' => $user->email,
             'provider' => $provider,
             'session_id' => substr(request()->session()->getId(), 0, 15) . '...',
             'password_hash_present' => request()->session()->has('password_hash_web'),
+            'has_cart_items' => $hasCartItems,
+            'cart_count' => $cartItems->count()
         ]);
+
+        // Stocker l'information du panier dans la session pour l'afficher sur la page d'accueil
+        if ($hasCartItems) {
+            request()->session()->flash('show_cart_choice', true);
+            request()->session()->flash('cart_count', $cartItems->count());
+        }
 
         // Rediriger vers l'accueil avec cache-busting pour forcer le rechargement
         return redirect(route('accueil') . '?login=' . time())

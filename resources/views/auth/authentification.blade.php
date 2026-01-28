@@ -443,20 +443,43 @@
                         resetFieldErrors();
                         showMessage('registerAlert', data.message, 'success');
                         
-                        // Afficher un message de succès plus détaillé
-                        setTimeout(() => {
-                            document.getElementById('register').innerHTML = `
-                                <div class="text-center">
-                                    <i class="fa-solid fa-check-circle fa-4x text-success mb-3"></i>
-                                    <h4 class="text-success">Inscription réussie !</h4>
-                                    <p class="text-muted">${data.message}</p>
-                                    <p class="text-muted">Vérifiez votre boîte email et cliquez sur le lien de vérification.</p>
-                                    <a href="{{ route('login') }}" class="btn blue-bg text-white">
-                                        <i class="fa-solid fa-sign-in-alt me-1"></i>Se connecter
-                                    </a>
-                                </div>
-                            `;
-                        }, 2000);
+                        // Vérifier si l'utilisateur invité avait des articles dans son panier
+                        if (data.has_cart_items && data.cart_count > 0) {
+                            // Afficher un message avec option de choix panier
+                            setTimeout(() => {
+                                document.getElementById('register').innerHTML = `
+                                    <div class="text-center">
+                                        <i class="fa-solid fa-check-circle fa-4x text-success mb-3"></i>
+                                        <h4 class="text-success">Inscription réussie !</h4>
+                                        <p class="text-muted">${data.message}</p>
+                                        <p class="text-muted mb-3">Vous avez <strong>${data.cart_count}</strong> article(s) dans votre panier.</p>
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ route('login') }}" class="btn blue-bg text-white">
+                                                <i class="fa-solid fa-sign-in-alt me-1"></i>Se connecter pour valider mon panier
+                                            </a>
+                                            <a href="{{ route('accueil') }}" class="btn btn-outline-primary">
+                                                <i class="fa-solid fa-store me-1"></i>Continuer mes achats
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                            }, 2000);
+                        } else {
+                            // Afficher un message de succès plus détaillé
+                            setTimeout(() => {
+                                document.getElementById('register').innerHTML = `
+                                    <div class="text-center">
+                                        <i class="fa-solid fa-check-circle fa-4x text-success mb-3"></i>
+                                        <h4 class="text-success">Inscription réussie !</h4>
+                                        <p class="text-muted">${data.message}</p>
+                                        <p class="text-muted">Vérifiez votre boîte email et cliquez sur le lien de vérification.</p>
+                                        <a href="{{ route('login') }}" class="btn blue-bg text-white">
+                                            <i class="fa-solid fa-sign-in-alt me-1"></i>Se connecter
+                                        </a>
+                                    </div>
+                                `;
+                            }, 2000);
+                        }
                     } else {
                         // Afficher les erreurs détaillées avec mise en évidence des champs
                         const errorMessage = data.message || 'Veuillez corriger les erreurs dans le formulaire';
@@ -530,11 +553,20 @@
                     } else if (data.success) {
                         resetFieldErrors();
                         showMessage('loginAlert', data.message, 'success');
-                        // Rediriger vers la page d'accueil avec cache-busting pour forcer le rechargement
-                        setTimeout(() => {
-                            const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
-                            window.location.replace(redirectUrl);
-                        }, 1000);
+                        
+                        // Vérifier si l'utilisateur a des articles dans son panier
+                        if (data.has_cart_items && data.cart_count > 0) {
+                            // Afficher le modal de choix au lieu de rediriger immédiatement
+                            setTimeout(() => {
+                                showCartChoiceModal(data.cart_count);
+                            }, 500);
+                        } else {
+                            // Rediriger vers la page d'accueil avec cache-busting pour forcer le rechargement
+                            setTimeout(() => {
+                                const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
+                                window.location.replace(redirectUrl);
+                            }, 1000);
+                        }
                     } else {
                         const errorMessage = data.message || 'Erreur lors de la connexion';
                         showMessage('loginAlert', errorMessage, 'danger', data.errors);
@@ -626,13 +658,21 @@
                             resetFieldErrors();
                             showMessage('codeAlert', 'Connexion réussie ! Redirection...', 'success');
                             
-                            // Rediriger vers la page d'accueil avec session
-                            setTimeout(() => {
-                                // Ajouter un paramètre de cache-busting pour forcer le rechargement
-                                const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
-                                // Utiliser replace pour éviter de garder la page d'auth dans l'historique
-                                window.location.replace(redirectUrl);
-                            }, 1000);
+                            // Vérifier si l'utilisateur a des articles dans son panier
+                            if (data.has_cart_items && data.cart_count > 0) {
+                                // Afficher le modal de choix au lieu de rediriger immédiatement
+                                setTimeout(() => {
+                                    showCartChoiceModal(data.cart_count);
+                                }, 500);
+                            } else {
+                                // Rediriger vers la page d'accueil avec session
+                                setTimeout(() => {
+                                    // Ajouter un paramètre de cache-busting pour forcer le rechargement
+                                    const redirectUrl = (data.redirect || '{{ route("accueil") }}') + '?login=' + Date.now();
+                                    // Utiliser replace pour éviter de garder la page d'auth dans l'historique
+                                    window.location.replace(redirectUrl);
+                                }, 1000);
+                            }
                         } else {
                             const errorMessage = data.message || 'Code invalide ou expiré';
                             showMessage('codeAlert', errorMessage, 'danger', data.errors);
@@ -698,6 +738,60 @@
             });
 
         </script>
+
+        <!-- Modal de choix panier/achats -->
+        <div class="modal fade" id="cartChoiceModal" tabindex="-1" aria-labelledby="cartChoiceModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title" id="cartChoiceModalLabel">
+                            <i class="fa-solid fa-cart-shopping text-primary me-2"></i>
+                            Articles dans votre panier
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <p class="mb-3">
+                            Vous avez <strong id="cartItemCount">0</strong> article(s) dans votre panier.
+                        </p>
+                        <p class="text-muted mb-4">
+                            Que souhaitez-vous faire ?
+                        </p>
+                        <div class="d-grid gap-2">
+                            <a href="{{ route('checkout') }}" class="btn blue-bg text-white">
+                                <i class="fa-solid fa-shopping-bag me-2"></i>
+                                Valider mon panier
+                            </a>
+                            <a href="{{ route('accueil') }}" class="btn btn-outline-primary">
+                                <i class="fa-solid fa-store me-2"></i>
+                                Continuer mes achats
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Fonction pour afficher le modal de choix panier
+            function showCartChoiceModal(cartCount) {
+                const modal = new bootstrap.Modal(document.getElementById('cartChoiceModal'));
+                document.getElementById('cartItemCount').textContent = cartCount || 0;
+                modal.show();
+            }
+
+            // Vérifier si on doit afficher le modal après connexion/inscription
+            // (pour les redirections depuis SocialAuthController)
+            @if(session('show_cart_choice'))
+                document.addEventListener('DOMContentLoaded', function() {
+                    const cartCount = {{ session('cart_count', 0) }};
+                    if (cartCount > 0) {
+                        showCartChoiceModal(cartCount);
+                    }
+                });
+            @endif
+        </script>
+
 <!-- JQUERY -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Bootstrap JS -->

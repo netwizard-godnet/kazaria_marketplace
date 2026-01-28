@@ -207,10 +207,26 @@ class AuthController extends Controller
             // Envoyer l'email de vérification (optionnel)
             Mail::to($user->email)->send(new VerifyEmailMail($user, $verificationUrl));
 
+            // Vérifier si l'utilisateur invité avait des articles dans son panier (via session_id)
+            $guestSessionId = $request->header('X-Session-ID');
+            $hasCartItems = false;
+            $cartCount = 0;
+            
+            if ($guestSessionId) {
+                $guestSessionId = is_array($guestSessionId) ? ($guestSessionId[0] ?? null) : (string)$guestSessionId;
+                $guestCartItems = CartItem::where('session_id', $guestSessionId)
+                    ->whereNull('user_id')
+                    ->get();
+                $hasCartItems = $guestCartItems->isNotEmpty();
+                $cartCount = $guestCartItems->count();
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Compte créé avec succès ! Vous pouvez maintenant vous connecter. Un email de vérification a été envoyé à votre adresse email pour devenir un utilisateur vérifié.',
-                'user' => $user->only(['id', 'nom', 'prenoms', 'email'])
+                'user' => $user->only(['id', 'nom', 'prenoms', 'email']),
+                'has_cart_items' => $hasCartItems,
+                'cart_count' => $cartCount
             ]);
 
         } catch (\Exception $e) {
@@ -388,13 +404,19 @@ class AuthController extends Controller
                         'timestamp' => now()->toDateTimeString(),
                     ]);
 
+                    // Vérifier si l'utilisateur a des articles dans son panier
+                    $cartItems = CartItem::getCartItems($user->id, null);
+                    $hasCartItems = $cartItems->isNotEmpty();
+
                     // Créer la réponse JSON
                     $response = response()->json([
                         'success' => true,
                         'message' => 'Connexion réussie',
                         'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
                         'requires_code' => false,
-                        'redirect' => route('accueil')
+                        'redirect' => route('accueil'),
+                        'has_cart_items' => $hasCartItems,
+                        'cart_count' => $cartItems->count()
                     ]);
 
                     // Ajouter le cookie de session à la réponse
@@ -696,12 +718,18 @@ class AuthController extends Controller
             'timestamp' => now()->toDateTimeString(),
         ]);
 
+        // Vérifier si l'utilisateur a des articles dans son panier
+        $cartItems = CartItem::getCartItems($user->id, null);
+        $hasCartItems = $cartItems->isNotEmpty();
+
         // Créer la réponse JSON
         $response = response()->json([
             'success' => true,
             'message' => 'Connexion réussie',
             'user' => $user->only(['id', 'nom', 'prenoms', 'email', 'telephone', 'two_factor_enabled']),
-            'redirect' => route('accueil')
+            'redirect' => route('accueil'),
+            'has_cart_items' => $hasCartItems,
+            'cart_count' => $cartItems->count()
         ]);
 
         // Ajouter le cookie de session à la réponse

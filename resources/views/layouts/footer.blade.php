@@ -328,6 +328,68 @@
     }
 </style>
 
+<!-- Modal de choix panier/achats -->
+<div class="modal fade" id="cartChoiceModal" tabindex="-1" aria-labelledby="cartChoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="cartChoiceModalLabel">
+                    <i class="fa-solid fa-cart-shopping text-primary me-2"></i>
+                    Articles dans votre panier
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p class="mb-3">
+                    Vous avez <strong id="cartItemCount">0</strong> article(s) dans votre panier.
+                </p>
+                <p class="text-muted mb-4">
+                    Que souhaitez-vous faire ?
+                </p>
+                <div class="d-grid gap-2">
+                    <a href="{{ route('checkout') }}" class="btn blue-bg text-white">
+                        <i class="fa-solid fa-shopping-bag me-2"></i>
+                        Valider mon panier
+                    </a>
+                    <a href="{{ route('accueil') }}" class="btn btn-outline-primary" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-store me-2"></i>
+                        Continuer mes achats
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fonction pour afficher le modal de choix panier
+    function showCartChoiceModal(cartCount) {
+        const modalElement = document.getElementById('cartChoiceModal');
+        if (!modalElement) {
+            console.warn('Modal cartChoiceModal non trouvé');
+            return;
+        }
+        const modal = new bootstrap.Modal(modalElement);
+        const countElement = document.getElementById('cartItemCount');
+        if (countElement) {
+            countElement.textContent = cartCount || 0;
+        }
+        modal.show();
+    }
+
+    // Vérifier si on doit afficher le modal après connexion sociale
+    @if(session('show_cart_choice'))
+        document.addEventListener('DOMContentLoaded', function() {
+            const cartCount = {{ session('cart_count', 0) }};
+            if (cartCount > 0) {
+                setTimeout(() => {
+                    showCartChoiceModal(cartCount);
+                }, 500);
+            }
+        });
+    @endif
+</script>
+
 <!-- Backdrop pour le pop-up cookies -->
 <div id="cookieConsentBackdrop" class="cookie-consent-backdrop" style="display: none;"></div>
 
