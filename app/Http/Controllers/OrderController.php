@@ -27,18 +27,56 @@ class OrderController extends Controller
     public function checkout(Request $request)
     {
         $user = auth()->user();
-        $sessionId = $request->session()->getId();
         
         // Récupérer les articles du panier (utilisateur connecté ou session invité)
         if ($user) {
             $cartItems = CartItem::getCartItems($user->id, null);
             $subtotal = CartItem::getCartTotal($user->id, null);
+            $sessionId = null;
         } else {
+            // Pour les invités, utiliser le session_id depuis le header X-Session-ID ou depuis la requête
+            // C'est l'ID stocké dans localStorage côté client, pas la session Laravel
+            $sessionId = $request->header('X-Session-ID') ?? $request->input('session_id');
+            
+            // Si pas de session_id fourni, essayer de récupérer depuis la session Laravel comme fallback
+            // (pour compatibilité avec les anciennes sessions)
+            if (!$sessionId && $request->hasSession()) {
+                $storedSessionId = session('guest_session_id');
+                if ($storedSessionId) {
+                    $sessionId = $storedSessionId;
+                }
+            }
+            
+            // Stocker le session_id dans la session Laravel pour les prochaines requêtes
+            if ($sessionId && $request->hasSession()) {
+                session(['guest_session_id' => $sessionId]);
+            }
+            
+            \Log::info('🔍 [CHECKOUT] Récupération panier invité', [
+                'session_id_from_header' => $request->header('X-Session-ID'),
+                'session_id_from_request' => $request->input('session_id'),
+                'session_id_from_session' => session('guest_session_id'),
+                'session_id_final' => $sessionId,
+                'has_session' => $request->hasSession(),
+            ]);
+            
+            // Si toujours pas de session_id, le panier sera vide (normal pour un nouvel invité)
             $cartItems = CartItem::getCartItems(null, $sessionId);
             $subtotal = CartItem::getCartTotal(null, $sessionId);
+            
+            \Log::info('🔍 [CHECKOUT] Panier invité récupéré', [
+                'session_id' => $sessionId,
+                'cart_items_count' => $cartItems->count(),
+                'subtotal' => $subtotal,
+            ]);
         }
         
         if ($cartItems->isEmpty()) {
+            \Log::warning('⚠️ [CHECKOUT] Panier vide - redirection vers panier', [
+                'user_id' => $user?->id,
+                'session_id' => $sessionId ?? null,
+                'is_authenticated' => (bool)$user,
+            ]);
             return redirect()->route('product-cart')->with('error', 'Votre panier est vide');
         }
         
@@ -97,18 +135,30 @@ class OrderController extends Controller
     public function shipping(Request $request)
     {
         $user = auth()->user();
-        $sessionId = $request->session()->getId();
         $pendingOrderData = session('pending_order_data');
         
         // Récupérer les articles du panier (utilisateur connecté ou session invité)
         if ($user) {
             $cartItems = CartItem::getCartItems($user->id, null);
             $subtotal = CartItem::getCartTotal($user->id, null);
+            $sessionId = null;
         } else {
             // Vérifier qu'on a des données en session
             if (!$pendingOrderData) {
                 return redirect()->route('checkout')->with('error', 'Veuillez remplir vos informations de livraison');
             }
+            
+            // Pour les invités, utiliser le session_id depuis le header ou la requête
+            $sessionId = $request->header('X-Session-ID') ?? $request->input('session_id');
+            
+            // Si pas de session_id fourni, essayer depuis la session Laravel
+            if (!$sessionId && $request->hasSession()) {
+                $storedSessionId = session('guest_session_id');
+                if ($storedSessionId) {
+                    $sessionId = $storedSessionId;
+                }
+            }
+            
             $cartItems = CartItem::getCartItems(null, $sessionId);
             $subtotal = CartItem::getCartTotal(null, $sessionId);
         }
@@ -248,7 +298,17 @@ class OrderController extends Controller
         try {
             DB::beginTransaction();
             
-            $sessionId = $request->session()->getId();
+            // Récupérer le session_id pour les invités (depuis header ou requête)
+            $sessionId = null;
+            if ($isGuest) {
+                $sessionId = $request->header('X-Session-ID') ?? $request->input('session_id');
+                if (!$sessionId && $request->hasSession()) {
+                    $storedSessionId = session('guest_session_id');
+                    if ($storedSessionId) {
+                        $sessionId = $storedSessionId;
+                    }
+                }
+            }
             
             // Utiliser les données validées
             $shippingName = $validationData['shipping_name'];

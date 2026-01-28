@@ -632,6 +632,16 @@
             }
         }
         
+        // Fonction globale pour obtenir le session_id (doit être accessible partout)
+        window.getSessionId = function() {
+            let sessionId = localStorage.getItem('guest_session_id');
+            if (!sessionId) {
+                sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('guest_session_id', sessionId);
+            }
+            return sessionId;
+        };
+        
         // S'assurer que getHeaders est disponible localement si cart.js n'est pas chargé
         if (typeof window.getHeaders === 'undefined') {
             window.getHeaders = function() {
@@ -645,32 +655,29 @@
                 if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
                 } else {
-                    headers['X-Session-ID'] = getSessionId();
+                    headers['X-Session-ID'] = window.getSessionId();
                 }
                 
                 return headers;
             };
-            
-            function getSessionId() {
-                let sessionId = localStorage.getItem('guest_session_id');
-                if (!sessionId) {
-                    sessionId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('guest_session_id', sessionId);
-                }
-                return sessionId;
-            }
         }
         
         // Fonction pour procéder au checkout
         function proceedToCheckout() {
             const token = localStorage.getItem('auth_token');
+            const sessionId = window.getSessionId();
             
-            // Redirection directe vers le checkout (l'authentification est gérée par le middleware)
-            window.location.href = '/checkout';
-            return;
+            // Construire l'URL avec le session_id pour les invités
+            let checkoutUrl = '/checkout';
+            if (!token && sessionId) {
+                // Pour les invités, passer le session_id en paramètre
+                checkoutUrl += '?session_id=' + encodeURIComponent(sessionId);
+            } else if (token) {
+                // Pour les utilisateurs connectés, passer le token
+                checkoutUrl += '?token=' + encodeURIComponent(token);
+            }
             
-            // Utilisateur connecté, aller au checkout
-            window.location.href = '/checkout?token=' + token;
+            window.location.href = checkoutUrl;
         }
         
         // Fonction pour appliquer un code promo

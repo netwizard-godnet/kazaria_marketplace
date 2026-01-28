@@ -79,6 +79,14 @@ class CartController extends Controller
         $cartItems = collect([]); // Collection vide par défaut
         $total = 0;
         
+        // Si utilisateur invité, essayer de récupérer le session_id depuis la requête et le stocker dans la session
+        if (!auth()->check()) {
+            $sessionId = $request->header('X-Session-ID') ?? $request->input('session_id');
+            if ($sessionId && $request->hasSession()) {
+                session(['guest_session_id' => $sessionId]);
+            }
+        }
+        
         // Récupérer les paramètres de livraison depuis la base de données
         $shippingCostSetting = \App\Models\Setting::where('key', 'shipping_cost')->first();
         $freeThresholdSetting = \App\Models\Setting::where('key', 'free_shipping_threshold')->first();
@@ -128,6 +136,11 @@ class CartController extends Controller
             ], 422);
         }
         $identifier = $this->getUserOrSessionApi($request);
+        
+        // Stocker le session_id dans la session Laravel pour les invités (pour pouvoir le récupérer lors de la navigation)
+        if (!$identifier['user_id'] && $identifier['session_id'] && $request->hasSession()) {
+            session(['guest_session_id' => $identifier['session_id']]);
+        }
 
         // Normaliser les attributs pour la comparaison
         // IMPORTANT: Utiliser input() pour récupérer les données du body JSON, pas attributes qui est pour les paramètres de route
@@ -230,6 +243,12 @@ class CartController extends Controller
     public function getCartApi(Request $request)
     {
         $identifier = $this->getUserOrSessionApi($request);
+        
+        // Stocker le session_id dans la session Laravel pour les invités
+        if (!$identifier['user_id'] && $identifier['session_id'] && $request->hasSession()) {
+            session(['guest_session_id' => $identifier['session_id']]);
+        }
+        
         $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
         $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
 
@@ -263,6 +282,11 @@ class CartController extends Controller
             ], 422);
         }
         $identifier = $this->getUserOrSession($request);
+        
+        // Stocker le session_id dans la session Laravel pour les invités (pour pouvoir le récupérer lors de la navigation)
+        if (!$identifier['user_id'] && $identifier['session_id']) {
+            session(['guest_session_id' => $identifier['session_id']]);
+        }
 
         // Normaliser les attributs pour la comparaison
         // IMPORTANT: Utiliser input() pour récupérer les données du body JSON, pas attributes qui est pour les paramètres de route
@@ -541,6 +565,12 @@ class CartController extends Controller
     public function getCart(Request $request)
     {
         $identifier = $this->getUserOrSession($request);
+        
+        // Stocker le session_id dans la session Laravel pour les invités
+        if (!$identifier['user_id'] && $identifier['session_id']) {
+            session(['guest_session_id' => $identifier['session_id']]);
+        }
+        
         $cartItems = CartItem::getCartItems($identifier['user_id'], $identifier['session_id']);
         $total = CartItem::getCartTotal($identifier['user_id'], $identifier['session_id']);
         $count = CartItem::getCartCount($identifier['user_id'], $identifier['session_id']);
