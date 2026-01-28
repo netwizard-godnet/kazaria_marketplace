@@ -22,24 +22,25 @@ class OrderController extends Controller
 {
     /**
      * Page de checkout (WEB - Sessions)
+     * Permet l'accès sans connexion - utilise session_id pour le panier invité
      */
     public function checkout(Request $request)
     {
-        // Vérifier si l'utilisateur est connecté via session
         $user = auth()->user();
+        $sessionId = $request->session()->getId();
         
-        if (!$user) {
-            return redirect()->route('login')->with('message', 'Veuillez vous connecter pour passer commande');
+        // Récupérer les articles du panier (utilisateur connecté ou session invité)
+        if ($user) {
+            $cartItems = CartItem::getCartItems($user->id, null);
+            $subtotal = CartItem::getCartTotal($user->id, null);
+        } else {
+            $cartItems = CartItem::getCartItems(null, $sessionId);
+            $subtotal = CartItem::getCartTotal(null, $sessionId);
         }
-        
-        // Récupérer les articles du panier
-        $cartItems = CartItem::getCartItems($user->id, null);
         
         if ($cartItems->isEmpty()) {
             return redirect()->route('product-cart')->with('error', 'Votre panier est vide');
         }
-        
-        $subtotal = CartItem::getCartTotal($user->id, null);
         
         // Appliquer remise promo éventuelle (affichage checkout)
         $promo = session('promo');
@@ -56,7 +57,7 @@ class OrderController extends Controller
         // Calculer le total avec livraison
         $total = max(0, $subtotal - $discount) + $shippingCost;
         
-        return view('checkout', compact('user', 'cartItems', 'total', 'subtotal', 'discount', 'promo', 'shippingCost', 'freeThreshold'));
+        return view('checkout', compact('user', 'cartItems', 'total', 'subtotal', 'discount', 'promo', 'shippingCost', 'freeThreshold', 'sessionId'));
     }
 
     /**
@@ -91,16 +92,31 @@ class OrderController extends Controller
 
     /**
      * Afficher la page de détails de livraison (WEB - Sessions)
+     * Permet l'accès sans connexion - utilise session_id pour le panier invité
      */
     public function shipping(Request $request)
     {
         $user = auth()->user();
+        $sessionId = $request->session()->getId();
+        $pendingOrderData = session('pending_order_data');
         
-        if (!$user) {
-            return redirect()->route('login');
+        // Récupérer les articles du panier (utilisateur connecté ou session invité)
+        if ($user) {
+            $cartItems = CartItem::getCartItems($user->id, null);
+            $subtotal = CartItem::getCartTotal($user->id, null);
+        } else {
+            // Vérifier qu'on a des données en session
+            if (!$pendingOrderData) {
+                return redirect()->route('checkout')->with('error', 'Veuillez remplir vos informations de livraison');
+            }
+            $cartItems = CartItem::getCartItems(null, $sessionId);
+            $subtotal = CartItem::getCartTotal(null, $sessionId);
         }
-        $cartItems = CartItem::getCartItems($user->id, null);
-        $subtotal = CartItem::getCartTotal($user->id, null);
+        
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('product-cart')->with('error', 'Votre panier est vide');
+        }
+        
         $promo = session('promo');
         $discount = 0;
         if ($promo && isset($promo['percent'])) {
@@ -112,25 +128,104 @@ class OrderController extends Controller
         $shippingCost = ($freeThreshold && $subtotal >= $freeThreshold) ? 0 : (float)$shippingCostSetting;
         $total = max(0, $subtotal - $discount) + $shippingCost;
         
-        return view('shipping', compact('user', 'cartItems', 'subtotal', 'shippingCost', 'total', 'discount', 'promo'));
+        return view('shipping', compact('user', 'cartItems', 'subtotal', 'shippingCost', 'total', 'discount', 'promo', 'pendingOrderData'));
+    }
+
+    /**
+     * Vérifier l'email et authentifier ou préparer la création de compte
+     */
+    public function verifyEmailAndAuthenticate(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'shipping_name' => 'required|string|max:255',
+            'shipping_phone' => 'required|string|max:20',
+            'shipping_address' => 'required|string',
+            'shipping_city' => 'required|string|max:100',
+            'shipping_postal_code' => 'nullable|string|max:10',
+            'shipping_country' => 'required|string|max:2',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $email = $request->email;
+        $user = User::where('email', $email)->first();
+
+        if ($user) {
+            // Compte existe - demander le mot de passe
+            return response()->json([
+                'success' => true,
+                'account_exists' => true,
+                'message' => 'Veuillez entrer votre mot de passe pour confirmer votre identité',
+                'user_id' => $user->id
+            ]);
+        } else {
+            // Compte n'existe pas - stocker les données temporairement et continuer
+            // Les données seront utilisées pour créer le compte après la commande
+            session([
+                'pending_order_data' => [
+                    'email' => $email,
+                    'shipping_name' => $request->shipping_name,
+                    'shipping_phone' => $request->shipping_phone,
+                    'shipping_address' => $request->shipping_address,
+                    'shipping_city' => $request->shipping_city,
+                    'shipping_postal_code' => $request->shipping_postal_code,
+                    'shipping_country' => $request->shipping_country,
+                ]
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'account_exists' => false,
+                'message' => 'Vous pouvez continuer la commande'
+            ]);
+        }
     }
 
     /**
      * Créer la commande (API - Tokens OU WEB - Sessions)
+     * Supporte maintenant les utilisateurs non connectés
      */
     public function createOrder(Request $request)
     {
         // Support à la fois pour les tokens (API) et les sessions (WEB)
         $user = $request->user() ?? auth()->user();
         
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Utilisateur non authentifié'
-            ], 401);
+        // Si pas d'utilisateur connecté, vérifier si on a des données en session
+        $pendingOrderData = null;
+        $isGuest = !$user;
+        if ($isGuest) {
+            $pendingOrderData = session('pending_order_data');
+            if (!$pendingOrderData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session expirée. Veuillez recommencer.'
+                ], 401);
+            }
         }
         
-        $validator = Validator::make($request->all(), [
+        // Si utilisateur invité, utiliser les données de session pour la validation
+        $validationData = $request->all();
+        if ($isGuest && $pendingOrderData) {
+            // Fusionner les données de session avec celles de la requête (la requête a priorité)
+            $validationData = array_merge($pendingOrderData, [
+                'shipping_name' => $request->shipping_name ?? $pendingOrderData['shipping_name'],
+                'shipping_email' => $request->shipping_email ?? $pendingOrderData['email'],
+                'shipping_phone' => $request->shipping_phone ?? $pendingOrderData['shipping_phone'],
+                'shipping_address' => $request->shipping_address ?? $pendingOrderData['shipping_address'],
+                'shipping_city' => $request->shipping_city ?? $pendingOrderData['shipping_city'],
+                'shipping_postal_code' => $request->shipping_postal_code ?? $pendingOrderData['shipping_postal_code'] ?? null,
+                'shipping_country' => $request->shipping_country ?? $pendingOrderData['shipping_country'],
+            ]);
+        }
+        
+        $validator = Validator::make($validationData, [
             'shipping_name' => 'required|string|max:255',
             'shipping_email' => 'required|email|max:255',
             'shipping_phone' => 'required|string|max:20',
@@ -153,8 +248,27 @@ class OrderController extends Controller
         try {
             DB::beginTransaction();
             
-            // Récupérer les articles du panier
-            $cartItems = CartItem::getCartItems($user->id, null);
+            $sessionId = $request->session()->getId();
+            
+            // Utiliser les données validées
+            $shippingName = $validationData['shipping_name'];
+            $shippingEmail = $validationData['shipping_email'];
+            $shippingPhone = $validationData['shipping_phone'];
+            $shippingAddress = $validationData['shipping_address'];
+            $shippingCity = $validationData['shipping_city'];
+            $shippingPostalCode = $validationData['shipping_postal_code'] ?? null;
+            $shippingCountry = $validationData['shipping_country'];
+            $paymentMethod = $validationData['payment_method'];
+            $customerNotes = $validationData['customer_notes'] ?? null;
+            
+            // Récupérer les articles du panier (utilisateur connecté ou session invité)
+            if ($user) {
+                $cartItems = CartItem::getCartItems($user->id, null);
+                $subtotal = CartItem::getCartTotal($user->id, null);
+            } else {
+                $cartItems = CartItem::getCartItems(null, $sessionId);
+                $subtotal = CartItem::getCartTotal(null, $sessionId);
+            }
             
             if ($cartItems->isEmpty()) {
                 return response()->json([
@@ -164,7 +278,6 @@ class OrderController extends Controller
             }
             
             // Calculer les montants
-            $subtotal = CartItem::getCartTotal($user->id, null);
             // Frais et seuil depuis paramètres
             $shippingCostSetting = \App\Models\Setting::get('shipping_cost', 0);
             $freeThreshold = \App\Models\Setting::get('free_shipping_threshold', 0);
@@ -190,17 +303,56 @@ class OrderController extends Controller
                 ], 400);
             }
             
+            // Si utilisateur invité, créer le compte temporairement (sans mot de passe)
+            // Le mot de passe sera défini après la commande
+            if ($isGuest && $pendingOrderData) {
+                // Extraire nom et prénom du shipping_name
+                $nameParts = explode(' ', $shippingName, 2);
+                $prenoms = $nameParts[0] ?? '';
+                $nom = $nameParts[1] ?? $nameParts[0] ?? '';
+                
+                // Créer l'utilisateur sans mot de passe (sera défini après)
+                $user = User::create([
+                    'nom' => $nom,
+                    'prenoms' => $prenoms,
+                    'email' => $shippingEmail,
+                    'telephone' => $shippingPhone,
+                    'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(32)), // Mot de passe temporaire
+                    'statut' => 'actif',
+                    'is_verified' => false,
+                    'termes_condition' => true,
+                    'newsletter' => false,
+                ]);
+                
+                // Transférer le panier de session vers l'utilisateur
+                CartItem::where('session_id', $sessionId)
+                    ->whereNull('user_id')
+                    ->update(['user_id' => $user->id, 'session_id' => null]);
+                
+                // Recharger les cartItems avec le user_id
+                $cartItems = CartItem::getCartItems($user->id, null);
+                
+                // Stocker l'ID utilisateur et l'email dans la session pour la définition du mot de passe
+                session([
+                    'pending_password_setup' => [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'order_number' => null // Sera rempli après création de la commande
+                    ]
+                ]);
+            }
+            
             // Créer la commande
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
                 'user_id' => $user->id,
-                'shipping_name' => $request->shipping_name,
-                'shipping_email' => $request->shipping_email,
-                'shipping_phone' => $request->shipping_phone,
-                'shipping_address' => $request->shipping_address,
-                'shipping_city' => $request->shipping_city,
-                'shipping_postal_code' => $request->shipping_postal_code,
-                'shipping_country' => $request->shipping_country,
+                'shipping_name' => $shippingName,
+                'shipping_email' => $shippingEmail,
+                'shipping_phone' => $shippingPhone,
+                'shipping_address' => $shippingAddress,
+                'shipping_city' => $shippingCity,
+                'shipping_postal_code' => $shippingPostalCode,
+                'shipping_country' => $shippingCountry,
                 'subtotal' => $subtotal,
                 'shipping_cost' => $shippingCost,
                 'tax' => $tax,
@@ -208,9 +360,16 @@ class OrderController extends Controller
                 'total' => $total,
                 'status' => OrderStatusService::STATUS_PENDING,
                 'payment_status' => OrderStatusService::PAYMENT_PENDING,
-                'payment_method' => $request->payment_method,
-                'customer_notes' => $request->customer_notes
+                'payment_method' => $paymentMethod,
+                'customer_notes' => $customerNotes
             ]);
+            
+            // Mettre à jour le numéro de commande dans la session si nécessaire
+            if ($isGuest && session()->has('pending_password_setup')) {
+                $pendingPasswordSetup = session('pending_password_setup');
+                $pendingPasswordSetup['order_number'] = $order->order_number;
+                session(['pending_password_setup' => $pendingPasswordSetup]);
+            }
             
             // Créer les articles de la commande et collecter les données pour la réservation du stock
             $orderItemsData = [];
@@ -312,11 +471,15 @@ class OrderController extends Controller
             
             // Vider le panier
             CartItem::where('user_id', $user->id)->delete();
+            
             // Consommer le code promo (incrément d'utilisation et nettoyer la session)
             if ($promo && isset($promo['code'])) {
                 \App\Models\Coupon::where('code', $promo['code'])->increment('uses');
             }
             session()->forget('promo');
+            
+            // Nettoyer les données temporaires de commande
+            session()->forget('pending_order_data');
             
             // NE PAS marquer comme payée si paiement à la livraison
             // Le statut de paiement reste "pending" jusqu'à la livraison effective
@@ -368,11 +531,19 @@ class OrderController extends Controller
             
             DB::commit();
             
-            // Construire l'URL de redirection (avec token seulement si c'est une requête API)
+            // Si c'est un nouvel utilisateur, indiquer qu'il doit définir un mot de passe
+            $needsPasswordSetup = $isGuest && $user->needs_password_setup ?? false;
+            
+            // Construire l'URL de redirection
             $redirectUrl = route('order-invoice', $order->order_number);
             $bearerToken = $request->bearerToken();
             if ($bearerToken) {
                 $redirectUrl .= '?token=' . $bearerToken;
+            }
+            
+            // Si besoin de définir un mot de passe, ajouter un paramètre
+            if ($needsPasswordSetup) {
+                $redirectUrl .= (strpos($redirectUrl, '?') !== false ? '&' : '?') . 'setup_password=1';
             }
             
             return response()->json([
@@ -380,7 +551,10 @@ class OrderController extends Controller
                 'message' => 'Commande créée avec succès',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'redirect' => $redirectUrl
+                'redirect' => $redirectUrl,
+                'needs_password_setup' => $needsPasswordSetup,
+                'user_id' => $user->id,
+                'email' => $user->email
             ]);
             
         } catch (\Exception $e) {
@@ -397,7 +571,7 @@ class OrderController extends Controller
     /**
      * Afficher la facture
      */
-    public function invoice($orderNumber)
+    public function invoice($orderNumber, Request $request)
     {
         $order = Order::where('order_number', $orderNumber)
             ->with(['items.product', 'items.variation.attributeValues.attribute', 'user'])
@@ -409,7 +583,10 @@ class OrderController extends Controller
         $siteName = Setting::get('site_name', 'KAZARIA');
         $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
         
-        return view('invoice', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress'));
+        // Vérifier si on doit afficher le modal de définition de mot de passe
+        $needsPasswordSetup = $request->has('setup_password') && session()->has('pending_password_setup');
+        
+        return view('invoice', compact('order', 'siteEmail', 'sitePhone', 'siteName', 'siteAddress', 'needsPasswordSetup'));
     }
 
     /**
@@ -643,6 +820,131 @@ class OrderController extends Controller
                 }
             }
         }
+    }
+
+    /**
+     * Définir le mot de passe après création de compte via commande
+     */
+    public function setupPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = User::findOrFail($request->user_id);
+            
+            // Vérifier que c'est bien un compte qui nécessite la définition du mot de passe
+            $pendingPasswordSetup = session('pending_password_setup');
+            if (!$pendingPasswordSetup || $pendingPasswordSetup['user_id'] != $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session invalide ou expirée'
+                ], 403);
+            }
+
+            // Définir le mot de passe
+            $user->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password)
+            ]);
+
+            // Nettoyer la session
+            session()->forget('pending_password_setup');
+
+            // Connecter automatiquement l'utilisateur
+            \Illuminate\Support\Facades\Auth::login($user);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mot de passe défini avec succès. Vous êtes maintenant connecté.',
+                'redirect' => route('order-invoice', $pendingPasswordSetup['order_number'] ?? '')
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur définition mot de passe: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la définition du mot de passe'
+            ], 500);
+        }
+    }
+
+    /**
+     * Authentifier avec mot de passe pour commande (compte existant)
+     */
+    public function authenticateForOrder(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun compte trouvé avec cet email'
+            ], 404);
+        }
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mot de passe incorrect'
+            ], 401);
+        }
+
+        // Connecter l'utilisateur
+        \Illuminate\Support\Facades\Auth::login($user);
+
+        // Transférer le panier de session vers l'utilisateur
+        $sessionId = $request->session()->getId();
+        $guestCartItems = CartItem::where('session_id', $sessionId)
+            ->whereNull('user_id')
+            ->get();
+
+        foreach ($guestCartItems as $item) {
+            // Vérifier si l'utilisateur a déjà ce produit dans son panier
+            $existingItem = CartItem::where('user_id', $user->id)
+                ->where('product_id', $item->product_id)
+                ->where('variation_id', $item->variation_id)
+                ->where('attributes', $item->attributes)
+                ->first();
+
+            if ($existingItem) {
+                $existingItem->quantity += $item->quantity;
+                $existingItem->save();
+                $item->delete();
+            } else {
+                $item->user_id = $user->id;
+                $item->session_id = null;
+                $item->save();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Authentification réussie',
+            'user' => $user->only(['id', 'nom', 'prenoms', 'email'])
+        ]);
     }
 
     /**

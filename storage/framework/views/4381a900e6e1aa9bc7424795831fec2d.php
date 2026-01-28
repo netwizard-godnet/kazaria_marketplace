@@ -29,44 +29,47 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingName" class="form-label">Nom complet <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="shippingName" value="<?php echo e($user->prenoms); ?> <?php echo e($user->nom); ?>" required>
+                                        <input type="text" class="form-control" id="shippingName" value="<?php echo e($user ? ($user->prenoms . ' ' . $user->nom) : ($pendingOrderData['shipping_name'] ?? '')); ?>" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" id="shippingEmail" value="<?php echo e($user->email); ?>" required>
+                                        <input type="email" class="form-control" id="shippingEmail" value="<?php echo e($user ? $user->email : ($pendingOrderData['email'] ?? '')); ?>" required <?php echo e($user ? 'readonly' : ''); ?>>
                                     </div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingPhone" class="form-label">Téléphone <span class="text-danger">*</span></label>
-                                        <input type="tel" class="form-control" id="shippingPhone" value="<?php echo e($user->telephone); ?>" required>
+                                        <input type="tel" class="form-control" id="shippingPhone" value="<?php echo e($user ? $user->telephone : ($pendingOrderData['shipping_phone'] ?? '')); ?>" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingCity" class="form-label">Ville <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="shippingCity" value="<?php echo e($user->ville ?? 'Abidjan'); ?>" required>
+                                        <input type="text" class="form-control" id="shippingCity" value="<?php echo e($user ? ($user->ville ?? 'Abidjan') : ($pendingOrderData['shipping_city'] ?? 'Abidjan')); ?>" required>
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="shippingAddress" class="form-label">Adresse complète <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="shippingAddress" rows="3" required><?php echo e($user->adresse ?? ''); ?></textarea>
+                                    <textarea class="form-control" id="shippingAddress" rows="3" required><?php echo e($user ? ($user->adresse ?? '') : ($pendingOrderData['shipping_address'] ?? '')); ?></textarea>
                                     <div class="form-text">Indiquez un point de repère pour faciliter la livraison</div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingPostalCode" class="form-label">Code postal</label>
-                                        <input type="text" class="form-control" id="shippingPostalCode" value="<?php echo e($user->code_postal ?? ''); ?>">
+                                        <input type="text" class="form-control" id="shippingPostalCode" value="<?php echo e($user ? ($user->code_postal ?? '') : ($pendingOrderData['shipping_postal_code'] ?? '')); ?>">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingCountry" class="form-label">Pays <span class="text-danger">*</span></label>
                                         <select class="form-control" id="shippingCountry" required>
-                                            <option value="CI" <?php echo e(($user->pays ?? 'CI') == 'CI' ? 'selected' : ''); ?>>Côte d'Ivoire</option>
-                                            <option value="SN" <?php echo e(($user->pays ?? '') == 'SN' ? 'selected' : ''); ?>>Sénégal</option>
-                                            <option value="ML" <?php echo e(($user->pays ?? '') == 'ML' ? 'selected' : ''); ?>>Mali</option>
-                                            <option value="BF" <?php echo e(($user->pays ?? '') == 'BF' ? 'selected' : ''); ?>>Burkina Faso</option>
-                                            <option value="GH" <?php echo e(($user->pays ?? '') == 'GH' ? 'selected' : ''); ?>>Ghana</option>
+                                            <?php
+                                                $selectedCountry = $user ? ($user->pays ?? 'CI') : ($pendingOrderData['shipping_country'] ?? 'CI');
+                                            ?>
+                                            <option value="CI" <?php echo e($selectedCountry == 'CI' ? 'selected' : ''); ?>>Côte d'Ivoire</option>
+                                            <option value="SN" <?php echo e($selectedCountry == 'SN' ? 'selected' : ''); ?>>Sénégal</option>
+                                            <option value="ML" <?php echo e($selectedCountry == 'ML' ? 'selected' : ''); ?>>Mali</option>
+                                            <option value="BF" <?php echo e($selectedCountry == 'BF' ? 'selected' : ''); ?>>Burkina Faso</option>
+                                            <option value="GH" <?php echo e($selectedCountry == 'GH' ? 'selected' : ''); ?>>Ghana</option>
                                         </select>
                                     </div>
                                 </div>

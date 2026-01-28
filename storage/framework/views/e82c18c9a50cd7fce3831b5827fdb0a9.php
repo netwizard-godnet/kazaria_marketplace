@@ -186,6 +186,121 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal pour définir mot de passe (nouveau compte) -->
+    <div class="modal fade" id="passwordSetupModal" tabindex="-1" aria-labelledby="passwordSetupModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordSetupModalLabel">
+                        <i class="bi bi-key me-2"></i>Sécuriser votre compte
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Votre commande a été créée avec succès ! Veuillez définir un mot de passe pour sécuriser votre compte.</p>
+                    <form id="passwordSetupForm">
+                        <div class="mb-3">
+                            <label for="setupPassword" class="form-label">Mot de passe <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="setupPassword" minlength="8" required>
+                            <small class="form-text text-muted">Minimum 8 caractères</small>
+                            <div class="invalid-feedback" id="setupPasswordError"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="setupPasswordConfirmation" class="form-label">Confirmer le mot de passe <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="setupPasswordConfirmation" minlength="8" required>
+                            <div class="invalid-feedback" id="setupPasswordConfirmationError"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn orange-bg text-white" onclick="setupPassword()">
+                        <i class="bi bi-check-circle me-2"></i>Définir le mot de passe
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function setupPassword() {
+            const password = document.getElementById('setupPassword').value;
+            const passwordConfirmation = document.getElementById('setupPasswordConfirmation').value;
+
+            // Réinitialiser les erreurs
+            document.getElementById('setupPassword').classList.remove('is-invalid');
+            document.getElementById('setupPasswordConfirmation').classList.remove('is-invalid');
+
+            if (!password || password.length < 8) {
+                document.getElementById('setupPassword').classList.add('is-invalid');
+                document.getElementById('setupPasswordError').textContent = 'Le mot de passe doit contenir au moins 8 caractères';
+                return;
+            }
+
+            if (password !== passwordConfirmation) {
+                document.getElementById('setupPasswordConfirmation').classList.add('is-invalid');
+                document.getElementById('setupPasswordConfirmationError').textContent = 'Les mots de passe ne correspondent pas';
+                return;
+            }
+
+            const pendingPasswordSetup = <?php echo json_encode(session('pending_password_setup'), 15, 512) ?>;
+            if (!pendingPasswordSetup || !pendingPasswordSetup.user_id) {
+                showNotification('error', 'Session expirée');
+                return;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                
+                const response = await fetch('/orders/setup-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        user_id: pendingPasswordSetup.user_id,
+                        password: password,
+                        password_confirmation: passwordConfirmation
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('success', data.message);
+                    // Fermer le modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('passwordSetupModal'));
+                    modal.hide();
+                } else {
+                    showNotification('error', data.message || 'Erreur lors de la définition du mot de passe');
+                    if (data.errors) {
+                        if (data.errors.password) {
+                            document.getElementById('setupPassword').classList.add('is-invalid');
+                            document.getElementById('setupPasswordError').textContent = data.errors.password[0];
+                        }
+                        if (data.errors.password_confirmation) {
+                            document.getElementById('setupPasswordConfirmation').classList.add('is-invalid');
+                            document.getElementById('setupPasswordConfirmationError').textContent = data.errors.password_confirmation[0];
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('error', 'Erreur de connexion');
+            }
+        }
+
+        // Afficher le modal de définition de mot de passe si nécessaire
+        <?php if(request('setup_password') == '1' && session('pending_password_setup')): ?>
+            document.addEventListener('DOMContentLoaded', function() {
+                const passwordSetupModal = new bootstrap.Modal(document.getElementById('passwordSetupModal'));
+                passwordSetupModal.show();
+            });
+        <?php endif; ?>
+    </script>
 <?php $__env->stopSection(); ?>
 
 

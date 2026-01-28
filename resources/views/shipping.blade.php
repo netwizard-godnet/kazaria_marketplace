@@ -29,44 +29,47 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingName" class="form-label">Nom complet <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="shippingName" value="{{ $user->prenoms }} {{ $user->nom }}" required>
+                                        <input type="text" class="form-control" id="shippingName" value="{{ $user ? ($user->prenoms . ' ' . $user->nom) : ($pendingOrderData['shipping_name'] ?? '') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" id="shippingEmail" value="{{ $user->email }}" required>
+                                        <input type="email" class="form-control" id="shippingEmail" value="{{ $user ? $user->email : ($pendingOrderData['email'] ?? '') }}" required {{ $user ? 'readonly' : '' }}>
                                     </div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingPhone" class="form-label">Téléphone <span class="text-danger">*</span></label>
-                                        <input type="tel" class="form-control" id="shippingPhone" value="{{ $user->telephone }}" required>
+                                        <input type="tel" class="form-control" id="shippingPhone" value="{{ $user ? $user->telephone : ($pendingOrderData['shipping_phone'] ?? '') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingCity" class="form-label">Ville <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="shippingCity" value="{{ $user->ville ?? 'Abidjan' }}" required>
+                                        <input type="text" class="form-control" id="shippingCity" value="{{ $user ? ($user->ville ?? 'Abidjan') : ($pendingOrderData['shipping_city'] ?? 'Abidjan') }}" required>
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="shippingAddress" class="form-label">Adresse complète <span class="text-danger">*</span></label>
-                                    <textarea class="form-control" id="shippingAddress" rows="3" required>{{ $user->adresse ?? '' }}</textarea>
+                                    <textarea class="form-control" id="shippingAddress" rows="3" required>{{ $user ? ($user->adresse ?? '') : ($pendingOrderData['shipping_address'] ?? '') }}</textarea>
                                     <div class="form-text">Indiquez un point de repère pour faciliter la livraison</div>
                                 </div>
                                 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingPostalCode" class="form-label">Code postal</label>
-                                        <input type="text" class="form-control" id="shippingPostalCode" value="{{ $user->code_postal ?? '' }}">
+                                        <input type="text" class="form-control" id="shippingPostalCode" value="{{ $user ? ($user->code_postal ?? '') : ($pendingOrderData['shipping_postal_code'] ?? '') }}">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="shippingCountry" class="form-label">Pays <span class="text-danger">*</span></label>
                                         <select class="form-control" id="shippingCountry" required>
-                                            <option value="CI" {{ ($user->pays ?? 'CI') == 'CI' ? 'selected' : '' }}>Côte d'Ivoire</option>
-                                            <option value="SN" {{ ($user->pays ?? '') == 'SN' ? 'selected' : '' }}>Sénégal</option>
-                                            <option value="ML" {{ ($user->pays ?? '') == 'ML' ? 'selected' : '' }}>Mali</option>
-                                            <option value="BF" {{ ($user->pays ?? '') == 'BF' ? 'selected' : '' }}>Burkina Faso</option>
-                                            <option value="GH" {{ ($user->pays ?? '') == 'GH' ? 'selected' : '' }}>Ghana</option>
+                                            @php
+                                                $selectedCountry = $user ? ($user->pays ?? 'CI') : ($pendingOrderData['shipping_country'] ?? 'CI');
+                                            @endphp
+                                            <option value="CI" {{ $selectedCountry == 'CI' ? 'selected' : '' }}>Côte d'Ivoire</option>
+                                            <option value="SN" {{ $selectedCountry == 'SN' ? 'selected' : '' }}>Sénégal</option>
+                                            <option value="ML" {{ $selectedCountry == 'ML' ? 'selected' : '' }}>Mali</option>
+                                            <option value="BF" {{ $selectedCountry == 'BF' ? 'selected' : '' }}>Burkina Faso</option>
+                                            <option value="GH" {{ $selectedCountry == 'GH' ? 'selected' : '' }}>Ghana</option>
                                         </select>
                                     </div>
                                 </div>

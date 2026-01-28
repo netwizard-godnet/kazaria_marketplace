@@ -312,16 +312,23 @@ Route::middleware('hybrid.auth')->group(function () {
 });
 
 // Routes de commande (WEB - Sessions + API - Tokens)
-Route::middleware('hybrid.auth')->group(function () {
+// Checkout et shipping accessibles sans authentification
+Route::middleware('web')->group(function () {
     Route::get('/checkout', [App\Http\Controllers\OrderController::class, 'checkout'])->name('checkout');
     Route::get('/shipping', [App\Http\Controllers\OrderController::class, 'shipping'])->name('shipping');
+});
+
+Route::middleware('hybrid.auth')->group(function () {
     Route::get('/order/invoice/{orderNumber}', [App\Http\Controllers\OrderController::class, 'invoice'])->name('order-invoice');
     Route::get('/order/download/{orderNumber}', [App\Http\Controllers\OrderController::class, 'downloadInvoice'])->name('order-download');
     Route::get('/order/details/{orderNumber}', [App\Http\Controllers\OrderController::class, 'orderDetails'])->name('order-details');
 });
 
-// Route web pour créer une commande (utilise la session)
-Route::middleware(['web', 'auth'])->group(function () {
+// Routes pour la commande (utilise la session, auth optionnel)
+Route::middleware(['web'])->group(function () {
+    Route::post('/orders/verify-email', [App\Http\Controllers\OrderController::class, 'verifyEmailAndAuthenticate'])->name('orders.verify-email');
+    Route::post('/orders/authenticate', [App\Http\Controllers\OrderController::class, 'authenticateForOrder'])->name('orders.authenticate');
+    Route::post('/orders/setup-password', [App\Http\Controllers\OrderController::class, 'setupPassword'])->name('orders.setup-password');
     Route::post('/orders/create', [App\Http\Controllers\OrderController::class, 'createOrder'])->name('orders.create');
 });
 
