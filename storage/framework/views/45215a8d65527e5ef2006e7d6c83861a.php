@@ -49,7 +49,7 @@
                                         <li><i class="bi bi-check-circle text-success me-2"></i>Suivi en temps réel</li>
                                         <li><i class="bi bi-check-circle text-success me-2"></i>Signature requise</li>
                                     </ul>
-                                    <p class="fw-bold orange-color mb-0">GRATUIT</p>
+                                    <p class="fw-bold orange-color mb-0">1000 F partout à Abidjan</p>
                                 </div>
                             </div>
                             
@@ -65,9 +65,9 @@
                                     <ul class="list-unstyled">
                                         <li><i class="bi bi-check-circle text-success me-2"></i>Livraison prioritaire</li>
                                         <li><i class="bi bi-check-circle text-success me-2"></i>Suivi en temps réel</li>
-                                        <li><i class="bi bi-check-circle text-success me-2"></i>Livraison matinale</li>
+                                        <li><i class="bi bi-check-circle text-success me-2"></i>Signature requise</li>
                                     </ul>
-                                    <p class="fw-bold orange-color mb-0">+5 000 FCFA</p>
+                                    <p class="fw-bold orange-color mb-0">A partir de 2 000 FCFA</p>
                                 </div>
                             </div>
                         </div>
@@ -111,7 +111,12 @@
                         
                         <div class="alert alert-info mt-3">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Livraison en province :</strong> Délais supplémentaires de 2-3 jours ouvrés. Frais de livraison variables selon la destination.
+                            <strong>Expédition (Intérieur de Pays) :</strong> Coût de livraison variable selon la destination et les Frais d'Expédition (A la Gare ou La Poste).
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Expédition (Sous Région) :</strong> Délais supplémentaires de 2-3 jours ouvrés. Frais de livraison variables selon la destination.
                         </div>
                     </div>
                 </div>
