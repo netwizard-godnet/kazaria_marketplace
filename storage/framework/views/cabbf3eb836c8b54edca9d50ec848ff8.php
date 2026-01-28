@@ -64,6 +64,8 @@ unset($__defined_vars, $__key, $__value); ?>
     }
     
     // Données JSON-LD par défaut (organisation)
+    $contactPhone = \App\Models\Setting::get('contact_phone', '+225 07 00 00 00 00');
+    $whatsappPhone = str_replace(['+', ' ', '-'], '', $contactPhone);
     $defaultJsonLd = [
         '@context' => 'https://schema.org',
         '@type' => 'Organization',
@@ -73,7 +75,7 @@ unset($__defined_vars, $__key, $__value); ?>
         'logo' => asset('images/KAZARIA.jpg'),
         'contactPoint' => [
             '@type' => 'ContactPoint',
-            'telephone' => '+2250701234567',
+            'telephone' => $contactPhone,
             'contactType' => 'customer service',
             'areaServed' => 'CI',
             'availableLanguage' => 'French'
@@ -85,7 +87,7 @@ unset($__defined_vars, $__key, $__value); ?>
             'addressCountry' => 'CI'
         ],
         'sameAs' => [
-            'https://wa.me/2250701234567'
+            'https://wa.me/' . $whatsappPhone
         ]
     ];
     

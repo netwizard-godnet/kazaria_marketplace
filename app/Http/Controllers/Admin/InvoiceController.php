@@ -334,7 +334,7 @@ class InvoiceController extends Controller
         // Récupérer les paramètres de l'entreprise depuis les settings
         $companyName = $invoice->company_name ?? Setting::get('site_name', 'KAZARIA');
         $companyEmail = $invoice->company_email ?? Setting::get('site_email', 'contact@kazaria.ci');
-        $companyPhone = $invoice->company_phone ?? Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $companyPhone = $invoice->company_phone ?? Setting::get('contact_phone', Setting::get('site_phone', '+225 07 00 00 00 00'));
         $companyAddress = $invoice->company_address ?? Setting::get('site_address', 'Côte d\'Ivoire');
         
         // Générer le PDF

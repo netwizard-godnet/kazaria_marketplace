@@ -146,7 +146,7 @@
         <div class="footer">
             <p>
                 <strong>Besoin d'aide ?</strong><br>
-                Contactez-nous à contact@kazaria.ci ou au +225 XX XX XX XX XX
+                Contactez-nous à {{ $settings['contact_email'] ?? 'contact@kazaria.ci' }} ou au {{ $settings['contact_phone'] ?? '+225 07 00 00 00 00' }}
             </p>
             <p style="color: #999;">
                 KAZARIA - E-commerce en Côte d'Ivoire<br>

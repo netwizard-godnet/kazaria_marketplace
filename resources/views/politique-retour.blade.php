@@ -188,7 +188,10 @@
                         </div>
 
                         <div class="text-center">
-                            <a href="https://wa.me/2250701234567" class="btn btn-success btn-sm mb-2 w-100" target="_blank">
+                            @php
+                                $whatsappPhone = str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '+225 07 00 00 00 00');
+                            @endphp
+                            <a href="https://wa.me/{{ $whatsappPhone }}" class="btn btn-success btn-sm mb-2 w-100" target="_blank">
                                 <i class="bi bi-whatsapp me-2"></i>Demander un retour
                             </a>
                             <a href="{{ route('contact') }}" class="btn orange-bg text-white btn-sm w-100">

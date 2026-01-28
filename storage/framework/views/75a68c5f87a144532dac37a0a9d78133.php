@@ -172,7 +172,10 @@
                         <p class="mb-3">Si vous ne trouvez pas la réponse à votre question, notre équipe est là pour vous aider :</p>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <a href="https://wa.me/2250701234567" class="btn btn-success btn-sm w-100" target="_blank">
+                                <?php
+                                    $whatsappPhone = str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '+225 07 00 00 00 00');
+                                ?>
+                                <a href="https://wa.me/<?php echo e($whatsappPhone); ?>" class="btn btn-success btn-sm w-100" target="_blank">
                                     <i class="bi bi-whatsapp me-2"></i>Discuter sur WhatsApp
                                 </a>
                             </div>

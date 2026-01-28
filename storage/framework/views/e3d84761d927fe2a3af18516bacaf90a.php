@@ -227,7 +227,10 @@
                             <a href="<?php echo e(route('product-cart')); ?>" class="btn orange-bg text-white btn-sm mb-2 w-100">
                                 <i class="bi bi-cart me-2"></i>Voir mon panier
                             </a>
-                            <a href="https://wa.me/2250701234567" class="btn btn-success btn-sm mb-2 w-100" target="_blank">
+                            <?php
+                                $whatsappPhone = str_replace(['+', ' ', '-'], '', $settings['contact_phone'] ?? '+225 07 00 00 00 00');
+                            ?>
+                            <a href="https://wa.me/<?php echo e($whatsappPhone); ?>" class="btn btn-success btn-sm mb-2 w-100" target="_blank">
                                 <i class="bi bi-whatsapp me-2"></i>Aide WhatsApp
                             </a>
                             <a href="<?php echo e(route('help-faq')); ?>" class="btn blue-bg text-white btn-sm w-100">

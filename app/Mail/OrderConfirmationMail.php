@@ -16,6 +16,7 @@ class OrderConfirmationMail extends Mailable
 
     public $order;
     public $pdfPath;
+    public $settings;
 
     /**
      * Create a new message instance.
@@ -24,6 +25,8 @@ class OrderConfirmationMail extends Mailable
     {
         $this->order = $order;
         $this->pdfPath = $pdfPath;
+        // Récupérer les settings pour les utiliser dans l'email
+        $this->settings = \App\Models\Setting::getPublicSettings();
     }
 
     /**
@@ -47,6 +50,9 @@ class OrderConfirmationMail extends Mailable
     {
         return new Content(
             view: 'emails.order-confirmation',
+            with: [
+                'settings' => $this->settings,
+            ],
         );
     }
 

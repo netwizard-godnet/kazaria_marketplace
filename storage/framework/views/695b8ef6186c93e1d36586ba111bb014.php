@@ -130,7 +130,11 @@
                         </p>
                         <p class="text-muted">
                             <i class="bi bi-telephone me-2"></i>
-                            <a href="tel:+225XXXXXXXXXX" class="orange-color">+225 XX XX XX XX XX</a>
+                            <?php
+                                $contactPhone = $settings['contact_phone'] ?? '+225 07 00 00 00 00';
+                                $phoneLink = str_replace(['+', ' ', '-'], '', $contactPhone);
+                            ?>
+                            <a href="tel:<?php echo e($phoneLink); ?>" class="orange-color"><?php echo e($contactPhone); ?></a>
                         </p>
                     </div>
                 </div>

@@ -261,7 +261,7 @@ class OrderController extends Controller
         
         // Récupérer les paramètres de contact depuis la BD
         $siteEmail = Setting::get('site_email', 'contact@kazaria.ci');
-        $sitePhone = Setting::get('site_phone', '+225 XX XX XX XX XX');
+        $sitePhone = Setting::get('contact_phone', Setting::get('site_phone', '+225 07 00 00 00 00'));
         $siteName = Setting::get('site_name', 'KAZARIA');
         $siteAddress = Setting::get('site_address', 'Côte d\'Ivoire');
         
