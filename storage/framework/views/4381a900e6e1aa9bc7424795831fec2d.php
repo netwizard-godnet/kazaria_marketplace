@@ -228,7 +228,21 @@
                         window.location.href = data.redirect;
                     }, 1500);
                 } else {
-                    showNotification('error', data.message || 'Erreur lors de la création de la commande');
+                    // Afficher les erreurs de validation détaillées si disponibles
+                    if (data.errors) {
+                        // Concaténer les messages d'erreurs en une seule chaîne lisible
+                        let messages = [];
+                        for (const field in data.errors) {
+                            if (Array.isArray(data.errors[field])) {
+                                messages = messages.concat(data.errors[field]);
+                            } else {
+                                messages.push(data.errors[field]);
+                            }
+                        }
+                        showNotification('error', messages.join(' - '));
+                    } else {
+                        showNotification('error', data.message || 'Erreur lors de la création de la commande');
+                    }
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 }
