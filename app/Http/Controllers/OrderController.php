@@ -197,6 +197,11 @@ class OrderController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::warning('Validation échouée lors de la création de la commande', [
+                'errors' => $validator->errors()->toArray(),
+                'request' => $request->all(),
+                'is_guest' => $isGuest,
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur de validation',
