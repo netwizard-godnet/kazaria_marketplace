@@ -627,9 +627,17 @@ class OrderController extends Controller
             }
             
             DB::commit();
+
+            // Connecter automatiquement le client après création de commande (invité ou non)
+            // Sinon la redirection vers la facture échoue : la route est protégée par HybridAuthMiddleware
+            if ($request->hasSession()) {
+                \Illuminate\Support\Facades\Auth::guard('web')->login($user, true);
+                $request->session()->put('password_hash_web', $user->getAuthPassword());
+                $request->session()->save();
+            }
             
             // Si c'est un nouvel utilisateur, indiquer qu'il doit définir un mot de passe
-            $needsPasswordSetup = $isGuest && $user->needs_password_setup ?? false;
+            $needsPasswordSetup = $isGuest && ($user->needs_password_setup ?? true);
             
             // Construire l'URL de redirection
             $redirectUrl = route('order-invoice', $order->order_number);
