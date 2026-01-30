@@ -269,6 +269,7 @@ class OrderController extends Controller
         $validationData = $request->all();
         if ($isGuest && $pendingOrderData) {
             // Fusionner les données de session avec celles de la requête (la requête a priorité)
+            // Inclure payment_method et customer_notes depuis la requête (choisis sur la page livraison)
             $validationData = array_merge($pendingOrderData, [
                 'shipping_name' => $request->shipping_name ?? $pendingOrderData['shipping_name'],
                 'shipping_email' => $request->shipping_email ?? $pendingOrderData['email'],
@@ -277,6 +278,8 @@ class OrderController extends Controller
                 'shipping_city' => $request->shipping_city ?? $pendingOrderData['shipping_city'],
                 'shipping_postal_code' => $request->shipping_postal_code ?? $pendingOrderData['shipping_postal_code'] ?? null,
                 'shipping_country' => $request->shipping_country ?? $pendingOrderData['shipping_country'],
+                'payment_method' => $request->payment_method,
+                'customer_notes' => $request->customer_notes ?? null,
             ]);
         }
 

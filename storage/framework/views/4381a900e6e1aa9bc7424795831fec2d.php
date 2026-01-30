@@ -193,7 +193,8 @@
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Création de la commande...';
             
             try {
-                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                const paymentRadio = document.querySelector('input[name="paymentMethod"]:checked');
+                const paymentMethod = paymentRadio ? paymentRadio.value : 'card';
                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
                 
                 const response = await fetch('/orders/create', {
@@ -218,19 +219,30 @@
                     })
                 });
 
-                const data = await response.json();
-                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // Réponse non JSON (ex. 419 CSRF, 500 HTML)
+                    if (response.status === 419) {
+                        showNotification('error', 'Session expirée. Veuillez rafraîchir la page et réessayer.');
+                    } else if (response.status >= 500) {
+                        showNotification('error', 'Erreur serveur. Veuillez réessayer dans quelques instants.');
+                    } else {
+                        showNotification('error', 'Erreur inattendue. Veuillez réessayer.');
+                    }
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+
                 if (data.success) {
                     showNotification('success', 'Commande créée avec succès !');
-                    
-                    // Redirection vers la facture
                     setTimeout(() => {
                         window.location.href = data.redirect;
                     }, 1500);
                 } else {
-                    // Afficher les erreurs de validation détaillées si disponibles
                     if (data.errors) {
-                        // Concaténer les messages d'erreurs en une seule chaîne lisible
                         let messages = [];
                         for (const field in data.errors) {
                             if (Array.isArray(data.errors[field])) {
@@ -248,7 +260,7 @@
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                showNotification('error', 'Erreur de connexion');
+                showNotification('error', 'Erreur de connexion. Vérifiez votre réseau.');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
