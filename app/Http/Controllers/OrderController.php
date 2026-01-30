@@ -279,7 +279,20 @@ class OrderController extends Controller
                 'shipping_country' => $request->shipping_country ?? $pendingOrderData['shipping_country'],
             ]);
         }
-        
+
+        // Si utilisateur connecté et corps de requête vide (JSON non reçu), message explicite
+        if (!$isGuest && empty($validationData)) {
+            \Log::warning('createOrder: requête sans données (utilisateur connecté)', [
+                'content_type' => $request->header('Content-Type'),
+                'user_id' => $user->id,
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Les données du formulaire n\'ont pas été reçues. Vérifiez que la page est bien chargée et réessayez.',
+                'errors' => ['form' => ['Données manquantes.']]
+            ], 422);
+        }
+
         $validator = Validator::make($validationData, [
             'shipping_name' => 'required|string|max:255',
             'shipping_email' => 'required|email|max:255',
@@ -290,6 +303,22 @@ class OrderController extends Controller
             'shipping_country' => 'required|string|max:2',
             'payment_method' => 'required|in:card,mobile_money,cash_on_delivery',
             'customer_notes' => 'nullable|string|max:500'
+        ], [
+            'shipping_name.required' => 'Le nom complet est obligatoire.',
+            'shipping_name.max' => 'Le nom ne doit pas dépasser 255 caractères.',
+            'shipping_email.required' => 'L\'email est obligatoire.',
+            'shipping_email.email' => 'L\'email n\'est pas valide.',
+            'shipping_phone.required' => 'Le téléphone est obligatoire.',
+            'shipping_phone.max' => 'Le téléphone ne doit pas dépasser 20 caractères.',
+            'shipping_address.required' => 'L\'adresse de livraison est obligatoire.',
+            'shipping_city.required' => 'La ville est obligatoire.',
+            'shipping_city.max' => 'La ville ne doit pas dépasser 100 caractères.',
+            'shipping_postal_code.max' => 'Le code postal ne doit pas dépasser 10 caractères.',
+            'shipping_country.required' => 'Le pays est obligatoire.',
+            'shipping_country.max' => 'Le pays doit contenir 2 caractères (ex. CI).',
+            'payment_method.required' => 'Veuillez choisir un mode de paiement.',
+            'payment_method.in' => 'Le mode de paiement choisi n\'est pas valide.',
+            'customer_notes.max' => 'Les notes ne doivent pas dépasser 500 caractères.',
         ]);
 
         if ($validator->fails()) {
