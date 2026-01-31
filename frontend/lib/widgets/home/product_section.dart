@@ -89,13 +89,16 @@ class ProductSection extends StatelessWidget {
               ),
               child: Row(
               children: [
-                Icon(icon, color: AppColors.primary),
+                Icon(icon, color: AppColors.primary, size: 20), // ✅ Taille fixe pour l'icône
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: AppTextStyles.h3,
+                Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                  child: Text(
+                    title,
+                    style: AppTextStyles.h3,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                  ),
                 ),
-                const Spacer(),
                 TextButton(
                   onPressed: () {
                     if (category != null) {

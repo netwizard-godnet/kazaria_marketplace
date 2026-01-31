@@ -3,10 +3,9 @@ class ApiConfig {
   // Changez cette URL selon votre environnement
   static const String baseUrl = 'https://www.kazaria-ci.com/api';
   // Pour Android Emulator utiliser: http://10.0.2.2:8000/api
-  // Pour appareil physique utiliser: http://YOUR_LOCAL_IP:8000/api
+  // Pour appareil physique utiliser: http://192.168.1.7:8000/api
 
   static const String imageBaseUrl = 'https://www.kazaria-ci.com';
-
   // Assistant IA
   static const String aiQuery = '$baseUrl/ai/query';
   static const String aiSuggestions = '$baseUrl/ai/suggestions';

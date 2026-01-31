@@ -55,9 +55,10 @@ class CartService {
     required int quantity,
   }) async {
     try {
+      // Include item_id in the body to satisfy backend validation
       return await _apiService.put(
         '${ApiConfig.baseUrl}/cart/update/$cartItemId',
-        {'quantity': quantity},
+        {'item_id': cartItemId, 'quantity': quantity},
         requiresAuth: true,
       );
     } catch (e) {

@@ -208,3 +208,9 @@ Route::get('/app/config', [App\Http\Controllers\MobileController::class, 'getApp
 Route::get('/app/logo', [App\Http\Controllers\MobileController::class, 'getAppLogo']);
 Route::get('/app/contact', [App\Http\Controllers\MobileController::class, 'getAppContact']);
 
+// Routes de partage (share)
+Route::middleware('auth:sanctum')->prefix('share')->group(function () {
+    Route::get('/product/{productId}/link', [App\Http\Controllers\ShareController::class, 'getProductShareLink']);
+    Route::get('/store/{storeId}/link', [App\Http\Controllers\ShareController::class, 'getStoreShareLink']);
+});
+

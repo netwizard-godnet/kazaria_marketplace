@@ -1,4 +1,4 @@
-package com.example.kazaria_app
+package com.example.kazaria
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -141,7 +141,7 @@ class _BrandsSectionState extends State<BrandsSection> {
                           crossAxisCount: 4,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 1,
+                          childAspectRatio: 0.92, // ✅ Réduit pour éviter l'overflow vertical
                         ),
                     itemCount: _brands.length > 8 ? 8 : _brands.length,
                         itemBuilder: (context, index) {
@@ -220,58 +220,64 @@ class _BrandCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo de la marque
-              imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: AppColors.grey100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          child: Padding(
+            padding: const EdgeInsets.all(4), // ✅ Padding pour éviter l'overflow
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // ✅ Minimiser la taille verticale
+              children: [
+                // Logo de la marque
+                imageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: 42, // ✅ Réduit de 50 à 42
+                        height: 42, // ✅ Réduit de 50 à 42
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: AppColors.grey100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            ),
                           ),
                         ),
+                        errorWidget: (context, url, error) {
+                          print('❌ [BRANDS] Erreur chargement logo ${brand.name}: $imageUrl');
+                          return _buildFallbackIcon();
+                        },
                       ),
-                      errorWidget: (context, url, error) {
-                        print('❌ [BRANDS] Erreur chargement logo ${brand.name}: $imageUrl');
-                        return _buildFallbackIcon();
-                      },
+                    )
+                  : _buildFallbackIcon(),
+                
+                const SizedBox(height: 4), // ✅ Réduit de 8 à 4
+                
+                // Nom de la marque
+                Flexible( // ✅ Utiliser Flexible pour éviter l'overflow
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Text(
+                      brand.name,
+                      style: const TextStyle(
+                        fontSize: 9, // ✅ Réduit de 10 à 9
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  )
-                : _buildFallbackIcon(),
-              
-              const SizedBox(height: 8),
-              
-              // Nom de la marque
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  brand.name,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -281,8 +287,8 @@ class _BrandCard extends StatelessWidget {
   /// Widget de fallback si pas de logo
   Widget _buildFallbackIcon() {
     return Container(
-      width: 50,
-      height: 50,
+      width: 42, // ✅ Réduit de 50 à 42
+      height: 42, // ✅ Réduit de 50 à 42
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),

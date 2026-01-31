@@ -697,22 +697,28 @@ class _StoresScreenState extends State<StoresScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_offer,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(width: AppSizes.space2),
-                      Text(
-                        'Meilleures offres',
-                        style: AppTextStyles.h3.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
+                  Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.local_offer,
+                          color: AppColors.primary,
+                          size: 24,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: AppSizes.space2),
+                        Expanded( // ✅ Utiliser Expanded pour le texte
+                          child: Text(
+                            'Meilleures offres',
+                            style: AppTextStyles.h3.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textDark,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   // ✅ Afficher "Voir tout" s'il y a plusieurs produits (plus de 3)
                   if (storeProvider.bestOffersProducts.length > 3)
@@ -802,22 +808,28 @@ class _StoresScreenState extends State<StoresScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.local_offer,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: AppSizes.space2),
-                Text(
-                  'Meilleures offres',
-                  style: AppTextStyles.h3.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
+                Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.local_offer,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: AppSizes.space2),
+                      Expanded( // ✅ Utiliser Expanded pour le texte
+                        child: Text(
+                          'Meilleures offres',
+                          style: AppTextStyles.h3.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                  ],
                 ),
                 // ✅ Afficher "Voir tout" s'il y a plusieurs produits (plus de 2 produits affichés)
                 // Cela permet de voir tous les produits même s'il n'y en a que quelques-uns

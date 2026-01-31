@@ -362,23 +362,39 @@ class _TopSaleProductCard extends StatelessWidget {
                   // Prix
                   Row(
                     children: [
-                      Text(
-                        Helpers.formatPrice(product.price),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                      Flexible( // ✅ Utiliser Flexible pour éviter l'overflow
+                        child: FittedBox( // ✅ Utiliser FittedBox pour réduire automatiquement si nécessaire
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            Helpers.formatPrice(product.price),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                       if (product.oldPrice != null && 
                           product.oldPrice! > product.price) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          Helpers.formatPrice(product.oldPrice!),
-                          style: TextStyle(
-                            fontSize: 10,
-                            decoration: TextDecoration.lineThrough,
-                            color: AppColors.textLight,
+                        const SizedBox(width: 4), // ✅ Réduit de 6 à 4
+                        Flexible( // ✅ Utiliser Flexible pour éviter l'overflow
+                          child: FittedBox( // ✅ Utiliser FittedBox pour réduire automatiquement si nécessaire
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              Helpers.formatPrice(product.oldPrice!),
+                              style: TextStyle(
+                                fontSize: 10,
+                                decoration: TextDecoration.lineThrough,
+                                color: AppColors.textLight,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],

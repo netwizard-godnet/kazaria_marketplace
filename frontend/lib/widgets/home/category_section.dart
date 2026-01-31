@@ -35,9 +35,13 @@ class CategorySection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Catégories',
-                  style: AppTextStyles.sectionTitle,
+                Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                  child: Text(
+                    'Catégories',
+                    style: AppTextStyles.sectionTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                  ),
                 ),
                 TextButton(
                   onPressed: () {

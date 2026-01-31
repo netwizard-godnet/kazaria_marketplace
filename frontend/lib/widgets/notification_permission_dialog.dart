@@ -112,7 +112,6 @@ class NotificationPermissionDialog extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.of(context).pop();
                       onDeny();
                     },
                     style: OutlinedButton.styleFrom(
@@ -141,7 +140,6 @@ class NotificationPermissionDialog extends StatelessWidget {
                   flex: 2,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop();
                       onAllow();
                     },
                     style: ElevatedButton.styleFrom(

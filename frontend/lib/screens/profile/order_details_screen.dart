@@ -661,18 +661,26 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                         color: AppColors.textMedium,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8), // ✅ Réduit de 12 à 8
                     Text(
                       '×',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textLight,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      Helpers.formatPrice(item.price),
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textMedium,
+                    const SizedBox(width: 8), // ✅ Réduit de 12 à 8
+                    Flexible( // ✅ Utiliser Flexible pour éviter l'overflow
+                      child: FittedBox( // ✅ Utiliser FittedBox pour réduire automatiquement si nécessaire
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          Helpers.formatPrice(item.price),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textMedium,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],

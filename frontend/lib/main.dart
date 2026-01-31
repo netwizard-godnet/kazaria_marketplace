@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:kazaria_app/firebase_options.dart';
-import 'package:kazaria_app/firebasemsg.dart';
+import 'package:kazaria/firebase_options.dart';
+import 'package:kazaria/firebasemsg.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

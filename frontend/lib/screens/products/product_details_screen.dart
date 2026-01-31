@@ -686,21 +686,37 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                Helpers.formatPrice(_displayPrice),
-                style: AppTextStyles.h1.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+              Flexible( // ✅ Utiliser Flexible pour éviter l'overflow
+                child: FittedBox( // ✅ Utiliser FittedBox pour réduire automatiquement si nécessaire
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    Helpers.formatPrice(_displayPrice),
+                    style: AppTextStyles.h1.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
               if (_hasDiscount) ...[
-                const SizedBox(width: 12),
-                Text(
-                  Helpers.formatPrice(_displayOldPrice!),
-                  style: AppTextStyles.body.copyWith(
-                    decoration: TextDecoration.lineThrough,
-                    color: AppColors.textLight,
-                    fontSize: 18,
+                const SizedBox(width: 8), // ✅ Réduit de 12 à 8
+                Flexible( // ✅ Utiliser Flexible pour éviter l'overflow
+                  child: FittedBox( // ✅ Utiliser FittedBox pour réduire automatiquement si nécessaire
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      Helpers.formatPrice(_displayOldPrice!),
+                      style: AppTextStyles.body.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                        color: AppColors.textLight,
+                        fontSize: 18,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],

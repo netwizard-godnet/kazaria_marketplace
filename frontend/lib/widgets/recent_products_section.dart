@@ -37,12 +37,21 @@ class RecentProductsSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.history, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('Produits récemment vus', style: AppTextStyles.sectionTitle),
-                ],
+              Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                child: Row(
+                  children: [
+                    Icon(Icons.history, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded( // ✅ Utiliser Expanded pour le texte
+                      child: Text(
+                        'Produits récemment vus',
+                        style: AppTextStyles.sectionTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (onViewAll != null)
                 TextButton(

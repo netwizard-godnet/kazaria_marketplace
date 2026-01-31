@@ -108,35 +108,44 @@ class _CategoryProductsSectionState extends State<CategoryProductsSection> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Titre avec icône
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        categoryIcon,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          categoryName,
-                          style: AppTextStyles.sectionTitle,
+                Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text(
-                          '${products.length} produits',
-                          style: AppTextStyles.sectionSubtitle,
+                        child: Icon(
+                          categoryIcon,
+                          color: AppColors.primary,
+                          size: 20,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded( // ✅ Utiliser Expanded pour le texte
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              categoryName,
+                              style: AppTextStyles.sectionTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                            ),
+                            Text(
+                              '${products.length} produits',
+                              style: AppTextStyles.sectionSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 // Bouton "Voir tout"
                 TextButton(

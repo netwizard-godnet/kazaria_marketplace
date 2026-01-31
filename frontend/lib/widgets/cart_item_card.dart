@@ -87,39 +87,11 @@ class _CartItemCardState extends State<CartItemCard> {
           ),
         ),
         confirmDismiss: (direction) async {
-          // Optionnel : Afficher une confirmation rapide
-          // Pour une suppression immédiate, retourner true directement
-          // Pour une confirmation, décommenter le code ci-dessous
-          
-          // Suppression immédiate sans confirmation
+          // Supprimer immédiatement sans attendre une confirmation
           return true;
-          
-          // OU avec confirmation (décommenter pour activer) :
-          /*
-          final result = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Retirer du panier'),
-              content: Text('Retirer "${product.name}" de votre panier ?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Annuler'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                  ),
-                  child: const Text('Retirer'),
-                ),
-              ],
-            ),
-          );
-          return result ?? false;
-          */
         },
         onDismissed: (direction) {
+          // Appeler la suppression quand le Dismissible est fermé
           widget.onRemove();
         },
         child: Card(
@@ -284,18 +256,20 @@ class _CartItemCardState extends State<CartItemCard> {
                         const SizedBox(height: 6),
 
                         // Prix avec réduction si applicable
-                        Row(
+                        // Utiliser Wrap pour autoriser le retour à la ligne si l'espace est trop
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
                           children: [
                             Text(
                               Helpers.formatPrice(widget.item.price),
                               style: AppTextStyles.body.copyWith(
                                 color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
                               ),
                             ),
                             if (product.hasDiscount) ...[
-                              const SizedBox(width: 8),
                               Text(
                                 Helpers.formatPrice(product.oldPrice!),
                                 style: AppTextStyles.caption.copyWith(
@@ -303,7 +277,6 @@ class _CartItemCardState extends State<CartItemCard> {
                                   color: AppColors.textLight,
                                 ),
                               ),
-                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
@@ -330,14 +303,23 @@ class _CartItemCardState extends State<CartItemCard> {
                         // Contrôles de quantité moderne
                         Row(
                           children: [
-                            _buildQuantityControl(),
-                            const Spacer(),
-                            // Total pour cet article
-                            Text(
-                              Helpers.formatPrice(widget.item.total),
-                              style: AppTextStyles.body.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
+                            // Limiter la taille du contrôle de quantité pour éviter les débordements
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 160),
+                              child: _buildQuantityControl(),
+                            ),
+                            const SizedBox(width: 8),
+                            // Total pour cet article, aligné à droite et s'adaptant à l'espace disponible
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  Helpers.formatPrice(widget.item.total),
+                                  style: AppTextStyles.body.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
                               ),
                             ),
                           ],

@@ -23,26 +23,32 @@ class StoresSection extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSizes.space2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+                  Expanded( // ✅ Utiliser Expanded pour éviter l'overflow
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(AppSizes.space2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(AppSizes.radiusLG),
+                          ),
+                          child: const Icon(
+                            Icons.store,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.store,
-                          color: AppColors.primary,
-                          size: 20,
+                        const SizedBox(width: AppSizes.space3),
+                        Expanded( // ✅ Utiliser Expanded pour le texte
+                          child: Text(
+                            'Boutiques populaires',
+                            style: AppTextStyles.h3,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis, // ✅ Tronquer si trop long
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSizes.space3),
-                      const Text(
-                        'Boutiques populaires',
-                        style: AppTextStyles.h3,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   TextButton(
                     onPressed: () {

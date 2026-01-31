@@ -12,6 +12,7 @@ import '../products/product_details_screen.dart';
 import '../products/recent_products_screen.dart';
 import '../checkout/checkout_screen.dart';
 import '../auth/login_screen.dart';
+import '../../routes/app_router.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -186,7 +187,12 @@ class _CartScreenState extends State<CartScreen> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pop(context);
+                          // Naviguer vers l'écran principal (MainScreen) en nettoyant la pile
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRouter.main,
+                            (route) => false,
+                          );
                         },
                         icon: const Icon(Icons.shopping_bag),
                         label: const Text('Continuer mes achats'),
