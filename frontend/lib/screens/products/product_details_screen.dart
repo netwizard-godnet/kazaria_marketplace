@@ -420,7 +420,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                         MaterialPageRoute(
                           builder: (_) => ImageGalleryScreen(
                             images: images
-                                .map((img) => '${ApiConfig.imageBaseUrl}/$img')
+                                .map((img) => _buildImageUrl(img))
                                 .toList(),
                             initialIndex: index,
                           ),

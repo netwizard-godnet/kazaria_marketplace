@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/banner_model.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
@@ -994,6 +995,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const SizedBox(height: AppSizes.space4),
 
+                    // Header GIF si disponible
+                    if (productProvider.headerGif != null)
+                      Builder(
+                        builder: (context) {
+                          final headerGif = productProvider.headerGif!;
+                          return GestureDetector(
+                            onTap: headerGif.actionType == 'url' && headerGif.actionData?['url'] != null
+                                ? () {
+                                    // Gérer le tap sur le header GIF
+                                    // Vous pouvez implémenter la navigation ici
+                                  }
+                                : null,
+                            child: CachedNetworkImage(
+                              imageUrl: headerGif.image,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              placeholder: (context, url) => Container(
+                                height: 200,
+                                color: Colors.grey[300],
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                height: 200,
+                                color: Colors.grey[200],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                    const SizedBox(height: AppSizes.space2),
+
                     // Bannières promotionnelles dynamiques
                     Builder(
                       builder: (context) {
@@ -1182,7 +1214,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (productProvider.banners.isNotEmpty) {
       for (var banner in productProvider.banners) {
         print('🔍 [HOME] Vérification bannière: ${banner.title}, type: ${banner.type}, image: ${banner.image}');
-        
+
         // ✅ Ne pas ajouter de bannière sans image
         if (banner.image.isEmpty || banner.image == 'null') {
           print('⚠️ [HOME] Bannière sans image ignorée: ${banner.title} (type: ${banner.type})');

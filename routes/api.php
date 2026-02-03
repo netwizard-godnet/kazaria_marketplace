@@ -214,3 +214,10 @@ Route::middleware('auth:sanctum')->prefix('share')->group(function () {
     Route::get('/store/{storeId}/link', [App\Http\Controllers\ShareController::class, 'getStoreShareLink']);
 });
 
+// Routes de popups (publique - pas d'authentification requise)
+Route::prefix('popups')->group(function () {
+    Route::get('/active', [App\Http\Controllers\PopupController::class, 'getActivePopups']);
+    Route::post('/{id}/impression', [App\Http\Controllers\PopupController::class, 'trackImpression']);
+    Route::post('/{id}/click', [App\Http\Controllers\PopupController::class, 'trackClick']);
+});
+

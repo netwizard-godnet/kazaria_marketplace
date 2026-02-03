@@ -6,6 +6,7 @@ import '../providers/product_provider.dart';
 import '../services/cart_reminder_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/notification_permission_dialog.dart';
+import '../widgets/popup_widget.dart';
 import 'home/home_screen.dart';
 import 'categories/categories_screen.dart';
 import 'stores/stores_screen.dart';
@@ -132,10 +133,17 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack garde tous les écrans en mémoire pour éviter le rechargement
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
+      // PopupWidget - Gère l'affichage des pop-ups configurés via le dashboard admin
+      body: Stack(
+        children: [
+          // IndexedStack garde tous les écrans en mémoire pour éviter le rechargement
+          IndexedStack(
+            index: _selectedIndex,
+            children: _screens,
+          ),
+          // PopupWidget - Affiche les pop-ups de marketing
+          const PopupWidget(),
+        ],
       ),
       bottomNavigationBar: Consumer<CartProvider>(
         builder: (context, cartProvider, _) {

@@ -26,10 +26,6 @@ class ModernBannerCarousel extends StatefulWidget {
 class _ModernBannerCarouselState extends State<ModernBannerCarousel>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
   
   int _currentPage = 0;
   Timer? _timer;
@@ -37,47 +33,13 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
     _startAutoPlay();
-  }
-
-  void _initializeAnimations() {
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 300), // Réduire la durée
-      vsync: this,
-    );
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 300), // Réduire la durée
-      vsync: this,
-    );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 1.0, // ✅ Commencer à 1.0 au lieu de 0.0 pour être visible immédiatement
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero, // ✅ Commencer à Offset.zero pour être visible immédiatement
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOut,
-    ));
-
-    // ✅ Lancer les animations immédiatement
-    _fadeController.forward();
-    _slideController.forward();
   }
 
   @override
   void dispose() {
     _stopAutoPlay();
     _pageController.dispose();
-    _fadeController.dispose();
-    _slideController.dispose();
     super.dispose();
   }
 
@@ -174,44 +136,48 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
             child: GestureDetector(
               onTap: banner.buttonText == null ? banner.onTap : null,
               child: (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
-                  ? CachedNetworkImage(
-                      imageUrl: _fixImageUrl(banner.imageUrl!),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      placeholder: (context, url) {
-                        print('⏳ [MODERN_BANNER_CAROUSEL] Chargement image: $url');
-                        return Container(
+                  ? Container(
+                      color: Colors.grey[100],
+                      child: CachedNetworkImage(
+                        imageUrl: _fixImageUrl(banner.imageUrl!),
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                        alignment: Alignment.center,
+                        placeholder: (context, url) {
+                          print('⏳ [MODERN_BANNER_CAROUSEL] Chargement image: $url');
+                          return Container(
                             width: double.infinity,
                             height: double.infinity,
-                          decoration: const BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
-                          ),
-                        );
-                      },
-                      errorWidget: (context, url, error) {
-                        print('❌ [MODERN_BANNER_CAROUSEL] Erreur chargement image: $url, erreur: $error');
-                        return Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                          decoration: const BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                          ),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.error, color: Colors.white),
-                                const SizedBox(height: 8),
-                                Text('Erreur: $error', style: const TextStyle(color: Colors.white)),
-                              ],
+                            decoration: const BoxDecoration(
+                              gradient: AppColors.primaryGradient,
                             ),
-                          ),
-                        );
-                      },
+                            child: const Center(
+                              child: CircularProgressIndicator(color: Colors.white),
+                            ),
+                          );
+                        },
+                        errorWidget: (context, url, error) {
+                          print('❌ [MODERN_BANNER_CAROUSEL] Erreur chargement image: $url, erreur: $error');
+                          return Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: const BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.error, color: Colors.white),
+                                  const SizedBox(height: 8),
+                                  Text('Erreur: $error', style: const TextStyle(color: Colors.white)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     )
                   : Container(
                       width: double.infinity,

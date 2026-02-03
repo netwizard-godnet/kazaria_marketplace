@@ -19,6 +19,7 @@ class ProductProvider with ChangeNotifier {
   List<ProductModel> _allProducts = [];
   List<CategoryModel> _categories = [];
   List<BannerModel> _banners = []; // ✅ Ajout bannières
+  BannerModel? _headerGif; // ✅ Header GIF
   List<BannerModel> _homepageAds = []; // ✅ Publicités de la page d'accueil
   List<ProductModel> _forYouProducts = [];
   List<ProductModel> _recommendedProducts = [];
@@ -47,6 +48,7 @@ class ProductProvider with ChangeNotifier {
   List<ProductModel> get allProducts => _allProducts;
   List<CategoryModel> get categories => _categories;
   List<BannerModel> get banners => _banners; // ✅ Getter bannières
+  BannerModel? get headerGif => _headerGif; // ✅ Getter header GIF
   List<BannerModel> get homepageAds => _homepageAds; // ✅ Getter publicités page d'accueil
   List<ProductModel> get forYouProducts => _forYouProducts;
   List<ProductModel> get recommendedProducts => _recommendedProducts;
@@ -162,6 +164,22 @@ class ProductProvider with ChangeNotifier {
         } catch (e) {
           print('❌ [PRODUCT_PROVIDER] Erreur parsing catégories: $e');
           _categories = [];
+        }
+
+        // ✅ Parser le header GIF
+        try {
+          final headerGifData = data['header_gif'];
+          if (headerGifData != null && headerGifData is Map) {
+            print('📊 [PRODUCT_PROVIDER] Header GIF trouvé');
+            _headerGif = BannerModel.fromJson(Map<String, dynamic>.from(headerGifData));
+            print('✅ [PRODUCT_PROVIDER] Header GIF parsé: ${_headerGif?.image}');
+          } else {
+            print('⚠️ [PRODUCT_PROVIDER] Pas de header GIF reçu');
+            _headerGif = null;
+          }
+        } catch (e) {
+          print('❌ [PRODUCT_PROVIDER] Erreur parsing header GIF: $e');
+          _headerGif = null;
         }
 
         // ✅ Parser les bannières avec gestion d'erreur

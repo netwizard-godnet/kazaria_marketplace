@@ -103,6 +103,13 @@ class MobileController extends Controller
                 });
 
             // Bannières pour le carousel principal de la page d'accueil
+            // 0. Header GIF (affiché en haut)
+            $headerGif = Banner::where('banner_type', 'header_gif')
+                ->where('is_active', true)
+                ->first();
+            
+            \Log::info('📊 [MOBILE] header_gif trouvée: ' . ($headerGif ? 'OUI (ID: ' . $headerGif->id . ')' : 'NON'));
+            
             // 1. Slides du carousel principal (CarouselSlide)
             $carouselSlides = CarouselSlide::where('is_active', true)
                 ->where('show_on_mobile', true)
@@ -335,6 +342,11 @@ class MobileController extends Controller
                     'trending_products' => $trendingProducts->values()->all(),
                     'new_products' => $newProducts->values()->all(),
                     'best_offers' => $bestOffers->values()->all(),
+                    'header_gif' => $headerGif ? [
+                        'id' => $headerGif->id,
+                        'image' => $headerGif->image_url ?? $this->getBannerImageUrl($headerGif->image_path),
+                        'link' => $headerGif->link_url ?? null,
+                    ] : null,
                     'banners' => $banners->values()->all(),
                     'homepage_ads' => $homepageAds,
                     'deals' => [
