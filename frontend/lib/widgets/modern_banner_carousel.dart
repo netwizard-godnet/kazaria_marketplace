@@ -26,21 +26,34 @@ class ModernBannerCarousel extends StatefulWidget {
 class _ModernBannerCarouselState extends State<ModernBannerCarousel>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
-  
   int _currentPage = 0;
   Timer? _timer;
+  double? _imageAspectRatio;
 
   @override
   void initState() {
     super.initState();
     _startAutoPlay();
+    // Précharger la première image pour calculer son ratio
+    if (widget.banners.isNotEmpty && widget.banners.first.imageUrl != null && widget.banners.first.imageUrl!.isNotEmpty) {
+      _getImageAspectRatio(widget.banners.first.imageUrl!);
+    }
   }
 
-  @override
-  void dispose() {
-    _stopAutoPlay();
-    _pageController.dispose();
-    super.dispose();
+  Future<void> _getImageAspectRatio(String imageUrl) async {
+    final image = Image.network(imageUrl);
+    final completer = Completer<ImageInfo>();
+    image.image.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((info, _) {
+        completer.complete(info);
+      }),
+    );
+    final info = await completer.future;
+    if (mounted) {
+      setState(() {
+        _imageAspectRatio = info.image.width / info.image.height;
+      });
+    }
   }
 
   void _startAutoPlay() {
@@ -66,16 +79,20 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 [MODERN_BANNER_CAROUSEL] Build appelé avec ${widget.banners.length} bannières');
-    
+    print('🎨 [MODERN_BANNER_CAROUSEL] Build appelé avec \\${widget.banners.length} bannières');
     if (widget.banners.isEmpty) {
       print('⚠️ [MODERN_BANNER_CAROUSEL] Aucune bannière, retourne SizedBox.shrink()');
       return const SizedBox.shrink();
     }
-
-    print('✅ [MODERN_BANNER_CAROUSEL] Affichage du carousel avec ${widget.banners.length} bannières');
+    print('✅ [MODERN_BANNER_CAROUSEL] Affichage du carousel avec \\${widget.banners.length} bannières');
+    // Si on a le ratio, on adapte la hauteur
+    double? height;
+    if (_imageAspectRatio != null) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      height = screenWidth / _imageAspectRatio!;
+    }
     return Container(
-      height: widget.height,
+      height: height ?? widget.height,
       margin: const EdgeInsets.symmetric(horizontal: 0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppSizes.radius2XL),
@@ -92,6 +109,10 @@ class _ModernBannerCarouselState extends State<ModernBannerCarousel>
               onPageChanged: (index) {
                 setState(() {
                   _currentPage = index;
+                  // Met à jour le ratio si l'image change
+                  if (widget.banners[index].imageUrl != null && widget.banners[index].imageUrl!.isNotEmpty) {
+                    _getImageAspectRatio(widget.banners[index].imageUrl!);
+                  }
                 });
               },
               itemCount: widget.banners.length,

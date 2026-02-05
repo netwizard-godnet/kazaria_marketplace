@@ -2153,6 +2153,38 @@ class AIController extends Controller
      * API endpoint pour obtenir des suggestions basées sur l'historique de vues
      * Peut être appelé depuis n'importe quelle page (hors chat box)
      */
+    public function getSuggestedQuestions(Request $request)
+    {
+        try {
+            if (!config('kazar_ai.enabled')) {
+                return response()->json(['success' => false, 'message' => 'KAZAR I.A désactivée'], 403);
+            }
+
+            $suggestedQuestions = [
+                "Quels sont les meilleurs smartphones ?",
+                "Avez-vous des promotions en cours ?",
+                "Comment devenir vendeur ?",
+                "Quels sont les modes de paiement ?",
+                "Délai de livraison pour Abidjan ?",
+                "Téléviseurs pas chers",
+                "Ordinateurs portables gaming",
+                "Produits électroménagers",
+                "Vêtements et mode",
+                "Frais de livraison"
+            ];
+
+            return response()->json([
+                'success' => true,
+                'questions' => $suggestedQuestions
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des suggestions: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getSuggestions(Request $request)
     {
         try {

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/ai_chat_service.dart';
 import '../../utils/constants.dart';
+import '../../models/product_model.dart';
+import '../products/product_details_screen.dart';
 
 class AIChatbotScreen extends StatefulWidget {
   const AIChatbotScreen({Key? key}) : super(key: key);
@@ -75,18 +78,23 @@ class _AIChatbotScreenState extends State<AIChatbotScreen> with TickerProviderSt
         conversationHistory: _conversationHistory,
       );
 
-      if (response['success'] == true && response['reply'] != null) {
+      // Le backend retourne 'message', pas 'reply'
+      final replyText = response['message'] ?? response['reply'];
+      final items = response['items'] as List?;
+      
+      if (response['success'] == true && replyText != null) {
         setState(() {
           _messages.add(
             ChatMessage(
-              text: response['reply'],
+              text: replyText,
               isBot: true,
               timestamp: DateTime.now(),
+              items: items?.cast<Map<String, dynamic>>(),
             ),
           );
           _conversationHistory.add({
             'role': 'assistant',
-            'content': response['reply'],
+            'content': replyText,
           });
         });
       } else {
@@ -380,6 +388,22 @@ class _AIChatbotScreenState extends State<AIChatbotScreen> with TickerProviderSt
                       fontSize: 11,
                     ),
                   ),
+                  // Afficher les produits si disponibles
+                  if (message.isBot && message.items != null && message.items!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 120,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        shrinkWrap: true,
+                        itemCount: message.items!.length,
+                        itemBuilder: (context, index) {
+                          final product = message.items![index];
+                          return _buildProductCard(context, product);
+                        },
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -415,57 +439,60 @@ class _AIChatbotScreenState extends State<AIChatbotScreen> with TickerProviderSt
           top: BorderSide(color: Colors.grey[200]!),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Questions suggérées :',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textLight,
+      constraints: const BoxConstraints(maxHeight: 200), // Limite la hauteur
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Questions suggérées :',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textLight,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _suggestedQuestions.map((question) {
-              return InkWell(
-                onTap: () => _sendMessage(question),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        question,
-                        style: const TextStyle(
-                          fontSize: 12,
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _suggestedQuestions.map((question) {
+                return InkWell(
+                  onTap: () => _sendMessage(question),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline,
+                          size: 14,
                           color: AppColors.primary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          question,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -575,6 +602,130 @@ class _AIChatbotScreenState extends State<AIChatbotScreen> with TickerProviderSt
     }
   }
 
+  Widget _buildProductCard(BuildContext context, Map<String, dynamic> product) {
+    // Formater le prix en CFA
+    String formatPrice(dynamic price) {
+      if (price == null) return '0 CFA';
+      
+      final priceValue = price is String ? double.tryParse(price) ?? 0 : price as num;
+      final formattedPrice = NumberFormat('#,##0', 'fr_FR').format(priceValue.toInt());
+      return '$formattedPrice CFA';
+    }
+
+    // Créer un objet ProductModel à partir des données du backend
+    ProductModel createProductFromMap(Map<String, dynamic> data) {
+      return ProductModel(
+        id: data['id'] ?? 0,
+        categoryId: data['category_id'] ?? 0,
+        name: data['name'] ?? 'Produit',
+        slug: data['slug'] ?? '',
+        description: data['description'] ?? '',
+        price: double.tryParse(data['price'].toString()) ?? 0,
+        oldPrice: data['old_price'] != null ? double.tryParse(data['old_price'].toString()) : null,
+        image: data['image'] ?? '',
+        imageUrl: data['image'] ?? '',
+        images: (data['images'] as List?)?.cast<String>() ?? [],
+        brand: data['brand'] ?? '',
+        rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+        reviewsCount: data['reviews_count'] ?? 0,
+        stock: data['stock'] ?? 1,
+        views: data['views'] ?? 0,
+        isFeatured: data['is_featured'] ?? false,
+        isTrending: data['is_trending'] ?? false,
+        isNew: data['is_new'] ?? false,
+        isBestOffer: data['is_best_offer'] ?? false,
+        isActive: data['is_active'] ?? true,
+        discountPercentage: (data['discount_percentage'] as num?)?.toDouble(),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Naviguer vers la page de détails du produit
+        final productModel = createProductFromMap(product);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailsScreen(product: productModel),
+          ),
+        );
+      },
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(6),
+                    topRight: Radius.circular(6),
+                  ),
+                  color: Colors.grey[200],
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: product['image'] ?? '',
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image, size: 16),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.broken_image, size: 16),
+                  ),
+                ),
+              ),
+            ),
+            // Produit info
+            Padding(
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product['name'] ?? 'Produit',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    formatPrice(product['price']),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 9,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
 
 class ChatMessage {
@@ -582,12 +733,14 @@ class ChatMessage {
   final bool isBot;
   final DateTime timestamp;
   final bool isError;
+  final List<Map<String, dynamic>>? items; // Produits si l'IA en recommande
 
   ChatMessage({
     required this.text,
     required this.isBot,
     required this.timestamp,
     this.isError = false,
+    this.items,
   });
 }
 

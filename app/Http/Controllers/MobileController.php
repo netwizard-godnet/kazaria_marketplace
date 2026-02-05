@@ -581,21 +581,74 @@ class MobileController extends Controller
                 });
             }
 
+            // ✅ Filtre de prix minimum
+            if ($request->has('min_price')) {
+                $minPrice = floatval($request->min_price);
+                $query->where('price', '>=', $minPrice);
+                \Log::info("💰 [MOBILE] Filtre prix min: $minPrice CFA");
+            }
+
+            // ✅ Filtre de prix maximum
+            if ($request->has('max_price')) {
+                $maxPrice = floatval($request->max_price);
+                $query->where('price', '<=', $maxPrice);
+                \Log::info("💰 [MOBILE] Filtre prix max: $maxPrice CFA");
+            }
+
+            // ✅ Filtre de note minimum
+            if ($request->has('min_rating')) {
+                $minRating = floatval($request->min_rating);
+                $query->where('rating', '>=', $minRating);
+                \Log::info("⭐ [MOBILE] Filtre note min: $minRating");
+            }
+
+            // ✅ Filtre de disponibilité en stock
+            if ($request->has('in_stock')) {
+                if ($request->in_stock == '1' || $request->in_stock === 'true') {
+                    $query->where('stock', '>', 0);
+                    \Log::info("📦 [MOBILE] Filtre: Uniquement produits en stock");
+                }
+            }
+
+            // ✅ Filtre par marques
+            if ($request->has('brands')) {
+                $brands = explode(',', $request->brands);
+                $brands = array_map('trim', $brands); // Nettoyer les espaces
+                $brands = array_filter($brands); // Supprimer les valeurs vides
+                
+                if (!empty($brands)) {
+                    $query->whereIn('brand', $brands);
+                    \Log::info("🏷️ [MOBILE] Filtre marques: " . implode(', ', $brands));
+                }
+            }
+
             // Tri
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
 
-            if ($sortBy === 'price') {
+            // ✅ Gérer les nouveaux types de tri du frontend
+            if ($sortBy === 'price_asc') {
+                $query->orderBy('price', 'asc');
+                \Log::info("💰 [MOBILE] Tri: Prix croissant");
+            } elseif ($sortBy === 'price_desc') {
+                $query->orderBy('price', 'desc');
+                \Log::info("💰 [MOBILE] Tri: Prix décroissant");
+            } elseif ($sortBy === 'price') {
                 $query->orderBy('price', $sortOrder);
+            } elseif ($sortBy === 'popular') {
+                $query->orderBy('views', 'desc');
+                \Log::info("📊 [MOBILE] Tri: Popularité (vues)");
+            } elseif ($sortBy === 'discount') {
+                $query->orderByRaw('discount_percentage DESC');
+                \Log::info("🏷️ [MOBILE] Tri: Promotions (réductions)");
+            } elseif ($sortBy === 'rating') {
+                $query->orderBy('rating', 'desc');
+                \Log::info("⭐ [MOBILE] Tri: Meilleure note");
             } elseif ($sortBy === 'name') {
                 $query->orderBy('name', $sortOrder);
-            } elseif ($sortBy === 'rating') {
-                $query->orderBy('rating', $sortOrder);
-            } elseif ($sortBy === 'discount_percentage') {
-                // ✅ Tri par pourcentage de réduction (pour les meilleures offres)
-                $query->orderByRaw('((old_price - price) / old_price * 100) DESC');
             } else {
-                $query->orderBy('created_at', $sortOrder);
+                // Par défaut: créé récemment
+                $query->orderBy('created_at', 'desc');
             }
 
             // Pagination

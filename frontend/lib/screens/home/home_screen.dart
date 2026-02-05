@@ -915,11 +915,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: BoxFit.contain,
                 alignment: Alignment.centerLeft,
               ),
-        titleSpacing: 16, // Espacement à gauche
-        automaticallyImplyLeading:
-            false, // Retire l'espace pour le bouton retour
-        backgroundColor: const Color(0xFF204fA1), // Bleu foncé élégant
-        foregroundColor: Colors.white, // Icônes en blanc
+        titleSpacing: 16,
+        automaticallyImplyLeading: false,
+        backgroundColor: const Color(0xFF204fA1),
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
@@ -972,217 +971,204 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          // Force le rechargement des données depuis le serveur
-          await Future.wait([
-            productProvider.loadHomeData(forceRefresh: true),
-            productProvider.loadPersonalizedSections(forceRefresh: true),
-            Provider.of<CartProvider>(context, listen: false).loadCart(),
-            Provider.of<FavoritesProvider>(
-              context,
-              listen: false,
-            ).loadFavorites(),
-          ]);
-        },
-        child: _isSearching && _searchController.text.isNotEmpty
-            ? _buildSearchResults()
-            : productProvider.isLoading && !productProvider.hasData
-            ? _buildLoadingState()
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSizes.space4),
-
-                    // Header GIF si disponible
-                    if (productProvider.headerGif != null)
-                      Builder(
-                        builder: (context) {
-                          final headerGif = productProvider.headerGif!;
-                          return GestureDetector(
-                            onTap: headerGif.actionType == 'url' && headerGif.actionData?['url'] != null
-                                ? () {
-                                    // Gérer le tap sur le header GIF
-                                    // Vous pouvez implémenter la navigation ici
-                                  }
-                                : null,
-                            child: CachedNetworkImage(
-                              imageUrl: headerGif.image,
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                              placeholder: (context, url) => Container(
-                                height: 200,
-                                color: Colors.grey[300],
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                height: 200,
-                                color: Colors.grey[200],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                    const SizedBox(height: AppSizes.space2),
-
-                    // Bannières promotionnelles dynamiques
-                    Builder(
-                      builder: (context) {
-                        final banners = _buildDynamicBanners(productProvider);
-                        print(
-                          '🎯 [HOME] Bannières passées au widget: ${banners.length}',
-                        );
-                        if (banners.isEmpty) {
-                          return const SizedBox.shrink();
+      body: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          // Header GIF si disponible (fixe en haut)
+          if (productProvider.headerGif != null)
+            Builder(
+              builder: (context) {
+                final headerGif = productProvider.headerGif!;
+                return GestureDetector(
+                  onTap: headerGif.actionType == 'url' && headerGif.actionData?['url'] != null
+                      ? () {
+                          // Gérer le tap sur le header GIF
+                          // Vous pouvez implémenter la navigation ici
                         }
-                        return ModernBannerCarousel(
-                          height: 220,
-                          banners: banners,
-                          autoPlayInterval: const Duration(seconds: 8),
-                        );
-                      },
+                      : null,
+                  child: CachedNetworkImage(
+                    imageUrl: headerGif.image,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    placeholder: (context, url) => Container(
+                      height: 200,
+                      color: Colors.grey[300],
                     ),
-
-                    const SizedBox(height: AppSizes.space4),
-
-                    // Boutiques officielles en priorité
-                    const BrandsSection(),
-                    _buildSectionSeparator(),
-
-                    // Boutons d'accès rapide aux promotions (affichés uniquement si activés côté backend)
-                    if (_hasActivePromotions(productProvider.promotions)) ...[
-                      PromoButtons(promotions: productProvider.promotions),
-                      _buildSectionSeparator(),
-                    ],
-
-                    // Catégories
-                    CategorySection(categories: productProvider.categories),
-                    _buildSectionSeparator(),
-
-                    // Pour vous
-                    ProductSection(
-                      title: 'Pour vous',
-                      products: productProvider.forYouProducts,
-                      icon: Icons.thumb_up_alt,
-                      category: null,
-                      isLoading:
-                          productProvider.personalizedLoading &&
-                          productProvider.forYouProducts.isEmpty,
+                    errorWidget: (context, url, error) => Container(
+                      height: 200,
+                      color: Colors.grey[200],
                     ),
-                    _buildSectionSeparator(),
-
-                    // Recommandé
-                    ProductSection(
-                      title: 'Recommandé pour vous',
-                      products: productProvider.recommendedProducts,
-                      icon: Icons.star,
-                      category: 'best_offers',
-                      isLoading:
-                          productProvider.personalizedLoading &&
-                          productProvider.recommendedProducts.isEmpty,
-                    ),
-                    if (productProvider.recentProducts.isNotEmpty) ...[
-                      _buildSectionSeparator(),
-                      RecentProductsSection(
-                        products: productProvider.recentProducts,
-                        onViewAll: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RecentProductsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                    _buildSectionSeparator(),
-
-                    // 🔥 NOUVEAU : Deals du Jour avec compte à rebours
-                    const DealsOfDaySection(),
-                    _buildSectionSeparator(),
-
-                    // Nouveautés
-                    ProductSection(
-                      title: 'Nouveautés',
-                      products: productProvider.newProducts,
-                      icon: Icons.new_releases,
-                      category: 'new',
-                      isLoading:
-                          productProvider.isLoading &&
-                          productProvider.newProducts.isEmpty,
-                    ),
-                    _buildSectionSeparator(),
-
-                    // 🏆 NOUVEAU : Section Top Ventes
-                    const TopSalesSection(),
-                    _buildSectionSeparator(),
-
-                    // Meilleures offres
-                    ProductSection(
-                      title: 'Meilleures offres',
-                      products: productProvider.bestOffers,
-                      icon: Icons.local_offer,
-                      category: 'best_offers',
-                      isLoading:
-                          productProvider.isLoading &&
-                          productProvider.bestOffers.isEmpty,
-                    ),
-                    _buildSectionSeparator(),
-
-                    // 🎨 Bannière publicitaire / Publicités de la page d'accueil
-                    if (productProvider.homepageAds.isNotEmpty)
-                      PromoBanner(homepageAds: productProvider.homepageAds)
-                    else
-                      PromoBanner(
-                        imageUrl: 'assets/images/bg-2.jpg',
-                        title: 'NOUVELLE COLLECTION',
-                        subtitle: 'JUSTE POUR VOUS',
-                        date: 'Octobre 2025',
-                        buttonText: 'Découvrir',
-                        overlayColor: const Color(0xFF1A3A52),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProductsListScreen(
-                                title: 'Nouvelle Collection',
-                                category: 'new',
-                                icon: Icons.new_releases,
+                  ),
+                );
+              },
+            ),
+          // Le reste du contenu scrollable
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await Future.wait([
+                  productProvider.loadHomeData(forceRefresh: true),
+                  productProvider.loadPersonalizedSections(forceRefresh: true),
+                  Provider.of<CartProvider>(context, listen: false).loadCart(),
+                  Provider.of<FavoritesProvider>(
+                    context,
+                    listen: false,
+                  ).loadFavorites(),
+                ]);
+              },
+              child: _isSearching && _searchController.text.isNotEmpty
+                  ? _buildSearchResults()
+                  : productProvider.isLoading && !productProvider.hasData
+                      ? _buildLoadingState()
+                      : SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: AppSizes.space2),
+                              // Bannières promotionnelles dynamiques
+                              Builder(
+                                builder: (context) {
+                                  final banners = _buildDynamicBanners(productProvider);
+                                  print(
+                                    '🎯 [HOME] Bannières passées au widget: \\${banners.length}',
+                                  );
+                                  if (banners.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return ModernBannerCarousel(
+                                    height: 220,
+                                    banners: banners,
+                                    autoPlayInterval: const Duration(seconds: 8),
+                                  );
+                                },
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    _buildSectionSeparator(),
-
-                    // Tendance
-                    ProductSection(
-                      title: 'Tendance',
-                      products: productProvider.trendingProducts,
-                      icon: Icons.trending_up,
-                      category: 'trending',
-                      isLoading:
-                          productProvider.isLoading &&
-                          productProvider.trendingProducts.isEmpty,
-                    ),
-                    _buildSectionSeparator(),
-
-                    // Sections dynamiques par catégorie
-                    const CategoryProductsSection(),
-
-                    const SizedBox(height: 24),
-
-                    // Politiques et Garanties
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: PoliciesSection(),
-                    ),
-
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
+                              const SizedBox(height: AppSizes.space4),
+                              // Boutiques officielles en priorité
+                              const BrandsSection(),
+                              _buildSectionSeparator(),
+                              // Boutons d'accès rapide aux promotions (affichés uniquement si activés côté backend)
+                              if (_hasActivePromotions(productProvider.promotions)) ...[
+                                PromoButtons(promotions: productProvider.promotions),
+                                _buildSectionSeparator(),
+                              ],
+                              // Catégories
+                              CategorySection(categories: productProvider.categories),
+                              _buildSectionSeparator(),
+                              // Pour vous
+                              ProductSection(
+                                title: 'Pour vous',
+                                products: productProvider.forYouProducts,
+                                icon: Icons.thumb_up_alt,
+                                category: null,
+                                isLoading:
+                                    productProvider.personalizedLoading &&
+                                    productProvider.forYouProducts.isEmpty,
+                              ),
+                              _buildSectionSeparator(),
+                              // Recommandé
+                              ProductSection(
+                                title: 'Recommandé pour vous',
+                                products: productProvider.recommendedProducts,
+                                icon: Icons.star,
+                                category: 'best_offers',
+                                isLoading:
+                                    productProvider.personalizedLoading &&
+                                    productProvider.recommendedProducts.isEmpty,
+                              ),
+                              if (productProvider.recentProducts.isNotEmpty) ...[
+                                _buildSectionSeparator(),
+                                RecentProductsSection(
+                                  products: productProvider.recentProducts,
+                                  onViewAll: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const RecentProductsScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                              _buildSectionSeparator(),
+                              // 🔥 NOUVEAU : Deals du Jour avec compte à rebours
+                              const DealsOfDaySection(),
+                              _buildSectionSeparator(),
+                              // Nouveautés
+                              ProductSection(
+                                title: 'Nouveautés',
+                                products: productProvider.newProducts,
+                                icon: Icons.new_releases,
+                                category: 'new',
+                                isLoading:
+                                    productProvider.isLoading &&
+                                    productProvider.newProducts.isEmpty,
+                              ),
+                              _buildSectionSeparator(),
+                              // 🏆 NOUVEAU : Section Top Ventes
+                              const TopSalesSection(),
+                              _buildSectionSeparator(),
+                              // Meilleures offres
+                              ProductSection(
+                                title: 'Meilleures offres',
+                                products: productProvider.bestOffers,
+                                icon: Icons.local_offer,
+                                category: 'best_offers',
+                                isLoading:
+                                    productProvider.isLoading &&
+                                    productProvider.bestOffers.isEmpty,
+                              ),
+                              _buildSectionSeparator(),
+                              // 🎨 Bannière publicitaire / Publicités de la page d'accueil
+                              if (productProvider.homepageAds.isNotEmpty)
+                                PromoBanner(homepageAds: productProvider.homepageAds)
+                              else
+                                PromoBanner(
+                                  imageUrl: 'assets/images/bg-2.jpg',
+                                  title: 'NOUVELLE COLLECTION',
+                                  subtitle: 'JUSTE POUR VOUS',
+                                  date: 'Octobre 2025',
+                                  buttonText: 'Découvrir',
+                                  overlayColor: const Color(0xFF1A3A52),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ProductsListScreen(
+                                          title: 'Nouvelle Collection',
+                                          category: 'new',
+                                          icon: Icons.new_releases,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              _buildSectionSeparator(),
+                              // Tendance
+                              ProductSection(
+                                title: 'Tendance',
+                                products: productProvider.trendingProducts,
+                                icon: Icons.trending_up,
+                                category: 'trending',
+                                isLoading:
+                                    productProvider.isLoading &&
+                                    productProvider.trendingProducts.isEmpty,
+                              ),
+                              _buildSectionSeparator(),
+                              // Sections dynamiques par catégorie
+                              const CategoryProductsSection(),
+                              const SizedBox(height: 24),
+                              // Politiques et Garanties
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: PoliciesSection(),
+                              ),
+                              const SizedBox(height: 32),
+                            ],
+                          ),
+                        ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {

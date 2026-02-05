@@ -91,9 +91,10 @@ Route::post('/reviews/{reviewId}/vote', [App\Http\Controllers\ReviewController::
 Route::post('/coupons/apply', [CouponController::class, 'apply']);
 
 // KAZAR I.A
-Route::post('/ai/query', [AIController::class, 'query']);
-Route::post('/ai/interaction', [AIController::class, 'logInteraction'])->name('ai.interaction');
+Route::post('/ai/query', [AIController::class, 'query'])->middleware('web');
+Route::post('/ai/interaction', [AIController::class, 'logInteraction'])->middleware('web')->name('ai.interaction');
 Route::get('/ai/suggestions', [AIController::class, 'getSuggestions'])->middleware('web');
+Route::get('/ai/suggested-questions', [AIController::class, 'getSuggestedQuestions'])->middleware('web');
 
 // Route pour vérifier le statut de vendeur
 Route::get('/check-seller-status', [App\Http\Controllers\ProfileController::class, 'checkSellerStatus'])->middleware('auth:sanctum');

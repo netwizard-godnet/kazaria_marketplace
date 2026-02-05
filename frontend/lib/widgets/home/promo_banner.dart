@@ -260,12 +260,33 @@ class _HomepageAdsCarouselState extends State<_HomepageAdsCarousel> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Timer? _timer;
+  double? _imageAspectRatio;
 
   @override
   void initState() {
     super.initState();
     if (widget.ads.length > 1) {
       _startAutoPlay();
+    }
+    // Précharger la première image pour calculer son ratio
+    if (widget.ads.isNotEmpty && widget.ads.first.image.isNotEmpty) {
+      _getImageAspectRatio(widget.ads.first.image);
+    }
+  }
+
+  Future<void> _getImageAspectRatio(String imageUrl) async {
+    final image = Image.network(imageUrl);
+    final completer = Completer<ImageInfo>();
+    image.image.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((info, _) {
+        completer.complete(info);
+      }),
+    );
+    final info = await completer.future;
+    if (mounted) {
+      setState(() {
+        _imageAspectRatio = info.image.width / info.image.height;
+      });
     }
   }
 
@@ -301,8 +322,15 @@ class _HomepageAdsCarouselState extends State<_HomepageAdsCarousel> {
       return const SizedBox.shrink();
     }
 
+    // Si on a le ratio, on adapte la hauteur
+    double? height;
+    if (_imageAspectRatio != null) {
+      final screenWidth = MediaQuery.of(context).size.width - 32; // padding horizontal
+      height = screenWidth / _imageAspectRatio!;
+    }
+
     return Container(
-      height: 180,
+      height: height ?? 180,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -314,6 +342,10 @@ class _HomepageAdsCarouselState extends State<_HomepageAdsCarousel> {
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
+                // Met à jour le ratio si l'image change
+                if (widget.ads[index].image.isNotEmpty) {
+                  _getImageAspectRatio(widget.ads[index].image);
+                }
               });
             },
             itemCount: widget.ads.length,
@@ -386,41 +418,41 @@ class _HomepageAdCard extends StatelessWidget {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: ad.image.isNotEmpty
-              ? SizedBox(
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: CachedNetworkImage(
-                  imageUrl: ad.image,
-                  fit: BoxFit.cover,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: ad.image.isNotEmpty
+                ? SizedBox(
                     width: double.infinity,
                     height: double.infinity,
-                  placeholder: (context, url) => Container(
+                    child: CachedNetworkImage(
+                      imageUrl: ad.image,
+                      fit: BoxFit.contain,
                       width: double.infinity,
                       height: double.infinity,
-                    color: AppColors.grey100,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
+                      placeholder: (context, url) => Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        color: AppColors.grey100,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        color: AppColors.grey100,
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: AppColors.grey500,
                         ),
                       ),
                     ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                    color: AppColors.grey100,
-                    child: const Icon(
-                      Icons.image_not_supported,
-                      color: AppColors.grey500,
-                      ),
-                    ),
-                  ),
-                )
+                  )
               : Container(
                   width: double.infinity,
                   height: double.infinity,
